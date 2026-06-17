@@ -1,0 +1,21 @@
+HEADER    SAMPLE INTERACTION STRUCTURE
+TITLE     SMALL TWO-CHAIN PROTEIN WITH A LIGAND FOR MVP TESTS
+ATOM      1  N   ALA A   1       0.000   0.000   0.000  1.00 20.00           N
+ATOM      2  CA  ALA A   1       1.450   0.000   0.000  1.00 20.00           C
+ATOM      3  C   ALA A   1       2.050   1.350   0.000  1.00 20.00           C
+ATOM      4  O   ALA A   1       1.450   2.400   0.000  1.00 20.00           O
+ATOM      5  H   ALA A   1      -0.500  -0.600   0.000  1.00 20.00           H
+ATOM      6  N   GLY A   2       3.300   1.300   0.000  1.00 20.00           N
+ATOM      7  CA  GLY A   2       4.000   2.550   0.000  1.00 20.00           C
+ATOM      8  C   GLY A   2       5.450   2.250   0.000  1.00 20.00           C
+ATOM      9  O   GLY A   2       6.100   3.200   0.000  1.00 20.00           O
+ATOM     10  N   SER B   1       4.200   0.300   0.000  1.00 20.00           N
+ATOM     11  CA  SER B   1       5.500   0.000   0.000  1.00 20.00           C
+ATOM     12  C   SER B   1       6.200   1.250   0.000  1.00 20.00           C
+ATOM     13  O   SER B   1       7.400   1.200   0.000  1.00 20.00           O
+HETATM   14  C1  ATP A 101       3.800   3.800   0.000  1.00 20.00           C
+HETATM   15  O1  ATP A 101       4.900   3.400   0.000  1.00 20.00           O
+HETATM   16  H1  ATP A 101       3.300   4.400   0.000  1.00 20.00           H
+HETATM   17  O   HOH A 201       9.000   9.000   9.000  1.00 20.00           O
+TER
+END
