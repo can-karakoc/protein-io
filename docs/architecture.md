@@ -18,7 +18,7 @@ backend/app/
 
 ## Why StructureData Exists
 
-`StructureData` is the internal structure format owned by this project. The PDB parser uses Biopython, but the rest of the backend should not depend on Biopython classes.
+`StructureData` is the internal structure format owned by this project. The PDB parser uses Gemmi, but the rest of the backend should not depend on Gemmi classes.
 
 That gives us one clean path:
 

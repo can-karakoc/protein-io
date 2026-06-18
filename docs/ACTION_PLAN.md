@@ -27,10 +27,10 @@ Verification note: deployed sample flow was checked on 2026-06-18. The live app 
 
 ## Phase 2: Gemmi Parser Migration
 
-- `[ ]` Add Gemmi as a backend dependency.
-- `[ ]` Replace Biopython parser internals while preserving `StructureData` and current parser API functions.
-- `[ ]` Preserve current behavior for atoms, chains, residues, ligands, waters, warnings, and first-model selection.
-- `[ ]` Add PDB parser parity tests.
+- `[x]` Add Gemmi as a backend dependency.
+- `[x]` Replace Biopython parser internals while preserving `StructureData` and current parser API functions.
+- `[x]` Preserve current behavior for atoms, chains, residues, ligands, waters, warnings, and first-model selection.
+- `[x]` Add PDB parser parity tests.
 - `[ ]` Add mmCIF/CIF support after PDB parity is stable.
 
 ## Phase 3: Gemmi NeighborSearch Contacts

@@ -35,7 +35,7 @@ Backend:
 
 - FastAPI
 - Python
-- Biopython `Bio.PDB`
+- Gemmi
 - Pydantic
 - pytest
 - Render

@@ -4,8 +4,8 @@ version = "0.1.0"
 description = "FastAPI backend for protein interaction analysis"
 requires-python = ">=3.11"
 dependencies = [
-    "biopython>=1.84",
     "fastapi>=0.115.0",
+    "gemmi>=0.7.5",
     "pydantic>=2.8.0",
     "python-multipart>=0.0.9",
     "uvicorn[standard]>=0.30.0",
@@ -20,4 +20,3 @@ dev = [
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
-

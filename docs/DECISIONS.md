@@ -7,7 +7,7 @@ Decision: Use Next.js for the frontend and FastAPI for the backend.
 Why:
 
 - Next.js is a strong fit for an interactive scientific web UI.
-- FastAPI is a clear fit for Python-based Bio.PDB analysis.
+- FastAPI is a clear fit for Python-based structural biology analysis.
 - Keeping analysis in Python avoids forcing comp-bio parsing into JavaScript.
 
 Tradeoff:
@@ -22,7 +22,7 @@ Decision: Support PDB uploads first. Defer mmCIF.
 Why:
 
 - PDB is simple enough for an MVP.
-- Biopython supports PDB parsing directly.
+- Gemmi supports fast PDB parsing and keeps a path open for mmCIF support.
 - mmCIF can be added later behind the same analysis model.
 
 Tradeoff:
@@ -35,13 +35,13 @@ Decision: Convert parser output into an app-owned `StructureData` model before a
 
 Why:
 
-- Contact analysis should not depend on Biopython objects.
+- Contact analysis should not depend on parser-library objects.
 - Future PDB, mmCIF, RCSB, AlphaFold, ColabFold, Boltz, and OpenFold-style inputs can target one internal structure shape.
 - Tests can focus on app behavior instead of parser library details.
 
 Tradeoff:
 
-- We duplicate a small subset of structural data instead of passing Biopython objects around directly.
+- We duplicate a small subset of structural data instead of passing parser-library objects around directly.
 - The normalized model must be maintained as new analysis needs appear.
 
 ## Keep Routes Thin
@@ -107,7 +107,7 @@ Why:
 
 - A naive all-pairs atom scan scales poorly as structures get larger.
 - A spatial grid is understandable, dependency-free, and good enough for the MVP.
-- It keeps `contacts.py` independent from FastAPI, Biopython, and heavy numerical libraries.
+- It keeps `contacts.py` independent from FastAPI, Gemmi internals, and heavy numerical libraries.
 
 Tradeoff:
 

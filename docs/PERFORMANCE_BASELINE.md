@@ -46,3 +46,21 @@ Measure the current Biopython parser and custom spatial-grid contact search so f
 - Gemmi parsing should still be benchmarked because parse time reaches meaningful values on large files.
 - Gemmi NeighborSearch is likely the higher-impact migration because contact detection dominates the current backend wall time.
 - The next comparison should run this same script after the Gemmi parser migration, then again after Gemmi NeighborSearch.
+
+## Gemmi Parser Branch Comparison
+
+These numbers were captured on the `feature/gemmi-parser` branch after replacing Biopython parser internals with Gemmi while keeping the existing spatial-grid contact search.
+
+| Input | Size KB | Runs | Atoms | Protein residues | Chains | Ligands | Contacts | Parse ms | Contacts ms | Response ms | Analysis ms | Wall ms |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| small | 1.4 | 5 | 17 | 3 | 2 | 1 | 6 | 0.14 | 0.13 | 0.01 | 0.28 | 0.28 |
+| medium-4HHB | 462.7 | 5 | 4779 | 574 | 4 | 6 | 2564 | 22.06 | 119.68 | 0.08 | 141.82 | 142.50 |
+| large-6VXX | 2124.7 | 5 | 23694 | 2916 | 18 | 63 | 5000 | 101.95 | 622.63 | 0.39 | 724.97 | 729.12 |
+
+Parser-only improvement versus the baseline:
+
+- `small`: 0.30 ms to 0.14 ms.
+- `medium-4HHB`: 29.68 ms to 22.06 ms.
+- `large-6VXX`: 142.36 ms to 101.95 ms.
+
+The contact-search cost remains essentially unchanged, which confirms that Gemmi NeighborSearch should be evaluated next.
