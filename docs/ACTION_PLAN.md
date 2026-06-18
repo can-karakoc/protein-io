@@ -23,7 +23,7 @@ Verification note: deployed sample flow was checked on 2026-06-18. The live app 
 
 - `[x]` Add backend timing for parsing, contact detection, and response assembly.
 - `[x]` Add frontend timing for sample loading, API request time, response parsing, and viewer render.
-- `[ ]` Benchmark the current Biopython parser and spatial grid with small, medium, and large structures.
+- `[x]` Benchmark the current Biopython parser and spatial grid with small, medium, and large structures.
 
 ## Phase 2: Gemmi Parser Migration
 

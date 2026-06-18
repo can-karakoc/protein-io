@@ -218,4 +218,5 @@ Contact table:
 - [Manual QA Checklist](docs/MANUAL_QA.md)
 - [MVP Scope](docs/MVP_SCOPE.md)
 - [Decisions](docs/DECISIONS.md)
+- [Performance Baseline](docs/PERFORMANCE_BASELINE.md)
 - [Release Plan](docs/RELEASE_PLAN.md)
