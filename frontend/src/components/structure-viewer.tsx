@@ -26,24 +26,38 @@ export function StructureViewer({ pdbText }: StructureViewerProps) {
         return;
       }
 
+      const renderStarted = performance.now();
+      const importStarted = performance.now();
       const threeDmol = await import("3dmol");
+      const importMs = elapsedMs(importStarted);
       if (cancelled || !containerRef.current) {
         return;
       }
 
+      const viewerCreateStarted = performance.now();
       if (!viewerRef.current) {
         viewerRef.current = threeDmol.createViewer(containerRef.current, {
           backgroundColor: "#ffffff",
         }) as ViewerLike;
       }
+      const viewerCreateMs = elapsedMs(viewerCreateStarted);
 
       const viewer = viewerRef.current;
+      const modelStarted = performance.now();
       viewer.clear();
       viewer.addModel(pdbText, "pdb");
       viewer.setStyle({}, { cartoon: { color: "spectrum" } });
       viewer.setStyle({ hetflag: true }, { stick: { radius: 0.22, colorscheme: "greenCarbon" } });
       viewer.zoomTo();
       viewer.render();
+      const modelRenderMs = elapsedMs(modelStarted);
+      console.info("[protein.io timing] viewer render", {
+        total_ms: elapsedMs(renderStarted),
+        import_ms: importMs,
+        viewer_create_ms: viewerCreateMs,
+        model_render_ms: modelRenderMs,
+        characters: pdbText.length,
+      });
     }
 
     renderStructure();
@@ -62,4 +76,8 @@ export function StructureViewer({ pdbText }: StructureViewerProps) {
   }
 
   return <div ref={containerRef} className="relative h-[420px] w-full overflow-hidden border border-slate-200 bg-white" />;
+}
+
+function elapsedMs(startedAt: number) {
+  return Math.round((performance.now() - startedAt) * 100) / 100;
 }

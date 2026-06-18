@@ -9,6 +9,7 @@ import { contactsToCsv } from "@/lib/csv";
 import type { AnalysisResponse, ContactRecord } from "@/lib/types";
 
 const EXAMPLE_FILE = "/sample.pdb";
+const TIMING_HEADER = "X-ProteinIO-Timing";
 
 export function ProteinWorkbench() {
   const [fileName, setFileName] = useState<string>("");
@@ -23,19 +24,36 @@ export function ProteinWorkbench() {
   const filteredContactPreview = useMemo(() => contacts.slice(0, 80), [contacts]);
 
   async function handleFile(file: File) {
+    const timingStarted = performance.now();
     setError(null);
     setAnalysis(null);
     setFileName(file.name);
-    setPdbText(await file.text());
+    const text = await file.text();
+    setPdbText(text);
+    logTiming("file upload read", timingStarted, {
+      fileName: file.name,
+      bytes: file.size,
+      characters: text.length,
+    });
   }
 
   async function loadExample() {
+    const timingStarted = performance.now();
     setError(null);
     setAnalysis(null);
+    const fetchStarted = performance.now();
     const response = await fetch(EXAMPLE_FILE);
+    const fetchMs = elapsedMs(fetchStarted);
+    const textStarted = performance.now();
     const text = await response.text();
+    const textMs = elapsedMs(textStarted);
     setFileName("sample.pdb");
     setPdbText(text);
+    logTiming("sample load", timingStarted, {
+      fetch_ms: fetchMs,
+      response_text_ms: textMs,
+      bytes: text.length,
+    });
   }
 
   async function analyzeStructure() {
@@ -48,21 +66,38 @@ export function ProteinWorkbench() {
     setError(null);
 
     try {
+      const timingStarted = performance.now();
+      const formStarted = performance.now();
       const formData = new FormData();
       formData.append("file", new File([pdbText], fileName || "uploaded.pdb", { type: "chemical/x-pdb" }));
       formData.append("cutoff_angstrom", String(cutoff));
+      const form_ms = elapsedMs(formStarted);
 
+      const requestStarted = performance.now();
       const response = await fetch(buildApiUrl("/api/analyze"), {
         method: "POST",
         body: formData,
       });
+      const request_ms = elapsedMs(requestStarted);
 
       if (!response.ok) {
         const body = (await response.json().catch(() => null)) as { detail?: string } | null;
         throw new Error(body?.detail ?? `Analysis failed with status ${response.status}.`);
       }
 
-      setAnalysis((await response.json()) as AnalysisResponse);
+      const parseStarted = performance.now();
+      const nextAnalysis = (await response.json()) as AnalysisResponse;
+      const response_json_ms = elapsedMs(parseStarted);
+      setAnalysis(nextAnalysis);
+      logTiming("analysis request", timingStarted, {
+        form_ms,
+        request_ms,
+        response_json_ms,
+        backend: response.headers.get(TIMING_HEADER) ?? "not exposed",
+        atoms: nextAnalysis.summary.atom_count,
+        residues: nextAnalysis.summary.residue_count,
+        contacts: nextAnalysis.summary.contact_count,
+      });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Analysis failed.");
     } finally {
@@ -268,6 +303,17 @@ export function ProteinWorkbench() {
       </div>
     </main>
   );
+}
+
+function elapsedMs(startedAt: number) {
+  return Math.round((performance.now() - startedAt) * 100) / 100;
+}
+
+function logTiming(label: string, startedAt: number, details: Record<string, number | string>) {
+  console.info(`[protein.io timing] ${label}`, {
+    total_ms: elapsedMs(startedAt),
+    ...details,
+  });
 }
 
 function SummaryCards({ analysis }: { analysis: AnalysisResponse | null }) {

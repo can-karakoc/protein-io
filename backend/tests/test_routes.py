@@ -40,6 +40,9 @@ def test_analyze_endpoint_returns_clean_response_shape():
     assert data["ligands"]
     assert data["contacts"]
     assert isinstance(data["warnings"], list)
+    assert "parse_ms=" in response.headers["X-ProteinIO-Timing"]
+    assert "contacts_ms=" in response.headers["X-ProteinIO-Timing"]
+    assert "response_ms=" in response.headers["X-ProteinIO-Timing"]
 
 
 def test_analyze_endpoint_rejects_bad_upload():
