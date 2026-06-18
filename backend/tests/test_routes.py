@@ -8,6 +8,7 @@ from app.main import app
 
 
 SAMPLE_PDB = Path(__file__).parents[2] / "examples" / "sample.pdb"
+SAMPLE_CIF = Path(__file__).parents[2] / "examples" / "sample.cif"
 
 
 def test_health_endpoint():
@@ -43,6 +44,24 @@ def test_analyze_endpoint_returns_clean_response_shape():
     assert "parse_ms=" in response.headers["X-ProteinIO-Timing"]
     assert "contacts_ms=" in response.headers["X-ProteinIO-Timing"]
     assert "response_ms=" in response.headers["X-ProteinIO-Timing"]
+
+
+def test_analyze_endpoint_accepts_mmcif_upload():
+    client = TestClient(app)
+
+    with SAMPLE_CIF.open("rb") as handle:
+        response = client.post(
+            "/analyze",
+            files={"file": ("sample.cif", handle, "chemical/x-mmcif")},
+            data={"cutoff_angstrom": "4.0"},
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["summary"]["atom_count"] == 17
+    assert data["summary"]["chain_count"] == 2
+    assert data["summary"]["ligand_count"] == 1
+    assert data["summary"]["contact_count"] == len(data["contacts"])
 
 
 def test_analyze_endpoint_rejects_bad_upload():

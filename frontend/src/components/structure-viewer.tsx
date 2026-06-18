@@ -3,7 +3,8 @@
 import { useEffect, useRef } from "react";
 
 type StructureViewerProps = {
-  pdbText: string;
+  structureText: string;
+  structureFormat: "pdb" | "cif";
 };
 
 type ViewerLike = {
@@ -14,7 +15,7 @@ type ViewerLike = {
   render: () => void;
 };
 
-export function StructureViewer({ pdbText }: StructureViewerProps) {
+export function StructureViewer({ structureText, structureFormat }: StructureViewerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const viewerRef = useRef<ViewerLike | null>(null);
 
@@ -22,7 +23,7 @@ export function StructureViewer({ pdbText }: StructureViewerProps) {
     let cancelled = false;
 
     async function renderStructure() {
-      if (!containerRef.current || !pdbText.trim()) {
+      if (!containerRef.current || !structureText.trim()) {
         return;
       }
 
@@ -45,7 +46,7 @@ export function StructureViewer({ pdbText }: StructureViewerProps) {
       const viewer = viewerRef.current;
       const modelStarted = performance.now();
       viewer.clear();
-      viewer.addModel(pdbText, "pdb");
+      viewer.addModel(structureText, structureFormat);
       viewer.setStyle({}, { cartoon: { color: "spectrum" } });
       viewer.setStyle({ hetflag: true }, { stick: { radius: 0.22, colorscheme: "greenCarbon" } });
       viewer.zoomTo();
@@ -56,7 +57,8 @@ export function StructureViewer({ pdbText }: StructureViewerProps) {
         import_ms: importMs,
         viewer_create_ms: viewerCreateMs,
         model_render_ms: modelRenderMs,
-        characters: pdbText.length,
+        format: structureFormat,
+        characters: structureText.length,
       });
     }
 
@@ -65,12 +67,12 @@ export function StructureViewer({ pdbText }: StructureViewerProps) {
     return () => {
       cancelled = true;
     };
-  }, [pdbText]);
+  }, [structureFormat, structureText]);
 
-  if (!pdbText.trim()) {
+  if (!structureText.trim()) {
     return (
       <div className="relative flex h-[420px] items-center justify-center overflow-hidden border border-dashed border-slate-300 bg-white text-sm text-slate-500">
-        Upload a PDB file to render the structure.
+        Upload a PDB or mmCIF file to render the structure.
       </div>
     );
   }

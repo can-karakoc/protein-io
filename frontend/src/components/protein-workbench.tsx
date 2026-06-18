@@ -10,16 +10,18 @@ import type { AnalysisResponse, ContactRecord } from "@/lib/types";
 
 const EXAMPLE_FILE = "/sample.pdb";
 const TIMING_HEADER = "X-ProteinIO-Timing";
+type StructureFileFormat = "pdb" | "cif";
 
 export function ProteinWorkbench() {
   const [fileName, setFileName] = useState<string>("");
-  const [pdbText, setPdbText] = useState("");
+  const [structureText, setStructureText] = useState("");
+  const [structureFormat, setStructureFormat] = useState<StructureFileFormat>("pdb");
   const [cutoff, setCutoff] = useState(4.0);
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const hasStructure = pdbText.trim().length > 0;
+  const hasStructure = structureText.trim().length > 0;
   const contacts = useMemo(() => analysis?.contacts ?? [], [analysis]);
   const filteredContactPreview = useMemo(() => contacts.slice(0, 80), [contacts]);
 
@@ -28,8 +30,9 @@ export function ProteinWorkbench() {
     setError(null);
     setAnalysis(null);
     setFileName(file.name);
+    setStructureFormat(formatFromFileName(file.name));
     const text = await file.text();
-    setPdbText(text);
+    setStructureText(text);
     logTiming("file upload read", timingStarted, {
       fileName: file.name,
       bytes: file.size,
@@ -48,7 +51,8 @@ export function ProteinWorkbench() {
     const text = await response.text();
     const textMs = elapsedMs(textStarted);
     setFileName("sample.pdb");
-    setPdbText(text);
+    setStructureText(text);
+    setStructureFormat("pdb");
     logTiming("sample load", timingStarted, {
       fetch_ms: fetchMs,
       response_text_ms: textMs,
@@ -58,7 +62,7 @@ export function ProteinWorkbench() {
 
   async function analyzeStructure() {
     if (!hasStructure) {
-      setError("Upload or load a PDB file before analysis.");
+      setError("Upload or load a PDB or mmCIF file before analysis.");
       return;
     }
 
@@ -69,7 +73,12 @@ export function ProteinWorkbench() {
       const timingStarted = performance.now();
       const formStarted = performance.now();
       const formData = new FormData();
-      formData.append("file", new File([pdbText], fileName || "uploaded.pdb", { type: "chemical/x-pdb" }));
+      formData.append(
+        "file",
+        new File([structureText], fileName || defaultUploadName(structureFormat), {
+          type: contentTypeForFormat(structureFormat),
+        }),
+      );
       formData.append("cutoff_angstrom", String(cutoff));
       const form_ms = elapsedMs(formStarted);
 
@@ -107,7 +116,8 @@ export function ProteinWorkbench() {
 
   function reset() {
     setFileName("");
-    setPdbText("");
+    setStructureText("");
+    setStructureFormat("pdb");
     setAnalysis(null);
     setError(null);
     setCutoff(4.0);
@@ -141,7 +151,7 @@ export function ProteinWorkbench() {
               Structure upload and contact analysis
             </h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Upload a PDB file, inspect the structure, calculate residue and ligand contacts, and export the
+              Upload a PDB or mmCIF file, inspect the structure, calculate residue and ligand contacts, and export the
               interaction table.
             </p>
           </div>
@@ -170,16 +180,16 @@ export function ProteinWorkbench() {
             <div className="border border-slate-200 bg-white p-4">
               <h2 className="text-sm font-semibold text-slate-950">Input</h2>
               <p className="mt-1 text-xs leading-5 text-slate-500">
-                PDB files contain atom coordinates used for visualization and distance-based contact detection.
+                PDB and mmCIF files contain atom coordinates used for visualization and distance-based contact detection.
               </p>
 
               <label className="mt-4 flex min-h-32 cursor-pointer flex-col items-center justify-center border border-dashed border-slate-300 bg-slate-50 px-4 text-center hover:bg-slate-100">
                 <FileUp className="mb-2 h-5 w-5 text-slate-500" />
-                <span className="text-sm font-medium text-slate-800">Choose PDB file</span>
-                <span className="mt-1 text-xs text-slate-500">Plain text .pdb upload</span>
+                <span className="text-sm font-medium text-slate-800">Choose structure file</span>
+                <span className="mt-1 text-xs text-slate-500">Plain text .pdb, .cif, or .mmcif upload</span>
                 <input
                   type="file"
-                  accept=".pdb,chemical/x-pdb,text/plain"
+                  accept=".pdb,.cif,.mmcif,chemical/x-pdb,chemical/x-mmcif,text/plain"
                   className="sr-only"
                   onChange={(event) => {
                     const file = event.target.files?.[0];
@@ -252,7 +262,7 @@ export function ProteinWorkbench() {
           </aside>
 
           <section className="grid gap-4">
-            <StructureViewer pdbText={pdbText} />
+            <StructureViewer structureText={structureText} structureFormat={structureFormat} />
             <SummaryCards analysis={analysis} />
           </section>
         </section>
@@ -268,7 +278,7 @@ export function ProteinWorkbench() {
 
           <DataTable
             title="Ligands"
-            helper="Non-water hetero residues detected in the PDB file."
+            helper="Non-water hetero residues detected in the structure file."
             emptyText="No ligand rows yet."
             headers={["Name", "Chain", "Residue", "Atoms"]}
             rows={(analysis?.ligands ?? []).map((ligand) => [
@@ -316,10 +326,22 @@ function logTiming(label: string, startedAt: number, details: Record<string, num
   });
 }
 
+function formatFromFileName(fileName: string): StructureFileFormat {
+  return /\.(cif|mmcif)$/i.test(fileName) ? "cif" : "pdb";
+}
+
+function defaultUploadName(format: StructureFileFormat): string {
+  return format === "cif" ? "uploaded.cif" : "uploaded.pdb";
+}
+
+function contentTypeForFormat(format: StructureFileFormat): string {
+  return format === "cif" ? "chemical/x-mmcif" : "chemical/x-pdb";
+}
+
 function SummaryCards({ analysis }: { analysis: AnalysisResponse | null }) {
   const summary = analysis?.summary;
   const items = [
-    ["Atoms", summary?.atom_count ?? 0, "Coordinate records parsed from the PDB."],
+    ["Atoms", summary?.atom_count ?? 0, "Coordinate records parsed from the structure file."],
     ["Protein residues", summary?.residue_count ?? 0, "Amino acid residues counted across chains."],
     ["Chains", summary?.chain_count ?? 0, "Distinct protein chains in the structure."],
     ["Ligands", summary?.ligand_count ?? 0, "Non-water hetero residues detected."],

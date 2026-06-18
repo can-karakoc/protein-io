@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import OrderedDict
 from pathlib import Path
+from typing import Literal
 
 import gemmi
 
@@ -11,56 +12,103 @@ from app.models import AtomRecord, ChainSummary, LigandSummary, ResidueRecord, R
 WATER_NAMES = {"HOH", "WAT", "H2O"}
 GEMMI_PROTEIN_HET_FLAG = "A"
 GEMMI_HETATM_FLAG = "H"
+StructureFormat = Literal["pdb", "mmcif"]
+PDB_SUFFIXES = {".pdb", ".ent"}
+MMCIF_SUFFIXES = {".cif", ".mmcif"}
 
 
 class StructureParseError(ValueError):
     """Raised when uploaded structure content cannot be parsed into useful data."""
 
 
-def parse_pdb_content(content: bytes | str, structure_id: str = "uploaded") -> StructureData:
-    """Parse PDB content and normalize it into app-owned StructureData.
+def parse_pdb_content(
+    content: bytes | str,
+    structure_id: str = "uploaded",
+    file_format: StructureFormat | None = None,
+) -> StructureData:
+    """Parse structure content and normalize it into app-owned StructureData.
 
     Gemmi stays inside this module. Everything downstream receives plain
     Pydantic records, which keeps analysis code independent from parser details.
     """
-    text = decode_pdb_content(content)
-    structure = parse_gemmi_structure(text, structure_id)
+    text = decode_structure_content(content)
+    structure = parse_gemmi_structure(text, structure_id, file_format=file_format)
     return structure_to_data(structure)
 
 
 def parse_pdb_path(path: str | Path, structure_id: str | None = None) -> StructureData:
     path = Path(path)
     if not path.exists():
-        raise StructureParseError(f"PDB file not found: {path}")
+        raise StructureParseError(f"Structure file not found: {path}")
 
-    return parse_pdb_content(path.read_bytes(), structure_id=structure_id or path.stem)
+    return parse_pdb_content(
+        path.read_bytes(),
+        structure_id=structure_id or path.stem,
+        file_format=detect_structure_format_from_filename(path.name),
+    )
 
 
-def decode_pdb_content(content: bytes | str) -> str:
+def decode_structure_content(content: bytes | str) -> str:
     if isinstance(content, bytes):
         if not content or not content.strip():
-            raise StructureParseError("The uploaded PDB file is empty.")
+            raise StructureParseError("The uploaded structure file is empty.")
         try:
             return content.decode("utf-8")
         except UnicodeDecodeError as exc:
-            raise StructureParseError("The uploaded file must be a text PDB file.") from exc
+            raise StructureParseError("The uploaded structure file must be plain text.") from exc
 
     if not content or not content.strip():
-        raise StructureParseError("The uploaded PDB file is empty.")
+        raise StructureParseError("The uploaded structure file is empty.")
     return content
 
 
-def parse_gemmi_structure(text: str, structure_id: str) -> gemmi.Structure:
+def parse_gemmi_structure(
+    text: str,
+    structure_id: str,
+    file_format: StructureFormat | None = None,
+) -> gemmi.Structure:
+    resolved_format = file_format or detect_structure_format_from_content(text)
     try:
-        structure = gemmi.read_pdb_string(text)
+        structure = gemmi.read_structure_string(text, format=gemmi_coordinate_format(resolved_format))
         structure.name = structure_id
     except Exception as exc:
-        raise StructureParseError(f"Could not parse PDB file: {exc}") from exc
+        raise StructureParseError(f"Could not parse {format_label(resolved_format)} file: {exc}") from exc
 
     if not any(True for model in structure for chain in model for residue in chain for _ in residue):
-        raise StructureParseError("The uploaded PDB file does not contain atoms.")
+        raise StructureParseError("The uploaded structure file does not contain atoms.")
 
     return structure
+
+
+def detect_structure_format_from_filename(filename: str | None) -> StructureFormat | None:
+    if not filename:
+        return None
+
+    suffix = Path(filename).suffix.lower()
+    if suffix in PDB_SUFFIXES:
+        return "pdb"
+    if suffix in MMCIF_SUFFIXES:
+        return "mmcif"
+    return None
+
+
+def detect_structure_format_from_content(text: str) -> StructureFormat:
+    stripped = text.lstrip()
+    if stripped.startswith("data_") or "_atom_site." in stripped[:5000]:
+        return "mmcif"
+    return "pdb"
+
+
+def gemmi_coordinate_format(file_format: StructureFormat) -> gemmi.CoorFormat:
+    if file_format == "mmcif":
+        return gemmi.CoorFormat.Mmcif
+    return gemmi.CoorFormat.Pdb
+
+
+def format_label(file_format: StructureFormat) -> str:
+    if file_format == "mmcif":
+        return "mmCIF"
+    return "PDB"
 
 
 def structure_to_data(structure: gemmi.Structure) -> StructureData:

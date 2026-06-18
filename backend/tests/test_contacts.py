@@ -6,6 +6,7 @@ from app.parser import parse_pdb_path
 
 
 SAMPLE_PDB = Path(__file__).parents[2] / "examples" / "sample.pdb"
+SAMPLE_CIF = Path(__file__).parents[2] / "examples" / "sample.cif"
 
 
 def test_contact_finder_respects_cutoff_and_returns_typed_records():
@@ -15,6 +16,15 @@ def test_contact_finder_respects_cutoff_and_returns_typed_records():
     assert contacts
     assert all(isinstance(contact, ContactRecord) for contact in contacts)
     assert all(contact.distance_angstrom <= 4.0 for contact in contacts)
+    assert {contact.contact_type for contact in contacts} == {"protein-ligand", "residue-residue"}
+
+
+def test_mmcif_contact_finder_returns_typed_records():
+    contacts, warnings = calculate_contacts(parse_pdb_path(SAMPLE_CIF), cutoff_angstrom=4.0)
+
+    assert warnings == []
+    assert contacts
+    assert all(isinstance(contact, ContactRecord) for contact in contacts)
     assert {contact.contact_type for contact in contacts} == {"protein-ligand", "residue-residue"}
 
 

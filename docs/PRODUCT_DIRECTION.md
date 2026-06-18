@@ -73,6 +73,7 @@ This branch adds:
 
 - Gemmi parser migration
 - Gemmi NeighborSearch contact search
+- PDB and mmCIF upload support through the same `StructureData` boundary
 - updated benchmarks and docs
 
 After merge, backend stack should become:

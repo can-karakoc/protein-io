@@ -38,13 +38,13 @@ feature/gemmi-parser
 - `[x]` Preserve contact semantics: ignore hydrogens, skip same-residue contacts, include residue-residue and protein-ligand contacts.
 - `[x]` Keep closest atom pair per residue pair/contact type.
 - `[x]` Benchmark current grid against Gemmi NeighborSearch.
-- `[~]` Review the existing Gemmi migration.
-- `[ ]` Add `.cif` and `.mmcif` upload support.
-- `[ ]` Make parser behavior file-format aware.
-- `[ ]` Keep the API response shape unchanged.
-- `[ ]` Keep contact analysis consuming `StructureData`, not raw Gemmi structures.
-- `[ ]` Add tests for PDB parsing, mmCIF parsing, reasonable chain/residue/atom counts, and typed contacts.
-- `[ ]` Update docs and README to say the app supports PDB and mmCIF.
+- `[x]` Review the existing Gemmi migration.
+- `[x]` Add `.cif` and `.mmcif` upload support.
+- `[x]` Make parser behavior file-format aware.
+- `[x]` Keep the API response shape unchanged.
+- `[x]` Keep contact analysis consuming `StructureData`, not raw Gemmi structures.
+- `[x]` Add tests for PDB parsing, mmCIF parsing, reasonable chain/residue/atom counts, and typed contacts.
+- `[x]` Update docs and README to say the app supports PDB and mmCIF.
 - `[ ]` Merge `feature/gemmi-parser` into `main` after review.
 
 Avoid in this priority:

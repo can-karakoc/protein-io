@@ -15,19 +15,19 @@ Tradeoff:
 - Local development uses two processes.
 - Deployment requires coordinating frontend and backend hosting.
 
-## Start with PDB Only
+## Support PDB and mmCIF Through Gemmi
 
-Decision: Support PDB uploads first. Defer mmCIF.
+Decision: Support PDB and mmCIF uploads through Gemmi while keeping `StructureData` as the internal app boundary.
 
 Why:
 
-- PDB is simple enough for an MVP.
-- Gemmi supports fast PDB parsing and keeps a path open for mmCIF support.
-- mmCIF can be added later behind the same analysis model.
+- PDB keeps the sample/demo workflow simple.
+- mmCIF is the modern archive format and makes the parser more credible.
+- Gemmi supports both formats behind one parser boundary.
 
 Tradeoff:
 
-- Some modern structures are better represented as mmCIF.
+- The UI and parser need a small amount of format detection.
 
 ## Normalize Structures into StructureData
 

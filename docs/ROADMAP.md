@@ -8,7 +8,7 @@ See [Product Direction](PRODUCT_DIRECTION.md) for product framing and [Action Pl
 
 - FastAPI backend with `/health`, `/analyze`, and `/api/analyze`.
 - Multipart structure upload.
-- PDB parsing into app-owned `StructureData`.
+- PDB and mmCIF parsing into app-owned `StructureData`.
 - Residue, chain, atom, ligand, and contact summaries.
 - Configurable distance cutoff.
 - Hydrogen filtering.
@@ -21,7 +21,7 @@ See [Product Direction](PRODUCT_DIRECTION.md) for product framing and [Action Pl
 
 ## Immediate Priorities
 
-1. Merge Gemmi and add mmCIF support.
+1. Review and merge the Gemmi/mmCIF branch.
 2. Add PDB ID fetch and RCSB metadata.
 3. Add table-to-viewer interaction.
 4. Add AlphaFold/pLDDT confidence support.

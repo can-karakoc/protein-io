@@ -31,6 +31,7 @@ Use this checklist before public demo updates and after meaningful frontend or b
 ## Upload Flow
 
 - `[ ]` Upload a local `.pdb` file.
+- `[ ]` Upload a local `.cif` or `.mmcif` file.
 - `[ ]` Confirm the file name appears.
 - `[ ]` Confirm the structure renders in the 3D viewer.
 - `[ ]` Analyze with the default `4.0` angstrom cutoff.

@@ -14,22 +14,21 @@ backend/app/
   contacts.py
 ```
 
-`main.py` creates the FastAPI app and registers routes. `routes.py` handles HTTP details. `service.py` orchestrates the analysis flow. `parser.py` converts PDB content into normalized structure data. `contacts.py` performs geometry-based contact analysis.
+`main.py` creates the FastAPI app and registers routes. `routes.py` handles HTTP details. `service.py` orchestrates the analysis flow. `parser.py` converts PDB/mmCIF content into normalized structure data. `contacts.py` performs geometry-based contact analysis.
 
 ## Why StructureData Exists
 
-`StructureData` is the internal structure format owned by this project. The PDB parser uses Gemmi, but the rest of the backend should not depend on Gemmi classes.
+`StructureData` is the internal structure format owned by this project. The structure parser uses Gemmi, but the rest of the backend should not depend on Gemmi classes.
 
 That gives us one clean path:
 
 ```text
-PDB content -> parser.py -> StructureData -> analysis modules -> AnalysisResponse
+PDB/mmCIF content -> parser.py -> StructureData -> analysis modules -> AnalysisResponse
 ```
 
 Later, other inputs can target the same middle model:
 
 ```text
-mmCIF content -> future parser -> StructureData
 RCSB PDB ID -> future fetcher/parser -> StructureData
 AlphaFold/Boltz/OpenFold output -> future parser -> StructureData
 ```
