@@ -64,3 +64,26 @@ Parser-only improvement versus the baseline:
 - `large-6VXX`: 142.36 ms to 101.95 ms.
 
 The contact-search cost remains essentially unchanged, which confirms that Gemmi NeighborSearch should be evaluated next.
+
+## Gemmi Parser + NeighborSearch Branch Comparison
+
+These numbers were captured on the `feature/gemmi-parser` branch after replacing both Biopython parser internals and the custom spatial-grid candidate search with Gemmi.
+
+| Input | Size KB | Runs | Atoms | Protein residues | Chains | Ligands | Contacts | Parse ms | Contacts ms | Response ms | Analysis ms | Wall ms |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| small | 1.4 | 5 | 17 | 3 | 2 | 1 | 6 | 0.15 | 0.24 | 0.01 | 0.40 | 0.41 |
+| medium-4HHB | 462.7 | 5 | 4779 | 574 | 4 | 6 | 2564 | 19.46 | 74.94 | 0.09 | 94.49 | 95.28 |
+| large-6VXX | 2124.7 | 5 | 23694 | 2916 | 18 | 63 | 5000 | 93.29 | 391.05 | 0.38 | 484.71 | 488.81 |
+
+Contact-search improvement versus Gemmi parser plus custom grid:
+
+- `small`: 0.13 ms to 0.24 ms. The tiny sample is too small for NeighborSearch overhead to matter.
+- `medium-4HHB`: 119.68 ms to 74.94 ms.
+- `large-6VXX`: 622.63 ms to 391.05 ms.
+
+Total backend wall-time improvement versus the original Biopython plus custom-grid baseline:
+
+- `medium-4HHB`: 150.59 ms to 95.28 ms.
+- `large-6VXX`: 772.71 ms to 488.81 ms.
+
+Gemmi NeighborSearch is clearly worthwhile for real structures. SciPy `cKDTree` is not needed for the next production step unless later benchmarks show Gemmi is insufficient for a new workflow.

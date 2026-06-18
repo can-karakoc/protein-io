@@ -12,7 +12,7 @@ The project is intentionally simple for the public MVP: no authentication, no da
 - Calculate residue-residue contacts.
 - Calculate protein-ligand contacts when ligands are present.
 - Ignore hydrogen atoms during contact detection.
-- Use spatial indexing for contact search.
+- Use Gemmi NeighborSearch for contact search.
 - Return warnings for useful analysis context.
 - Expose a FastAPI backend with health and analysis endpoints.
 - Upload or load a sample PDB in the frontend.
@@ -117,7 +117,7 @@ cd /Users/cankarakoc/Codex/protein-interaction-explorer
 .venv/bin/pytest backend/tests
 ```
 
-The tests cover parser behavior, ligand detection, contact calculation, spatial indexing, route behavior, CORS origin parsing, and bad upload handling.
+The tests cover parser behavior, ligand detection, contact calculation, neighbor search, route behavior, CORS origin parsing, and bad upload handling.
 
 ## API
 

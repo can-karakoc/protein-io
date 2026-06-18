@@ -45,7 +45,7 @@ def test_contact_results_can_be_capped():
     assert warnings
 
 
-def test_spatial_index_finds_contacts_across_neighboring_cells():
+def test_neighbor_search_finds_contacts_at_cutoff_boundary():
     structure = StructureData(
         structure_id="grid-test",
         atoms=[

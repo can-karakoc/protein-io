@@ -55,9 +55,9 @@ This also creates a natural future path for ligand analysis, structure compariso
 
 ## Contact Search
 
-Contact detection uses a simple spatial hash grid. Atoms are assigned to cubic cells sized by the active cutoff, then each atom is compared only with atoms in its own cell and adjacent cells. This avoids scanning every atom against every other atom while keeping the algorithm readable and dependency-free.
+Contact detection uses Gemmi NeighborSearch as the spatial candidate generator. Relevant heavy atoms from `StructureData` are copied into a temporary Gemmi search structure, then each atom queries nearby candidates within the active cutoff. This avoids scanning every atom against every other atom while keeping the public analysis boundary based on app-owned records.
 
-The grid is only a candidate generator. A contact is accepted only after an exact Euclidean distance check confirms the atom pair is within the cutoff.
+NeighborSearch is only a candidate generator. A contact is accepted only after an exact Euclidean distance check confirms the atom pair is within the cutoff.
 
 ## Why Plugins Are Not Built Yet
 

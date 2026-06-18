@@ -35,11 +35,11 @@ Verification note: deployed sample flow was checked on 2026-06-18. The live app 
 
 ## Phase 3: Gemmi NeighborSearch Contacts
 
-- `[ ]` Replace or parallelize the custom spatial grid with Gemmi NeighborSearch.
-- `[ ]` Preserve existing contact semantics: ignore hydrogens, skip same-residue contacts, include residue-residue and protein-ligand contacts.
-- `[ ]` Keep closest atom pair per residue pair/contact type.
-- `[ ]` Benchmark current grid against Gemmi NeighborSearch.
-- `[ ]` Consider SciPy `cKDTree` only if Gemmi NeighborSearch is insufficient.
+- `[x]` Replace or parallelize the custom spatial grid with Gemmi NeighborSearch.
+- `[x]` Preserve existing contact semantics: ignore hydrogens, skip same-residue contacts, include residue-residue and protein-ligand contacts.
+- `[x]` Keep closest atom pair per residue pair/contact type.
+- `[x]` Benchmark current grid against Gemmi NeighborSearch.
+- `[x]` Consider SciPy `cKDTree` only if Gemmi NeighborSearch is insufficient.
 
 ## Phase 4: Interactive Viewer
 

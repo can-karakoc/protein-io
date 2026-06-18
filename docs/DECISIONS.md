@@ -99,25 +99,26 @@ Tradeoff:
 
 - Users do not see every individual atom-atom contact unless this is expanded later.
 
-## Use Spatial Hashing for Contact Search
+## Use Gemmi NeighborSearch for Contact Search
 
-Decision: Contact search uses a simple cutoff-sized 3D spatial hash grid.
+Decision: Contact search uses Gemmi NeighborSearch as the spatial candidate generator.
 
 Why:
 
 - A naive all-pairs atom scan scales poorly as structures get larger.
-- A spatial grid is understandable, dependency-free, and good enough for the MVP.
-- It keeps `contacts.py` independent from FastAPI, Gemmi internals, and heavy numerical libraries.
+- Gemmi NeighborSearch is faster than the first custom spatial-grid implementation on medium and large benchmark structures.
+- It avoids adding SciPy while keeping parser and neighbor-search capabilities in one structural biology library.
+- `contacts.py` still accepts `StructureData`, so parser-library objects do not leak into the public analysis boundary.
 
 Tradeoff:
 
-- This is less feature-rich than a mature KD-tree implementation.
-- If future analyses need more advanced geometry queries, we may introduce a scientific spatial index library after the need is concrete.
+- `contacts.py` now creates a lightweight temporary Gemmi search structure from normalized atom records.
+- If future analyses need more advanced geometry queries, SciPy `cKDTree` can still be benchmarked later.
 
 Manual concept:
 
-- Atoms are bucketed into cubic cells roughly the size of the cutoff.
-- For each atom, we only inspect atoms in its own cell and the 26 neighboring cells.
+- Relevant heavy atoms are copied into a temporary Gemmi structure.
+- Gemmi NeighborSearch returns nearby candidate atoms within the cutoff.
 - Exact Euclidean distance is still checked before a contact is accepted.
 
 ## Ignore Hydrogens
