@@ -1,6 +1,6 @@
 # Protein Interaction Explorer
 
-Protein Interaction Explorer is an open-source computational biology web app for exploring protein structure interactions. The MVP lets a scientist upload a PDB file, visualize the structure, parse chains/residues/ligands, calculate residue and protein-ligand contacts, and export a clean interaction report.
+Protein Interaction Explorer is an open-source structural biology workspace for uploading, fetching, visualizing, analyzing, and reporting protein structures. The MVP lets a scientist upload a PDB file, visualize the structure, parse chains/residues/ligands, calculate residue and protein-ligand contacts, and export a clean interaction report.
 
 The project is intentionally simple for the public MVP: no authentication, no database, no Docker, no queues, and no cloud storage.
 
@@ -219,4 +219,5 @@ Contact table:
 - [MVP Scope](docs/MVP_SCOPE.md)
 - [Decisions](docs/DECISIONS.md)
 - [Performance Baseline](docs/PERFORMANCE_BASELINE.md)
+- [Product Direction](docs/PRODUCT_DIRECTION.md)
 - [Release Plan](docs/RELEASE_PLAN.md)
