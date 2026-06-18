@@ -194,12 +194,28 @@ See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 See [docs/RELEASE_PLAN.md](docs/RELEASE_PLAN.md) and [docs/ROADMAP.md](docs/ROADMAP.md).
 
+## Screenshots
+
+Sample loaded in the deployed app:
+
+![Protein Interaction Explorer sample loaded](docs/screenshots/protein-io-sample-loaded.png)
+
+Sample analysis results:
+
+![Protein Interaction Explorer analysis results](docs/screenshots/protein-io-analysis.png)
+
+Contact table:
+
+![Protein Interaction Explorer contact table](docs/screenshots/protein-io-contacts.png)
+
 ## Documentation
 
+- [Action Plan](docs/ACTION_PLAN.md)
 - [Architecture](docs/architecture.md)
+- [Biology Notes](docs/biology_notes.md)
 - [Deployment](docs/DEPLOYMENT.md)
 - [Git Workflow](docs/GIT_WORKFLOW.md)
+- [Manual QA Checklist](docs/MANUAL_QA.md)
 - [MVP Scope](docs/MVP_SCOPE.md)
 - [Decisions](docs/DECISIONS.md)
 - [Release Plan](docs/RELEASE_PLAN.md)
-- [Learning Notes](docs/LEARNING_NOTES.md)
