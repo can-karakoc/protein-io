@@ -4,7 +4,7 @@ These notes explain the biological terms used by the MVP. They are intentionally
 
 ## Structures
 
-A structure file stores 3D coordinates for atoms in a biomolecule. In this MVP, the main supported input is a PDB file. Each atom record includes a position in angstroms and belongs to a residue and chain.
+A structure file stores 3D coordinates for atoms in a biomolecule. In this MVP, the supported inputs are PDB and mmCIF files. Each atom record includes a position in angstroms and belongs to a residue and chain.
 
 ## Chains
 
@@ -32,11 +32,11 @@ The default cutoff is `4.0` angstroms. A smaller cutoff returns fewer, tighter c
 
 ## Hydrogens
 
-Hydrogen atoms are ignored during contact detection. Many PDB files do not include hydrogens, so ignoring them keeps results more consistent across files.
+Hydrogen atoms are ignored during contact detection. Many structure files do not include hydrogens, so ignoring them keeps results more consistent across files.
 
 ## Limitations
 
-- The MVP supports PDB upload first; mmCIF is planned.
+- The MVP supports PDB and mmCIF upload.
 - Only the first model is analyzed when a file contains multiple models.
 - Contact categories are currently broad: residue-residue and protein-ligand.
 - The app does not yet classify hydrogen bonds, salt bridges, hydrophobic contacts, aromatic contacts, or metal coordination.

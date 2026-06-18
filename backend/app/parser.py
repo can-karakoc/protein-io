@@ -1,119 +1,164 @@
 from __future__ import annotations
 
+from collections import OrderedDict
 from pathlib import Path
-from tempfile import NamedTemporaryFile
+from typing import Literal
 
-from Bio.PDB import PDBParser
+import gemmi
 
 from app.models import AtomRecord, ChainSummary, LigandSummary, ResidueRecord, ResidueKind, StructureData
 
 
 WATER_NAMES = {"HOH", "WAT", "H2O"}
+GEMMI_PROTEIN_HET_FLAG = "A"
+GEMMI_HETATM_FLAG = "H"
+StructureFormat = Literal["pdb", "mmcif"]
+PDB_SUFFIXES = {".pdb", ".ent"}
+MMCIF_SUFFIXES = {".cif", ".mmcif"}
 
 
 class StructureParseError(ValueError):
     """Raised when uploaded structure content cannot be parsed into useful data."""
 
 
-def parse_pdb_content(content: bytes | str, structure_id: str = "uploaded") -> StructureData:
-    """Parse PDB content and normalize it into app-owned StructureData.
+def parse_pdb_content(
+    content: bytes | str,
+    structure_id: str = "uploaded",
+    file_format: StructureFormat | None = None,
+) -> StructureData:
+    """Parse structure content and normalize it into app-owned StructureData.
 
-    Biopython stays inside this module. Everything downstream receives plain
+    Gemmi stays inside this module. Everything downstream receives plain
     Pydantic records, which keeps analysis code independent from parser details.
     """
-    text = decode_pdb_content(content)
-    structure = parse_biopython_structure(text, structure_id)
+    text = decode_structure_content(content)
+    structure = parse_gemmi_structure(text, structure_id, file_format=file_format)
     return structure_to_data(structure)
 
 
 def parse_pdb_path(path: str | Path, structure_id: str | None = None) -> StructureData:
     path = Path(path)
     if not path.exists():
-        raise StructureParseError(f"PDB file not found: {path}")
+        raise StructureParseError(f"Structure file not found: {path}")
 
-    return parse_pdb_content(path.read_bytes(), structure_id=structure_id or path.stem)
+    return parse_pdb_content(
+        path.read_bytes(),
+        structure_id=structure_id or path.stem,
+        file_format=detect_structure_format_from_filename(path.name),
+    )
 
 
-def decode_pdb_content(content: bytes | str) -> str:
+def decode_structure_content(content: bytes | str) -> str:
     if isinstance(content, bytes):
         if not content or not content.strip():
-            raise StructureParseError("The uploaded PDB file is empty.")
+            raise StructureParseError("The uploaded structure file is empty.")
         try:
             return content.decode("utf-8")
         except UnicodeDecodeError as exc:
-            raise StructureParseError("The uploaded file must be a text PDB file.") from exc
+            raise StructureParseError("The uploaded structure file must be plain text.") from exc
 
     if not content or not content.strip():
-        raise StructureParseError("The uploaded PDB file is empty.")
+        raise StructureParseError("The uploaded structure file is empty.")
     return content
 
 
-def parse_biopython_structure(text: str, structure_id: str):
+def parse_gemmi_structure(
+    text: str,
+    structure_id: str,
+    file_format: StructureFormat | None = None,
+) -> gemmi.Structure:
+    resolved_format = file_format or detect_structure_format_from_content(text)
     try:
-        with NamedTemporaryFile("w+", suffix=".pdb") as handle:
-            handle.write(text)
-            handle.flush()
-            parser = PDBParser(QUIET=True)
-            structure = parser.get_structure(structure_id, handle.name)
-    except Exception as exc:  # Biopython can raise several parser-specific errors.
-        raise StructureParseError(f"Could not parse PDB file: {exc}") from exc
+        structure = gemmi.read_structure_string(text, format=gemmi_coordinate_format(resolved_format))
+        structure.name = structure_id
+    except Exception as exc:
+        raise StructureParseError(f"Could not parse {format_label(resolved_format)} file: {exc}") from exc
 
-    if not list(structure.get_atoms()):
-        raise StructureParseError("The uploaded PDB file does not contain atoms.")
+    if not any(True for model in structure for chain in model for residue in chain for _ in residue):
+        raise StructureParseError("The uploaded structure file does not contain atoms.")
 
     return structure
 
 
-def structure_to_data(structure) -> StructureData:
+def detect_structure_format_from_filename(filename: str | None) -> StructureFormat | None:
+    if not filename:
+        return None
+
+    suffix = Path(filename).suffix.lower()
+    if suffix in PDB_SUFFIXES:
+        return "pdb"
+    if suffix in MMCIF_SUFFIXES:
+        return "mmcif"
+    return None
+
+
+def detect_structure_format_from_content(text: str) -> StructureFormat:
+    stripped = text.lstrip()
+    if stripped.startswith("data_") or "_atom_site." in stripped[:5000]:
+        return "mmcif"
+    return "pdb"
+
+
+def gemmi_coordinate_format(file_format: StructureFormat) -> gemmi.CoorFormat:
+    if file_format == "mmcif":
+        return gemmi.CoorFormat.Mmcif
+    return gemmi.CoorFormat.Pdb
+
+
+def format_label(file_format: StructureFormat) -> str:
+    if file_format == "mmcif":
+        return "mmCIF"
+    return "PDB"
+
+
+def structure_to_data(structure: gemmi.Structure) -> StructureData:
     atoms: list[AtomRecord] = []
     residues: list[ResidueRecord] = []
-    chains: list[ChainSummary] = []
+    chain_counts: OrderedDict[str, dict[str, int]] = OrderedDict()
     ligands: list[LigandSummary] = []
     warnings: list[str] = []
 
-    models = list(structure.get_models())
-    if len(models) > 1:
+    if len(structure) > 1:
         warnings.append("Multiple models found; only the first model was analyzed.")
-    model = models[0]
+    model = structure[0]
 
-    for chain in model.get_chains():
-        chain_atom_count = 0
-        chain_protein_residue_count = 0
+    for chain in model:
+        chain_count = chain_counts.setdefault(chain.name, {"atoms": 0, "protein_residues": 0})
 
-        for residue in chain.get_residues():
+        for residue in chain:
             residue_kind = classify_residue(residue)
             residue_number = format_residue_number(residue)
-            residue_id = make_residue_id(chain.id, residue)
+            residue_id = make_residue_id(chain.name, residue, residue_kind)
             atom_ids: list[str] = []
 
             if residue_kind == "protein":
-                chain_protein_residue_count += 1
+                chain_count["protein_residues"] += 1
 
-            for atom in residue.get_atoms():
-                atom_id = f"{residue_id}:{atom.get_name().strip()}"
-                coord = atom.get_coord()
+            for atom in residue:
+                atom_name = atom.name.strip()
+                atom_id = f"{residue_id}:{atom_name}"
                 atom_record = AtomRecord(
                     id=atom_id,
-                    name=atom.get_name().strip(),
-                    element=(getattr(atom, "element", "") or "").strip(),
-                    x=round(float(coord[0]), 3),
-                    y=round(float(coord[1]), 3),
-                    z=round(float(coord[2]), 3),
-                    chain_id=chain.id,
+                    name=atom_name,
+                    element=atom.element.name.strip(),
+                    x=round(float(atom.pos.x), 3),
+                    y=round(float(atom.pos.y), 3),
+                    z=round(float(atom.pos.z), 3),
+                    chain_id=chain.name,
                     residue_id=residue_id,
-                    residue_name=residue.get_resname().strip(),
+                    residue_name=residue.name.strip(),
                     residue_number=residue_number,
                     residue_kind=residue_kind,
                 )
                 atoms.append(atom_record)
                 atom_ids.append(atom_id)
-                chain_atom_count += 1
+                chain_count["atoms"] += 1
 
             residues.append(
                 ResidueRecord(
                     id=residue_id,
-                    name=residue.get_resname().strip(),
-                    chain_id=chain.id,
+                    name=residue.name.strip(),
+                    chain_id=chain.name,
                     residue_number=residue_number,
                     kind=residue_kind,
                     atom_ids=atom_ids,
@@ -123,23 +168,24 @@ def structure_to_data(structure) -> StructureData:
             if residue_kind == "ligand":
                 ligands.append(
                     LigandSummary(
-                        name=residue.get_resname().strip(),
-                        chain_id=chain.id,
+                        name=residue.name.strip(),
+                        chain_id=chain.name,
                         residue_number=residue_number,
                         atom_count=len(atom_ids),
                     )
                 )
 
-        chains.append(
-            ChainSummary(
-                id=chain.id,
-                residue_count=chain_protein_residue_count,
-                atom_count=chain_atom_count,
-            )
+    chains = [
+        ChainSummary(
+            id=chain_id,
+            residue_count=counts["protein_residues"],
+            atom_count=counts["atoms"],
         )
+        for chain_id, counts in chain_counts.items()
+    ]
 
     return StructureData(
-        structure_id=str(structure.id),
+        structure_id=structure.name,
         atoms=atoms,
         residues=residues,
         chains=chains,
@@ -148,27 +194,34 @@ def structure_to_data(structure) -> StructureData:
     )
 
 
-def classify_residue(residue) -> ResidueKind:
-    hetero_flag = residue.id[0].strip()
-    residue_name = residue.get_resname().strip()
+def classify_residue(residue: gemmi.Residue) -> ResidueKind:
+    residue_name = residue.name.strip()
 
-    if not hetero_flag:
+    if residue.het_flag == GEMMI_PROTEIN_HET_FLAG:
         return "protein"
     if residue_name in WATER_NAMES:
         return "water"
-    if hetero_flag:
+    if residue.het_flag == GEMMI_HETATM_FLAG:
         return "ligand"
     return "other"
 
 
-def format_residue_number(residue) -> str:
-    _, sequence_number, insertion_code = residue.id
-    insertion = insertion_code.strip()
-    return f"{sequence_number}{insertion}" if insertion else str(sequence_number)
+def format_residue_number(residue: gemmi.Residue) -> str:
+    insertion = residue.seqid.icode.strip()
+    return f"{residue.seqid.num}{insertion}" if insertion else str(residue.seqid.num)
 
 
-def make_residue_id(chain_id: str, residue) -> str:
-    hetero_flag, sequence_number, insertion_code = residue.id
-    insertion = insertion_code.strip()
-    hetero = hetero_flag.strip() or "protein"
-    return f"{chain_id}:{hetero}:{sequence_number}:{insertion}"
+def make_residue_id(chain_id: str, residue: gemmi.Residue, residue_kind: ResidueKind) -> str:
+    insertion = residue.seqid.icode.strip()
+    hetero = hetero_id(residue, residue_kind)
+    return f"{chain_id}:{hetero}:{residue.seqid.num}:{insertion}"
+
+
+def hetero_id(residue: gemmi.Residue, residue_kind: ResidueKind) -> str:
+    if residue_kind == "protein":
+        return "protein"
+    if residue_kind == "water":
+        return "W"
+    if residue_kind == "ligand":
+        return f"H_{residue.name.strip()}"
+    return residue.het_flag.strip() or "other"

@@ -3,7 +3,7 @@ from time import perf_counter
 
 from app.contacts import calculate_contacts
 from app.models import AnalysisResponse
-from app.parser import parse_pdb_content
+from app.parser import detect_structure_format_from_filename, parse_pdb_content
 
 
 @dataclass(frozen=True)
@@ -42,7 +42,7 @@ def analyze_pdb_content(
     filename: str | None = None,
     cutoff_angstrom: float = 4.0,
 ) -> AnalysisResponse:
-    """Run the MVP analysis pipeline for uploaded PDB content."""
+    """Run the MVP analysis pipeline for uploaded structure content."""
     return analyze_pdb_content_with_timing(
         content,
         filename=filename,
@@ -59,7 +59,11 @@ def analyze_pdb_content_with_timing(
     structure_id = structure_id_from_filename(filename)
 
     parse_started = perf_counter()
-    structure = parse_pdb_content(content, structure_id=structure_id)
+    structure = parse_pdb_content(
+        content,
+        structure_id=structure_id,
+        file_format=detect_structure_format_from_filename(filename),
+    )
     parse_ms = elapsed_ms(parse_started)
 
     contacts_started = perf_counter()

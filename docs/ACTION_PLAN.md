@@ -1,6 +1,6 @@
 # Action Plan
 
-This is the working implementation roadmap for Protein Interaction Explorer. Update the status whenever a roadmap item is completed.
+This is the working implementation roadmap for Protein Interaction Explorer. Keep it aligned with [Product Direction](PRODUCT_DIRECTION.md).
 
 ## Status Legend
 
@@ -8,7 +8,7 @@ This is the working implementation roadmap for Protein Interaction Explorer. Upd
 - `[~]` In progress
 - `[ ]` Not started
 
-## Phase 0: Public Demo Polish
+## Completed Foundation
 
 - `[x]` Clean up Git-tracked docs and keep local project memory ignored.
 - `[x]` Add public-demo polish docs.
@@ -16,79 +16,117 @@ This is the working implementation roadmap for Protein Interaction Explorer. Upd
 - `[x]` Add a short manual QA checklist.
 - `[x]` Add screenshots to the README.
 - `[x]` Confirm the deployed sample flow works.
-
-Verification note: deployed sample flow was checked on 2026-06-18. The live app loaded `sample.pdb`, reached the Render backend, and returned 17 atoms, 3 protein residues, 2 chains, 1 ligand, and 6 contacts.
-
-## Phase 1: Performance Baseline
-
 - `[x]` Add backend timing for parsing, contact detection, and response assembly.
 - `[x]` Add frontend timing for sample loading, API request time, response parsing, and viewer render.
 - `[x]` Benchmark the current Biopython parser and spatial grid with small, medium, and large structures.
 
-## Phase 2: Gemmi Parser Migration
+Verification note: deployed sample flow was checked on 2026-06-18. The live app loaded `sample.pdb`, reached the Render backend, and returned 17 atoms, 3 protein residues, 2 chains, 1 ligand, and 6 contacts.
 
-- `[ ]` Add Gemmi as a backend dependency.
-- `[ ]` Replace Biopython parser internals while preserving `StructureData` and current parser API functions.
-- `[ ]` Preserve current behavior for atoms, chains, residues, ligands, waters, warnings, and first-model selection.
-- `[ ]` Add PDB parser parity tests.
-- `[ ]` Add mmCIF/CIF support after PDB parity is stable.
+## Priority 1: Merge Gemmi and Add mmCIF Support
 
-## Phase 3: Gemmi NeighborSearch Contacts
+Branch:
 
-- `[ ]` Replace or parallelize the custom spatial grid with Gemmi NeighborSearch.
-- `[ ]` Preserve existing contact semantics: ignore hydrogens, skip same-residue contacts, include residue-residue and protein-ligand contacts.
-- `[ ]` Keep closest atom pair per residue pair/contact type.
-- `[ ]` Benchmark current grid against Gemmi NeighborSearch.
-- `[ ]` Consider SciPy `cKDTree` only if Gemmi NeighborSearch is insufficient.
+```text
+feature/gemmi-parser
+```
 
-## Phase 4: Interactive Viewer
+- `[x]` Add Gemmi as a backend dependency.
+- `[x]` Replace Biopython parser internals while preserving `StructureData` and current parser API functions.
+- `[x]` Preserve current behavior for atoms, chains, residues, ligands, waters, warnings, and first-model selection.
+- `[x]` Add PDB parser parity tests.
+- `[x]` Replace the custom spatial grid with Gemmi NeighborSearch.
+- `[x]` Preserve contact semantics: ignore hydrogens, skip same-residue contacts, include residue-residue and protein-ligand contacts.
+- `[x]` Keep closest atom pair per residue pair/contact type.
+- `[x]` Benchmark current grid against Gemmi NeighborSearch.
+- `[x]` Review the existing Gemmi migration.
+- `[x]` Add `.cif` and `.mmcif` upload support.
+- `[x]` Make parser behavior file-format aware.
+- `[x]` Keep the API response shape unchanged.
+- `[x]` Keep contact analysis consuming `StructureData`, not raw Gemmi structures.
+- `[x]` Add tests for PDB parsing, mmCIF parsing, reasonable chain/residue/atom counts, and typed contacts.
+- `[x]` Update docs and README to say the app supports PDB and mmCIF.
+- `[ ]` Merge `feature/gemmi-parser` into `main` after review.
 
-- `[ ]` Refactor `StructureViewer` into a controlled interactive viewer component.
-- `[ ]` Add representation controls: cartoon, stick, sphere, surface, line, and mixed modes.
-- `[ ]` Add coloring controls: spectrum, chain, residue type, contact involvement, ligand proximity, and confidence when available.
-- `[ ]` Add reset camera and zoom-to-selection controls.
+Avoid in this priority:
 
-## Phase 5: Table-to-Viewer Interaction
+- RCSB fetching
+- AlphaFold support
+- heavy frontend changes beyond accepting `.cif` / `.mmcif`
 
-- `[ ]` Click chain rows to highlight or isolate chains.
-- `[ ]` Click ligand rows to zoom to ligand and show nearby pocket residues.
-- `[ ]` Click contact rows to highlight both residues and closest atom pair.
-- `[ ]` Draw contact overlay lines in the viewer.
-- `[ ]` Add contact overlay toggles and selected-contact distance display.
+## Priority 2: Add PDB ID Fetch and RCSB Metadata
 
-## Phase 6: Prediction Output Support
+- `[ ]` Add `backend/app/integrations/rcsb.py`.
+- `[ ]` Add PDB ID validation.
+- `[ ]` Add mocked backend tests for valid/invalid PDB IDs and metadata normalization.
+- `[ ]` Add analysis pipeline from fetched structure text.
+- `[ ]` Add frontend PDB ID input with loading and error states.
+- `[ ]` Show simple metadata: PDB ID, title, method, resolution, organism, deposition date, chain/entity summary, and RCSB link when available.
+- `[ ]` Update README, roadmap, decisions, and QA docs.
 
-- `[ ]` Support AlphaFold-style PDB and mmCIF uploads.
+Avoid search by protein name, database caching, user accounts, and saved structures.
+
+## Priority 3: Table-to-Viewer Interaction
+
+- `[ ]` Add selected item state in the frontend.
+- `[ ]` Pass selected contact/residue/chain/ligand state to the viewer.
+- `[ ]` Use 3Dmol.js selection APIs to highlight selected rows in the structure.
+- `[ ]` Add clear/reset selection control.
+- `[ ]` Make selected rows visually obvious.
+- `[ ]` Update manual QA and screenshots if useful.
+
+Do not switch from 3Dmol.js to Mol* in this priority.
+
+## Priority 4: AlphaFold / Predicted Structure Confidence Support
+
+- `[ ]` Support uploaded AlphaFold-style PDB/mmCIF files.
 - `[ ]` Detect when B-factor values should be interpreted as pLDDT.
 - `[ ]` Add per-residue confidence annotations to backend output.
+- `[ ]` Add confidence categories: very high, confident, low, very low.
+- `[ ]` Add confidence summary generation.
+- `[ ]` Add confidence panel and low-confidence warning copy.
 - `[ ]` Add pLDDT coloring mode and legend.
-- `[ ]` Add optional PAE JSON sidecar support.
-- `[ ]` Add PAE heatmap view after sidecar parsing is stable.
+- `[ ]` Add tests for pLDDT extraction, category assignment, summary generation, and no-confidence files.
 
-## Phase 7: Structure Fetching
+Do not add AlphaFold DB fetching, PAE, or model inference in this priority.
 
-- `[ ]` Add PDB ID fetch from RCSB.
-- `[ ]` Add AlphaFold DB fetch by UniProt ID if useful.
-- `[ ]` Add source and format metadata to analysis responses.
-- `[ ]` Add rate-limit-aware error handling.
+## Priority 5: Contact Categories and Better Interaction Summaries
 
-## Phase 8: Richer Scientific Analysis
+- `[ ]` Keep raw distance search separate from classification.
+- `[ ]` Add simple categories: protein-protein, protein-ligand, ligand-water, protein-water, intra-chain, inter-chain, and possible clash.
+- `[ ]` Add summary outputs: top contacting residues, top contacting ligands, inter-chain contact count, protein-ligand contact count, closest contacts, and possible clashes.
+- `[ ]` Add frontend category filter and summary cards.
+- `[ ]` Add tests for category assignment and summary counts.
 
-- `[ ]` Add richer contact categories where reliable.
-- `[ ]` Add residue/property annotations.
-- `[ ]` Add ligand-pocket summaries.
-- `[ ]` Add contact graph or adjacency output.
-- `[ ]` Add graph-driven workflows for neighborhoods, components, interface clusters, and hub residues.
+Do not claim hydrogen bonds, salt bridges, pi-stacking, or hydrophobic interactions unless valid criteria are implemented.
 
-## Phase 9: Reports and Sharing
+## Priority 6: AlphaFold DB Fetch by UniProt ID
 
-- `[ ]` Add saved analysis reports.
-- `[ ]` Add shareable report URLs.
-- `[ ]` Add report history.
-- `[ ]` Add downloadable HTML or PDF reports.
+- `[ ]` Add `backend/app/integrations/alphafold.py`.
+- `[ ]` Fetch AlphaFold metadata and structure by UniProt ID.
+- `[ ]` Add frontend mode: upload file, fetch PDB ID, or fetch AlphaFold by UniProt ID.
+- `[ ]` Mock network calls in tests.
 
-## Phase 10: Future Module Interface
+Do not add model inference, job queues, or permanent storage.
 
-- `[ ]` Identify repeated patterns across real parser, contact, confidence, pocket, graph, and report modules.
-- `[ ]` Define a small analysis-module interface around `StructureData`.
-- `[ ]` Add plugin-style registry behavior only after it removes real complexity.
+## Priority 7: PAE JSON Sidecar Support
+
+- `[ ]` Allow structure upload plus optional PAE JSON sidecar.
+- `[ ]` Show whether PAE was uploaded.
+- `[ ]` Add high-level PAE summary or warning if easy.
+- `[ ]` Add PAE heatmap later, not first.
+
+## Priority 8: Optional Mol* Viewer Evaluation
+
+- `[ ]` Continue with 3Dmol.js unless it blocks table-to-viewer highlighting, confidence coloring, or large-structure rendering.
+- `[ ]` Add a viewer abstraction only when there is a concrete product reason.
+
+## Priority 9: Advanced Ligand Interaction Module
+
+- `[ ]` Start with MVP-safe ligand summaries: closest ligand contacts, contacting residues per ligand, distance distribution, ligand-specific export.
+- `[ ]` Evaluate ProLIF, RDKit, MDAnalysis, or PLIP-inspired output later.
+- `[ ]` Check Render deployment compatibility before adding heavy dependencies.
+
+## Priority 10: Structure Comparison
+
+- `[ ]` Compare two structures only after single-structure analysis is strong.
+- `[ ]` Later workflows may include alignment, RMSD, contact differences, gained/lost contacts, and viewer highlighting.

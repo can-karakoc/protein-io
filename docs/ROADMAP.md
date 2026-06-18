@@ -1,52 +1,40 @@
 # Roadmap
 
-## Phase 1: Backend MVP
+Protein Interaction Explorer is an open-source structural biology workspace for uploading, fetching, visualizing, analyzing, and reporting protein structures.
 
-- Implement `/health`.
-- Implement `/api/analyze`.
-- Accept multipart PDB upload.
-- Support `distance_cutoff` parameter.
-- Return `AnalysisResult`.
-- Add FastAPI endpoint tests.
+See [Product Direction](PRODUCT_DIRECTION.md) for product framing and [Action Plan](ACTION_PLAN.md) for implementation status.
 
-## Phase 2: Frontend MVP
+## Completed MVP Foundation
 
-- Scaffold Next.js with TypeScript and Tailwind CSS.
-- Build upload panel.
-- Add distance cutoff input.
-- Send file to backend.
-- Display loading and error states.
-- Render structure with 3Dmol.js.
-- Display summary cards.
-- Display chain, ligand, and contact tables.
-- Add CSV export button.
-- Verify the frontend/backend flow with local servers.
+- FastAPI backend with `/health`, `/analyze`, and `/api/analyze`.
+- Multipart structure upload.
+- PDB and mmCIF parsing into app-owned `StructureData`.
+- Residue, chain, atom, ligand, and contact summaries.
+- Configurable distance cutoff.
+- Hydrogen filtering.
+- Contact result capping.
+- Backend tests.
+- Next.js frontend with upload panel, sample loader, 3Dmol.js viewer, summary cards, tables, and CSV export.
+- Vercel frontend deployment.
+- Render backend deployment.
+- Public docs, screenshots, QA checklist, and benchmark baseline.
 
-## Phase 3: Documentation and Polish
+## Immediate Priorities
 
-- Complete `docs/architecture.md`.
-- Complete `docs/biology_notes.md`.
-- Add screenshots.
-- Add exact local run commands.
-- Add deployment notes.
-- Keep `docs/RELEASE_PLAN.md` updated before public launch.
-- Improve sample-file workflow.
+1. Review and merge the Gemmi/mmCIF branch.
+2. Add PDB ID fetch and RCSB metadata.
+3. Add table-to-viewer interaction.
+4. Add AlphaFold/pLDDT confidence support.
+5. Add contact categories and better interaction summaries.
 
-## Phase 4: Public Demo
+## Later Priorities
 
-- Deploy frontend.
-- Deploy backend on Render using `render.yaml`.
-- Configure `FRONTEND_ORIGIN` on Render after Vercel frontend deploy.
-- Add minimal health monitoring.
-- Test public demo with sample PDB.
+6. Add AlphaFold DB fetch by UniProt ID.
+7. Add PAE JSON sidecar support.
+8. Evaluate a Mol* viewer upgrade only if 3Dmol.js becomes limiting.
+9. Add advanced ligand interaction summaries.
+10. Add structure comparison.
 
-## Later Enhancements
+## Boundaries
 
-- Fetch by PDB ID.
-- Add mmCIF support.
-- Add AlphaFold, ColabFold, and Boltz output viewing.
-- Add background model prediction jobs.
-- Add saved/shareable reports.
-- Add richer contact categories.
-- Add chain coloring and ligand highlighting in the viewer.
-- Add downloadable PDF or HTML reports.
+Avoid authentication, database persistence, user accounts, cloud storage, background jobs, GPU/model inference, plugin registries, and complex infrastructure until there is a concrete workflow that needs them.

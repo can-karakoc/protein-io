@@ -1,21 +1,21 @@
 # Protein Interaction Explorer
 
-Protein Interaction Explorer is an open-source computational biology web app for exploring protein structure interactions. The MVP lets a scientist upload a PDB file, visualize the structure, parse chains/residues/ligands, calculate residue and protein-ligand contacts, and export a clean interaction report.
+Protein Interaction Explorer is an open-source structural biology workspace for uploading, fetching, visualizing, analyzing, and reporting protein structures. The MVP lets a scientist upload a PDB or mmCIF file, visualize the structure, parse chains/residues/ligands, calculate residue and protein-ligand contacts, and export a clean interaction report.
 
 The project is intentionally simple for the public MVP: no authentication, no database, no Docker, no queues, and no cloud storage.
 
 ## MVP Features
 
-- Upload a local PDB file.
+- Upload a local PDB or mmCIF file.
 - Parse atoms, residues, chains, and ligands.
 - Summarize chain counts, residue counts, ligand records, and atom counts.
 - Calculate residue-residue contacts.
 - Calculate protein-ligand contacts when ligands are present.
 - Ignore hydrogen atoms during contact detection.
-- Use spatial indexing for contact search.
+- Use Gemmi NeighborSearch for contact search.
 - Return warnings for useful analysis context.
 - Expose a FastAPI backend with health and analysis endpoints.
-- Upload or load a sample PDB in the frontend.
+- Upload PDB/mmCIF files or load a sample PDB in the frontend.
 - Render structures with 3Dmol.js.
 - Show summary cards, chain table, ligand table, and contact table.
 - Export contacts as CSV.
@@ -35,7 +35,7 @@ Backend:
 
 - FastAPI
 - Python
-- Biopython `Bio.PDB`
+- Gemmi
 - Pydantic
 - pytest
 - Render
@@ -63,6 +63,7 @@ protein-interaction-explorer/
     tests/
   examples/
     sample.pdb
+    sample.cif
   docs/
 ```
 
@@ -117,7 +118,7 @@ cd /Users/cankarakoc/Codex/protein-interaction-explorer
 .venv/bin/pytest backend/tests
 ```
 
-The tests cover parser behavior, ligand detection, contact calculation, spatial indexing, route behavior, CORS origin parsing, and bad upload handling.
+The tests cover PDB and mmCIF parser behavior, ligand detection, contact calculation, neighbor search, route behavior, CORS origin parsing, and bad upload handling.
 
 ## API
 
@@ -134,7 +135,7 @@ POST /analyze
 POST /api/analyze
 ```
 
-The analysis endpoint accepts a multipart PDB upload and an optional `cutoff_angstrom` form value.
+The analysis endpoint accepts a multipart PDB, `.cif`, or `.mmcif` upload and an optional `cutoff_angstrom` form value.
 
 Response shape:
 
@@ -186,7 +187,7 @@ See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ## Roadmap
 
-- v0.1 MVP launch: PDB upload, visualization, backend analysis, CSV export, Vercel + Render deployment.
+- v0.1 MVP launch: PDB/mmCIF upload, visualization, backend analysis, CSV export, Vercel + Render deployment.
 - v0.2 public demo polish: better sample workflow, UI states, screenshots, demo docs.
 - v0.3 scientific credibility: richer biology explanations, validation, chain/ligand highlighting.
 - v0.4 database-connected version: saved reports and shareable URLs.
@@ -219,4 +220,5 @@ Contact table:
 - [MVP Scope](docs/MVP_SCOPE.md)
 - [Decisions](docs/DECISIONS.md)
 - [Performance Baseline](docs/PERFORMANCE_BASELINE.md)
+- [Product Direction](docs/PRODUCT_DIRECTION.md)
 - [Release Plan](docs/RELEASE_PLAN.md)

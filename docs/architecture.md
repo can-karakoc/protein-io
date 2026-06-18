@@ -14,22 +14,21 @@ backend/app/
   contacts.py
 ```
 
-`main.py` creates the FastAPI app and registers routes. `routes.py` handles HTTP details. `service.py` orchestrates the analysis flow. `parser.py` converts PDB content into normalized structure data. `contacts.py` performs geometry-based contact analysis.
+`main.py` creates the FastAPI app and registers routes. `routes.py` handles HTTP details. `service.py` orchestrates the analysis flow. `parser.py` converts PDB/mmCIF content into normalized structure data. `contacts.py` performs geometry-based contact analysis.
 
 ## Why StructureData Exists
 
-`StructureData` is the internal structure format owned by this project. The PDB parser uses Biopython, but the rest of the backend should not depend on Biopython classes.
+`StructureData` is the internal structure format owned by this project. The structure parser uses Gemmi, but the rest of the backend should not depend on Gemmi classes.
 
 That gives us one clean path:
 
 ```text
-PDB content -> parser.py -> StructureData -> analysis modules -> AnalysisResponse
+PDB/mmCIF content -> parser.py -> StructureData -> analysis modules -> AnalysisResponse
 ```
 
 Later, other inputs can target the same middle model:
 
 ```text
-mmCIF content -> future parser -> StructureData
 RCSB PDB ID -> future fetcher/parser -> StructureData
 AlphaFold/Boltz/OpenFold output -> future parser -> StructureData
 ```
@@ -55,9 +54,9 @@ This also creates a natural future path for ligand analysis, structure compariso
 
 ## Contact Search
 
-Contact detection uses a simple spatial hash grid. Atoms are assigned to cubic cells sized by the active cutoff, then each atom is compared only with atoms in its own cell and adjacent cells. This avoids scanning every atom against every other atom while keeping the algorithm readable and dependency-free.
+Contact detection uses Gemmi NeighborSearch as the spatial candidate generator. Relevant heavy atoms from `StructureData` are copied into a temporary Gemmi search structure, then each atom queries nearby candidates within the active cutoff. This avoids scanning every atom against every other atom while keeping the public analysis boundary based on app-owned records.
 
-The grid is only a candidate generator. A contact is accepted only after an exact Euclidean distance check confirms the atom pair is within the cutoff.
+NeighborSearch is only a candidate generator. A contact is accepted only after an exact Euclidean distance check confirms the atom pair is within the cutoff.
 
 ## Why Plugins Are Not Built Yet
 

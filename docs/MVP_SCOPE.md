@@ -2,8 +2,8 @@
 
 ## In Scope
 
-- Upload a local PDB file.
-- Parse PDB files on the backend.
+- Upload a local PDB or mmCIF file.
+- Parse PDB and mmCIF files on the backend.
 - Normalize parsed structures into `StructureData`.
 - Return structure summary data:
   - structure ID
@@ -33,7 +33,6 @@
 - Background jobs.
 - Live model inference.
 - PDB ID fetch.
-- mmCIF support.
 - AlphaFold, ColabFold, or Boltz-specific workflows.
 - Production observability beyond basic logs.
 
@@ -48,8 +47,8 @@
 
 ## MVP Success Criteria
 
-A user can upload `examples/sample.pdb`, see a structure viewer, receive backend analysis, inspect tables, change the distance cutoff, and export contacts as CSV.
+A user can upload `examples/sample.pdb` or `examples/sample.cif`, see a structure viewer, receive backend analysis, inspect tables, change the distance cutoff, and export contacts as CSV.
 
 ## Backend Scope Boundary
 
-The backend may be shaped for future extension, but it should not implement future systems yet. In this MVP, `StructureData` is the only extension point we need: PDB parsing produces it, contact analysis consumes it, and the service returns a typed response. Do not add a plugin registry, parser registry, database, queue, or storage layer until there is a concrete feature that needs it.
+The backend may be shaped for future extension, but it should not implement future systems yet. In this MVP, `StructureData` is the only extension point we need: PDB/mmCIF parsing produces it, contact analysis consumes it, and the service returns a typed response. Do not add a plugin registry, parser registry, database, queue, or storage layer until there is a concrete feature that needs it.

@@ -1,15 +1,23 @@
 from __future__ import annotations
 
-from collections import defaultdict
-from itertools import product
+from collections import OrderedDict
+from dataclasses import dataclass
 from math import dist
+
+import gemmi
 
 from app.models import AtomRecord, ContactRecord, StructureData
 
 
 DEFAULT_DISTANCE_CUTOFF = 4.0
 DEFAULT_MAX_CONTACTS = 5000
-GridCell = tuple[int, int, int]
+
+
+@dataclass(frozen=True)
+class NeighborSearchIndex:
+    search: gemmi.NeighborSearch
+    atom_lookup: dict[tuple[int, int, int], AtomRecord]
+    positions: dict[str, gemmi.Position]
 
 
 def calculate_contacts(
@@ -29,11 +37,11 @@ def calculate_contacts(
     if not relevant_atoms:
         return [], ["No non-hydrogen protein or ligand atoms were available for contact analysis."]
 
-    spatial_index = build_spatial_index(relevant_atoms, cell_size=cutoff_angstrom)
+    neighbor_index = build_neighbor_search_index(relevant_atoms, cutoff_angstrom=cutoff_angstrom)
     closest_by_pair: dict[tuple[str, str, str], ContactRecord] = {}
 
     for atom_a in relevant_atoms:
-        for atom_b in nearby_atoms(atom_a, spatial_index, cell_size=cutoff_angstrom):
+        for atom_b in nearby_atoms(atom_a, neighbor_index, cutoff_angstrom=cutoff_angstrom):
             if atom_b.id <= atom_a.id:
                 continue
             if atom_a.residue_id == atom_b.residue_id:
@@ -74,39 +82,102 @@ def calculate_contacts(
     return contacts, warnings
 
 
-def build_spatial_index(atoms: list[AtomRecord], cell_size: float) -> dict[GridCell, list[AtomRecord]]:
-    """Group atoms into cubic cells so contact search avoids all-pairs scans."""
-    index: dict[GridCell, list[AtomRecord]] = defaultdict(list)
+def build_neighbor_search_index(atoms: list[AtomRecord], cutoff_angstrom: float) -> NeighborSearchIndex:
+    """Build a Gemmi NeighborSearch index from normalized atom records."""
+    structure = gemmi.Structure()
+    structure.cell = unit_cell_for_atoms(atoms, cutoff_angstrom=cutoff_angstrom)
+    model = gemmi.Model(1)
+
+    atom_lookup: dict[tuple[int, int, int], AtomRecord] = {}
+    positions: dict[str, gemmi.Position] = {}
+    grouped_atoms = group_atoms_by_chain_and_residue(atoms)
+    x_shift, y_shift, z_shift = coordinate_shift(atoms, cutoff_angstrom=cutoff_angstrom)
+
+    for chain_index, (chain_id, residues) in enumerate(grouped_atoms.items()):
+        chain = gemmi.Chain(chain_id)
+
+        for residue_index, (residue_id, residue_atoms) in enumerate(residues.items()):
+            first_atom = residue_atoms[0]
+            residue = gemmi.Residue()
+            residue.name = first_atom.residue_name
+            residue.seqid = gemmi.SeqId(residue_index + 1, " ")
+            residue.het_flag = "A" if first_atom.residue_kind == "protein" else "H"
+
+            for atom_index, atom_record in enumerate(residue_atoms):
+                gemmi_atom = gemmi.Atom()
+                gemmi_atom.name = atom_record.name
+                gemmi_atom.element = gemmi.Element(atom_record.element.strip() or "X")
+                gemmi_atom.pos = gemmi.Position(
+                    atom_record.x + x_shift,
+                    atom_record.y + y_shift,
+                    atom_record.z + z_shift,
+                )
+                residue.add_atom(gemmi_atom)
+                atom_lookup[(chain_index, residue_index, atom_index)] = atom_record
+                positions[atom_record.id] = gemmi_atom.pos
+
+            chain.add_residue(residue)
+
+        model.add_chain(chain)
+
+    structure.add_model(model)
+    return NeighborSearchIndex(
+        search=gemmi.NeighborSearch(structure, cutoff_angstrom).populate(include_h=False),
+        atom_lookup=atom_lookup,
+        positions=positions,
+    )
+
+
+def group_atoms_by_chain_and_residue(
+    atoms: list[AtomRecord],
+) -> OrderedDict[str, OrderedDict[str, list[AtomRecord]]]:
+    grouped_atoms: OrderedDict[str, OrderedDict[str, list[AtomRecord]]] = OrderedDict()
     for atom in atoms:
-        index[cell_for_atom(atom, cell_size)].append(atom)
-    return dict(index)
+        residues = grouped_atoms.setdefault(atom.chain_id, OrderedDict())
+        residues.setdefault(atom.residue_id, []).append(atom)
+    return grouped_atoms
+
+
+def unit_cell_for_atoms(atoms: list[AtomRecord], cutoff_angstrom: float) -> gemmi.UnitCell:
+    padding = coordinate_padding(cutoff_angstrom)
+    x_values = [atom.x for atom in atoms]
+    y_values = [atom.y for atom in atoms]
+    z_values = [atom.z for atom in atoms]
+    return gemmi.UnitCell(
+        max(x_values) - min(x_values) + (padding * 2),
+        max(y_values) - min(y_values) + (padding * 2),
+        max(z_values) - min(z_values) + (padding * 2),
+        90,
+        90,
+        90,
+    )
+
+
+def coordinate_shift(atoms: list[AtomRecord], cutoff_angstrom: float) -> tuple[float, float, float]:
+    padding = coordinate_padding(cutoff_angstrom)
+    return (
+        padding - min(atom.x for atom in atoms),
+        padding - min(atom.y for atom in atoms),
+        padding - min(atom.z for atom in atoms),
+    )
+
+
+def coordinate_padding(cutoff_angstrom: float) -> float:
+    return cutoff_angstrom + 1.0
 
 
 def nearby_atoms(
     atom: AtomRecord,
-    spatial_index: dict[GridCell, list[AtomRecord]],
-    cell_size: float,
+    neighbor_index: NeighborSearchIndex,
+    cutoff_angstrom: float,
 ) -> list[AtomRecord]:
-    atom_cell = cell_for_atom(atom, cell_size)
+    position = neighbor_index.positions[atom.id]
     atoms: list[AtomRecord] = []
-
-    for offset in product((-1, 0, 1), repeat=3):
-        neighbor_cell = (
-            atom_cell[0] + offset[0],
-            atom_cell[1] + offset[1],
-            atom_cell[2] + offset[2],
-        )
-        atoms.extend(spatial_index.get(neighbor_cell, []))
-
+    for mark in neighbor_index.search.find_atoms(position, radius=cutoff_angstrom):
+        atom_record = neighbor_index.atom_lookup.get((mark.chain_idx, mark.residue_idx, mark.atom_idx))
+        if atom_record is not None:
+            atoms.append(atom_record)
     return atoms
-
-
-def cell_for_atom(atom: AtomRecord, cell_size: float) -> GridCell:
-    return (
-        int(atom.x // cell_size),
-        int(atom.y // cell_size),
-        int(atom.z // cell_size),
-    )
 
 
 def classify_contact(atom_a: AtomRecord, atom_b: AtomRecord) -> str | None:

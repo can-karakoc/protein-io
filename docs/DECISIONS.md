@@ -7,7 +7,7 @@ Decision: Use Next.js for the frontend and FastAPI for the backend.
 Why:
 
 - Next.js is a strong fit for an interactive scientific web UI.
-- FastAPI is a clear fit for Python-based Bio.PDB analysis.
+- FastAPI is a clear fit for Python-based structural biology analysis.
 - Keeping analysis in Python avoids forcing comp-bio parsing into JavaScript.
 
 Tradeoff:
@@ -15,19 +15,19 @@ Tradeoff:
 - Local development uses two processes.
 - Deployment requires coordinating frontend and backend hosting.
 
-## Start with PDB Only
+## Support PDB and mmCIF Through Gemmi
 
-Decision: Support PDB uploads first. Defer mmCIF.
+Decision: Support PDB and mmCIF uploads through Gemmi while keeping `StructureData` as the internal app boundary.
 
 Why:
 
-- PDB is simple enough for an MVP.
-- Biopython supports PDB parsing directly.
-- mmCIF can be added later behind the same analysis model.
+- PDB keeps the sample/demo workflow simple.
+- mmCIF is the modern archive format and makes the parser more credible.
+- Gemmi supports both formats behind one parser boundary.
 
 Tradeoff:
 
-- Some modern structures are better represented as mmCIF.
+- The UI and parser need a small amount of format detection.
 
 ## Normalize Structures into StructureData
 
@@ -35,13 +35,13 @@ Decision: Convert parser output into an app-owned `StructureData` model before a
 
 Why:
 
-- Contact analysis should not depend on Biopython objects.
+- Contact analysis should not depend on parser-library objects.
 - Future PDB, mmCIF, RCSB, AlphaFold, ColabFold, Boltz, and OpenFold-style inputs can target one internal structure shape.
 - Tests can focus on app behavior instead of parser library details.
 
 Tradeoff:
 
-- We duplicate a small subset of structural data instead of passing Biopython objects around directly.
+- We duplicate a small subset of structural data instead of passing parser-library objects around directly.
 - The normalized model must be maintained as new analysis needs appear.
 
 ## Keep Routes Thin
@@ -99,25 +99,26 @@ Tradeoff:
 
 - Users do not see every individual atom-atom contact unless this is expanded later.
 
-## Use Spatial Hashing for Contact Search
+## Use Gemmi NeighborSearch for Contact Search
 
-Decision: Contact search uses a simple cutoff-sized 3D spatial hash grid.
+Decision: Contact search uses Gemmi NeighborSearch as the spatial candidate generator.
 
 Why:
 
 - A naive all-pairs atom scan scales poorly as structures get larger.
-- A spatial grid is understandable, dependency-free, and good enough for the MVP.
-- It keeps `contacts.py` independent from FastAPI, Biopython, and heavy numerical libraries.
+- Gemmi NeighborSearch is faster than the first custom spatial-grid implementation on medium and large benchmark structures.
+- It avoids adding SciPy while keeping parser and neighbor-search capabilities in one structural biology library.
+- `contacts.py` still accepts `StructureData`, so parser-library objects do not leak into the public analysis boundary.
 
 Tradeoff:
 
-- This is less feature-rich than a mature KD-tree implementation.
-- If future analyses need more advanced geometry queries, we may introduce a scientific spatial index library after the need is concrete.
+- `contacts.py` now creates a lightweight temporary Gemmi search structure from normalized atom records.
+- If future analyses need more advanced geometry queries, SciPy `cKDTree` can still be benchmarked later.
 
 Manual concept:
 
-- Atoms are bucketed into cubic cells roughly the size of the cutoff.
-- For each atom, we only inspect atoms in its own cell and the 26 neighboring cells.
+- Relevant heavy atoms are copied into a temporary Gemmi structure.
+- Gemmi NeighborSearch returns nearby candidate atoms within the cutoff.
 - Exact Euclidean distance is still checked before a contact is accepted.
 
 ## Ignore Hydrogens

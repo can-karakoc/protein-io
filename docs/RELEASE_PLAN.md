@@ -2,7 +2,7 @@
 
 ## v0.1 MVP Launch
 
-- Upload PDB files.
+- Upload PDB and mmCIF files.
 - Parse chains, residues, atoms, and ligands.
 - Calculate residue-residue and protein-ligand contacts.
 - Visualize uploaded structures in the browser.
