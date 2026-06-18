@@ -198,6 +198,7 @@ See [docs/RELEASE_PLAN.md](docs/RELEASE_PLAN.md) and [docs/ROADMAP.md](docs/ROAD
 
 - [Architecture](docs/architecture.md)
 - [Deployment](docs/DEPLOYMENT.md)
+- [Git Workflow](docs/GIT_WORKFLOW.md)
 - [MVP Scope](docs/MVP_SCOPE.md)
 - [Decisions](docs/DECISIONS.md)
 - [Release Plan](docs/RELEASE_PLAN.md)
