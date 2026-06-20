@@ -123,10 +123,12 @@ Do not add model inference, job queues, or permanent storage.
 
 ## Priority 7: PAE JSON Sidecar Support
 
-- `[ ]` Allow structure upload plus optional PAE JSON sidecar.
-- `[ ]` Show whether PAE was uploaded.
-- `[ ]` Add high-level PAE summary or warning if easy.
-- `[ ]` Add PAE heatmap later, not first.
+- Branch: `feature/pae-sidecar`
+- `[x]` Allow structure upload plus optional PAE JSON sidecar.
+- `[x]` Show whether PAE was uploaded.
+- `[x]` Add high-level PAE summary and warning.
+- `[x]` Defer PAE heatmap until there is a concrete visualization need.
+- `[x]` Run final browser verification and merge `feature/pae-sidecar` into `main` after review.
 
 ## Priority 8: Optional Mol* Viewer Evaluation
 

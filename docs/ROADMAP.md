@@ -11,6 +11,7 @@ See [Product Direction](PRODUCT_DIRECTION.md) for product framing and [Action Pl
 - PDB and mmCIF parsing into app-owned `StructureData`.
 - RCSB mmCIF fetch by PDB ID with metadata and removed-entry replacement IDs.
 - AlphaFold DB mmCIF fetch by UniProt accession with predicted-confidence reuse.
+- Optional PAE JSON sidecar summaries for uploaded structures.
 - Table-to-viewer row selection for chains, ligands, and contacts.
 - AlphaFold-style pLDDT confidence summaries for predicted-structure uploads.
 - Contact categories and interaction summary output.
@@ -32,10 +33,10 @@ See [Product Direction](PRODUCT_DIRECTION.md) for product framing and [Action Pl
 4. Add AlphaFold/pLDDT confidence support. Done.
 5. Add contact categories and better interaction summaries. Done.
 6. Add AlphaFold DB fetch by UniProt ID. Done.
+7. Add PAE JSON sidecar support. Done.
 
 ## Later Priorities
 
-7. Add PAE JSON sidecar support.
 8. Evaluate a Mol* viewer upgrade only if 3Dmol.js becomes limiting.
 9. Add advanced ligand interaction summaries.
 10. Add structure comparison.

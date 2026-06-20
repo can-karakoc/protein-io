@@ -7,7 +7,7 @@ from app.confidence import analyze_plddt_confidence
 from app.integrations.alphafold import AlphaFoldStructure, fetch_alphafold_structure
 from app.integrations.rcsb import fetch_rcsb_structure
 from app.integrations.rcsb import RcsbStructure
-from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, RcsbAnalysisResponse, StructureMetadata
+from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, PaeSummary, RcsbAnalysisResponse, StructureMetadata
 from app.parser import detect_structure_format_from_filename, parse_pdb_content
 
 
@@ -58,12 +58,16 @@ def analyze_pdb_content(
     content: bytes,
     filename: str | None = None,
     cutoff_angstrom: float = 4.0,
+    pae: PaeSummary | None = None,
+    pae_warnings: list[str] | None = None,
 ) -> AnalysisResponse:
     """Run the MVP analysis pipeline for uploaded structure content."""
     return analyze_pdb_content_with_timing(
         content,
         filename=filename,
         cutoff_angstrom=cutoff_angstrom,
+        pae=pae,
+        pae_warnings=pae_warnings,
     ).response
 
 
@@ -72,6 +76,8 @@ def analyze_pdb_content_with_timing(
     filename: str | None = None,
     cutoff_angstrom: float = 4.0,
     metadata: StructureMetadata | None = None,
+    pae: PaeSummary | None = None,
+    pae_warnings: list[str] | None = None,
 ) -> TimedAnalysis:
     """Run analysis and return coarse timings for development diagnostics."""
     structure_id = structure_id_from_filename(filename)
@@ -96,11 +102,12 @@ def analyze_pdb_content_with_timing(
         metadata=metadata,
         confidence=confidence,
         residue_confidences=residue_confidences,
+        pae=pae,
         interaction_summary=summarize_interactions(contacts),
         chains=structure.chains,
         ligands=structure.ligands,
         contacts=contacts,
-        warnings=[*structure.warnings, *contact_warnings, *confidence_warnings],
+        warnings=[*structure.warnings, *contact_warnings, *confidence_warnings, *(pae_warnings or [])],
     )
     response_ms = elapsed_ms(response_started)
 

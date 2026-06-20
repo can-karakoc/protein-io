@@ -49,6 +49,15 @@ Use this checklist before public demo updates and after meaningful frontend or b
 - `[ ]` Confirm contact count changes when appropriate.
 - `[ ]` Confirm invalid or empty files show useful errors.
 
+## PAE Sidecar Flow
+
+- `[ ]` Upload or load a structure file.
+- `[ ]` Attach a valid AlphaFold-style PAE JSON sidecar.
+- `[ ]` Run analysis and confirm the PAE sidecar panel appears.
+- `[ ]` Confirm residue count, mean PAE, max PAE, and high-error pair count are shown.
+- `[ ]` Attach invalid PAE JSON and confirm a useful validation error appears.
+- `[ ]` Confirm analysis still works without a PAE sidecar.
+
 ## Table-to-Viewer Interaction
 
 - `[ ]` Select a chain row and confirm the row and 3D structure highlight update.
