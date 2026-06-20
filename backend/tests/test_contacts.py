@@ -17,6 +17,8 @@ def test_contact_finder_respects_cutoff_and_returns_typed_records():
     assert all(isinstance(contact, ContactRecord) for contact in contacts)
     assert all(contact.distance_angstrom <= 4.0 for contact in contacts)
     assert {contact.contact_type for contact in contacts} == {"protein-ligand", "residue-residue"}
+    assert any("protein-protein" in contact.contact_categories for contact in contacts)
+    assert any("protein-ligand" in contact.contact_categories for contact in contacts)
 
 
 def test_mmcif_contact_finder_returns_typed_records():
@@ -80,6 +82,32 @@ def test_neighbor_search_finds_contacts_at_cutoff_boundary():
     assert contacts[0].residue_b == "2"
 
 
+def test_contact_finder_returns_water_contact_categories_and_possible_clashes():
+    structure = StructureData(
+        structure_id="water-category-test",
+        atoms=[
+            make_atom("A:protein:1::CA", "CA", 0.0, 0.0, 0.0, "A", "A:protein:1:", "ALA", "1"),
+            make_atom("A:H_ATP:101::P", "P", 3.0, 0.0, 0.0, "A", "A:H_ATP:101:", "ATP", "101", "ligand"),
+            make_atom("A:W:201::O", "O", 1.4, 0.0, 0.0, "A", "A:W:201:", "HOH", "201", "water"),
+        ],
+        residues=[
+            ResidueRecord(id="A:protein:1:", name="ALA", chain_id="A", residue_number="1", kind="protein", atom_ids=[]),
+            ResidueRecord(id="A:H_ATP:101:", name="ATP", chain_id="A", residue_number="101", kind="ligand", atom_ids=[]),
+            ResidueRecord(id="A:W:201:", name="HOH", chain_id="A", residue_number="201", kind="water", atom_ids=[]),
+        ],
+        chains=[ChainSummary(id="A", residue_count=1, atom_count=3)],
+        ligands=[],
+    )
+
+    contacts, warnings = calculate_contacts(structure, cutoff_angstrom=4.0)
+
+    assert warnings == []
+    assert {contact.contact_type for contact in contacts} == {"protein-ligand", "protein-water", "ligand-water"}
+    assert any("protein-water" in contact.contact_categories for contact in contacts)
+    assert any("ligand-water" in contact.contact_categories for contact in contacts)
+    assert any("possible-clash" in contact.contact_categories for contact in contacts)
+
+
 def make_atom(
     atom_id: str,
     name: str,
@@ -90,6 +118,7 @@ def make_atom(
     residue_id: str,
     residue_name: str,
     residue_number: str,
+    residue_kind: str = "protein",
 ) -> AtomRecord:
     return AtomRecord(
         id=atom_id,
@@ -102,5 +131,5 @@ def make_atom(
         residue_id=residue_id,
         residue_name=residue_name,
         residue_number=residue_number,
-        residue_kind="protein",
+        residue_kind=residue_kind,  # type: ignore[arg-type]
     )

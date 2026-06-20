@@ -9,8 +9,10 @@ import { contactsToCsv } from "@/lib/csv";
 import type {
   AnalysisResponse,
   ChainSummary,
+  ContactCategory,
   ContactRecord,
   ConfidenceSummary,
+  InteractionSummary,
   LigandSummary,
   ResidueConfidence,
   RcsbAnalysisResponse,
@@ -23,6 +25,7 @@ const TIMING_HEADER = "X-ProteinIO-Timing";
 const EMPTY_RESIDUE_CONFIDENCES: ResidueConfidence[] = [];
 type StructureFileFormat = "pdb" | "cif";
 type ViewerColorMode = "structure" | "plddt";
+type ContactFilter = "all" | ContactCategory;
 
 export function ProteinWorkbench() {
   const [fileName, setFileName] = useState<string>("");
@@ -33,6 +36,7 @@ export function ProteinWorkbench() {
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
   const [selection, setSelection] = useState<ViewerSelection | null>(null);
   const [viewerColorMode, setViewerColorMode] = useState<ViewerColorMode>("structure");
+  const [contactFilter, setContactFilter] = useState<ContactFilter>("all");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isRcsbLoading, setIsRcsbLoading] = useState(false);
@@ -40,7 +44,14 @@ export function ProteinWorkbench() {
   const hasStructure = structureText.trim().length > 0;
   const contacts = useMemo(() => analysis?.contacts ?? [], [analysis]);
   const residueConfidences = analysis?.residue_confidences ?? EMPTY_RESIDUE_CONFIDENCES;
-  const filteredContactPreview = useMemo(() => contacts.slice(0, 80), [contacts]);
+  const filteredContacts = useMemo(
+    () =>
+      contactFilter === "all"
+        ? contacts
+        : contacts.filter((contact) => contact.contact_categories.includes(contactFilter)),
+    [contactFilter, contacts],
+  );
+  const filteredContactPreview = useMemo(() => filteredContacts.slice(0, 80), [filteredContacts]);
 
   async function handleFile(file: File) {
     const timingStarted = performance.now();
@@ -48,6 +59,7 @@ export function ProteinWorkbench() {
     setAnalysis(null);
     setSelection(null);
     setViewerColorMode("structure");
+    setContactFilter("all");
     setFileName(file.name);
     setStructureFormat(formatFromFileName(file.name));
     const text = await file.text();
@@ -65,6 +77,7 @@ export function ProteinWorkbench() {
     setAnalysis(null);
     setSelection(null);
     setViewerColorMode("structure");
+    setContactFilter("all");
     const fetchStarted = performance.now();
     const response = await fetch(EXAMPLE_FILE);
     const fetchMs = elapsedMs(fetchStarted);
@@ -121,6 +134,7 @@ export function ProteinWorkbench() {
       setAnalysis(nextAnalysis);
       setSelection(null);
       setViewerColorMode(nextAnalysis.confidence ? "plddt" : "structure");
+      setContactFilter("all");
       logTiming("analysis request", timingStarted, {
         form_ms,
         request_ms,
@@ -149,6 +163,7 @@ export function ProteinWorkbench() {
     setAnalysis(null);
     setSelection(null);
     setViewerColorMode("structure");
+    setContactFilter("all");
 
     try {
       const timingStarted = performance.now();
@@ -173,6 +188,7 @@ export function ProteinWorkbench() {
       setAnalysis(payload.analysis);
       setSelection(null);
       setViewerColorMode(payload.analysis.confidence ? "plddt" : "structure");
+      setContactFilter("all");
       logTiming("rcsb fetch analysis", timingStarted, {
         request_ms,
         response_json_ms,
@@ -196,6 +212,7 @@ export function ProteinWorkbench() {
     setAnalysis(null);
     setSelection(null);
     setViewerColorMode("structure");
+    setContactFilter("all");
     setError(null);
     setCutoff(4.0);
   }
@@ -384,6 +401,7 @@ export function ProteinWorkbench() {
               colorMode={viewerColorMode}
               onColorModeChange={setViewerColorMode}
             />
+            <InteractionSummaryPanel summary={analysis?.interaction_summary ?? null} />
             <SummaryCards analysis={analysis} />
           </section>
         </section>
@@ -421,22 +439,25 @@ export function ProteinWorkbench() {
             <div>
               <h2 className="text-sm font-semibold text-slate-950">Contacts</h2>
               <p className="mt-1 text-xs leading-5 text-slate-500">
-                Closest atom pair per residue-residue or protein-ligand contact.
+                Closest atom pair per categorized contact.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={exportCsv}
-              disabled={!contacts.length}
-              className="inline-flex h-10 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
-            >
-              <Download className="h-4 w-4" />
-              Export CSV
-            </button>
+            <div className="flex flex-col gap-2 sm:items-end">
+              <ContactCategoryFilter value={contactFilter} onChange={setContactFilter} />
+              <button
+                type="button"
+                onClick={exportCsv}
+                disabled={!contacts.length}
+                className="inline-flex h-10 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
+              >
+                <Download className="h-4 w-4" />
+                Export CSV
+              </button>
+            </div>
           </div>
           <ContactTable
             contacts={filteredContactPreview}
-            totalCount={contacts.length}
+            totalCount={filteredContacts.length}
             selection={selection}
             onSelect={(contact) =>
               setSelection({
@@ -626,6 +647,74 @@ function ConfidencePanel({
   );
 }
 
+function InteractionSummaryPanel({ summary }: { summary: InteractionSummary | null }) {
+  if (!summary) {
+    return null;
+  }
+
+  const items = [
+    ["Protein-protein", summary.protein_protein_count],
+    ["Protein-ligand", summary.protein_ligand_count],
+    ["Protein-water", summary.protein_water_count],
+    ["Ligand-water", summary.ligand_water_count],
+    ["Inter-chain", summary.inter_chain_count],
+    ["Possible clashes", summary.possible_clash_count],
+  ];
+
+  return (
+    <div className="border border-slate-200 bg-white p-4">
+      <h2 className="text-sm font-semibold text-slate-950">Interaction summary</h2>
+      <p className="mt-1 text-xs leading-5 text-slate-500">
+        Distance-based contact categories and top contact participants.
+      </p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {items.map(([label, value]) => (
+          <div key={label} className="flex items-center justify-between border border-slate-200 px-3 py-2">
+            <span className="text-sm text-slate-700">{label}</span>
+            <span className="font-mono text-sm text-slate-950">{value}</span>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <TopContactList
+          title="Top residues"
+          rows={summary.top_contacting_residues.map((residue) => [
+            `${residue.chain_id}:${residue.residue_name}${residue.residue_number}`,
+            residue.contact_count,
+          ])}
+        />
+        <TopContactList
+          title="Top ligands"
+          rows={summary.top_contacting_ligands.map((ligand) => [
+            `${ligand.name} ${ligand.chain_id}:${ligand.residue_number}`,
+            ligand.contact_count,
+          ])}
+        />
+      </div>
+    </div>
+  );
+}
+
+function TopContactList({ title, rows }: { title: string; rows: Array<[string, number]> }) {
+  return (
+    <div>
+      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{title}</p>
+      {rows.length ? (
+        <div className="mt-2 divide-y divide-slate-100 border border-slate-200">
+          {rows.map(([label, count]) => (
+            <div key={label} className="flex items-center justify-between px-3 py-2">
+              <span className="font-mono text-sm text-slate-800">{label}</span>
+              <span className="font-mono text-sm text-slate-950">{count}</span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-2 text-sm text-slate-500">No rows.</p>
+      )}
+    </div>
+  );
+}
+
 function SelectionBar({ selection, onClear }: { selection: ViewerSelection | null; onClear: () => void }) {
   if (!selection) {
     return null;
@@ -645,6 +734,43 @@ function SelectionBar({ selection, onClear }: { selection: ViewerSelection | nul
       >
         <X className="h-4 w-4" />
       </button>
+    </div>
+  );
+}
+
+function ContactCategoryFilter({
+  value,
+  onChange,
+}: {
+  value: ContactFilter;
+  onChange: (value: ContactFilter) => void;
+}) {
+  const options: Array<[ContactFilter, string]> = [
+    ["all", "All"],
+    ["protein-protein", "Protein-protein"],
+    ["protein-ligand", "Protein-ligand"],
+    ["protein-water", "Protein-water"],
+    ["ligand-water", "Ligand-water"],
+    ["inter-chain", "Inter-chain"],
+    ["possible-clash", "Clashes"],
+  ];
+
+  return (
+    <div className="flex max-w-full flex-wrap justify-end gap-1">
+      {options.map(([option, label]) => (
+        <button
+          key={option}
+          type="button"
+          onClick={() => onChange(option)}
+          className={`h-8 border px-2 text-xs font-medium ${
+            value === option
+              ? "border-slate-900 bg-slate-900 text-white"
+              : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100"
+          }`}
+        >
+          {label}
+        </button>
+      ))}
     </div>
   );
 }
@@ -790,6 +916,7 @@ function ContactTable({
               <span className="sr-only">Select</span>
             </th>
             <th className="px-4 py-3 font-medium">Type</th>
+            <th className="px-4 py-3 font-medium">Categories</th>
             <th className="px-4 py-3 font-medium">Residue A</th>
             <th className="px-4 py-3 font-medium">Atom A</th>
             <th className="px-4 py-3 font-medium">Residue B</th>
@@ -813,6 +940,7 @@ function ContactTable({
                   />
                 </td>
                 <td className="px-4 py-3 text-slate-700">{contact.contact_type}</td>
+                <td className="px-4 py-3 text-slate-700">{contact.contact_categories.join(", ")}</td>
                 <td className="px-4 py-3 font-mono text-slate-900">
                   {contact.chain_a}:{contact.residue_name_a}
                   {contact.residue_a}

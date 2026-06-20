@@ -6,6 +6,7 @@ from math import dist
 
 import gemmi
 
+from app.contact_classification import classify_contact_type, contact_categories
 from app.models import AtomRecord, ContactRecord, StructureData
 
 
@@ -32,7 +33,7 @@ def calculate_contacts(
     relevant_atoms = [
         atom
         for atom in structure.atoms
-        if atom.residue_kind in {"protein", "ligand"} and not is_hydrogen_atom(atom)
+        if atom.residue_kind in {"protein", "ligand", "water"} and not is_hydrogen_atom(atom)
     ]
     if not relevant_atoms:
         return [], ["No non-hydrogen protein or ligand atoms were available for contact analysis."]
@@ -47,7 +48,7 @@ def calculate_contacts(
             if atom_a.residue_id == atom_b.residue_id:
                 continue
 
-            contact_type = classify_contact(atom_a, atom_b)
+            contact_type = classify_contact_type(atom_a, atom_b)
             if contact_type is None:
                 continue
 
@@ -180,17 +181,12 @@ def nearby_atoms(
     return atoms
 
 
-def classify_contact(atom_a: AtomRecord, atom_b: AtomRecord) -> str | None:
-    kinds = {atom_a.residue_kind, atom_b.residue_kind}
-    if kinds == {"protein"}:
-        return "residue-residue"
-    if kinds == {"protein", "ligand"}:
-        return "protein-ligand"
-    return None
-
-
 def contact_key(atom_a: AtomRecord, atom_b: AtomRecord, contact_type: str) -> tuple[tuple[str, str, str], AtomRecord, AtomRecord]:
     if contact_type == "protein-ligand" and atom_a.residue_kind == "ligand":
+        atom_a, atom_b = atom_b, atom_a
+    elif contact_type == "protein-water" and atom_a.residue_kind == "water":
+        atom_a, atom_b = atom_b, atom_a
+    elif contact_type == "ligand-water" and atom_a.residue_kind == "water":
         atom_a, atom_b = atom_b, atom_a
     elif contact_type == "residue-residue" and residue_sort_key(atom_b) < residue_sort_key(atom_a):
         atom_a, atom_b = atom_b, atom_a
@@ -210,6 +206,7 @@ def build_contact(atom_a: AtomRecord, atom_b: AtomRecord, distance: float, conta
         atom_b=atom_b.name,
         distance_angstrom=distance,
         contact_type=contact_type,  # type: ignore[arg-type]
+        contact_categories=contact_categories(atom_a, atom_b, contact_type, distance),  # type: ignore[arg-type]
     )
 
 

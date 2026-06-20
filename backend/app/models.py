@@ -3,7 +3,16 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
-ContactType = Literal["residue-residue", "protein-ligand"]
+ContactType = Literal["residue-residue", "protein-ligand", "protein-water", "ligand-water"]
+ContactCategory = Literal[
+    "protein-protein",
+    "protein-ligand",
+    "protein-water",
+    "ligand-water",
+    "intra-chain",
+    "inter-chain",
+    "possible-clash",
+]
 ConfidenceCategory = Literal["very_high", "confident", "low", "very_low"]
 ResidueKind = Literal["protein", "ligand", "water", "other"]
 
@@ -56,6 +65,35 @@ class ContactRecord(BaseModel):
     atom_b: str
     distance_angstrom: float
     contact_type: ContactType
+    contact_categories: list[ContactCategory] = Field(default_factory=list)
+
+
+class TopContactResidue(BaseModel):
+    chain_id: str
+    residue_number: str
+    residue_name: str
+    contact_count: int
+
+
+class TopContactLigand(BaseModel):
+    chain_id: str
+    residue_number: str
+    name: str
+    contact_count: int
+
+
+class InteractionSummary(BaseModel):
+    protein_protein_count: int = 0
+    protein_ligand_count: int = 0
+    protein_water_count: int = 0
+    ligand_water_count: int = 0
+    intra_chain_count: int = 0
+    inter_chain_count: int = 0
+    possible_clash_count: int = 0
+    top_contacting_residues: list[TopContactResidue] = Field(default_factory=list)
+    top_contacting_ligands: list[TopContactLigand] = Field(default_factory=list)
+    closest_contacts: list[ContactRecord] = Field(default_factory=list)
+    possible_clashes: list[ContactRecord] = Field(default_factory=list)
 
 
 class StructureSummary(BaseModel):
@@ -125,6 +163,7 @@ class AnalysisResponse(BaseModel):
     metadata: StructureMetadata | None = None
     confidence: ConfidenceSummary | None = None
     residue_confidences: list[ResidueConfidence] = Field(default_factory=list)
+    interaction_summary: InteractionSummary | None = None
     chains: list[ChainSummary]
     ligands: list[LigandSummary]
     contacts: list[ContactRecord]

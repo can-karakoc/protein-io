@@ -23,10 +23,20 @@ Use this checklist before public demo updates and after meaningful frontend or b
 - `[ ]` Confirm the structure renders in the 3D viewer.
 - `[ ]` Click `Analyze structure`.
 - `[ ]` Confirm summary cards update.
+- `[ ]` Confirm the interaction summary panel appears.
 - `[ ]` Confirm chain rows are shown.
 - `[ ]` Confirm ligand rows are shown when ligands exist.
 - `[ ]` Confirm contact rows are shown.
+- `[ ]` Confirm contact rows include category labels.
 - `[ ]` Confirm `Export CSV` downloads a contacts CSV.
+
+## Contact Category Flow
+
+- `[ ]` Analyze a structure with contacts.
+- `[ ]` Switch the contact filter between `All`, `Protein-protein`, `Protein-ligand`, `Protein-water`, `Ligand-water`, `Inter-chain`, and `Clashes`.
+- `[ ]` Confirm the contact table count and visible rows update for each available category.
+- `[ ]` Confirm selecting a filtered contact still highlights the matching residues in the viewer.
+- `[ ]` Confirm exported CSV includes the `contact_categories` column.
 
 ## Upload Flow
 
@@ -61,7 +71,7 @@ Use this checklist before public demo updates and after meaningful frontend or b
 - `[ ]` Click `Fetch`.
 - `[ ]` Confirm the mmCIF structure renders in the 3D viewer.
 - `[ ]` Confirm the metadata panel shows title, method, RCSB link, and any available resolution or organism.
-- `[ ]` Confirm chains, ligands, contacts, and CSV export work after fetch.
+- `[ ]` Confirm chains, ligands, contacts, contact categories, interaction summary, and CSV export work after fetch.
 - `[ ]` Enter removed entry `1HHB` and confirm analysis succeeds with `removed` status and replacement IDs.
 - `[ ]` Enter an invalid PDB ID and confirm a useful error appears.
 

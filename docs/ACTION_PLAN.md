@@ -99,13 +99,14 @@ Do not add AlphaFold DB fetching, PAE, or model inference in this priority.
 
 ## Priority 5: Contact Categories and Better Interaction Summaries
 
-Next after Priority 4 review/merge:
+Branch: `feature/contact-categories`
 
-- `[ ]` Keep raw distance search separate from classification.
-- `[ ]` Add simple categories: protein-protein, protein-ligand, ligand-water, protein-water, intra-chain, inter-chain, and possible clash.
-- `[ ]` Add summary outputs: top contacting residues, top contacting ligands, inter-chain contact count, protein-ligand contact count, closest contacts, and possible clashes.
-- `[ ]` Add frontend category filter and summary cards.
-- `[ ]` Add tests for category assignment and summary counts.
+- `[x]` Keep raw distance search separate from classification.
+- `[x]` Add simple categories: protein-protein, protein-ligand, ligand-water, protein-water, intra-chain, inter-chain, and possible clash.
+- `[x]` Add summary outputs: top contacting residues, top contacting ligands, inter-chain contact count, protein-ligand contact count, closest contacts, and possible clashes.
+- `[x]` Add frontend category filter and summary cards.
+- `[x]` Add tests for category assignment and summary counts.
+- `[x]` Run final browser verification and merge `feature/contact-categories` into `main` after review.
 
 Do not claim hydrogen bonds, salt bridges, pi-stacking, or hydrophobic interactions unless valid criteria are implemented.
 

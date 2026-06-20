@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from time import perf_counter
 
 from app.contacts import calculate_contacts
+from app.contact_classification import summarize_interactions
 from app.confidence import analyze_plddt_confidence
 from app.integrations.rcsb import fetch_rcsb_structure
 from app.integrations.rcsb import RcsbStructure
@@ -88,6 +89,7 @@ def analyze_pdb_content_with_timing(
         metadata=metadata,
         confidence=confidence,
         residue_confidences=residue_confidences,
+        interaction_summary=summarize_interactions(contacts),
         chains=structure.chains,
         ligands=structure.ligands,
         contacts=contacts,

@@ -12,6 +12,7 @@ See [Product Direction](PRODUCT_DIRECTION.md) for product framing and [Action Pl
 - RCSB mmCIF fetch by PDB ID with metadata and removed-entry replacement IDs.
 - Table-to-viewer row selection for chains, ligands, and contacts.
 - AlphaFold-style pLDDT confidence summaries for predicted-structure uploads.
+- Contact categories and interaction summary output.
 - Residue, chain, atom, ligand, and contact summaries.
 - Configurable distance cutoff.
 - Hydrogen filtering.
@@ -28,7 +29,7 @@ See [Product Direction](PRODUCT_DIRECTION.md) for product framing and [Action Pl
 2. Add PDB ID fetch and RCSB metadata. Done.
 3. Add table-to-viewer interaction. Done.
 4. Add AlphaFold/pLDDT confidence support. Done.
-5. Add contact categories and better interaction summaries. Next.
+5. Add contact categories and better interaction summaries. Done.
 
 ## Later Priorities
 

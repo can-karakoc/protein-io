@@ -1,6 +1,6 @@
 # Protein Interaction Explorer
 
-Protein Interaction Explorer is an open-source structural biology workspace for uploading, fetching, visualizing, analyzing, and reporting protein structures. The MVP lets a scientist upload a PDB or mmCIF file, fetch a PDB ID from RCSB, visualize the structure, parse chains/residues/ligands, calculate residue and protein-ligand contacts, and export a clean interaction report.
+Protein Interaction Explorer is an open-source structural biology workspace for uploading, fetching, visualizing, analyzing, and reporting protein structures. The MVP lets a scientist upload a PDB or mmCIF file, fetch a PDB ID from RCSB, visualize the structure, parse chains/residues/ligands, calculate categorized contacts, summarize interaction participants, and export a clean interaction report.
 
 The project is intentionally simple for the public MVP: no authentication, no database, no Docker, no queues, and no cloud storage.
 
@@ -12,6 +12,8 @@ The project is intentionally simple for the public MVP: no authentication, no da
 - Summarize chain counts, residue counts, ligand records, and atom counts.
 - Calculate residue-residue contacts.
 - Calculate protein-ligand contacts when ligands are present.
+- Categorize contacts as protein-protein, protein-ligand, protein-water, ligand-water, intra-chain, inter-chain, or possible clash.
+- Summarize top contacting residues, top contacting ligands, closest contacts, and category counts.
 - Detect AlphaFold-style pLDDT confidence values from predicted-structure uploads.
 - Ignore hydrogen atoms during contact detection.
 - Use Gemmi NeighborSearch for contact search.
@@ -20,7 +22,8 @@ The project is intentionally simple for the public MVP: no authentication, no da
 - Upload PDB/mmCIF files or load a sample PDB in the frontend.
 - Fetch RCSB mmCIF structures from a PDB ID.
 - Render structures with 3Dmol.js.
-- Show RCSB metadata, confidence summaries, summary cards, chain table, ligand table, and contact table.
+- Show RCSB metadata, confidence summaries, interaction summaries, summary cards, chain table, ligand table, and contact table.
+- Filter the contact table by contact category.
 - Export contacts as CSV.
 - Prepare frontend API calls through `NEXT_PUBLIC_API_URL`.
 
@@ -62,6 +65,7 @@ protein-interaction-explorer/
       models.py
       parser.py
       contacts.py
+      contact_classification.py
       csv_export.py
     tests/
   examples/
@@ -121,7 +125,7 @@ cd /Users/cankarakoc/Codex/protein-interaction-explorer
 .venv/bin/pytest backend/tests
 ```
 
-The tests cover PDB and mmCIF parser behavior, ligand detection, contact calculation, neighbor search, RCSB PDB ID validation, route behavior, CORS origin parsing, and bad upload handling.
+The tests cover PDB and mmCIF parser behavior, ligand detection, contact calculation, contact classification, interaction summaries, neighbor search, RCSB PDB ID validation, route behavior, CORS origin parsing, and bad upload handling.
 
 ## API
 
@@ -156,6 +160,7 @@ Response shape:
   },
   "metadata": null,
   "confidence": null,
+  "interaction_summary": null,
   "residue_confidences": [],
   "chains": [],
   "ligands": [],
@@ -181,6 +186,7 @@ RCSB response shape:
       "replaced_by": []
     },
     "confidence": null,
+    "interaction_summary": null,
     "residue_confidences": [],
     "chains": [],
     "ligands": [],
