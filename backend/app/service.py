@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from time import perf_counter
 
 from app.contacts import calculate_contacts
-from app.contact_classification import summarize_interactions
+from app.contact_classification import summarize_interactions, summarize_ligand_interactions
 from app.confidence import analyze_plddt_confidence
 from app.integrations.alphafold import AlphaFoldStructure, fetch_alphafold_structure
 from app.integrations.rcsb import fetch_rcsb_structure
@@ -104,6 +104,7 @@ def analyze_pdb_content_with_timing(
         residue_confidences=residue_confidences,
         pae=pae,
         interaction_summary=summarize_interactions(contacts),
+        ligand_interactions=summarize_ligand_interactions(contacts),
         chains=structure.chains,
         ligands=structure.ligands,
         contacts=contacts,

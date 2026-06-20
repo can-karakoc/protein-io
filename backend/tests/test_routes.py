@@ -44,6 +44,10 @@ def test_analyze_endpoint_returns_clean_response_shape():
     assert data["chains"]
     assert data["ligands"]
     assert data["contacts"]
+    assert data["ligand_interactions"]
+    assert data["ligand_interactions"][0]["name"] == "ATP"
+    assert data["ligand_interactions"][0]["protein_contact_count"] == 3
+    assert data["ligand_interactions"][0]["closest_contact"]
     assert isinstance(data["warnings"], list)
     assert "parse_ms=" in response.headers["X-ProteinIO-Timing"]
     assert "contacts_ms=" in response.headers["X-ProteinIO-Timing"]

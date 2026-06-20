@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 
 import { StructureViewer } from "@/components/structure-viewer";
 import { buildApiUrl } from "@/lib/api";
-import { contactsToCsv } from "@/lib/csv";
+import { contactsToCsv, ligandInteractionsToCsv } from "@/lib/csv";
 import type {
   AlphaFoldAnalysisResponse,
   AnalysisResponse,
@@ -14,6 +14,7 @@ import type {
   ContactRecord,
   ConfidenceSummary,
   InteractionSummary,
+  LigandInteractionSummary,
   LigandSummary,
   PaeSummary,
   ResidueConfidence,
@@ -312,14 +313,19 @@ export function ProteinWorkbench() {
       return;
     }
 
-    const csv = contactsToCsv(contacts);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${fileName.replace(/\.[^.]+$/, "") || "contacts"}-contacts.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    downloadCsv(contactsToCsv(contacts), `${baseExportName(fileName) || "contacts"}-contacts.csv`);
+  }
+
+  function exportLigandCsv() {
+    const ligandInteractions = analysis?.ligand_interactions ?? [];
+    if (!ligandInteractions.length) {
+      return;
+    }
+
+    downloadCsv(
+      ligandInteractionsToCsv(ligandInteractions),
+      `${baseExportName(fileName) || "ligands"}-ligand-interactions.csv`,
+    );
   }
 
   return (
@@ -550,6 +556,10 @@ export function ProteinWorkbench() {
             />
             <PaePanel pae={analysis?.pae ?? null} />
             <InteractionSummaryPanel summary={analysis?.interaction_summary ?? null} />
+            <LigandInteractionPanel
+              ligandInteractions={analysis?.ligand_interactions ?? []}
+              onExport={exportLigandCsv}
+            />
             <SummaryCards analysis={analysis} />
           </section>
         </section>
@@ -630,6 +640,20 @@ function logTiming(label: string, startedAt: number, details: Record<string, num
     total_ms: elapsedMs(startedAt),
     ...details,
   });
+}
+
+function downloadCsv(csv: string, filename: string) {
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function baseExportName(fileName: string) {
+  return fileName.replace(/\.[^.]+$/, "");
 }
 
 function formatFromFileName(fileName: string): StructureFileFormat {
@@ -884,6 +908,91 @@ function InteractionSummaryPanel({ summary }: { summary: InteractionSummary | nu
             ligand.contact_count,
           ])}
         />
+      </div>
+    </div>
+  );
+}
+
+function LigandInteractionPanel({
+  ligandInteractions,
+  onExport,
+}: {
+  ligandInteractions: LigandInteractionSummary[];
+  onExport: () => void;
+}) {
+  if (!ligandInteractions.length) {
+    return null;
+  }
+
+  return (
+    <div className="border border-slate-200 bg-white">
+      <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-sm font-semibold text-slate-950">Ligand interaction summary</h2>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Per-ligand contact counts, closest atom pair, contacting residues, and distance distribution.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onExport}
+          className="inline-flex h-10 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100"
+        >
+          <Download className="h-4 w-4" />
+          Export ligand CSV
+        </button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[980px] text-left text-sm">
+          <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <tr>
+              <th className="px-4 py-3 font-medium">Ligand</th>
+              <th className="px-4 py-3 font-medium">Contacts</th>
+              <th className="px-4 py-3 font-medium">Protein</th>
+              <th className="px-4 py-3 font-medium">Water</th>
+              <th className="px-4 py-3 font-medium">Clashes</th>
+              <th className="px-4 py-3 font-medium">Closest</th>
+              <th className="px-4 py-3 font-medium">Top residues</th>
+              <th className="px-4 py-3 font-medium">Distance buckets</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {ligandInteractions.map((ligand) => (
+              <tr key={`${ligand.name}-${ligand.chain_id}-${ligand.residue_number}`}>
+                <td className="px-4 py-3 font-mono text-slate-950">
+                  {ligand.name} {ligand.chain_id}:{ligand.residue_number}
+                </td>
+                <td className="px-4 py-3 font-mono text-slate-800">{ligand.contact_count}</td>
+                <td className="px-4 py-3 font-mono text-slate-800">{ligand.protein_contact_count}</td>
+                <td className="px-4 py-3 font-mono text-slate-800">{ligand.water_contact_count}</td>
+                <td className="px-4 py-3 font-mono text-slate-800">{ligand.possible_clash_count}</td>
+                <td className="px-4 py-3 text-slate-700">
+                  {ligand.closest_contact && ligand.closest_distance_angstrom !== null ? (
+                    <span className="font-mono">
+                      {ligand.closest_distance_angstrom.toFixed(3)} A, {ligand.closest_contact.atom_a}-
+                      {ligand.closest_contact.atom_b}
+                    </span>
+                  ) : (
+                    "None"
+                  )}
+                </td>
+                <td className="px-4 py-3 text-slate-700">
+                  {ligand.contacting_residues.length
+                    ? ligand.contacting_residues
+                        .map((residue) => `${residue.chain_id}:${residue.residue_name}${residue.residue_number} (${residue.contact_count})`)
+                        .join(", ")
+                    : "None"}
+                </td>
+                <td className="px-4 py-3 font-mono text-slate-700">
+                  &lt;2:{ligand.distance_distribution.under_2_angstrom} / 2-3:
+                  {ligand.distance_distribution.two_to_3_angstrom} / 3-4:
+                  {ligand.distance_distribution.three_to_4_angstrom} / &gt;4:
+                  {ligand.distance_distribution.over_4_angstrom}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );

@@ -38,6 +38,13 @@ Use this checklist before public demo updates and after meaningful frontend or b
 - `[ ]` Confirm selecting a filtered contact still highlights the matching residues in the viewer.
 - `[ ]` Confirm exported CSV includes the `contact_categories` column.
 
+## Ligand Interaction Flow
+
+- `[ ]` Analyze a structure with at least one ligand.
+- `[ ]` Confirm the ligand interaction summary appears.
+- `[ ]` Confirm each ligand row shows total, protein, water, clash, closest contact, top residues, and distance buckets.
+- `[ ]` Click `Export ligand CSV` and confirm the downloaded CSV includes one row per ligand.
+
 ## Upload Flow
 
 - `[ ]` Upload a local `.pdb` file.

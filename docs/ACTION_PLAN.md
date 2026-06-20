@@ -142,9 +142,12 @@ Do not add model inference, job queues, or permanent storage.
 
 ## Priority 9: Advanced Ligand Interaction Module
 
-- `[ ]` Start with MVP-safe ligand summaries: closest ligand contacts, contacting residues per ligand, distance distribution, ligand-specific export.
-- `[ ]` Evaluate ProLIF, RDKit, MDAnalysis, or PLIP-inspired output later.
-- `[ ]` Check Render deployment compatibility before adding heavy dependencies.
+- Branch: `feature/ligand-interaction-summaries`
+- `[x]` Start with MVP-safe ligand summaries: closest ligand contacts, contacting residues per ligand, distance distribution, ligand-specific export.
+- `[x]` Add backend response data without adding heavy chemistry dependencies.
+- `[x]` Add frontend ligand interaction panel and ligand CSV export.
+- `[ ]` Evaluate ProLIF, RDKit, MDAnalysis, or PLIP-inspired output later only if the simple summaries are insufficient.
+- `[x]` Preserve Render compatibility by avoiding new backend dependencies.
 
 ## Priority 10: Structure Comparison
 

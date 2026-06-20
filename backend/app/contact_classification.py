@@ -7,7 +7,9 @@ from app.models import (
     ContactCategory,
     ContactRecord,
     ContactType,
+    DistanceDistribution,
     InteractionSummary,
+    LigandInteractionSummary,
     TopContactLigand,
     TopContactResidue,
 )
@@ -57,9 +59,7 @@ def summarize_interactions(contacts: list[ContactRecord], max_items: int = 5) ->
         for chain_id, residue_number, residue_name in contact_residue_keys(contact):
             protein_residue_counts[(chain_id, residue_number, residue_name)] += 1
 
-        if "protein-ligand" in contact.contact_categories:
-            ligand_counts[(contact.chain_b, contact.residue_b, contact.residue_name_b)] += 1
-        if "ligand-water" in contact.contact_categories:
+        if "protein-ligand" in contact.contact_categories or "ligand-water" in contact.contact_categories:
             ligand_key = ligand_residue_key(contact)
             if ligand_key is not None:
                 ligand_counts[ligand_key] += 1
@@ -98,6 +98,73 @@ def summarize_interactions(contacts: list[ContactRecord], max_items: int = 5) ->
             if "possible-clash" in contact.contact_categories
         ][:max_items],
     )
+
+
+def summarize_ligand_interactions(contacts: list[ContactRecord], max_residues: int = 5) -> list[LigandInteractionSummary]:
+    ligand_contacts: dict[tuple[str, str, str], list[ContactRecord]] = {}
+
+    for contact in contacts:
+        ligand_key = ligand_residue_key(contact)
+        if ligand_key is None:
+            continue
+        ligand_contacts.setdefault(ligand_key, []).append(contact)
+
+    summaries: list[LigandInteractionSummary] = []
+    for (chain_id, residue_number, name), ligand_contact_rows in ligand_contacts.items():
+        residue_counts: Counter[tuple[str, str, str]] = Counter()
+        for contact in ligand_contact_rows:
+            for residue_key in contact_residue_keys(contact):
+                residue_counts[residue_key] += 1
+
+        closest_contact = min(ligand_contact_rows, key=lambda contact: contact.distance_angstrom)
+        summaries.append(
+            LigandInteractionSummary(
+                chain_id=chain_id,
+                residue_number=residue_number,
+                name=name,
+                contact_count=len(ligand_contact_rows),
+                protein_contact_count=sum(1 for contact in ligand_contact_rows if "protein-ligand" in contact.contact_categories),
+                water_contact_count=sum(1 for contact in ligand_contact_rows if "ligand-water" in contact.contact_categories),
+                possible_clash_count=sum(1 for contact in ligand_contact_rows if "possible-clash" in contact.contact_categories),
+                closest_distance_angstrom=closest_contact.distance_angstrom,
+                closest_contact=closest_contact,
+                contacting_residues=[
+                    TopContactResidue(
+                        chain_id=residue_chain_id,
+                        residue_number=contacting_residue_number,
+                        residue_name=residue_name,
+                        contact_count=count,
+                    )
+                    for (residue_chain_id, contacting_residue_number, residue_name), count in residue_counts.most_common(max_residues)
+                ],
+                distance_distribution=ligand_distance_distribution(ligand_contact_rows),
+            )
+        )
+
+    return sorted(
+        summaries,
+        key=lambda summary: (
+            -summary.contact_count,
+            summary.closest_distance_angstrom if summary.closest_distance_angstrom is not None else float("inf"),
+            summary.chain_id,
+            summary.residue_number,
+            summary.name,
+        ),
+    )
+
+
+def ligand_distance_distribution(contacts: list[ContactRecord]) -> DistanceDistribution:
+    distribution = DistanceDistribution()
+    for contact in contacts:
+        if contact.distance_angstrom < 2.0:
+            distribution.under_2_angstrom += 1
+        elif contact.distance_angstrom < 3.0:
+            distribution.two_to_3_angstrom += 1
+        elif contact.distance_angstrom < 4.0:
+            distribution.three_to_4_angstrom += 1
+        else:
+            distribution.over_4_angstrom += 1
+    return distribution
 
 
 def contact_residue_keys(contact: ContactRecord) -> list[tuple[str, str, str]]:

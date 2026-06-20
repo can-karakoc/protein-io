@@ -15,7 +15,7 @@ The project is intentionally simple for the public MVP: no authentication, no da
 - Calculate residue-residue contacts.
 - Calculate protein-ligand contacts when ligands are present.
 - Categorize contacts as protein-protein, protein-ligand, protein-water, ligand-water, intra-chain, inter-chain, or possible clash.
-- Summarize top contacting residues, top contacting ligands, closest contacts, and category counts.
+- Summarize top contacting residues, top contacting ligands, closest contacts, ligand interaction details, and category counts.
 - Detect AlphaFold-style pLDDT confidence values from predicted structures.
 - Summarize PAE sidecars with residue count, mean PAE, max PAE, and high-error pair count.
 - Ignore hydrogen atoms during contact detection.
@@ -26,9 +26,9 @@ The project is intentionally simple for the public MVP: no authentication, no da
 - Fetch RCSB mmCIF structures from a PDB ID.
 - Fetch AlphaFold DB mmCIF structures from a UniProt accession.
 - Render structures with Mol*.
-- Show RCSB/AlphaFold metadata, confidence summaries, PAE summaries, interaction summaries, summary cards, chain table, ligand table, and contact table.
+- Show RCSB/AlphaFold metadata, confidence summaries, PAE summaries, interaction summaries, ligand interaction summaries, summary cards, chain table, ligand table, and contact table.
 - Filter the contact table by contact category.
-- Export contacts as CSV.
+- Export contacts and ligand interaction summaries as CSV.
 - Prepare frontend API calls through `NEXT_PUBLIC_API_URL`.
 
 ## Tech Stack

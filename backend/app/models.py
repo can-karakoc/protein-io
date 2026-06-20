@@ -82,6 +82,27 @@ class TopContactLigand(BaseModel):
     contact_count: int
 
 
+class DistanceDistribution(BaseModel):
+    under_2_angstrom: int = 0
+    two_to_3_angstrom: int = 0
+    three_to_4_angstrom: int = 0
+    over_4_angstrom: int = 0
+
+
+class LigandInteractionSummary(BaseModel):
+    chain_id: str
+    residue_number: str
+    name: str
+    contact_count: int
+    protein_contact_count: int = 0
+    water_contact_count: int = 0
+    possible_clash_count: int = 0
+    closest_distance_angstrom: float | None = None
+    closest_contact: ContactRecord | None = None
+    contacting_residues: list[TopContactResidue] = Field(default_factory=list)
+    distance_distribution: DistanceDistribution = Field(default_factory=DistanceDistribution)
+
+
 class InteractionSummary(BaseModel):
     protein_protein_count: int = 0
     protein_ligand_count: int = 0
@@ -178,6 +199,7 @@ class AnalysisResponse(BaseModel):
     residue_confidences: list[ResidueConfidence] = Field(default_factory=list)
     pae: PaeSummary | None = None
     interaction_summary: InteractionSummary | None = None
+    ligand_interactions: list[LigandInteractionSummary] = Field(default_factory=list)
     chains: list[ChainSummary]
     ligands: list[LigandSummary]
     contacts: list[ContactRecord]
