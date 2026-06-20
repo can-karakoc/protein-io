@@ -55,6 +55,8 @@ Production features:
 - chain, ligand, residue/contact summary
 - residue-residue contacts
 - protein-ligand contacts
+- contact categories for protein-protein, protein-ligand, protein-water, ligand-water, intra-chain, inter-chain, and possible clash contacts
+- interaction summary output for counts, top residues, top ligands, closest contacts, and possible clashes
 - RCSB metadata panel with removed-entry replacement IDs
 - table row selection for chains, ligands, and contacts
 - AlphaFold-style pLDDT confidence summaries for predicted-structure uploads
@@ -68,13 +70,13 @@ Production stack:
 - Frontend: Next.js, React, TypeScript, Tailwind CSS, 3Dmol.js, Vercel
 - Backend: FastAPI, Python, Gemmi, Pydantic, pytest, Render
 
-Next feature branch:
+Latest completed feature branch:
 
 ```text
 feature/contact-categories
 ```
 
-This branch should add:
+This branch adds:
 
 - simple contact categories
 - better interaction summary outputs
@@ -138,7 +140,7 @@ Work in small PR-sized steps:
 2. Add PDB ID fetch and RCSB metadata. Done.
 3. Add table-to-viewer interaction. Done.
 4. Add AlphaFold/pLDDT confidence support. Done.
-5. Add contact categories and better interaction summaries. Next.
+5. Add contact categories and better interaction summaries. Done.
 6. Add AlphaFold DB fetch by UniProt ID.
 7. Add PAE JSON sidecar support.
 8. Evaluate a Mol* viewer upgrade only if 3Dmol.js becomes limiting.

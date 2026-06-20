@@ -11,6 +11,7 @@ const CONTACT_COLUMNS: Array<keyof ContactRecord> = [
   "atom_b",
   "distance_angstrom",
   "contact_type",
+  "contact_categories",
 ];
 
 export function contactsToCsv(contacts: ContactRecord[]) {
@@ -21,8 +22,8 @@ export function contactsToCsv(contacts: ContactRecord[]) {
   return [header, ...rows].join("\n");
 }
 
-function escapeCsvValue(value: string | number) {
-  const text = String(value);
+function escapeCsvValue(value: string | number | string[]) {
+  const text = Array.isArray(value) ? value.join(";") : String(value);
   if (!/[",\n]/.test(text)) {
     return text;
   }

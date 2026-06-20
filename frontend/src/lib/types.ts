@@ -1,4 +1,12 @@
-export type ContactType = "residue-residue" | "protein-ligand";
+export type ContactType = "residue-residue" | "protein-ligand" | "protein-water" | "ligand-water";
+export type ContactCategory =
+  | "protein-protein"
+  | "protein-ligand"
+  | "protein-water"
+  | "ligand-water"
+  | "intra-chain"
+  | "inter-chain"
+  | "possible-clash";
 export type ConfidenceCategory = "very_high" | "confident" | "low" | "very_low";
 
 export type ChainSummary = {
@@ -25,6 +33,7 @@ export type ContactRecord = {
   atom_b: string;
   distance_angstrom: number;
   contact_type: ContactType;
+  contact_categories: ContactCategory[];
 };
 
 export type ViewerSelection =
@@ -88,12 +97,41 @@ export type ConfidenceSummary = {
   low_confidence_count: number;
 };
 
+export type TopContactResidue = {
+  chain_id: string;
+  residue_number: string;
+  residue_name: string;
+  contact_count: number;
+};
+
+export type TopContactLigand = {
+  chain_id: string;
+  residue_number: string;
+  name: string;
+  contact_count: number;
+};
+
+export type InteractionSummary = {
+  protein_protein_count: number;
+  protein_ligand_count: number;
+  protein_water_count: number;
+  ligand_water_count: number;
+  intra_chain_count: number;
+  inter_chain_count: number;
+  possible_clash_count: number;
+  top_contacting_residues: TopContactResidue[];
+  top_contacting_ligands: TopContactLigand[];
+  closest_contacts: ContactRecord[];
+  possible_clashes: ContactRecord[];
+};
+
 export type AnalysisResponse = {
   version: string;
   summary: StructureSummary;
   metadata: StructureMetadata | null;
   confidence: ConfidenceSummary | null;
   residue_confidences: ResidueConfidence[];
+  interaction_summary: InteractionSummary | null;
   chains: ChainSummary[];
   ligands: LigandSummary[];
   contacts: ContactRecord[];
