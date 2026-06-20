@@ -39,6 +39,16 @@ Use this checklist before public demo updates and after meaningful frontend or b
 - `[ ]` Confirm contact count changes when appropriate.
 - `[ ]` Confirm invalid or empty files show useful errors.
 
+## RCSB Fetch Flow
+
+- `[ ]` Enter a valid PDB ID such as `4HHB`.
+- `[ ]` Click `Fetch`.
+- `[ ]` Confirm the mmCIF structure renders in the 3D viewer.
+- `[ ]` Confirm the metadata panel shows title, method, RCSB link, and any available resolution or organism.
+- `[ ]` Confirm chains, ligands, contacts, and CSV export work after fetch.
+- `[ ]` Enter removed entry `1HHB` and confirm analysis succeeds with `removed` status and replacement IDs.
+- `[ ]` Enter an invalid PDB ID and confirm a useful error appears.
+
 ## Deployed Demo
 
 - `[ ]` Open `https://protein-io.vercel.app`.

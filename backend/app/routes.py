@@ -4,9 +4,10 @@ from time import perf_counter
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from starlette.responses import Response
 
-from app.models import AnalysisResponse
+from app.models import AnalysisResponse, RcsbAnalysisResponse
+from app.integrations.rcsb import RcsbFetchError
 from app.parser import StructureParseError
-from app.service import analyze_pdb_content_with_timing, elapsed_ms
+from app.service import analyze_pdb_content_with_timing, analyze_rcsb_id_with_timing, elapsed_ms
 
 
 router = APIRouter()
@@ -50,3 +51,28 @@ async def analyze_api(
     cutoff_angstrom: float = Form(4.0),
 ) -> AnalysisResponse:
     return await analyze(response=response, file=file, cutoff_angstrom=cutoff_angstrom)
+
+
+@router.get("/api/rcsb/{pdb_id}/analyze", response_model=RcsbAnalysisResponse)
+async def analyze_rcsb(
+    pdb_id: str,
+    response: Response,
+    cutoff_angstrom: float = 4.0,
+) -> RcsbAnalysisResponse:
+    if cutoff_angstrom <= 0:
+        raise HTTPException(status_code=400, detail="cutoff_angstrom must be greater than zero.")
+
+    try:
+        fetch_started = perf_counter()
+        analysis = analyze_rcsb_id_with_timing(pdb_id, cutoff_angstrom=cutoff_angstrom)
+        fetch_ms = elapsed_ms(fetch_started) - analysis.timing.total_ms
+        timing_header = f"fetch_ms={max(fetch_ms, 0):.2f}, {analysis.timing.as_header_value()}"
+        response.headers[TIMING_HEADER] = timing_header
+        logger.info("analysis timing pdb_id=%s %s", pdb_id, timing_header)
+        return analysis.response
+    except RcsbFetchError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except StructureParseError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc

@@ -10,6 +10,28 @@ from app.models import AtomRecord, ChainSummary, LigandSummary, ResidueRecord, R
 
 
 WATER_NAMES = {"HOH", "WAT", "H2O"}
+STANDARD_AMINO_ACID_NAMES = {
+    "ALA",
+    "ARG",
+    "ASN",
+    "ASP",
+    "CYS",
+    "GLN",
+    "GLU",
+    "GLY",
+    "HIS",
+    "ILE",
+    "LEU",
+    "LYS",
+    "MET",
+    "PHE",
+    "PRO",
+    "SER",
+    "THR",
+    "TRP",
+    "TYR",
+    "VAL",
+}
 GEMMI_PROTEIN_HET_FLAG = "A"
 GEMMI_HETATM_FLAG = "H"
 StructureFormat = Literal["pdb", "mmcif"]
@@ -197,7 +219,7 @@ def structure_to_data(structure: gemmi.Structure) -> StructureData:
 def classify_residue(residue: gemmi.Residue) -> ResidueKind:
     residue_name = residue.name.strip()
 
-    if residue.het_flag == GEMMI_PROTEIN_HET_FLAG:
+    if residue.het_flag == GEMMI_PROTEIN_HET_FLAG or residue_name in STANDARD_AMINO_ACID_NAMES:
         return "protein"
     if residue_name in WATER_NAMES:
         return "water"

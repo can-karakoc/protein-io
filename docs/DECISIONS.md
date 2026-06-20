@@ -121,6 +121,30 @@ Manual concept:
 - Gemmi NeighborSearch returns nearby candidate atoms within the cutoff.
 - Exact Euclidean distance is still checked before a contact is accepted.
 
+## Fetch RCSB Structures as mmCIF
+
+Decision: PDB ID fetch retrieves mmCIF coordinates from RCSB and runs them through the same parser and analysis pipeline as uploaded files.
+
+Why:
+
+- mmCIF is the modern archive format and avoids legacy PDB column limits.
+- The existing Gemmi parser already supports mmCIF.
+- Keeping RCSB input behind `StructureData` prevents provider-specific objects from leaking into analysis code.
+
+Tradeoff:
+
+- The first implementation fetches live RCSB data on demand and does not cache structures.
+- Some obsolete entries are absent from the current-entry metadata API even when coordinate files are still downloadable.
+
+Metadata scope:
+
+- Show practical entry metadata only: PDB ID, title, method, resolution, organism when available, deposition date, entity/chain counts, and RCSB link.
+- For removed/superseded entries, fall back to RCSB holdings metadata and show `status: removed` plus replacement IDs.
+
+Parser compatibility:
+
+- Some older mmCIF files mark standard amino acids with hetero flags. Standard amino acid residue names are still classified as protein so old entries such as `1HHB` produce useful residue/contact analysis.
+
 ## Ignore Hydrogens
 
 Decision: Hydrogen atoms are excluded from contact detection.

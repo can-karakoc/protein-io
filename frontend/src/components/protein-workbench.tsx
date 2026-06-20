@@ -1,12 +1,12 @@
 "use client";
 
-import { AlertCircle, Atom, Download, FileUp, Loader2, Play, RotateCcw } from "lucide-react";
+import { AlertCircle, Atom, Download, FileUp, Loader2, Play, RotateCcw, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { StructureViewer } from "@/components/structure-viewer";
 import { buildApiUrl } from "@/lib/api";
 import { contactsToCsv } from "@/lib/csv";
-import type { AnalysisResponse, ContactRecord } from "@/lib/types";
+import type { AnalysisResponse, ContactRecord, RcsbAnalysisResponse, StructureMetadata } from "@/lib/types";
 
 const EXAMPLE_FILE = "/sample.pdb";
 const TIMING_HEADER = "X-ProteinIO-Timing";
@@ -16,10 +16,12 @@ export function ProteinWorkbench() {
   const [fileName, setFileName] = useState<string>("");
   const [structureText, setStructureText] = useState("");
   const [structureFormat, setStructureFormat] = useState<StructureFileFormat>("pdb");
+  const [pdbId, setPdbId] = useState("");
   const [cutoff, setCutoff] = useState(4.0);
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRcsbLoading, setIsRcsbLoading] = useState(false);
 
   const hasStructure = structureText.trim().length > 0;
   const contacts = useMemo(() => analysis?.contacts ?? [], [analysis]);
@@ -114,10 +116,58 @@ export function ProteinWorkbench() {
     }
   }
 
+  async function fetchRcsbStructure() {
+    const normalizedPdbId = pdbId.trim();
+    if (!normalizedPdbId) {
+      setError("Enter a 4-character PDB ID before fetching from RCSB.");
+      return;
+    }
+
+    setIsRcsbLoading(true);
+    setError(null);
+    setAnalysis(null);
+
+    try {
+      const timingStarted = performance.now();
+      const requestStarted = performance.now();
+      const response = await fetch(
+        buildApiUrl(`/api/rcsb/${encodeURIComponent(normalizedPdbId)}/analyze?cutoff_angstrom=${cutoff}`),
+      );
+      const request_ms = elapsedMs(requestStarted);
+
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as { detail?: string } | null;
+        throw new Error(body?.detail ?? `RCSB fetch failed with status ${response.status}.`);
+      }
+
+      const parseStarted = performance.now();
+      const payload = (await response.json()) as RcsbAnalysisResponse;
+      const response_json_ms = elapsedMs(parseStarted);
+
+      setFileName(payload.filename);
+      setStructureText(payload.structure_text);
+      setStructureFormat(payload.structure_format);
+      setAnalysis(payload.analysis);
+      logTiming("rcsb fetch analysis", timingStarted, {
+        request_ms,
+        response_json_ms,
+        backend: response.headers.get(TIMING_HEADER) ?? "not exposed",
+        pdb_id: payload.analysis.metadata?.pdb_id ?? normalizedPdbId.toUpperCase(),
+        bytes: payload.structure_text.length,
+        contacts: payload.analysis.summary.contact_count,
+      });
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "RCSB fetch failed.");
+    } finally {
+      setIsRcsbLoading(false);
+    }
+  }
+
   function reset() {
     setFileName("");
     setStructureText("");
     setStructureFormat("pdb");
+    setPdbId("");
     setAnalysis(null);
     setError(null);
     setCutoff(4.0);
@@ -240,6 +290,36 @@ export function ProteinWorkbench() {
               ) : null}
             </div>
 
+            <div className="border border-slate-200 bg-white p-4">
+              <h2 className="text-sm font-semibold text-slate-950">RCSB fetch</h2>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Fetch a deposited structure by PDB ID, then analyze the returned mmCIF coordinates.
+              </p>
+              <label className="mt-4 block text-xs font-medium uppercase tracking-wide text-slate-500" htmlFor="pdb-id">
+                PDB ID
+              </label>
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  id="pdb-id"
+                  type="text"
+                  value={pdbId}
+                  maxLength={4}
+                  onChange={(event) => setPdbId(event.target.value.toUpperCase())}
+                  placeholder="1ABC"
+                  className="h-10 min-w-0 flex-1 border border-slate-300 bg-white px-3 font-mono text-sm uppercase outline-none focus:border-cyan-600"
+                />
+                <button
+                  type="button"
+                  onClick={fetchRcsbStructure}
+                  disabled={isRcsbLoading}
+                  className="inline-flex h-10 items-center justify-center gap-2 bg-slate-900 px-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                >
+                  {isRcsbLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  Fetch
+                </button>
+              </div>
+            </div>
+
             {error ? (
               <div className="border border-red-200 bg-red-50 p-4 text-sm text-red-800">
                 <div className="flex items-start gap-2">
@@ -263,6 +343,7 @@ export function ProteinWorkbench() {
 
           <section className="grid gap-4">
             <StructureViewer structureText={structureText} structureFormat={structureFormat} />
+            <MetadataPanel metadata={analysis?.metadata ?? null} />
             <SummaryCards analysis={analysis} />
           </section>
         </section>
@@ -357,6 +438,54 @@ function SummaryCards({ analysis }: { analysis: AnalysisResponse | null }) {
           <p className="mt-2 text-xs leading-5 text-slate-500">{helper}</p>
         </div>
       ))}
+    </div>
+  );
+}
+
+function MetadataPanel({ metadata }: { metadata: StructureMetadata | null }) {
+  if (!metadata || metadata.source !== "rcsb") {
+    return null;
+  }
+
+  const rows = [
+    ["PDB ID", metadata.pdb_id],
+    ["Status", metadata.status === "removed" ? "Removed entry" : metadata.status],
+    ["Replaced by", metadata.replaced_by.length ? metadata.replaced_by.join(", ") : null],
+    ["Method", metadata.method],
+    ["Resolution", metadata.resolution_angstrom ? `${metadata.resolution_angstrom.toFixed(2)} A` : null],
+    ["Organism", metadata.organism],
+    ["Deposited", metadata.deposition_date],
+    ["Entities", metadata.entity_count],
+    ["Chains", metadata.chain_count],
+  ];
+
+  return (
+    <div className="border border-slate-200 bg-white p-4">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-sm font-semibold text-slate-950">{metadata.title ?? "RCSB structure"}</h2>
+          <div className="mt-3 grid gap-x-5 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
+            {rows.map(([label, value]) =>
+              value ? (
+                <div key={label}>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
+                  <p className="mt-1 text-sm text-slate-800">{value}</p>
+                </div>
+              ) : null,
+            )}
+          </div>
+        </div>
+        {metadata.rcsb_url ? (
+          <a
+            href={metadata.rcsb_url}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-9 shrink-0 items-center justify-center border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100"
+          >
+            RCSB entry
+          </a>
+        ) : null}
+      </div>
     </div>
   );
 }

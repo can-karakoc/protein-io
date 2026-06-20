@@ -94,6 +94,22 @@ END
     assert structure.warnings == []
 
 
+def test_standard_amino_acids_with_hetero_flag_are_counted_as_protein():
+    structure = parse_pdb_content(
+        b"""
+HETATM    1  N   VAL A   1       0.000   0.000   0.000  1.00 20.00           N
+HETATM    2  CA  VAL A   1       1.450   0.000   0.000  1.00 20.00           C
+HETATM    3  C   VAL A   1       2.050   1.350   0.000  1.00 20.00           C
+HETATM    4  O   VAL A   1       1.450   2.400   0.000  1.00 20.00           O
+END
+""",
+        structure_id="hetero-amino-acid",
+    )
+
+    assert structure.summary.residue_count == 1
+    assert structure.summary.ligand_count == 0
+
+
 def test_empty_file_returns_useful_error():
     with pytest.raises(StructureParseError, match="empty"):
         parse_pdb_content(b"", structure_id="empty")

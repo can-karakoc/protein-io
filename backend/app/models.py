@@ -64,6 +64,21 @@ class StructureSummary(BaseModel):
     contact_count: int = 0
 
 
+class StructureMetadata(BaseModel):
+    source: Literal["upload", "rcsb"] = "upload"
+    status: Literal["current", "removed"] | None = None
+    pdb_id: str | None = None
+    title: str | None = None
+    method: str | None = None
+    resolution_angstrom: float | None = None
+    organism: str | None = None
+    deposition_date: str | None = None
+    rcsb_url: str | None = None
+    entity_count: int | None = None
+    chain_count: int | None = None
+    replaced_by: list[str] = Field(default_factory=list)
+
+
 class StructureData(BaseModel):
     structure_id: str
     atoms: list[AtomRecord]
@@ -86,7 +101,15 @@ class StructureData(BaseModel):
 class AnalysisResponse(BaseModel):
     version: str = "0.1.0"
     summary: StructureSummary
+    metadata: StructureMetadata | None = None
     chains: list[ChainSummary]
     ligands: list[LigandSummary]
     contacts: list[ContactRecord]
     warnings: list[str] = Field(default_factory=list)
+
+
+class RcsbAnalysisResponse(BaseModel):
+    filename: str
+    structure_format: Literal["cif"] = "cif"
+    structure_text: str
+    analysis: AnalysisResponse

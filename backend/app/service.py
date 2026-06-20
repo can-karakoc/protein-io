@@ -2,7 +2,9 @@ from dataclasses import dataclass
 from time import perf_counter
 
 from app.contacts import calculate_contacts
-from app.models import AnalysisResponse
+from app.integrations.rcsb import fetch_rcsb_structure
+from app.integrations.rcsb import RcsbStructure
+from app.models import AnalysisResponse, RcsbAnalysisResponse, StructureMetadata
 from app.parser import detect_structure_format_from_filename, parse_pdb_content
 
 
@@ -37,6 +39,12 @@ class TimedAnalysis:
     timing: AnalysisTiming
 
 
+@dataclass(frozen=True)
+class TimedRcsbAnalysis:
+    response: RcsbAnalysisResponse
+    timing: AnalysisTiming
+
+
 def analyze_pdb_content(
     content: bytes,
     filename: str | None = None,
@@ -54,6 +62,7 @@ def analyze_pdb_content_with_timing(
     content: bytes,
     filename: str | None = None,
     cutoff_angstrom: float = 4.0,
+    metadata: StructureMetadata | None = None,
 ) -> TimedAnalysis:
     """Run analysis and return coarse timings for development diagnostics."""
     structure_id = structure_id_from_filename(filename)
@@ -74,6 +83,7 @@ def analyze_pdb_content_with_timing(
     summary = structure.summary.model_copy(update={"contact_count": len(contacts)})
     response = AnalysisResponse(
         summary=summary,
+        metadata=metadata,
         chains=structure.chains,
         ligands=structure.ligands,
         contacts=contacts,
@@ -88,6 +98,34 @@ def analyze_pdb_content_with_timing(
             contacts_ms=contacts_ms,
             response_ms=response_ms,
         ),
+    )
+
+
+def analyze_rcsb_id_with_timing(
+    pdb_id: str,
+    cutoff_angstrom: float = 4.0,
+) -> TimedRcsbAnalysis:
+    rcsb_structure = fetch_rcsb_structure(pdb_id)
+    analysis = analyze_pdb_content_with_timing(
+        rcsb_structure.content,
+        filename=rcsb_structure.filename,
+        cutoff_angstrom=cutoff_angstrom,
+        metadata=rcsb_structure.metadata,
+    )
+    return TimedRcsbAnalysis(
+        response=rcsb_response_from_structure(rcsb_structure, analysis.response),
+        timing=analysis.timing,
+    )
+
+
+def rcsb_response_from_structure(
+    rcsb_structure: RcsbStructure,
+    analysis: AnalysisResponse,
+) -> RcsbAnalysisResponse:
+    return RcsbAnalysisResponse(
+        filename=rcsb_structure.filename,
+        structure_text=rcsb_structure.content.decode("utf-8"),
+        analysis=analysis,
     )
 
 
