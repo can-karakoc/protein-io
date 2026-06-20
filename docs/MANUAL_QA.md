@@ -39,6 +39,14 @@ Use this checklist before public demo updates and after meaningful frontend or b
 - `[ ]` Confirm contact count changes when appropriate.
 - `[ ]` Confirm invalid or empty files show useful errors.
 
+## Table-to-Viewer Interaction
+
+- `[ ]` Select a chain row and confirm the row and 3D structure highlight update.
+- `[ ]` Select a ligand row and confirm the ligand is highlighted in the viewer.
+- `[ ]` Select a contact row and confirm both contact residues are highlighted.
+- `[ ]` Clear the selection and confirm the viewer returns to the base structure style.
+- `[ ]` Confirm selection controls work with keyboard focus and activation.
+
 ## RCSB Fetch Flow
 
 - `[ ]` Enter a valid PDB ID such as `4HHB`.
