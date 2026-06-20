@@ -124,6 +124,27 @@ export type TopContactLigand = {
   contact_count: number;
 };
 
+export type DistanceDistribution = {
+  under_2_angstrom: number;
+  two_to_3_angstrom: number;
+  three_to_4_angstrom: number;
+  over_4_angstrom: number;
+};
+
+export type LigandInteractionSummary = {
+  chain_id: string;
+  residue_number: string;
+  name: string;
+  contact_count: number;
+  protein_contact_count: number;
+  water_contact_count: number;
+  possible_clash_count: number;
+  closest_distance_angstrom: number | null;
+  closest_contact: ContactRecord | null;
+  contacting_residues: TopContactResidue[];
+  distance_distribution: DistanceDistribution;
+};
+
 export type InteractionSummary = {
   protein_protein_count: number;
   protein_ligand_count: number;
@@ -146,6 +167,7 @@ export type AnalysisResponse = {
   residue_confidences: ResidueConfidence[];
   pae: PaeSummary | null;
   interaction_summary: InteractionSummary | null;
+  ligand_interactions: LigandInteractionSummary[];
   chains: ChainSummary[];
   ligands: LigandSummary[];
   contacts: ContactRecord[];
