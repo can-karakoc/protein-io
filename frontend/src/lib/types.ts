@@ -101,6 +101,15 @@ export type ConfidenceSummary = {
   low_confidence_count: number;
 };
 
+export type PaeSummary = {
+  source: "pae";
+  residue_count: number;
+  max_predicted_aligned_error: number;
+  mean_predicted_aligned_error: number;
+  high_error_pair_count: number;
+  high_error_threshold: number;
+};
+
 export type TopContactResidue = {
   chain_id: string;
   residue_number: string;
@@ -135,6 +144,7 @@ export type AnalysisResponse = {
   metadata: StructureMetadata | null;
   confidence: ConfidenceSummary | null;
   residue_confidences: ResidueConfidence[];
+  pae: PaeSummary | null;
   interaction_summary: InteractionSummary | null;
   chains: ChainSummary[];
   ligands: LigandSummary[];

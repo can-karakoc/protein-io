@@ -68,6 +68,44 @@ def test_analyze_endpoint_accepts_mmcif_upload():
     assert data["summary"]["contact_count"] == len(data["contacts"])
 
 
+def test_analyze_endpoint_accepts_pae_sidecar():
+    client = TestClient(app)
+    pae_content = b'{"predicted_aligned_error": [[0, 18], [17, 0]], "max_predicted_aligned_error": 31.0}'
+
+    with SAMPLE_PDB.open("rb") as handle:
+        response = client.post(
+            "/analyze",
+            files={
+                "file": ("sample.pdb", handle, "chemical/x-pdb"),
+                "pae_file": ("sample-pae.json", pae_content, "application/json"),
+            },
+            data={"cutoff_angstrom": "4.0"},
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["pae"]["residue_count"] == 2
+    assert data["pae"]["max_predicted_aligned_error"] == 31.0
+    assert data["pae"]["high_error_pair_count"] == 2
+    assert any("PAE sidecar" in warning for warning in data["warnings"])
+
+
+def test_analyze_endpoint_rejects_invalid_pae_sidecar():
+    client = TestClient(app)
+
+    with SAMPLE_PDB.open("rb") as handle:
+        response = client.post(
+            "/analyze",
+            files={
+                "file": ("sample.pdb", handle, "chemical/x-pdb"),
+                "pae_file": ("sample-pae.json", b"not-json", "application/json"),
+            },
+        )
+
+    assert response.status_code == 400
+    assert "valid JSON" in response.json()["detail"]
+
+
 def test_rcsb_analyze_endpoint_returns_metadata(monkeypatch):
     client = TestClient(app)
 

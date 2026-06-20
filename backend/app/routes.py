@@ -6,6 +6,7 @@ from starlette.responses import Response
 
 from app.integrations.alphafold import AlphaFoldFetchError
 from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, RcsbAnalysisResponse
+from app.pae import PaeParseError, analyze_pae_json
 from app.integrations.rcsb import RcsbFetchError
 from app.parser import StructureParseError
 from app.service import analyze_alphafold_id_with_timing, analyze_pdb_content_with_timing, analyze_rcsb_id_with_timing, elapsed_ms
@@ -25,6 +26,7 @@ def health() -> dict[str, str]:
 async def analyze(
     response: Response,
     file: UploadFile = File(...),
+    pae_file: UploadFile | None = File(None),
     cutoff_angstrom: float = Form(4.0),
 ) -> AnalysisResponse:
     if cutoff_angstrom <= 0:
@@ -33,13 +35,23 @@ async def analyze(
     try:
         read_started = perf_counter()
         content = await file.read()
+        pae_content = await pae_file.read() if pae_file is not None else None
         read_ms = elapsed_ms(read_started)
-        analysis = analyze_pdb_content_with_timing(content, filename=file.filename, cutoff_angstrom=cutoff_angstrom)
+        pae, pae_warnings = analyze_pae_json(pae_content) if pae_content is not None else (None, [])
+        analysis = analyze_pdb_content_with_timing(
+            content,
+            filename=file.filename,
+            cutoff_angstrom=cutoff_angstrom,
+            pae=pae,
+            pae_warnings=pae_warnings,
+        )
         timing_header = analysis.timing.as_header_value(read_ms=read_ms)
         response.headers[TIMING_HEADER] = timing_header
         logger.info("analysis timing filename=%s %s", file.filename or "uploaded", timing_header)
         return analysis.response
     except StructureParseError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except PaeParseError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -49,9 +61,10 @@ async def analyze(
 async def analyze_api(
     response: Response,
     file: UploadFile = File(...),
+    pae_file: UploadFile | None = File(None),
     cutoff_angstrom: float = Form(4.0),
 ) -> AnalysisResponse:
-    return await analyze(response=response, file=file, cutoff_angstrom=cutoff_angstrom)
+    return await analyze(response=response, file=file, pae_file=pae_file, cutoff_angstrom=cutoff_angstrom)
 
 
 @router.get("/api/rcsb/{pdb_id}/analyze", response_model=RcsbAnalysisResponse)

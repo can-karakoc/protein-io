@@ -123,6 +123,15 @@ class ConfidenceSummary(BaseModel):
     low_confidence_count: int
 
 
+class PaeSummary(BaseModel):
+    source: Literal["pae"] = "pae"
+    residue_count: int
+    max_predicted_aligned_error: float
+    mean_predicted_aligned_error: float
+    high_error_pair_count: int
+    high_error_threshold: float
+
+
 class StructureMetadata(BaseModel):
     source: Literal["upload", "rcsb", "alphafold"] = "upload"
     status: Literal["current", "removed"] | None = None
@@ -167,6 +176,7 @@ class AnalysisResponse(BaseModel):
     metadata: StructureMetadata | None = None
     confidence: ConfidenceSummary | None = None
     residue_confidences: list[ResidueConfidence] = Field(default_factory=list)
+    pae: PaeSummary | None = None
     interaction_summary: InteractionSummary | None = None
     chains: list[ChainSummary]
     ligands: list[LigandSummary]

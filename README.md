@@ -1,12 +1,13 @@
 # Protein Interaction Explorer
 
-Protein Interaction Explorer is an open-source structural biology workspace for uploading, fetching, visualizing, analyzing, and reporting protein structures. The MVP lets a scientist upload a PDB or mmCIF file, fetch a PDB ID from RCSB, fetch a predicted model from AlphaFold DB by UniProt accession, visualize the structure, parse chains/residues/ligands, calculate categorized contacts, summarize interaction participants, and export a clean interaction report.
+Protein Interaction Explorer is an open-source structural biology workspace for uploading, fetching, visualizing, analyzing, and reporting protein structures. The MVP lets a scientist upload a PDB or mmCIF file, optionally attach an AlphaFold PAE JSON sidecar, fetch a PDB ID from RCSB, fetch a predicted model from AlphaFold DB by UniProt accession, visualize the structure, parse chains/residues/ligands, calculate categorized contacts, summarize interaction participants, and export a clean interaction report.
 
 The project is intentionally simple for the public MVP: no authentication, no database, no Docker, no queues, and no cloud storage.
 
 ## MVP Features
 
 - Upload a local PDB or mmCIF file.
+- Attach an optional AlphaFold-style PAE JSON sidecar for uploaded structures.
 - Fetch a deposited structure by PDB ID from RCSB.
 - Fetch a predicted AlphaFold DB model by UniProt accession.
 - Parse atoms, residues, chains, and ligands.
@@ -16,6 +17,7 @@ The project is intentionally simple for the public MVP: no authentication, no da
 - Categorize contacts as protein-protein, protein-ligand, protein-water, ligand-water, intra-chain, inter-chain, or possible clash.
 - Summarize top contacting residues, top contacting ligands, closest contacts, and category counts.
 - Detect AlphaFold-style pLDDT confidence values from predicted structures.
+- Summarize PAE sidecars with residue count, mean PAE, max PAE, and high-error pair count.
 - Ignore hydrogen atoms during contact detection.
 - Use Gemmi NeighborSearch for contact search.
 - Return warnings for useful analysis context.
@@ -24,7 +26,7 @@ The project is intentionally simple for the public MVP: no authentication, no da
 - Fetch RCSB mmCIF structures from a PDB ID.
 - Fetch AlphaFold DB mmCIF structures from a UniProt accession.
 - Render structures with 3Dmol.js.
-- Show RCSB/AlphaFold metadata, confidence summaries, interaction summaries, summary cards, chain table, ligand table, and contact table.
+- Show RCSB/AlphaFold metadata, confidence summaries, PAE summaries, interaction summaries, summary cards, chain table, ligand table, and contact table.
 - Filter the contact table by contact category.
 - Export contacts as CSV.
 - Prepare frontend API calls through `NEXT_PUBLIC_API_URL`.
@@ -66,6 +68,7 @@ protein-interaction-explorer/
       service.py
       models.py
       parser.py
+      pae.py
       contacts.py
       contact_classification.py
       integrations/
@@ -128,7 +131,7 @@ cd /Users/cankarakoc/Codex/protein-interaction-explorer
 .venv/bin/pytest backend/tests
 ```
 
-The tests cover PDB and mmCIF parser behavior, ligand detection, contact calculation, contact classification, interaction summaries, neighbor search, RCSB PDB ID validation, AlphaFold DB UniProt validation, route behavior, CORS origin parsing, and bad upload handling.
+The tests cover PDB and mmCIF parser behavior, PAE sidecar parsing, ligand detection, contact calculation, contact classification, interaction summaries, neighbor search, RCSB PDB ID validation, AlphaFold DB UniProt validation, route behavior, CORS origin parsing, and bad upload handling.
 
 ## API
 
@@ -147,7 +150,7 @@ GET /api/rcsb/{pdb_id}/analyze
 GET /api/alphafold/{uniprot_id}/analyze
 ```
 
-The analysis endpoint accepts a multipart PDB, `.cif`, or `.mmcif` upload and an optional `cutoff_angstrom` form value.
+The analysis endpoint accepts a multipart PDB, `.cif`, or `.mmcif` upload, an optional `pae_file` JSON sidecar, and an optional `cutoff_angstrom` form value.
 The RCSB endpoint accepts a 4-character PDB ID and optional `cutoff_angstrom` query value, fetches mmCIF coordinates, and returns fetched structure text plus analysis results. Removed or superseded entries can still be analyzed when coordinates are available; metadata marks them as `removed` and includes replacement IDs, for example `1HHB` replaced by `2HHB`, `3HHB`, and `4HHB`.
 The AlphaFold endpoint accepts a UniProt accession such as `P69905`, fetches AlphaFold DB metadata and an mmCIF model, then returns the same analysis shape. AlphaFold DB models are predicted monomers; no model inference is run by this app.
 
@@ -165,6 +168,7 @@ Response shape:
   },
   "metadata": null,
   "confidence": null,
+  "pae": null,
   "interaction_summary": null,
   "residue_confidences": [],
   "chains": [],
@@ -191,6 +195,7 @@ RCSB response shape:
       "replaced_by": []
     },
     "confidence": null,
+    "pae": null,
     "interaction_summary": null,
     "residue_confidences": [],
     "chains": [],
@@ -219,6 +224,7 @@ AlphaFold response shape:
       "model_version": 4
     },
     "confidence": null,
+    "pae": null,
     "interaction_summary": null,
     "residue_confidences": [],
     "chains": [],

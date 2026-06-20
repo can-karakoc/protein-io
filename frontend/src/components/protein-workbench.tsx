@@ -15,6 +15,7 @@ import type {
   ConfidenceSummary,
   InteractionSummary,
   LigandSummary,
+  PaeSummary,
   ResidueConfidence,
   RcsbAnalysisResponse,
   StructureMetadata,
@@ -32,6 +33,8 @@ export function ProteinWorkbench() {
   const [fileName, setFileName] = useState<string>("");
   const [structureText, setStructureText] = useState("");
   const [structureFormat, setStructureFormat] = useState<StructureFileFormat>("pdb");
+  const [paeFileName, setPaeFileName] = useState("");
+  const [paeText, setPaeText] = useState("");
   const [pdbId, setPdbId] = useState("");
   const [uniprotId, setUniprotId] = useState("");
   const [cutoff, setCutoff] = useState(4.0);
@@ -63,6 +66,8 @@ export function ProteinWorkbench() {
     setSelection(null);
     setViewerColorMode("structure");
     setContactFilter("all");
+    setPaeFileName("");
+    setPaeText("");
     setFileName(file.name);
     setStructureFormat(formatFromFileName(file.name));
     const text = await file.text();
@@ -81,6 +86,8 @@ export function ProteinWorkbench() {
     setSelection(null);
     setViewerColorMode("structure");
     setContactFilter("all");
+    setPaeFileName("");
+    setPaeText("");
     const fetchStarted = performance.now();
     const response = await fetch(EXAMPLE_FILE);
     const fetchMs = elapsedMs(fetchStarted);
@@ -94,6 +101,22 @@ export function ProteinWorkbench() {
       fetch_ms: fetchMs,
       response_text_ms: textMs,
       bytes: text.length,
+    });
+  }
+
+  async function handlePaeFile(file: File) {
+    const timingStarted = performance.now();
+    setError(null);
+    setAnalysis(null);
+    setSelection(null);
+    setContactFilter("all");
+    const text = await file.text();
+    setPaeFileName(file.name);
+    setPaeText(text);
+    logTiming("pae sidecar read", timingStarted, {
+      fileName: file.name,
+      bytes: file.size,
+      characters: text.length,
     });
   }
 
@@ -116,6 +139,14 @@ export function ProteinWorkbench() {
           type: contentTypeForFormat(structureFormat),
         }),
       );
+      if (paeText.trim()) {
+        formData.append(
+          "pae_file",
+          new File([paeText], paeFileName || "pae.json", {
+            type: "application/json",
+          }),
+        );
+      }
       formData.append("cutoff_angstrom", String(cutoff));
       const form_ms = elapsedMs(formStarted);
 
@@ -266,6 +297,8 @@ export function ProteinWorkbench() {
     setStructureFormat("pdb");
     setPdbId("");
     setUniprotId("");
+    setPaeFileName("");
+    setPaeText("");
     setAnalysis(null);
     setSelection(null);
     setViewerColorMode("structure");
@@ -383,10 +416,34 @@ export function ProteinWorkbench() {
                 Analyze structure
               </button>
 
+              <label className="mt-4 flex cursor-pointer flex-col border border-dashed border-slate-300 bg-slate-50 px-3 py-3 hover:bg-slate-100">
+                <span className="text-xs font-medium uppercase tracking-wide text-slate-500">Optional PAE sidecar</span>
+                <span className="mt-1 text-sm font-medium text-slate-800">Choose PAE JSON</span>
+                <span className="mt-1 text-xs text-slate-500">AlphaFold predicted aligned error JSON.</span>
+                <input
+                  type="file"
+                  accept=".json,application/json"
+                  className="sr-only"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) {
+                      void handlePaeFile(file);
+                    }
+                  }}
+                />
+              </label>
+
               {fileName ? (
                 <div className="mt-4 border border-slate-200 bg-slate-50 p-3">
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Loaded file</p>
                   <p className="mt-1 break-words font-mono text-sm text-slate-800">{fileName}</p>
+                </div>
+              ) : null}
+
+              {paeFileName ? (
+                <div className="mt-3 border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Loaded PAE sidecar</p>
+                  <p className="mt-1 break-words font-mono text-sm text-slate-800">{paeFileName}</p>
                 </div>
               ) : null}
             </div>
@@ -491,6 +548,7 @@ export function ProteinWorkbench() {
               colorMode={viewerColorMode}
               onColorModeChange={setViewerColorMode}
             />
+            <PaePanel pae={analysis?.pae ?? null} />
             <InteractionSummaryPanel summary={analysis?.interaction_summary ?? null} />
             <SummaryCards analysis={analysis} />
           </section>
@@ -746,6 +804,36 @@ function ConfidencePanel({
               <span className="text-sm text-slate-700">{label}</span>
             </div>
             <span className="font-mono text-sm text-slate-900">{count}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PaePanel({ pae }: { pae: PaeSummary | null }) {
+  if (!pae) {
+    return null;
+  }
+
+  const items = [
+    ["Residues", pae.residue_count],
+    ["Mean PAE", `${pae.mean_predicted_aligned_error.toFixed(2)} A`],
+    ["Max PAE", `${pae.max_predicted_aligned_error.toFixed(2)} A`],
+    [`Pairs >= ${pae.high_error_threshold.toFixed(1)} A`, pae.high_error_pair_count],
+  ];
+
+  return (
+    <div className="border border-slate-200 bg-white p-4">
+      <h2 className="text-sm font-semibold text-slate-950">PAE sidecar</h2>
+      <p className="mt-1 text-xs leading-5 text-slate-500">
+        Predicted aligned error summary from the uploaded JSON sidecar.
+      </p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        {items.map(([label, value]) => (
+          <div key={label} className="border border-slate-200 px-3 py-2">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
+            <p className="mt-1 font-mono text-sm text-slate-950">{value}</p>
           </div>
         ))}
       </div>
