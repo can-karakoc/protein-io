@@ -45,7 +45,7 @@ feature/gemmi-parser
 - `[x]` Keep contact analysis consuming `StructureData`, not raw Gemmi structures.
 - `[x]` Add tests for PDB parsing, mmCIF parsing, reasonable chain/residue/atom counts, and typed contacts.
 - `[x]` Update docs and README to say the app supports PDB and mmCIF.
-- `[ ]` Merge `feature/gemmi-parser` into `main` after review.
+- `[x]` Merge `feature/gemmi-parser` into `main` after review.
 
 Avoid in this priority:
 
@@ -55,17 +55,25 @@ Avoid in this priority:
 
 ## Priority 2: Add PDB ID Fetch and RCSB Metadata
 
-- `[ ]` Add `backend/app/integrations/rcsb.py`.
-- `[ ]` Add PDB ID validation.
-- `[ ]` Add mocked backend tests for valid/invalid PDB IDs and metadata normalization.
-- `[ ]` Add analysis pipeline from fetched structure text.
-- `[ ]` Add frontend PDB ID input with loading and error states.
-- `[ ]` Show simple metadata: PDB ID, title, method, resolution, organism, deposition date, chain/entity summary, and RCSB link when available.
-- `[ ]` Update README, roadmap, decisions, and QA docs.
+- Branch: `feature/rcsb-fetch`
+- `[x]` Add `backend/app/integrations/rcsb.py`.
+- `[x]` Add PDB ID validation.
+- `[x]` Add mocked backend tests for valid/invalid PDB IDs and metadata normalization.
+- `[x]` Add analysis pipeline from fetched structure text.
+- `[x]` Add frontend PDB ID input with loading and error states.
+- `[x]` Show simple metadata: PDB ID, title, method, resolution, organism, deposition date, chain/entity summary, and RCSB link when available.
+- `[x]` Handle removed/superseded RCSB entries, including replacement IDs such as `1HHB -> 2HHB, 3HHB, 4HHB`.
+- `[x]` Preserve protein residue classification for older mmCIF records that mark standard amino acids with hetero flags.
+- `[x]` Update README, roadmap, decisions, and QA docs.
+- `[x]` Run full final verification and merge `feature/rcsb-fetch` into `main` after review.
 
 Avoid search by protein name, database caching, user accounts, and saved structures.
 
 ## Priority 3: Table-to-Viewer Interaction
+
+Next after Priority 2 review/merge:
+
+- Branch: `feature/table-viewer-interaction`
 
 - `[ ]` Add selected item state in the frontend.
 - `[ ]` Pass selected contact/residue/chain/ligand state to the viewer.

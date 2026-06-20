@@ -48,11 +48,14 @@ main
 Production features:
 
 - PDB upload
+- mmCIF upload
+- RCSB mmCIF fetch by PDB ID
 - sample file loader
 - 3Dmol.js structure viewer
 - chain, ligand, residue/contact summary
 - residue-residue contacts
 - protein-ligand contacts
+- RCSB metadata panel with removed-entry replacement IDs
 - CSV export
 - backend timing diagnostics
 - frontend timing logs
@@ -61,29 +64,19 @@ Production features:
 Production stack:
 
 - Frontend: Next.js, React, TypeScript, Tailwind CSS, 3Dmol.js, Vercel
-- Backend: FastAPI, Python, Biopython `Bio.PDB`, Pydantic, pytest, Render
+- Backend: FastAPI, Python, Gemmi, Pydantic, pytest, Render
 
-Active feature branch:
+Next feature branch:
 
 ```text
-feature/gemmi-parser
+feature/table-viewer-interaction
 ```
 
-This branch adds:
+This branch should add:
 
-- Gemmi parser migration
-- Gemmi NeighborSearch contact search
-- PDB and mmCIF upload support through the same `StructureData` boundary
-- updated benchmarks and docs
-
-After merge, backend stack should become:
-
-- FastAPI
-- Python
-- Gemmi
-- Pydantic
-- pytest
-- Render
+- row selection state for chains, ligands, and contacts
+- 3Dmol.js highlighting for selected table rows
+- clear/reset selection control
 
 ## Architecture Principle
 
@@ -139,9 +132,9 @@ Work in small PR-sized steps:
 
 ## Priority Roadmap
 
-1. Merge Gemmi and add mmCIF support.
-2. Add PDB ID fetch and RCSB metadata.
-3. Add table-to-viewer interaction.
+1. Merge Gemmi and add mmCIF support. Done.
+2. Add PDB ID fetch and RCSB metadata. Done.
+3. Add table-to-viewer interaction. Next.
 4. Add AlphaFold/pLDDT confidence support.
 5. Add contact categories and better interaction summaries.
 6. Add AlphaFold DB fetch by UniProt ID.

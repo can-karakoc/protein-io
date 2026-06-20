@@ -1,12 +1,13 @@
 # Protein Interaction Explorer
 
-Protein Interaction Explorer is an open-source structural biology workspace for uploading, fetching, visualizing, analyzing, and reporting protein structures. The MVP lets a scientist upload a PDB or mmCIF file, visualize the structure, parse chains/residues/ligands, calculate residue and protein-ligand contacts, and export a clean interaction report.
+Protein Interaction Explorer is an open-source structural biology workspace for uploading, fetching, visualizing, analyzing, and reporting protein structures. The MVP lets a scientist upload a PDB or mmCIF file, fetch a PDB ID from RCSB, visualize the structure, parse chains/residues/ligands, calculate residue and protein-ligand contacts, and export a clean interaction report.
 
 The project is intentionally simple for the public MVP: no authentication, no database, no Docker, no queues, and no cloud storage.
 
 ## MVP Features
 
 - Upload a local PDB or mmCIF file.
+- Fetch a deposited structure by PDB ID from RCSB.
 - Parse atoms, residues, chains, and ligands.
 - Summarize chain counts, residue counts, ligand records, and atom counts.
 - Calculate residue-residue contacts.
@@ -16,8 +17,9 @@ The project is intentionally simple for the public MVP: no authentication, no da
 - Return warnings for useful analysis context.
 - Expose a FastAPI backend with health and analysis endpoints.
 - Upload PDB/mmCIF files or load a sample PDB in the frontend.
+- Fetch RCSB mmCIF structures from a PDB ID.
 - Render structures with 3Dmol.js.
-- Show summary cards, chain table, ligand table, and contact table.
+- Show RCSB metadata, summary cards, chain table, ligand table, and contact table.
 - Export contacts as CSV.
 - Prepare frontend API calls through `NEXT_PUBLIC_API_URL`.
 
@@ -118,7 +120,7 @@ cd /Users/cankarakoc/Codex/protein-interaction-explorer
 .venv/bin/pytest backend/tests
 ```
 
-The tests cover PDB and mmCIF parser behavior, ligand detection, contact calculation, neighbor search, route behavior, CORS origin parsing, and bad upload handling.
+The tests cover PDB and mmCIF parser behavior, ligand detection, contact calculation, neighbor search, RCSB PDB ID validation, route behavior, CORS origin parsing, and bad upload handling.
 
 ## API
 
@@ -133,9 +135,11 @@ Analyze:
 ```text
 POST /analyze
 POST /api/analyze
+GET /api/rcsb/{pdb_id}/analyze
 ```
 
 The analysis endpoint accepts a multipart PDB, `.cif`, or `.mmcif` upload and an optional `cutoff_angstrom` form value.
+The RCSB endpoint accepts a 4-character PDB ID and optional `cutoff_angstrom` query value, fetches mmCIF coordinates, and returns fetched structure text plus analysis results. Removed or superseded entries can still be analyzed when coordinates are available; metadata marks them as `removed` and includes replacement IDs, for example `1HHB` replaced by `2HHB`, `3HHB`, and `4HHB`.
 
 Response shape:
 
@@ -149,10 +153,35 @@ Response shape:
     "ligand_count": 0,
     "contact_count": 0
   },
+  "metadata": null,
   "chains": [],
   "ligands": [],
   "contacts": [],
   "warnings": []
+}
+```
+
+RCSB response shape:
+
+```json
+{
+  "filename": "4HHB.cif",
+  "structure_format": "cif",
+  "structure_text": "data_...",
+  "analysis": {
+    "version": "0.1.0",
+    "summary": {},
+    "metadata": {
+      "source": "rcsb",
+      "status": "current",
+      "pdb_id": "4HHB",
+      "replaced_by": []
+    },
+    "chains": [],
+    "ligands": [],
+    "contacts": [],
+    "warnings": []
+  }
 }
 ```
 

@@ -34,11 +34,34 @@ export type StructureSummary = {
   contact_count: number;
 };
 
+export type StructureMetadata = {
+  source: "upload" | "rcsb";
+  status: "current" | "removed" | null;
+  pdb_id: string | null;
+  title: string | null;
+  method: string | null;
+  resolution_angstrom: number | null;
+  organism: string | null;
+  deposition_date: string | null;
+  rcsb_url: string | null;
+  entity_count: number | null;
+  chain_count: number | null;
+  replaced_by: string[];
+};
+
 export type AnalysisResponse = {
   version: string;
   summary: StructureSummary;
+  metadata: StructureMetadata | null;
   chains: ChainSummary[];
   ligands: LigandSummary[];
   contacts: ContactRecord[];
   warnings: string[];
+};
+
+export type RcsbAnalysisResponse = {
+  filename: string;
+  structure_format: "cif";
+  structure_text: string;
+  analysis: AnalysisResponse;
 };
