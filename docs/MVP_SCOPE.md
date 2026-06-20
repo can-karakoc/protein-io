@@ -17,7 +17,7 @@
 - Use a configurable distance cutoff, defaulting to 4.0 angstroms.
 - Ignore hydrogen atoms in contact calculations.
 - Cap very large contact results and return a warning.
-- Render the uploaded structure in-browser using 3Dmol.js.
+- Render the uploaded structure in-browser using Mol*.
 - Show clean scientific UI tables and summary cards.
 - Export contacts as CSV.
 - Include backend tests.

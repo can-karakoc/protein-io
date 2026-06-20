@@ -3,6 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 
 import type { ContactRecord, ResidueConfidence, ViewerSelection } from "@/lib/types";
+import type { Viewer as MolstarViewer } from "molstar/lib/apps/viewer/app";
+import type { BuiltInTrajectoryFormat } from "molstar/lib/mol-plugin-state/formats/trajectory";
+import type { Expression } from "molstar/lib/mol-script/language/expression";
+import type { MolScriptBuilder } from "molstar/lib/mol-script/language/builder";
 
 type StructureViewerProps = {
   structureText: string;
@@ -12,13 +16,7 @@ type StructureViewerProps = {
   colorMode: "structure" | "plddt";
 };
 
-type ViewerLike = {
-  clear: () => void;
-  addModel: (data: string, format: string) => void;
-  setStyle: (selection: object, style: object) => void;
-  zoomTo: (selection?: object) => void;
-  render: () => void;
-};
+type SelectionExpression = (queryBuilder: typeof MolScriptBuilder) => Expression;
 
 export function StructureViewer({
   structureText,
@@ -28,13 +26,19 @@ export function StructureViewer({
   colorMode,
 }: StructureViewerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const viewerRef = useRef<ViewerLike | null>(null);
+  const viewerRef = useRef<MolstarViewer | null>(null);
+  const loadedStructureRef = useRef<string>("");
+  const selectionRef = useRef<ViewerSelection | null>(selection);
   const [viewerError, setViewerError] = useState<string | null>(null);
+
+  useEffect(() => {
+    selectionRef.current = selection;
+  }, [selection]);
 
   useEffect(() => {
     let cancelled = false;
 
-    async function renderStructure() {
+    async function loadStructure() {
       if (!containerRef.current || !structureText.trim()) {
         return;
       }
@@ -42,40 +46,47 @@ export function StructureViewer({
       try {
         setViewerError(null);
         if (!isWebGlAvailable()) {
-          setViewerError("The 3D viewer needs WebGL, which is unavailable in this browser.");
+          setViewerError("Mol* needs WebGL, which is unavailable in this browser.");
           return;
         }
 
         const renderStarted = performance.now();
         const importStarted = performance.now();
-        const threeDmol = await import("3dmol");
+        const { Viewer } = await import("molstar/lib/apps/viewer/app");
         const importMs = elapsedMs(importStarted);
         if (cancelled || !containerRef.current) {
           return;
         }
 
         const viewerCreateStarted = performance.now();
-        if (!viewerRef.current) {
-          viewerRef.current = threeDmol.createViewer(containerRef.current, {
-            backgroundColor: "#ffffff",
-          }) as ViewerLike;
-        }
+        viewerRef.current?.dispose();
+        containerRef.current.replaceChildren();
+        viewerRef.current = await Viewer.create(containerRef.current, {
+          layoutIsExpanded: false,
+          layoutShowControls: false,
+          layoutShowSequence: false,
+          layoutShowLog: false,
+          layoutShowLeftPanel: false,
+          collapseRightPanel: true,
+          viewportShowControls: true,
+          viewportShowExpand: true,
+          viewportShowReset: true,
+          viewportShowSelectionMode: true,
+          viewportShowSettings: true,
+          viewportShowToggleFullscreen: true,
+          viewportBackgroundColor: "#ffffff",
+          volumeStreamingDisabled: true,
+        });
         const viewerCreateMs = elapsedMs(viewerCreateStarted);
 
         const viewer = viewerRef.current;
         const modelStarted = performance.now();
-        viewer.clear();
-        viewer.addModel(structureText, structureFormat);
-        if (colorMode === "plddt" && residueConfidences.length) {
-          applyConfidenceStyle(viewer, residueConfidences);
-        } else {
-          viewer.setStyle({}, { cartoon: { color: "spectrum" } });
-        }
-        viewer.setStyle({ hetflag: true }, { stick: { radius: 0.22, colorscheme: "greenCarbon" } });
-        applySelectionStyle(viewer, selection);
-        const zoomSelection = zoomSelectionFor(selection);
-        viewer.zoomTo(zoomSelection);
-        viewer.render();
+        await viewer.loadStructureFromData(structureText, molstarFormat(structureFormat), {
+          dataLabel: structureFormat === "cif" ? "Uploaded mmCIF" : "Uploaded PDB",
+        });
+        loadedStructureRef.current = structureSignature(structureText, structureFormat);
+        applySelection(viewer, selectionRef.current);
+        viewer.handleResize();
         const modelRenderMs = elapsedMs(modelStarted);
         console.info("[protein.io timing] viewer render", {
           total_ms: elapsedMs(renderStarted),
@@ -84,27 +95,44 @@ export function StructureViewer({
           model_render_ms: modelRenderMs,
           format: structureFormat,
           characters: structureText.length,
-          selection: selection?.label ?? "none",
-          color_mode: colorMode,
         });
       } catch (caught) {
+        viewerRef.current?.dispose();
         viewerRef.current = null;
+        loadedStructureRef.current = "";
         console.error("[protein.io viewer] render failed", caught);
-        setViewerError("The 3D viewer needs WebGL, which is unavailable in this browser.");
+        setViewerError("Mol* could not render this structure. Check that WebGL is enabled and the file is valid.");
       }
     }
 
-    renderStructure();
+    loadStructure();
 
     return () => {
       cancelled = true;
     };
-  }, [colorMode, residueConfidences, selection, structureFormat, structureText]);
+  }, [structureFormat, structureText]);
+
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer || loadedStructureRef.current !== structureSignature(structureText, structureFormat)) {
+      return;
+    }
+
+    applySelection(viewer, selection);
+  }, [selection, structureFormat, structureText]);
+
+  useEffect(() => {
+    return () => {
+      viewerRef.current?.dispose();
+      viewerRef.current = null;
+      loadedStructureRef.current = "";
+    };
+  }, []);
 
   if (!structureText.trim()) {
     return (
       <div className="relative flex h-[420px] items-center justify-center overflow-hidden border border-dashed border-slate-300 bg-white text-sm text-slate-500">
-        Upload a PDB or mmCIF file to render the structure.
+        Upload a PDB or mmCIF file to render it with Mol*.
       </div>
     );
   }
@@ -112,6 +140,11 @@ export function StructureViewer({
   return (
     <div className="relative h-[420px] w-full overflow-hidden border border-slate-200 bg-white">
       <div ref={containerRef} className="absolute inset-0" />
+      {colorMode === "plddt" && residueConfidences.length ? (
+        <div className="pointer-events-none absolute left-3 top-3 max-w-[240px] border border-amber-200 bg-amber-50/95 px-3 py-2 text-xs leading-5 text-amber-900 shadow-sm">
+          pLDDT summaries are shown in the analysis panels. Mol* confidence coloring is queued as a viewer-theme follow-up.
+        </div>
+      ) : null}
       {viewerError ? (
         <div className="absolute inset-0 flex items-center justify-center bg-white px-6 text-center text-sm leading-6 text-slate-600">
           {viewerError}
@@ -121,101 +154,127 @@ export function StructureViewer({
   );
 }
 
-function applyConfidenceStyle(viewer: ViewerLike, residueConfidences: ResidueConfidence[]) {
-  viewer.setStyle({}, { cartoon: { color: "#d1d5db" } });
-
-  for (const residue of residueConfidences) {
-    viewer.setStyle(residueSelection(residue.chain_id, residue.residue_number), {
-      cartoon: { color: confidenceColor(residue.category) },
-    });
-  }
-}
-
-function confidenceColor(category: ResidueConfidence["category"]) {
-  if (category === "very_high") {
-    return "#2563eb";
-  }
-  if (category === "confident") {
-    return "#06b6d4";
-  }
-  if (category === "low") {
-    return "#f59e0b";
-  }
-  return "#ef4444";
-}
-
-function applySelectionStyle(viewer: ViewerLike, selection: ViewerSelection | null) {
+function applySelection(viewer: MolstarViewer, selection: ViewerSelection | null) {
   if (!selection) {
+    viewer.structureInteractivity({ action: ["select", "highlight"] });
     return;
   }
 
+  viewer.structureInteractivity({
+    action: ["select", "focus"],
+    applyGranularity: true,
+    expression: selectionExpression(selection),
+    focusOptions: { durationMs: 250, extraRadius: 5 },
+  });
+}
+
+function selectionExpression(selection: ViewerSelection): SelectionExpression {
   if (selection.kind === "chain") {
-    viewer.setStyle({ chain: selection.chainId }, { cartoon: { color: "#f59e0b", opacity: 0.9 } });
-    return;
+    return (MS) => chainExpression(MS, selection.chainId);
   }
 
   if (selection.kind === "ligand") {
-    viewer.setStyle(ligandSelection(selection), {
-      stick: { radius: 0.34, color: "#f59e0b" },
-      sphere: { radius: 0.38, color: "#f59e0b" },
-    });
-    return;
+    return (MS) =>
+      residueExpression(MS, {
+        chainId: selection.chainId,
+        residueNumber: selection.residueNumber,
+        residueName: selection.residueName,
+      });
   }
 
-  applyContactResidueStyle(viewer, selection.contact);
+  return (MS) => contactExpression(MS, selection.contact);
 }
 
-function applyContactResidueStyle(viewer: ViewerLike, contact: ContactRecord) {
-  const residueA = residueSelection(contact.chain_a, contact.residue_a);
-  const residueB = residueSelection(contact.chain_b, contact.residue_b);
+function contactExpression(MS: typeof MolScriptBuilder, contact: ContactRecord) {
+  return MS.struct.combinator.merge([
+    atomExpression(MS, {
+      chainId: contact.chain_a,
+      residueNumber: contact.residue_a,
+      residueName: contact.residue_name_a,
+      atomName: contact.atom_a,
+    }),
+    atomExpression(MS, {
+      chainId: contact.chain_b,
+      residueNumber: contact.residue_b,
+      residueName: contact.residue_name_b,
+      atomName: contact.atom_b,
+    }),
+  ]);
+}
 
-  viewer.setStyle(residueA, {
-    cartoon: { color: "#0f766e" },
-    stick: { radius: 0.24, color: "#0f766e" },
+function atomExpression(
+  MS: typeof MolScriptBuilder,
+  selection: {
+    chainId: string;
+    residueNumber: string;
+    residueName: string;
+    atomName: string;
+  },
+) {
+  return MS.struct.generator.atomGroups({
+    "chain-test": chainTest(MS, selection.chainId),
+    "residue-test": residueTest(MS, selection.residueNumber, selection.residueName),
+    "atom-test": MS.core.rel.eq([MS.ammp("label_atom_id"), selection.atomName]),
   });
-  viewer.setStyle(residueB, {
-    cartoon: { color: "#f59e0b" },
-    stick: { radius: 0.24, color: "#f59e0b" },
+}
+
+function residueExpression(
+  MS: typeof MolScriptBuilder,
+  selection: {
+    chainId: string;
+    residueNumber: string;
+    residueName?: string;
+  },
+) {
+  return MS.struct.generator.atomGroups({
+    "chain-test": chainTest(MS, selection.chainId),
+    "residue-test": residueTest(MS, selection.residueNumber, selection.residueName),
   });
-  viewer.setStyle({ ...residueA, atom: contact.atom_a }, { sphere: { radius: 0.42, color: "#0f766e" } });
-  viewer.setStyle({ ...residueB, atom: contact.atom_b }, { sphere: { radius: 0.42, color: "#f59e0b" } });
 }
 
-function zoomSelectionFor(selection: ViewerSelection | null): object | undefined {
-  if (!selection) {
-    return undefined;
-  }
-
-  if (selection.kind === "chain") {
-    return { chain: selection.chainId };
-  }
-
-  if (selection.kind === "ligand") {
-    return ligandSelection(selection);
-  }
-
-  return residueSelection(selection.contact.chain_a, selection.contact.residue_a);
+function chainExpression(MS: typeof MolScriptBuilder, chainId: string) {
+  return MS.struct.generator.atomGroups({
+    "chain-test": chainTest(MS, chainId),
+  });
 }
 
-function ligandSelection(selection: Extract<ViewerSelection, { kind: "ligand" }>) {
-  return {
-    chain: selection.chainId,
-    resn: selection.residueName,
-    resi: selectionResidueNumber(selection.residueNumber),
-    hetflag: true,
-  };
+function chainTest(MS: typeof MolScriptBuilder, chainId: string) {
+  return MS.core.logic.or([
+    MS.core.rel.eq([MS.ammp("auth_asym_id"), chainId]),
+    MS.core.rel.eq([MS.ammp("label_asym_id"), chainId]),
+  ]);
 }
 
-function residueSelection(chainId: string, residueNumber: string) {
-  return {
-    chain: chainId,
-    resi: selectionResidueNumber(residueNumber),
-  };
-}
-
-function selectionResidueNumber(residueNumber: string) {
+function residueTest(MS: typeof MolScriptBuilder, residueNumber: string, residueName?: string) {
   const numericResidue = Number(residueNumber);
-  return Number.isFinite(numericResidue) ? numericResidue : residueNumber;
+  const residueTests: Expression[] = [];
+
+  if (Number.isFinite(numericResidue)) {
+    residueTests.push(
+      MS.core.logic.or([
+        MS.core.rel.eq([MS.ammp("auth_seq_id"), numericResidue]),
+        MS.core.rel.eq([MS.ammp("label_seq_id"), numericResidue]),
+      ]),
+    );
+  }
+
+  if (residueName) {
+    residueTests.push(MS.core.rel.eq([MS.ammp("label_comp_id"), residueName]));
+  }
+
+  if (residueTests.length === 1) {
+    return residueTests[0];
+  }
+
+  return MS.core.logic.and(residueTests);
+}
+
+function molstarFormat(structureFormat: StructureViewerProps["structureFormat"]): BuiltInTrajectoryFormat {
+  return structureFormat === "cif" ? "mmcif" : "pdb";
+}
+
+function structureSignature(structureText: string, structureFormat: StructureViewerProps["structureFormat"]) {
+  return `${structureFormat}:${structureText.length}:${structureText.slice(0, 80)}`;
 }
 
 function isWebGlAvailable() {
