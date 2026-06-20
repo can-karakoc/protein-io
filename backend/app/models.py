@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 
 ContactType = Literal["residue-residue", "protein-ligand"]
+ConfidenceCategory = Literal["very_high", "confident", "low", "very_low"]
 ResidueKind = Literal["protein", "ligand", "water", "other"]
 
 
@@ -14,6 +15,7 @@ class AtomRecord(BaseModel):
     x: float
     y: float
     z: float
+    b_factor: float | None = None
     chain_id: str
     residue_id: str
     residue_name: str
@@ -64,6 +66,25 @@ class StructureSummary(BaseModel):
     contact_count: int = 0
 
 
+class ResidueConfidence(BaseModel):
+    chain_id: str
+    residue_number: str
+    residue_name: str
+    plddt: float
+    category: ConfidenceCategory
+
+
+class ConfidenceSummary(BaseModel):
+    source: Literal["plddt"] = "plddt"
+    residue_count: int
+    average_plddt: float
+    very_high_count: int
+    confident_count: int
+    low_count: int
+    very_low_count: int
+    low_confidence_count: int
+
+
 class StructureMetadata(BaseModel):
     source: Literal["upload", "rcsb"] = "upload"
     status: Literal["current", "removed"] | None = None
@@ -102,6 +123,8 @@ class AnalysisResponse(BaseModel):
     version: str = "0.1.0"
     summary: StructureSummary
     metadata: StructureMetadata | None = None
+    confidence: ConfidenceSummary | None = None
+    residue_confidences: list[ResidueConfidence] = Field(default_factory=list)
     chains: list[ChainSummary]
     ligands: list[LigandSummary]
     contacts: list[ContactRecord]

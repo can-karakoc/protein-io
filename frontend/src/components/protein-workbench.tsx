@@ -10,7 +10,9 @@ import type {
   AnalysisResponse,
   ChainSummary,
   ContactRecord,
+  ConfidenceSummary,
   LigandSummary,
+  ResidueConfidence,
   RcsbAnalysisResponse,
   StructureMetadata,
   ViewerSelection,
@@ -18,7 +20,9 @@ import type {
 
 const EXAMPLE_FILE = "/sample.pdb";
 const TIMING_HEADER = "X-ProteinIO-Timing";
+const EMPTY_RESIDUE_CONFIDENCES: ResidueConfidence[] = [];
 type StructureFileFormat = "pdb" | "cif";
+type ViewerColorMode = "structure" | "plddt";
 
 export function ProteinWorkbench() {
   const [fileName, setFileName] = useState<string>("");
@@ -28,12 +32,14 @@ export function ProteinWorkbench() {
   const [cutoff, setCutoff] = useState(4.0);
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
   const [selection, setSelection] = useState<ViewerSelection | null>(null);
+  const [viewerColorMode, setViewerColorMode] = useState<ViewerColorMode>("structure");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isRcsbLoading, setIsRcsbLoading] = useState(false);
 
   const hasStructure = structureText.trim().length > 0;
   const contacts = useMemo(() => analysis?.contacts ?? [], [analysis]);
+  const residueConfidences = analysis?.residue_confidences ?? EMPTY_RESIDUE_CONFIDENCES;
   const filteredContactPreview = useMemo(() => contacts.slice(0, 80), [contacts]);
 
   async function handleFile(file: File) {
@@ -41,6 +47,7 @@ export function ProteinWorkbench() {
     setError(null);
     setAnalysis(null);
     setSelection(null);
+    setViewerColorMode("structure");
     setFileName(file.name);
     setStructureFormat(formatFromFileName(file.name));
     const text = await file.text();
@@ -57,6 +64,7 @@ export function ProteinWorkbench() {
     setError(null);
     setAnalysis(null);
     setSelection(null);
+    setViewerColorMode("structure");
     const fetchStarted = performance.now();
     const response = await fetch(EXAMPLE_FILE);
     const fetchMs = elapsedMs(fetchStarted);
@@ -112,6 +120,7 @@ export function ProteinWorkbench() {
       const response_json_ms = elapsedMs(parseStarted);
       setAnalysis(nextAnalysis);
       setSelection(null);
+      setViewerColorMode(nextAnalysis.confidence ? "plddt" : "structure");
       logTiming("analysis request", timingStarted, {
         form_ms,
         request_ms,
@@ -139,6 +148,7 @@ export function ProteinWorkbench() {
     setError(null);
     setAnalysis(null);
     setSelection(null);
+    setViewerColorMode("structure");
 
     try {
       const timingStarted = performance.now();
@@ -162,6 +172,7 @@ export function ProteinWorkbench() {
       setStructureFormat(payload.structure_format);
       setAnalysis(payload.analysis);
       setSelection(null);
+      setViewerColorMode(payload.analysis.confidence ? "plddt" : "structure");
       logTiming("rcsb fetch analysis", timingStarted, {
         request_ms,
         response_json_ms,
@@ -184,6 +195,7 @@ export function ProteinWorkbench() {
     setPdbId("");
     setAnalysis(null);
     setSelection(null);
+    setViewerColorMode("structure");
     setError(null);
     setCutoff(4.0);
   }
@@ -357,9 +369,21 @@ export function ProteinWorkbench() {
           </aside>
 
           <section className="grid gap-4">
-            <StructureViewer structureText={structureText} structureFormat={structureFormat} selection={selection} />
+            <StructureViewer
+              structureText={structureText}
+              structureFormat={structureFormat}
+              selection={selection}
+              residueConfidences={residueConfidences}
+              colorMode={viewerColorMode}
+            />
             <SelectionBar selection={selection} onClear={() => setSelection(null)} />
             <MetadataPanel metadata={analysis?.metadata ?? null} />
+            <ConfidencePanel
+              confidence={analysis?.confidence ?? null}
+              residueConfidences={residueConfidences}
+              colorMode={viewerColorMode}
+              onColorModeChange={setViewerColorMode}
+            />
             <SummaryCards analysis={analysis} />
           </section>
         </section>
@@ -517,6 +541,86 @@ function MetadataPanel({ metadata }: { metadata: StructureMetadata | null }) {
             RCSB entry
           </a>
         ) : null}
+      </div>
+    </div>
+  );
+}
+
+function ConfidencePanel({
+  confidence,
+  residueConfidences,
+  colorMode,
+  onColorModeChange,
+}: {
+  confidence: ConfidenceSummary | null;
+  residueConfidences: ResidueConfidence[];
+  colorMode: ViewerColorMode;
+  onColorModeChange: (mode: ViewerColorMode) => void;
+}) {
+  if (!confidence) {
+    return null;
+  }
+
+  const categories = [
+    ["Very high", confidence.very_high_count, "#2563eb"],
+    ["Confident", confidence.confident_count, "#06b6d4"],
+    ["Low", confidence.low_count, "#f59e0b"],
+    ["Very low", confidence.very_low_count, "#ef4444"],
+  ] as const;
+
+  return (
+    <div className="border border-slate-200 bg-white p-4">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h2 className="text-sm font-semibold text-slate-950">Predicted confidence</h2>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            pLDDT values were read from residue B-factors for this predicted-structure upload.
+          </p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Average pLDDT</p>
+              <p className="mt-1 font-mono text-xl font-semibold text-slate-950">{confidence.average_plddt.toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Residues</p>
+              <p className="mt-1 font-mono text-xl font-semibold text-slate-950">{confidence.residue_count}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Low confidence</p>
+              <p className="mt-1 font-mono text-xl font-semibold text-slate-950">{confidence.low_confidence_count}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 flex-col gap-3">
+          <div className="inline-flex border border-slate-300 bg-white p-1">
+            {(["structure", "plddt"] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => onColorModeChange(mode)}
+                className={`h-8 px-3 text-xs font-semibold uppercase tracking-wide ${
+                  colorMode === mode ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-100"
+                }`}
+              >
+                {mode === "plddt" ? "pLDDT" : "Structure"}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-slate-500">{residueConfidences.length} residues available for confidence coloring.</p>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        {categories.map(([label, count, color]) => (
+          <div key={label} className="flex items-center justify-between border border-slate-200 px-3 py-2">
+            <div className="flex items-center gap-2">
+              <span className="h-3 w-3" style={{ backgroundColor: color }} />
+              <span className="text-sm text-slate-700">{label}</span>
+            </div>
+            <span className="font-mono text-sm text-slate-900">{count}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
