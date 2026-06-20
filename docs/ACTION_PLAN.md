@@ -112,10 +112,12 @@ Do not claim hydrogen bonds, salt bridges, pi-stacking, or hydrophobic interacti
 
 ## Priority 6: AlphaFold DB Fetch by UniProt ID
 
-- `[ ]` Add `backend/app/integrations/alphafold.py`.
-- `[ ]` Fetch AlphaFold metadata and structure by UniProt ID.
-- `[ ]` Add frontend mode: upload file, fetch PDB ID, or fetch AlphaFold by UniProt ID.
-- `[ ]` Mock network calls in tests.
+- Branch: `feature/alphafold-fetch`
+- `[x]` Add `backend/app/integrations/alphafold.py`.
+- `[x]` Fetch AlphaFold metadata and structure by UniProt ID.
+- `[x]` Add frontend mode: upload file, fetch PDB ID, or fetch AlphaFold by UniProt ID.
+- `[x]` Mock network calls in tests.
+- `[x]` Run final browser verification and merge `feature/alphafold-fetch` into `main` after review.
 
 Do not add model inference, job queues, or permanent storage.
 

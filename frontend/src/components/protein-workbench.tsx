@@ -7,6 +7,7 @@ import { StructureViewer } from "@/components/structure-viewer";
 import { buildApiUrl } from "@/lib/api";
 import { contactsToCsv } from "@/lib/csv";
 import type {
+  AlphaFoldAnalysisResponse,
   AnalysisResponse,
   ChainSummary,
   ContactCategory,
@@ -32,6 +33,7 @@ export function ProteinWorkbench() {
   const [structureText, setStructureText] = useState("");
   const [structureFormat, setStructureFormat] = useState<StructureFileFormat>("pdb");
   const [pdbId, setPdbId] = useState("");
+  const [uniprotId, setUniprotId] = useState("");
   const [cutoff, setCutoff] = useState(4.0);
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
   const [selection, setSelection] = useState<ViewerSelection | null>(null);
@@ -40,6 +42,7 @@ export function ProteinWorkbench() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isRcsbLoading, setIsRcsbLoading] = useState(false);
+  const [isAlphaFoldLoading, setIsAlphaFoldLoading] = useState(false);
 
   const hasStructure = structureText.trim().length > 0;
   const contacts = useMemo(() => analysis?.contacts ?? [], [analysis]);
@@ -204,11 +207,65 @@ export function ProteinWorkbench() {
     }
   }
 
+  async function fetchAlphaFoldStructure() {
+    const normalizedUniprotId = uniprotId.trim();
+    if (!normalizedUniprotId) {
+      setError("Enter a UniProt accession before fetching from AlphaFold DB.");
+      return;
+    }
+
+    setIsAlphaFoldLoading(true);
+    setError(null);
+    setAnalysis(null);
+    setSelection(null);
+    setViewerColorMode("structure");
+    setContactFilter("all");
+
+    try {
+      const timingStarted = performance.now();
+      const requestStarted = performance.now();
+      const response = await fetch(
+        buildApiUrl(`/api/alphafold/${encodeURIComponent(normalizedUniprotId)}/analyze?cutoff_angstrom=${cutoff}`),
+      );
+      const request_ms = elapsedMs(requestStarted);
+
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as { detail?: string } | null;
+        throw new Error(body?.detail ?? `AlphaFold DB fetch failed with status ${response.status}.`);
+      }
+
+      const parseStarted = performance.now();
+      const payload = (await response.json()) as AlphaFoldAnalysisResponse;
+      const response_json_ms = elapsedMs(parseStarted);
+
+      setFileName(payload.filename);
+      setStructureText(payload.structure_text);
+      setStructureFormat(payload.structure_format);
+      setAnalysis(payload.analysis);
+      setSelection(null);
+      setViewerColorMode(payload.analysis.confidence ? "plddt" : "structure");
+      setContactFilter("all");
+      logTiming("alphafold fetch analysis", timingStarted, {
+        request_ms,
+        response_json_ms,
+        backend: response.headers.get(TIMING_HEADER) ?? "not exposed",
+        uniprot_id: payload.analysis.metadata?.uniprot_id ?? normalizedUniprotId.toUpperCase(),
+        bytes: payload.structure_text.length,
+        contacts: payload.analysis.summary.contact_count,
+      });
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "AlphaFold DB fetch failed.");
+    } finally {
+      setIsAlphaFoldLoading(false);
+    }
+  }
+
   function reset() {
     setFileName("");
     setStructureText("");
     setStructureFormat("pdb");
     setPdbId("");
+    setUniprotId("");
     setAnalysis(null);
     setSelection(null);
     setViewerColorMode("structure");
@@ -359,6 +416,39 @@ export function ProteinWorkbench() {
                   className="inline-flex h-10 items-center justify-center gap-2 bg-slate-900 px-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
                   {isRcsbLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  Fetch
+                </button>
+              </div>
+            </div>
+
+            <div className="border border-slate-200 bg-white p-4">
+              <h2 className="text-sm font-semibold text-slate-950">AlphaFold DB fetch</h2>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Fetch a predicted monomer model by UniProt accession, then analyze the returned mmCIF coordinates.
+              </p>
+              <label
+                className="mt-4 block text-xs font-medium uppercase tracking-wide text-slate-500"
+                htmlFor="uniprot-id"
+              >
+                UniProt accession
+              </label>
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  id="uniprot-id"
+                  type="text"
+                  value={uniprotId}
+                  maxLength={10}
+                  onChange={(event) => setUniprotId(event.target.value.toUpperCase())}
+                  placeholder="P69905"
+                  className="h-10 min-w-0 flex-1 border border-slate-300 bg-white px-3 font-mono text-sm uppercase outline-none focus:border-cyan-600"
+                />
+                <button
+                  type="button"
+                  onClick={fetchAlphaFoldStructure}
+                  disabled={isAlphaFoldLoading}
+                  className="inline-flex h-10 items-center justify-center gap-2 bg-slate-900 px-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                >
+                  {isAlphaFoldLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                   Fetch
                 </button>
               </div>
@@ -520,27 +610,43 @@ function SummaryCards({ analysis }: { analysis: AnalysisResponse | null }) {
 }
 
 function MetadataPanel({ metadata }: { metadata: StructureMetadata | null }) {
-  if (!metadata || metadata.source !== "rcsb") {
+  if (!metadata || metadata.source === "upload") {
     return null;
   }
 
-  const rows = [
-    ["PDB ID", metadata.pdb_id],
-    ["Status", metadata.status === "removed" ? "Removed entry" : metadata.status],
-    ["Replaced by", metadata.replaced_by.length ? metadata.replaced_by.join(", ") : null],
-    ["Method", metadata.method],
-    ["Resolution", metadata.resolution_angstrom ? `${metadata.resolution_angstrom.toFixed(2)} A` : null],
-    ["Organism", metadata.organism],
-    ["Deposited", metadata.deposition_date],
-    ["Entities", metadata.entity_count],
-    ["Chains", metadata.chain_count],
-  ];
+  const isAlphaFold = metadata.source === "alphafold";
+  const rows = isAlphaFold
+    ? [
+        ["UniProt", metadata.uniprot_id],
+        ["Method", metadata.method],
+        ["Organism", metadata.organism],
+        ["Model version", metadata.model_version],
+        ["Model date", metadata.deposition_date],
+        ["Entities", metadata.entity_count],
+        ["Chains", metadata.chain_count],
+      ]
+    : [
+        ["PDB ID", metadata.pdb_id],
+        ["Status", metadata.status === "removed" ? "Removed entry" : metadata.status],
+        ["Replaced by", metadata.replaced_by.length ? metadata.replaced_by.join(", ") : null],
+        ["Method", metadata.method],
+        ["Resolution", metadata.resolution_angstrom ? `${metadata.resolution_angstrom.toFixed(2)} A` : null],
+        ["Organism", metadata.organism],
+        ["Deposited", metadata.deposition_date],
+        ["Entities", metadata.entity_count],
+        ["Chains", metadata.chain_count],
+      ];
+
+  const entryUrl = isAlphaFold ? metadata.alphafold_url : metadata.rcsb_url;
+  const entryLabel = isAlphaFold ? "AlphaFold DB entry" : "RCSB entry";
 
   return (
     <div className="border border-slate-200 bg-white p-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-slate-950">{metadata.title ?? "RCSB structure"}</h2>
+          <h2 className="text-sm font-semibold text-slate-950">
+            {metadata.title ?? (isAlphaFold ? "AlphaFold DB model" : "RCSB structure")}
+          </h2>
           <div className="mt-3 grid gap-x-5 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
             {rows.map(([label, value]) =>
               value ? (
@@ -552,14 +658,14 @@ function MetadataPanel({ metadata }: { metadata: StructureMetadata | null }) {
             )}
           </div>
         </div>
-        {metadata.rcsb_url ? (
+        {entryUrl ? (
           <a
-            href={metadata.rcsb_url}
+            href={entryUrl}
             target="_blank"
             rel="noreferrer"
             className="inline-flex h-9 shrink-0 items-center justify-center border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100"
           >
-            RCSB entry
+            {entryLabel}
           </a>
         ) : null}
       </div>
@@ -595,7 +701,7 @@ function ConfidencePanel({
         <div>
           <h2 className="text-sm font-semibold text-slate-950">Predicted confidence</h2>
           <p className="mt-1 text-xs leading-5 text-slate-500">
-            pLDDT values were read from residue B-factors for this predicted-structure upload.
+            pLDDT values were read from residue B-factors for this predicted structure.
           </p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <div>

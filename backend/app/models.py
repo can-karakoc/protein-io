@@ -124,15 +124,19 @@ class ConfidenceSummary(BaseModel):
 
 
 class StructureMetadata(BaseModel):
-    source: Literal["upload", "rcsb"] = "upload"
+    source: Literal["upload", "rcsb", "alphafold"] = "upload"
     status: Literal["current", "removed"] | None = None
     pdb_id: str | None = None
+    uniprot_id: str | None = None
     title: str | None = None
     method: str | None = None
     resolution_angstrom: float | None = None
     organism: str | None = None
     deposition_date: str | None = None
     rcsb_url: str | None = None
+    alphafold_url: str | None = None
+    model_url: str | None = None
+    model_version: int | None = None
     entity_count: int | None = None
     chain_count: int | None = None
     replaced_by: list[str] = Field(default_factory=list)
@@ -170,8 +174,16 @@ class AnalysisResponse(BaseModel):
     warnings: list[str] = Field(default_factory=list)
 
 
-class RcsbAnalysisResponse(BaseModel):
+class FetchedStructureAnalysisResponse(BaseModel):
     filename: str
     structure_format: Literal["cif"] = "cif"
     structure_text: str
     analysis: AnalysisResponse
+
+
+class RcsbAnalysisResponse(FetchedStructureAnalysisResponse):
+    pass
+
+
+class AlphaFoldAnalysisResponse(FetchedStructureAnalysisResponse):
+    pass

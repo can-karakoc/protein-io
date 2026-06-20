@@ -4,9 +4,10 @@ from time import perf_counter
 from app.contacts import calculate_contacts
 from app.contact_classification import summarize_interactions
 from app.confidence import analyze_plddt_confidence
+from app.integrations.alphafold import AlphaFoldStructure, fetch_alphafold_structure
 from app.integrations.rcsb import fetch_rcsb_structure
 from app.integrations.rcsb import RcsbStructure
-from app.models import AnalysisResponse, RcsbAnalysisResponse, StructureMetadata
+from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, RcsbAnalysisResponse, StructureMetadata
 from app.parser import detect_structure_format_from_filename, parse_pdb_content
 
 
@@ -44,6 +45,12 @@ class TimedAnalysis:
 @dataclass(frozen=True)
 class TimedRcsbAnalysis:
     response: RcsbAnalysisResponse
+    timing: AnalysisTiming
+
+
+@dataclass(frozen=True)
+class TimedAlphaFoldAnalysis:
+    response: AlphaFoldAnalysisResponse
     timing: AnalysisTiming
 
 
@@ -124,6 +131,23 @@ def analyze_rcsb_id_with_timing(
     )
 
 
+def analyze_alphafold_id_with_timing(
+    uniprot_id: str,
+    cutoff_angstrom: float = 4.0,
+) -> TimedAlphaFoldAnalysis:
+    alphafold_structure = fetch_alphafold_structure(uniprot_id)
+    analysis = analyze_pdb_content_with_timing(
+        alphafold_structure.content,
+        filename=alphafold_structure.filename,
+        cutoff_angstrom=cutoff_angstrom,
+        metadata=alphafold_structure.metadata,
+    )
+    return TimedAlphaFoldAnalysis(
+        response=alphafold_response_from_structure(alphafold_structure, analysis.response),
+        timing=analysis.timing,
+    )
+
+
 def rcsb_response_from_structure(
     rcsb_structure: RcsbStructure,
     analysis: AnalysisResponse,
@@ -131,6 +155,17 @@ def rcsb_response_from_structure(
     return RcsbAnalysisResponse(
         filename=rcsb_structure.filename,
         structure_text=rcsb_structure.content.decode("utf-8"),
+        analysis=analysis,
+    )
+
+
+def alphafold_response_from_structure(
+    alphafold_structure: AlphaFoldStructure,
+    analysis: AnalysisResponse,
+) -> AlphaFoldAnalysisResponse:
+    return AlphaFoldAnalysisResponse(
+        filename=alphafold_structure.filename,
+        structure_text=alphafold_structure.content.decode("utf-8"),
         analysis=analysis,
     )
 
