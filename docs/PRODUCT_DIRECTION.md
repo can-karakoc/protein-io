@@ -56,6 +56,7 @@ Production features:
 - residue-residue contacts
 - protein-ligand contacts
 - RCSB metadata panel with removed-entry replacement IDs
+- table row selection for chains, ligands, and contacts
 - CSV export
 - backend timing diagnostics
 - frontend timing logs

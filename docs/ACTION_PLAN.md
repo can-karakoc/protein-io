@@ -71,16 +71,14 @@ Avoid search by protein name, database caching, user accounts, and saved structu
 
 ## Priority 3: Table-to-Viewer Interaction
 
-Next after Priority 2 review/merge:
-
 - Branch: `feature/table-viewer-interaction`
 
-- `[ ]` Add selected item state in the frontend.
-- `[ ]` Pass selected contact/residue/chain/ligand state to the viewer.
-- `[ ]` Use 3Dmol.js selection APIs to highlight selected rows in the structure.
-- `[ ]` Add clear/reset selection control.
-- `[ ]` Make selected rows visually obvious.
-- `[ ]` Update manual QA and screenshots if useful.
+- `[x]` Add selected item state in the frontend.
+- `[x]` Pass selected contact/residue/chain/ligand state to the viewer.
+- `[x]` Use 3Dmol.js selection APIs to highlight selected rows in the structure.
+- `[x]` Add clear/reset selection control.
+- `[x]` Make selected rows visually obvious.
+- `[x]` Update manual QA and screenshots if useful.
 
 Do not switch from 3Dmol.js to Mol* in this priority.
 

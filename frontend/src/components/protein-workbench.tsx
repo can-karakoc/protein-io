@@ -1,12 +1,20 @@
 "use client";
 
-import { AlertCircle, Atom, Download, FileUp, Loader2, Play, RotateCcw, Search } from "lucide-react";
+import { AlertCircle, Atom, Download, FileUp, Loader2, Play, RotateCcw, Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { StructureViewer } from "@/components/structure-viewer";
 import { buildApiUrl } from "@/lib/api";
 import { contactsToCsv } from "@/lib/csv";
-import type { AnalysisResponse, ContactRecord, RcsbAnalysisResponse, StructureMetadata } from "@/lib/types";
+import type {
+  AnalysisResponse,
+  ChainSummary,
+  ContactRecord,
+  LigandSummary,
+  RcsbAnalysisResponse,
+  StructureMetadata,
+  ViewerSelection,
+} from "@/lib/types";
 
 const EXAMPLE_FILE = "/sample.pdb";
 const TIMING_HEADER = "X-ProteinIO-Timing";
@@ -19,6 +27,7 @@ export function ProteinWorkbench() {
   const [pdbId, setPdbId] = useState("");
   const [cutoff, setCutoff] = useState(4.0);
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
+  const [selection, setSelection] = useState<ViewerSelection | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isRcsbLoading, setIsRcsbLoading] = useState(false);
@@ -31,6 +40,7 @@ export function ProteinWorkbench() {
     const timingStarted = performance.now();
     setError(null);
     setAnalysis(null);
+    setSelection(null);
     setFileName(file.name);
     setStructureFormat(formatFromFileName(file.name));
     const text = await file.text();
@@ -46,6 +56,7 @@ export function ProteinWorkbench() {
     const timingStarted = performance.now();
     setError(null);
     setAnalysis(null);
+    setSelection(null);
     const fetchStarted = performance.now();
     const response = await fetch(EXAMPLE_FILE);
     const fetchMs = elapsedMs(fetchStarted);
@@ -100,6 +111,7 @@ export function ProteinWorkbench() {
       const nextAnalysis = (await response.json()) as AnalysisResponse;
       const response_json_ms = elapsedMs(parseStarted);
       setAnalysis(nextAnalysis);
+      setSelection(null);
       logTiming("analysis request", timingStarted, {
         form_ms,
         request_ms,
@@ -126,6 +138,7 @@ export function ProteinWorkbench() {
     setIsRcsbLoading(true);
     setError(null);
     setAnalysis(null);
+    setSelection(null);
 
     try {
       const timingStarted = performance.now();
@@ -148,6 +161,7 @@ export function ProteinWorkbench() {
       setStructureText(payload.structure_text);
       setStructureFormat(payload.structure_format);
       setAnalysis(payload.analysis);
+      setSelection(null);
       logTiming("rcsb fetch analysis", timingStarted, {
         request_ms,
         response_json_ms,
@@ -169,6 +183,7 @@ export function ProteinWorkbench() {
     setStructureFormat("pdb");
     setPdbId("");
     setAnalysis(null);
+    setSelection(null);
     setError(null);
     setCutoff(4.0);
   }
@@ -342,32 +357,38 @@ export function ProteinWorkbench() {
           </aside>
 
           <section className="grid gap-4">
-            <StructureViewer structureText={structureText} structureFormat={structureFormat} />
+            <StructureViewer structureText={structureText} structureFormat={structureFormat} selection={selection} />
+            <SelectionBar selection={selection} onClear={() => setSelection(null)} />
             <MetadataPanel metadata={analysis?.metadata ?? null} />
             <SummaryCards analysis={analysis} />
           </section>
         </section>
 
         <section className="grid gap-6 xl:grid-cols-2">
-          <DataTable
-            title="Chains"
-            helper="Protein residue and atom counts grouped by chain."
-            emptyText="Run analysis to show chains."
-            headers={["Chain", "Residues", "Atoms"]}
-            rows={(analysis?.chains ?? []).map((chain) => [chain.id, chain.residue_count, chain.atom_count])}
+          <ChainTable
+            chains={analysis?.chains ?? []}
+            selection={selection}
+            onSelect={(chain) =>
+              setSelection({
+                kind: "chain",
+                chainId: chain.id,
+                label: `Chain ${chain.id}`,
+              })
+            }
           />
 
-          <DataTable
-            title="Ligands"
-            helper="Non-water hetero residues detected in the structure file."
-            emptyText="No ligand rows yet."
-            headers={["Name", "Chain", "Residue", "Atoms"]}
-            rows={(analysis?.ligands ?? []).map((ligand) => [
-              ligand.name,
-              ligand.chain_id,
-              ligand.residue_number,
-              ligand.atom_count,
-            ])}
+          <LigandTable
+            ligands={analysis?.ligands ?? []}
+            selection={selection}
+            onSelect={(ligand) =>
+              setSelection({
+                kind: "ligand",
+                chainId: ligand.chain_id,
+                residueName: ligand.name,
+                residueNumber: ligand.residue_number,
+                label: `${ligand.name} ${ligand.chain_id}:${ligand.residue_number}`,
+              })
+            }
           />
         </section>
 
@@ -389,7 +410,18 @@ export function ProteinWorkbench() {
               Export CSV
             </button>
           </div>
-          <ContactTable contacts={filteredContactPreview} totalCount={contacts.length} />
+          <ContactTable
+            contacts={filteredContactPreview}
+            totalCount={contacts.length}
+            selection={selection}
+            onSelect={(contact) =>
+              setSelection({
+                kind: "contact",
+                contact,
+                label: `${contact.chain_a}:${contact.residue_name_a}${contact.residue_a} - ${contact.chain_b}:${contact.residue_name_b}${contact.residue_b}`,
+              })
+            }
+          />
         </section>
       </div>
     </main>
@@ -490,58 +522,157 @@ function MetadataPanel({ metadata }: { metadata: StructureMetadata | null }) {
   );
 }
 
-function DataTable({
-  title,
-  helper,
-  emptyText,
-  headers,
-  rows,
+function SelectionBar({ selection, onClear }: { selection: ViewerSelection | null; onClear: () => void }) {
+  if (!selection) {
+    return null;
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-3 border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+      <div>
+        <p className="text-xs font-medium uppercase tracking-wide text-amber-700">Selected</p>
+        <p className="mt-1 font-mono text-sm">{selection.label}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onClear}
+        aria-label="Clear selected structure item"
+        className="inline-flex h-9 w-9 shrink-0 items-center justify-center border border-amber-300 bg-white text-amber-900 hover:bg-amber-100"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+function ChainTable({
+  chains,
+  selection,
+  onSelect,
 }: {
-  title: string;
-  helper: string;
-  emptyText: string;
-  headers: string[];
-  rows: Array<Array<string | number>>;
+  chains: ChainSummary[];
+  selection: ViewerSelection | null;
+  onSelect: (chain: ChainSummary) => void;
 }) {
   return (
     <div className="border border-slate-200 bg-white">
       <div className="border-b border-slate-200 p-4">
-        <h2 className="text-sm font-semibold text-slate-950">{title}</h2>
-        <p className="mt-1 text-xs leading-5 text-slate-500">{helper}</p>
+        <h2 className="text-sm font-semibold text-slate-950">Chains</h2>
+        <p className="mt-1 text-xs leading-5 text-slate-500">Protein residue and atom counts grouped by chain.</p>
       </div>
-      {rows.length ? (
+      {chains.length ? (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[420px] text-left text-sm">
             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
-                {headers.map((header) => (
-                  <th key={header} className="px-4 py-3 font-medium">
-                    {header}
-                  </th>
-                ))}
+                <th className="px-4 py-3 font-medium">
+                  <span className="sr-only">Select</span>
+                </th>
+                <th className="px-4 py-3 font-medium">Chain</th>
+                <th className="px-4 py-3 font-medium">Residues</th>
+                <th className="px-4 py-3 font-medium">Atoms</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {rows.map((row, rowIndex) => (
-                <tr key={`${title}-${rowIndex}`} className="text-slate-800">
-                  {row.map((cell, cellIndex) => (
-                    <td key={`${title}-${rowIndex}-${cellIndex}`} className="px-4 py-3">
-                      {cell}
-                    </td>
-                  ))}
+              {chains.map((chain) => (
+                <tr
+                  key={chain.id}
+                  className={selectableRowClass(selection?.kind === "chain" && selection.chainId === chain.id)}
+                >
+                  <td className="w-12 px-4 py-3">
+                    <SelectionButton label={`Select chain ${chain.id}`} onClick={() => onSelect(chain)} />
+                  </td>
+                  <td className="px-4 py-3 font-mono text-slate-900">{chain.id}</td>
+                  <td className="px-4 py-3 text-slate-800">{chain.residue_count}</td>
+                  <td className="px-4 py-3 text-slate-800">{chain.atom_count}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       ) : (
-        <p className="p-4 text-sm text-slate-500">{emptyText}</p>
+        <p className="p-4 text-sm text-slate-500">Run analysis to show chains.</p>
       )}
     </div>
   );
 }
 
-function ContactTable({ contacts, totalCount }: { contacts: ContactRecord[]; totalCount: number }) {
+function LigandTable({
+  ligands,
+  selection,
+  onSelect,
+}: {
+  ligands: LigandSummary[];
+  selection: ViewerSelection | null;
+  onSelect: (ligand: LigandSummary) => void;
+}) {
+  return (
+    <div className="border border-slate-200 bg-white">
+      <div className="border-b border-slate-200 p-4">
+        <h2 className="text-sm font-semibold text-slate-950">Ligands</h2>
+        <p className="mt-1 text-xs leading-5 text-slate-500">Non-water hetero residues detected in the structure file.</p>
+      </div>
+      {ligands.length ? (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[420px] text-left text-sm">
+            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="px-4 py-3 font-medium">
+                  <span className="sr-only">Select</span>
+                </th>
+                <th className="px-4 py-3 font-medium">Name</th>
+                <th className="px-4 py-3 font-medium">Chain</th>
+                <th className="px-4 py-3 font-medium">Residue</th>
+                <th className="px-4 py-3 font-medium">Atoms</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {ligands.map((ligand) => {
+                const selected =
+                  selection?.kind === "ligand" &&
+                  selection.chainId === ligand.chain_id &&
+                  selection.residueNumber === ligand.residue_number &&
+                  selection.residueName === ligand.name;
+
+                return (
+                  <tr
+                    key={`${ligand.name}-${ligand.chain_id}-${ligand.residue_number}`}
+                    className={selectableRowClass(selected)}
+                  >
+                    <td className="w-12 px-4 py-3">
+                      <SelectionButton
+                        label={`Select ligand ${ligand.name} ${ligand.chain_id}:${ligand.residue_number}`}
+                        onClick={() => onSelect(ligand)}
+                      />
+                    </td>
+                    <td className="px-4 py-3 font-mono text-slate-900">{ligand.name}</td>
+                    <td className="px-4 py-3 font-mono text-slate-800">{ligand.chain_id}</td>
+                    <td className="px-4 py-3 font-mono text-slate-800">{ligand.residue_number}</td>
+                    <td className="px-4 py-3 text-slate-800">{ligand.atom_count}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="p-4 text-sm text-slate-500">No ligand rows yet.</p>
+      )}
+    </div>
+  );
+}
+
+function ContactTable({
+  contacts,
+  totalCount,
+  selection,
+  onSelect,
+}: {
+  contacts: ContactRecord[];
+  totalCount: number;
+  selection: ViewerSelection | null;
+  onSelect: (contact: ContactRecord) => void;
+}) {
   if (!contacts.length) {
     return <p className="p-4 text-sm text-slate-500">Run analysis to populate contacts.</p>;
   }
@@ -551,6 +682,9 @@ function ContactTable({ contacts, totalCount }: { contacts: ContactRecord[]; tot
       <table className="w-full min-w-[980px] text-left text-sm">
         <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
           <tr>
+            <th className="px-4 py-3 font-medium">
+              <span className="sr-only">Select</span>
+            </th>
             <th className="px-4 py-3 font-medium">Type</th>
             <th className="px-4 py-3 font-medium">Residue A</th>
             <th className="px-4 py-3 font-medium">Atom A</th>
@@ -560,20 +694,35 @@ function ContactTable({ contacts, totalCount }: { contacts: ContactRecord[]; tot
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
-          {contacts.map((contact, index) => (
-            <tr key={`${contact.contact_type}-${contact.chain_a}-${contact.residue_a}-${contact.chain_b}-${contact.residue_b}-${index}`}>
-              <td className="px-4 py-3 text-slate-700">{contact.contact_type}</td>
-              <td className="px-4 py-3 font-mono text-slate-900">
-                {contact.chain_a}:{contact.residue_name_a}{contact.residue_a}
-              </td>
-              <td className="px-4 py-3 font-mono text-slate-700">{contact.atom_a}</td>
-              <td className="px-4 py-3 font-mono text-slate-900">
-                {contact.chain_b}:{contact.residue_name_b}{contact.residue_b}
-              </td>
-              <td className="px-4 py-3 font-mono text-slate-700">{contact.atom_b}</td>
-              <td className="px-4 py-3 font-mono text-slate-700">{contact.distance_angstrom.toFixed(3)} A</td>
-            </tr>
-          ))}
+          {contacts.map((contact, index) => {
+            const selected = selection?.kind === "contact" && contactKey(selection.contact, index) === contactKey(contact, index);
+
+            return (
+              <tr
+                key={contactKey(contact, index)}
+                className={selectableRowClass(selected)}
+              >
+                <td className="w-12 px-4 py-3">
+                  <SelectionButton
+                    label={`Select contact ${contact.chain_a}:${contact.residue_name_a}${contact.residue_a} to ${contact.chain_b}:${contact.residue_name_b}${contact.residue_b}`}
+                    onClick={() => onSelect(contact)}
+                  />
+                </td>
+                <td className="px-4 py-3 text-slate-700">{contact.contact_type}</td>
+                <td className="px-4 py-3 font-mono text-slate-900">
+                  {contact.chain_a}:{contact.residue_name_a}
+                  {contact.residue_a}
+                </td>
+                <td className="px-4 py-3 font-mono text-slate-700">{contact.atom_a}</td>
+                <td className="px-4 py-3 font-mono text-slate-900">
+                  {contact.chain_b}:{contact.residue_name_b}
+                  {contact.residue_b}
+                </td>
+                <td className="px-4 py-3 font-mono text-slate-700">{contact.atom_b}</td>
+                <td className="px-4 py-3 font-mono text-slate-700">{contact.distance_angstrom.toFixed(3)} A</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
       {totalCount > contacts.length ? (
@@ -583,4 +732,37 @@ function ContactTable({ contacts, totalCount }: { contacts: ContactRecord[]; tot
       ) : null}
     </div>
   );
+}
+
+function selectableRowClass(selected: boolean) {
+  return [
+    "text-slate-800",
+    selected ? "bg-amber-50 ring-2 ring-inset ring-amber-400 hover:bg-amber-50" : "",
+  ].join(" ");
+}
+
+function SelectionButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className="inline-flex h-8 w-8 items-center justify-center border border-slate-300 bg-white text-slate-700 hover:bg-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-600"
+    >
+      <Atom className="h-4 w-4" />
+    </button>
+  );
+}
+
+function contactKey(contact: ContactRecord, index: number) {
+  return [
+    contact.contact_type,
+    contact.chain_a,
+    contact.residue_a,
+    contact.atom_a,
+    contact.chain_b,
+    contact.residue_b,
+    contact.atom_b,
+    index,
+  ].join("-");
 }

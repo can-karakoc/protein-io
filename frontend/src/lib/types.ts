@@ -26,6 +26,25 @@ export type ContactRecord = {
   contact_type: ContactType;
 };
 
+export type ViewerSelection =
+  | {
+      kind: "chain";
+      chainId: string;
+      label: string;
+    }
+  | {
+      kind: "ligand";
+      chainId: string;
+      residueName: string;
+      residueNumber: string;
+      label: string;
+    }
+  | {
+      kind: "contact";
+      contact: ContactRecord;
+      label: string;
+    };
+
 export type StructureSummary = {
   atom_count: number;
   residue_count: number;
