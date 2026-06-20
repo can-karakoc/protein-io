@@ -20,7 +20,7 @@ See [Product Direction](PRODUCT_DIRECTION.md) for product framing and [Action Pl
 - Hydrogen filtering.
 - Contact result capping.
 - Backend tests.
-- Next.js frontend with upload panel, sample loader, 3Dmol.js viewer, summary cards, tables, and CSV export.
+- Next.js frontend with upload panel, sample loader, Mol* viewer, summary cards, tables, and CSV export.
 - Vercel frontend deployment.
 - Render backend deployment.
 - Public docs, screenshots, QA checklist, and benchmark baseline.
@@ -37,7 +37,7 @@ See [Product Direction](PRODUCT_DIRECTION.md) for product framing and [Action Pl
 
 ## Later Priorities
 
-8. Evaluate a Mol* viewer upgrade only if 3Dmol.js becomes limiting.
+8. Integrate Mol* as the primary structure viewer. In progress.
 9. Add advanced ligand interaction summaries.
 10. Add structure comparison.
 

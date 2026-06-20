@@ -25,7 +25,7 @@ The project is intentionally simple for the public MVP: no authentication, no da
 - Upload PDB/mmCIF files or load a sample PDB in the frontend.
 - Fetch RCSB mmCIF structures from a PDB ID.
 - Fetch AlphaFold DB mmCIF structures from a UniProt accession.
-- Render structures with 3Dmol.js.
+- Render structures with Mol*.
 - Show RCSB/AlphaFold metadata, confidence summaries, PAE summaries, interaction summaries, summary cards, chain table, ligand table, and contact table.
 - Filter the contact table by contact category.
 - Export contacts as CSV.
@@ -38,7 +38,7 @@ Frontend:
 - Next.js
 - TypeScript
 - Tailwind CSS
-- 3Dmol.js
+- Mol*
 - Vercel
 
 Backend:

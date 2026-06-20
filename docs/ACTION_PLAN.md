@@ -130,10 +130,15 @@ Do not add model inference, job queues, or permanent storage.
 - `[x]` Defer PAE heatmap until there is a concrete visualization need.
 - `[x]` Run final browser verification and merge `feature/pae-sidecar` into `main` after review.
 
-## Priority 8: Optional Mol* Viewer Evaluation
+## Priority 8: Mol* Viewer Integration
 
-- `[ ]` Continue with 3Dmol.js unless it blocks table-to-viewer highlighting, confidence coloring, or large-structure rendering.
-- `[ ]` Add a viewer abstraction only when there is a concrete product reason.
+- Branch: `feature/molstar-viewer`
+- `[x]` Replace the 3Dmol.js viewer implementation with Mol*.
+- `[x]` Load uploaded, RCSB, and AlphaFold PDB/mmCIF text through Mol*.
+- `[x]` Keep table-to-viewer selection wired for chains, ligands, and contacts using Mol* select/focus interactivity.
+- `[x]` Enable Mol* viewport controls, reset, expand, settings, and fullscreen controls.
+- `[x]` Add frontend bundler configuration for Mol*'s browser dependencies.
+- `[~]` Rebuild pLDDT coloring as a Mol* representation/theme follow-up.
 
 ## Priority 9: Advanced Ligand Interaction Module
 

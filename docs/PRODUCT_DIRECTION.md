@@ -53,7 +53,7 @@ Production features:
 - AlphaFold DB mmCIF fetch by UniProt accession
 - optional PAE JSON sidecar upload for predicted structures
 - sample file loader
-- 3Dmol.js structure viewer
+- Mol* structure viewer
 - chain, ligand, residue/contact summary
 - residue-residue contacts
 - protein-ligand contacts
@@ -71,7 +71,7 @@ Production features:
 
 Production stack:
 
-- Frontend: Next.js, React, TypeScript, Tailwind CSS, 3Dmol.js, Vercel
+- Frontend: Next.js, React, TypeScript, Tailwind CSS, Mol*, Vercel
 - Backend: FastAPI, Python, Gemmi, Pydantic, pytest, Render
 
 Latest completed feature branch:
@@ -147,7 +147,7 @@ Work in small PR-sized steps:
 5. Add contact categories and better interaction summaries. Done.
 6. Add AlphaFold DB fetch by UniProt ID. Done.
 7. Add PAE JSON sidecar support. Done.
-8. Evaluate a Mol* viewer upgrade only if 3Dmol.js becomes limiting.
+8. Integrate Mol* as the primary structure viewer. In progress.
 9. Add advanced ligand interaction summaries.
 10. Add structure comparison.
 

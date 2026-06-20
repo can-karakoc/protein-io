@@ -71,7 +71,7 @@ Use this checklist before public demo updates and after meaningful frontend or b
 - `[ ]` Upload an AlphaFold-style file with a filename such as `AF-P69905-F1-model_v4.pdb`.
 - `[ ]` Confirm the confidence panel appears after analysis.
 - `[ ]` Confirm average pLDDT, category counts, and low-confidence warnings are shown when applicable.
-- `[ ]` Switch between `Structure` and `pLDDT` coloring modes.
+- `[ ]` Switch between `Structure` and `pLDDT` coloring modes and confirm the pLDDT follow-up notice appears when Mol* confidence coloring is not yet available.
 - `[ ]` Upload a normal experimental-style file and confirm no confidence panel appears.
 
 ## RCSB Fetch Flow
@@ -106,5 +106,5 @@ Use this checklist before public demo updates and after meaningful frontend or b
 
 - `[ ]` Check desktop layout.
 - `[ ]` Check mobile-width layout.
-- `[ ]` Confirm the 3Dmol canvas stays inside its panel.
+- `[ ]` Confirm the Mol* canvas and controls stay inside the viewer panel.
 - `[ ]` Confirm text does not overlap controls or tables.

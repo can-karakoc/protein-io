@@ -72,19 +72,20 @@ Tradeoff:
 
 - Later plugin work may require naming conventions and module boundaries, but the current data model reduces rewrite risk.
 
-## Use 3Dmol.js for Visualization
+## Use Mol* for Visualization
 
-Decision: Use 3Dmol.js unless a clear MVP blocker appears.
+Decision: Use Mol* as the browser structure viewer.
 
 Why:
 
-- It is browser-native and commonly used for molecular visualization.
-- It can load PDB text directly.
-- It is lighter to integrate than building custom WebGL molecular rendering.
+- Mol* is widely used for modern PDB/mmCIF visualization workflows.
+- It supports richer built-in viewport controls, fullscreen, selections, and future annotation workflows.
+- It aligns better with the app's mmCIF-first RCSB and AlphaFold direction than the initial 3Dmol.js MVP viewer.
 
 Tradeoff:
 
-- Advanced visualization workflows may eventually need more viewer-specific work.
+- Mol* is heavier to bundle than 3Dmol.js and needs a browser alias for its MP4 encoder dependency.
+- pLDDT coloring now needs a Mol* representation/theme implementation instead of the old per-residue 3Dmol.js styles.
 
 ## Keep One Closest Atom Pair Per Residue Pair
 
