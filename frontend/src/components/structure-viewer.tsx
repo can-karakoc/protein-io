@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import type { ContactRecord, ViewerSelection } from "@/lib/types";
+import type { ContactRecord, ResidueConfidence, ViewerSelection } from "@/lib/types";
 
 type StructureViewerProps = {
   structureText: string;
   structureFormat: "pdb" | "cif";
   selection: ViewerSelection | null;
+  residueConfidences: ResidueConfidence[];
+  colorMode: "structure" | "plddt";
 };
 
 type ViewerLike = {
@@ -18,7 +20,13 @@ type ViewerLike = {
   render: () => void;
 };
 
-export function StructureViewer({ structureText, structureFormat, selection }: StructureViewerProps) {
+export function StructureViewer({
+  structureText,
+  structureFormat,
+  selection,
+  residueConfidences,
+  colorMode,
+}: StructureViewerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const viewerRef = useRef<ViewerLike | null>(null);
   const [viewerError, setViewerError] = useState<string | null>(null);
@@ -58,7 +66,11 @@ export function StructureViewer({ structureText, structureFormat, selection }: S
         const modelStarted = performance.now();
         viewer.clear();
         viewer.addModel(structureText, structureFormat);
-        viewer.setStyle({}, { cartoon: { color: "spectrum" } });
+        if (colorMode === "plddt" && residueConfidences.length) {
+          applyConfidenceStyle(viewer, residueConfidences);
+        } else {
+          viewer.setStyle({}, { cartoon: { color: "spectrum" } });
+        }
         viewer.setStyle({ hetflag: true }, { stick: { radius: 0.22, colorscheme: "greenCarbon" } });
         applySelectionStyle(viewer, selection);
         const zoomSelection = zoomSelectionFor(selection);
@@ -73,6 +85,7 @@ export function StructureViewer({ structureText, structureFormat, selection }: S
           format: structureFormat,
           characters: structureText.length,
           selection: selection?.label ?? "none",
+          color_mode: colorMode,
         });
       } catch (caught) {
         viewerRef.current = null;
@@ -86,7 +99,7 @@ export function StructureViewer({ structureText, structureFormat, selection }: S
     return () => {
       cancelled = true;
     };
-  }, [selection, structureFormat, structureText]);
+  }, [colorMode, residueConfidences, selection, structureFormat, structureText]);
 
   if (!structureText.trim()) {
     return (
@@ -106,6 +119,29 @@ export function StructureViewer({ structureText, structureFormat, selection }: S
       ) : null}
     </div>
   );
+}
+
+function applyConfidenceStyle(viewer: ViewerLike, residueConfidences: ResidueConfidence[]) {
+  viewer.setStyle({}, { cartoon: { color: "#d1d5db" } });
+
+  for (const residue of residueConfidences) {
+    viewer.setStyle(residueSelection(residue.chain_id, residue.residue_number), {
+      cartoon: { color: confidenceColor(residue.category) },
+    });
+  }
+}
+
+function confidenceColor(category: ResidueConfidence["category"]) {
+  if (category === "very_high") {
+    return "#2563eb";
+  }
+  if (category === "confident") {
+    return "#06b6d4";
+  }
+  if (category === "low") {
+    return "#f59e0b";
+  }
+  return "#ef4444";
 }
 
 function applySelectionStyle(viewer: ViewerLike, selection: ViewerSelection | null) {

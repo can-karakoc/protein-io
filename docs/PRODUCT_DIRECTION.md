@@ -57,6 +57,7 @@ Production features:
 - protein-ligand contacts
 - RCSB metadata panel with removed-entry replacement IDs
 - table row selection for chains, ligands, and contacts
+- AlphaFold-style pLDDT confidence summaries for predicted-structure uploads
 - CSV export
 - backend timing diagnostics
 - frontend timing logs
@@ -70,14 +71,14 @@ Production stack:
 Next feature branch:
 
 ```text
-feature/table-viewer-interaction
+feature/contact-categories
 ```
 
 This branch should add:
 
-- row selection state for chains, ligands, and contacts
-- 3Dmol.js highlighting for selected table rows
-- clear/reset selection control
+- simple contact categories
+- better interaction summary outputs
+- category filters and summary cards
 
 ## Architecture Principle
 
@@ -135,9 +136,9 @@ Work in small PR-sized steps:
 
 1. Merge Gemmi and add mmCIF support. Done.
 2. Add PDB ID fetch and RCSB metadata. Done.
-3. Add table-to-viewer interaction. Next.
-4. Add AlphaFold/pLDDT confidence support.
-5. Add contact categories and better interaction summaries.
+3. Add table-to-viewer interaction. Done.
+4. Add AlphaFold/pLDDT confidence support. Done.
+5. Add contact categories and better interaction summaries. Next.
 6. Add AlphaFold DB fetch by UniProt ID.
 7. Add PAE JSON sidecar support.
 8. Evaluate a Mol* viewer upgrade only if 3Dmol.js becomes limiting.

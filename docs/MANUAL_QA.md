@@ -47,6 +47,14 @@ Use this checklist before public demo updates and after meaningful frontend or b
 - `[ ]` Clear the selection and confirm the viewer returns to the base structure style.
 - `[ ]` Confirm selection controls work with keyboard focus and activation.
 
+## Predicted Confidence Flow
+
+- `[ ]` Upload an AlphaFold-style file with a filename such as `AF-P69905-F1-model_v4.pdb`.
+- `[ ]` Confirm the confidence panel appears after analysis.
+- `[ ]` Confirm average pLDDT, category counts, and low-confidence warnings are shown when applicable.
+- `[ ]` Switch between `Structure` and `pLDDT` coloring modes.
+- `[ ]` Upload a normal experimental-style file and confirm no confidence panel appears.
+
 ## RCSB Fetch Flow
 
 - `[ ]` Enter a valid PDB ID such as `4HHB`.

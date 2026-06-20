@@ -11,6 +11,7 @@ See [Product Direction](PRODUCT_DIRECTION.md) for product framing and [Action Pl
 - PDB and mmCIF parsing into app-owned `StructureData`.
 - RCSB mmCIF fetch by PDB ID with metadata and removed-entry replacement IDs.
 - Table-to-viewer row selection for chains, ligands, and contacts.
+- AlphaFold-style pLDDT confidence summaries for predicted-structure uploads.
 - Residue, chain, atom, ligand, and contact summaries.
 - Configurable distance cutoff.
 - Hydrogen filtering.
@@ -25,9 +26,9 @@ See [Product Direction](PRODUCT_DIRECTION.md) for product framing and [Action Pl
 
 1. Review and merge the Gemmi/mmCIF branch. Done.
 2. Add PDB ID fetch and RCSB metadata. Done.
-3. Add table-to-viewer interaction. In progress on `feature/table-viewer-interaction`.
-4. Add AlphaFold/pLDDT confidence support. Next after Priority 3 review/merge.
-5. Add contact categories and better interaction summaries.
+3. Add table-to-viewer interaction. Done.
+4. Add AlphaFold/pLDDT confidence support. Done.
+5. Add contact categories and better interaction summaries. Next.
 
 ## Later Priorities
 

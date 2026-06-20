@@ -166,6 +166,7 @@ def structure_to_data(structure: gemmi.Structure) -> StructureData:
                     x=round(float(atom.pos.x), 3),
                     y=round(float(atom.pos.y), 3),
                     z=round(float(atom.pos.z), 3),
+                    b_factor=round(float(atom.b_iso), 2),
                     chain_id=chain.name,
                     residue_id=residue_id,
                     residue_name=residue.name.strip(),

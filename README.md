@@ -12,6 +12,7 @@ The project is intentionally simple for the public MVP: no authentication, no da
 - Summarize chain counts, residue counts, ligand records, and atom counts.
 - Calculate residue-residue contacts.
 - Calculate protein-ligand contacts when ligands are present.
+- Detect AlphaFold-style pLDDT confidence values from predicted-structure uploads.
 - Ignore hydrogen atoms during contact detection.
 - Use Gemmi NeighborSearch for contact search.
 - Return warnings for useful analysis context.
@@ -19,7 +20,7 @@ The project is intentionally simple for the public MVP: no authentication, no da
 - Upload PDB/mmCIF files or load a sample PDB in the frontend.
 - Fetch RCSB mmCIF structures from a PDB ID.
 - Render structures with 3Dmol.js.
-- Show RCSB metadata, summary cards, chain table, ligand table, and contact table.
+- Show RCSB metadata, confidence summaries, summary cards, chain table, ligand table, and contact table.
 - Export contacts as CSV.
 - Prepare frontend API calls through `NEXT_PUBLIC_API_URL`.
 
@@ -154,6 +155,8 @@ Response shape:
     "contact_count": 0
   },
   "metadata": null,
+  "confidence": null,
+  "residue_confidences": [],
   "chains": [],
   "ligands": [],
   "contacts": [],
@@ -177,6 +180,8 @@ RCSB response shape:
       "pdb_id": "4HHB",
       "replaced_by": []
     },
+    "confidence": null,
+    "residue_confidences": [],
     "chains": [],
     "ligands": [],
     "contacts": [],

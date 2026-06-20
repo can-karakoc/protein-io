@@ -1,4 +1,5 @@
 export type ContactType = "residue-residue" | "protein-ligand";
+export type ConfidenceCategory = "very_high" | "confident" | "low" | "very_low";
 
 export type ChainSummary = {
   id: string;
@@ -68,10 +69,31 @@ export type StructureMetadata = {
   replaced_by: string[];
 };
 
+export type ResidueConfidence = {
+  chain_id: string;
+  residue_number: string;
+  residue_name: string;
+  plddt: number;
+  category: ConfidenceCategory;
+};
+
+export type ConfidenceSummary = {
+  source: "plddt";
+  residue_count: number;
+  average_plddt: number;
+  very_high_count: number;
+  confident_count: number;
+  low_count: number;
+  very_low_count: number;
+  low_confidence_count: number;
+};
+
 export type AnalysisResponse = {
   version: string;
   summary: StructureSummary;
   metadata: StructureMetadata | null;
+  confidence: ConfidenceSummary | null;
+  residue_confidences: ResidueConfidence[];
   chains: ChainSummary[];
   ligands: LigandSummary[];
   contacts: ContactRecord[];

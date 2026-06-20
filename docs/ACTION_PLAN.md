@@ -84,18 +84,22 @@ Do not switch from 3Dmol.js to Mol* in this priority.
 
 ## Priority 4: AlphaFold / Predicted Structure Confidence Support
 
-- `[ ]` Support uploaded AlphaFold-style PDB/mmCIF files.
-- `[ ]` Detect when B-factor values should be interpreted as pLDDT.
-- `[ ]` Add per-residue confidence annotations to backend output.
-- `[ ]` Add confidence categories: very high, confident, low, very low.
-- `[ ]` Add confidence summary generation.
-- `[ ]` Add confidence panel and low-confidence warning copy.
-- `[ ]` Add pLDDT coloring mode and legend.
-- `[ ]` Add tests for pLDDT extraction, category assignment, summary generation, and no-confidence files.
+- Branch: `feature/plddt-confidence`
+- `[x]` Support uploaded AlphaFold-style PDB/mmCIF files.
+- `[x]` Detect when B-factor values should be interpreted as pLDDT.
+- `[x]` Add per-residue confidence annotations to backend output.
+- `[x]` Add confidence categories: very high, confident, low, very low.
+- `[x]` Add confidence summary generation.
+- `[x]` Add confidence panel and low-confidence warning copy.
+- `[x]` Add pLDDT coloring mode and legend.
+- `[x]` Add tests for pLDDT extraction, category assignment, summary generation, and no-confidence files.
+- `[x]` Run final browser verification and merge `feature/plddt-confidence` into `main` after review.
 
 Do not add AlphaFold DB fetching, PAE, or model inference in this priority.
 
 ## Priority 5: Contact Categories and Better Interaction Summaries
+
+Next after Priority 4 review/merge:
 
 - `[ ]` Keep raw distance search separate from classification.
 - `[ ]` Add simple categories: protein-protein, protein-ligand, ligand-water, protein-water, intra-chain, inter-chain, and possible clash.

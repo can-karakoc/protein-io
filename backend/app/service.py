@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from time import perf_counter
 
 from app.contacts import calculate_contacts
+from app.confidence import analyze_plddt_confidence
 from app.integrations.rcsb import fetch_rcsb_structure
 from app.integrations.rcsb import RcsbStructure
 from app.models import AnalysisResponse, RcsbAnalysisResponse, StructureMetadata
@@ -80,14 +81,17 @@ def analyze_pdb_content_with_timing(
     contacts_ms = elapsed_ms(contacts_started)
 
     response_started = perf_counter()
+    confidence, residue_confidences, confidence_warnings = analyze_plddt_confidence(structure)
     summary = structure.summary.model_copy(update={"contact_count": len(contacts)})
     response = AnalysisResponse(
         summary=summary,
         metadata=metadata,
+        confidence=confidence,
+        residue_confidences=residue_confidences,
         chains=structure.chains,
         ligands=structure.ligands,
         contacts=contacts,
-        warnings=[*structure.warnings, *contact_warnings],
+        warnings=[*structure.warnings, *contact_warnings, *confidence_warnings],
     )
     response_ms = elapsed_ms(response_started)
 
