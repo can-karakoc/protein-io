@@ -64,15 +64,19 @@ export type StructureSummary = {
 };
 
 export type StructureMetadata = {
-  source: "upload" | "rcsb";
+  source: "upload" | "rcsb" | "alphafold";
   status: "current" | "removed" | null;
   pdb_id: string | null;
+  uniprot_id: string | null;
   title: string | null;
   method: string | null;
   resolution_angstrom: number | null;
   organism: string | null;
   deposition_date: string | null;
   rcsb_url: string | null;
+  alphafold_url: string | null;
+  model_url: string | null;
+  model_version: number | null;
   entity_count: number | null;
   chain_count: number | null;
   replaced_by: string[];
@@ -144,3 +148,5 @@ export type RcsbAnalysisResponse = {
   structure_text: string;
   analysis: AnalysisResponse;
 };
+
+export type AlphaFoldAnalysisResponse = RcsbAnalysisResponse;

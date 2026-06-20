@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 
 import app.main as main_module
 import app.service as service_module
+from app.integrations.alphafold import AlphaFoldFetchError, AlphaFoldStructure
 from app.integrations.rcsb import RcsbFetchError, RcsbStructure
 from app.main import app
 from app.models import StructureMetadata
@@ -117,6 +118,60 @@ def test_rcsb_analyze_endpoint_rejects_invalid_id(monkeypatch):
 
     assert response.status_code == 400
     assert "4 alphanumeric" in response.json()["detail"]
+
+
+def test_alphafold_analyze_endpoint_returns_metadata_and_confidence(monkeypatch):
+    client = TestClient(app)
+
+    def fake_fetch_alphafold_structure(uniprot_id: str) -> AlphaFoldStructure:
+        return AlphaFoldStructure(
+            uniprot_id=uniprot_id,
+            filename=f"AF-{uniprot_id}-F1-model_v4.cif",
+            content=SAMPLE_CIF.read_bytes(),
+            metadata=StructureMetadata(
+                source="alphafold",
+                status="current",
+                uniprot_id=uniprot_id,
+                title="Hemoglobin subunit alpha",
+                method="AlphaFold DB predicted model",
+                organism="Homo sapiens",
+                deposition_date="2022-06-01",
+                alphafold_url=f"https://alphafold.ebi.ac.uk/entry/{uniprot_id}",
+                model_url=f"https://alphafold.ebi.ac.uk/files/AF-{uniprot_id}-F1-model_v4.cif",
+                model_version=4,
+                entity_count=1,
+                chain_count=1,
+            ),
+        )
+
+    monkeypatch.setattr(service_module, "fetch_alphafold_structure", fake_fetch_alphafold_structure)
+
+    response = client.get("/api/alphafold/P69905/analyze?cutoff_angstrom=4.0")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["filename"] == "AF-P69905-F1-model_v4.cif"
+    assert data["structure_format"] == "cif"
+    assert data["structure_text"].lstrip().startswith("data_")
+    assert data["analysis"]["metadata"]["source"] == "alphafold"
+    assert data["analysis"]["metadata"]["uniprot_id"] == "P69905"
+    assert data["analysis"]["metadata"]["title"] == "Hemoglobin subunit alpha"
+    assert data["analysis"]["confidence"] is not None
+    assert "fetch_ms=" in response.headers["X-ProteinIO-Timing"]
+
+
+def test_alphafold_analyze_endpoint_rejects_invalid_accession(monkeypatch):
+    client = TestClient(app)
+
+    def fake_fetch_alphafold_structure(uniprot_id: str) -> AlphaFoldStructure:
+        raise AlphaFoldFetchError("UniProt accession must be 6 to 10 alphanumeric characters.")
+
+    monkeypatch.setattr(service_module, "fetch_alphafold_structure", fake_fetch_alphafold_structure)
+
+    response = client.get("/api/alphafold/bad-id/analyze")
+
+    assert response.status_code == 400
+    assert "UniProt accession" in response.json()["detail"]
 
 
 def test_analyze_endpoint_rejects_bad_upload():

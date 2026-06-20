@@ -50,6 +50,7 @@ Production features:
 - PDB upload
 - mmCIF upload
 - RCSB mmCIF fetch by PDB ID
+- AlphaFold DB mmCIF fetch by UniProt accession
 - sample file loader
 - 3Dmol.js structure viewer
 - chain, ligand, residue/contact summary
@@ -60,6 +61,7 @@ Production features:
 - RCSB metadata panel with removed-entry replacement IDs
 - table row selection for chains, ligands, and contacts
 - AlphaFold-style pLDDT confidence summaries for predicted-structure uploads
+- AlphaFold DB metadata panel for fetched predicted models
 - CSV export
 - backend timing diagnostics
 - frontend timing logs
@@ -73,14 +75,14 @@ Production stack:
 Latest completed feature branch:
 
 ```text
-feature/contact-categories
+feature/alphafold-fetch
 ```
 
 This branch adds:
 
-- simple contact categories
-- better interaction summary outputs
-- category filters and summary cards
+- AlphaFold DB metadata and mmCIF fetch by UniProt accession
+- frontend UniProt accession fetch mode
+- mocked tests for AlphaFold DB network calls
 
 ## Architecture Principle
 
@@ -141,7 +143,7 @@ Work in small PR-sized steps:
 3. Add table-to-viewer interaction. Done.
 4. Add AlphaFold/pLDDT confidence support. Done.
 5. Add contact categories and better interaction summaries. Done.
-6. Add AlphaFold DB fetch by UniProt ID.
+6. Add AlphaFold DB fetch by UniProt ID. Done.
 7. Add PAE JSON sidecar support.
 8. Evaluate a Mol* viewer upgrade only if 3Dmol.js becomes limiting.
 9. Add advanced ligand interaction summaries.
