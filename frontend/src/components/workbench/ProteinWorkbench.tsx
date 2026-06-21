@@ -1,9 +1,11 @@
 "use client";
 
-import { AlertCircle, Atom, Download, FileUp, Loader2, Play, RotateCcw, Search, X } from "lucide-react";
+import { AlertCircle, Atom, Download, FileUp, Loader2, Play, Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { StructureViewer } from "@/components/structure-viewer";
+import { StructureViewer } from "@/components/viewer/StructureViewer";
+import { WorkbenchShell } from "@/components/workbench/WorkbenchShell";
+import type { WorkbenchMode } from "@/components/workbench/TopNav";
 import { buildApiUrl } from "@/lib/api";
 import { contactsToCsv, ligandInteractionsToCsv } from "@/lib/csv";
 import type {
@@ -32,6 +34,7 @@ type ViewerColorMode = "structure" | "plddt";
 type ContactFilter = "all" | ContactCategory;
 
 export function ProteinWorkbench() {
+  const [mode, setMode] = useState<WorkbenchMode>("explore");
   const [fileName, setFileName] = useState<string>("");
   const [structureText, setStructureText] = useState("");
   const [structureFormat, setStructureFormat] = useState<StructureFileFormat>("pdb");
@@ -370,42 +373,9 @@ export function ProteinWorkbench() {
   }
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-slate-50 text-slate-950">
-      <div className="mx-auto flex min-w-0 w-full max-w-7xl flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
-        <header className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <div className="mb-2 flex items-center gap-2 text-sm font-medium text-cyan-700">
-              <Atom className="h-4 w-4" />
-              Protein Interaction Explorer
-            </div>
-            <h1 className="text-2xl font-semibold tracking-normal text-slate-950 sm:text-3xl">
-              Structure upload and contact analysis
-            </h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Upload a PDB or mmCIF file, inspect the structure, calculate residue and ligand contacts, and export the
-              interaction table.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={loadExample}
-              className="inline-flex h-10 items-center gap-2 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100"
-            >
-              <FileUp className="h-4 w-4" />
-              Load sample
-            </button>
-            <button
-              type="button"
-              onClick={reset}
-              className="inline-flex h-10 items-center gap-2 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100"
-            >
-              <RotateCcw className="h-4 w-4" />
-              Reset
-            </button>
-          </div>
-        </header>
-
+    <WorkbenchShell mode={mode} onModeChange={setMode} onLoadSample={loadExample} onReset={reset}>
+      {mode === "explore" ? (
+        <>
         <section className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
           <aside className="min-w-0 flex flex-col gap-4">
             <div className="border border-slate-200 bg-white p-4">
@@ -702,8 +672,31 @@ export function ProteinWorkbench() {
             }
           />
         </section>
-      </div>
-    </main>
+        </>
+      ) : (
+        <WorkbenchModePlaceholder mode={mode} />
+      )}
+    </WorkbenchShell>
+  );
+}
+
+function WorkbenchModePlaceholder({ mode }: { mode: Exclude<WorkbenchMode, "explore"> }) {
+  const copy =
+    mode === "compare"
+      ? {
+          title: "Compare workspace",
+          body: "The comparison workflow is available in Explore for now. This mode is reserved for the upcoming dedicated structure A/B comparison workspace.",
+        }
+      : {
+          title: "Report workspace",
+          body: "Report mode is reserved for the upcoming clean analysis summary, provenance, and export workflow.",
+        };
+
+  return (
+    <section className="border border-dashed border-slate-300 bg-white p-6">
+      <p className="text-sm font-semibold text-slate-950">{copy.title}</p>
+      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">{copy.body}</p>
+    </section>
   );
 }
 

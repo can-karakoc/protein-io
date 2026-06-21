@@ -166,9 +166,10 @@ Do not add model inference, job queues, or permanent storage.
 
 Goal: restructure the frontend into a scientist-facing workbench organized around `Explore | Compare | Report`.
 
-- `[ ]` Inspect the current frontend structure before implementation.
-- `[ ]` Propose a concrete component architecture before coding.
-- `[ ]` Add top navigation with app identity, mode tabs, docs/GitHub links, and export access.
+- `[x]` Inspect the current frontend structure before implementation.
+- `[x]` Propose a concrete component architecture before coding.
+- `[x]` Add initial workbench shell and mode tabs with app identity.
+- `[ ]` Add top navigation links for docs/GitHub and export access.
 - `[ ]` Build an Explore layout with left sidebar, center Mol* viewer, and results tabs.
 - `[ ]` Group load inputs, analysis controls, and compact metadata in the left sidebar.
 - `[ ]` Move results into tabs: Overview, Chains, Ligands, Contacts, Confidence, PAE, and Quality.
