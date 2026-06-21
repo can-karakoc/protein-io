@@ -1,7 +1,7 @@
 "use client";
 
 import { Atom, Database, Download, FileUp, Search, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { StructureViewer } from "@/components/viewer/StructureViewer";
 import { ExploreSidebar } from "@/components/workbench/ExploreSidebar";
@@ -519,7 +519,7 @@ export function ProteinWorkbench() {
     >
       {mode === "explore" ? (
         <>
-        <section className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
+        <section className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)] lg:items-start">
           <ExploreSidebar
             fileName={fileName}
             paeFileName={paeFileName}
@@ -558,7 +558,7 @@ export function ProteinWorkbench() {
             warnings={analysis?.warnings ?? []}
           />
 
-          <section className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4">
+          <section className="grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-4">
             <StructureViewer
               structureText={structureText}
               structureFormat={structureFormat}
@@ -566,7 +566,6 @@ export function ProteinWorkbench() {
               residueConfidences={residueConfidences}
               colorMode={viewerColorMode}
             />
-            <SelectionBar selection={selection} onClear={() => setSelection(null)} />
             <ResultsPanel
               activeTab={resultsTab}
               onTabChange={setResultsTab}
@@ -613,6 +612,7 @@ export function ProteinWorkbench() {
               onFocusRcsb={() => document.getElementById("pdb-id")?.focus()}
               onFocusAlphaFold={() => document.getElementById("uniprot-id")?.focus()}
             />
+            <SelectionBar selection={selection} onClear={() => setSelection(null)} />
           </section>
         </section>
         </>
@@ -694,6 +694,7 @@ function ResultsPanel({
   onFocusRcsb: () => void;
   onFocusAlphaFold: () => void;
 }) {
+  const panelRef = useRef<HTMLElement | null>(null);
   const tabs: Array<{ id: ResultsTab; label: string; visible: boolean }> = [
     { id: "overview", label: "Overview", visible: true },
     { id: "chains", label: "Chains", visible: true },
@@ -724,8 +725,23 @@ function ResultsPanel({
         ) ?? null
       : null;
 
+  function preservePanelPosition(update: () => void) {
+    const previousTop = panelRef.current?.getBoundingClientRect().top ?? null;
+    update();
+    window.requestAnimationFrame(() => {
+      if (previousTop === null || !panelRef.current) {
+        return;
+      }
+      const nextTop = panelRef.current.getBoundingClientRect().top;
+      const delta = nextTop - previousTop;
+      if (Math.abs(delta) > 1) {
+        window.scrollBy({ top: delta, left: 0, behavior: "auto" });
+      }
+    });
+  }
+
   return (
-    <section className="min-w-0 overflow-hidden border border-slate-200 bg-white">
+    <section ref={panelRef} className="min-w-0 overflow-hidden border border-slate-200 bg-white">
       <div className="flex flex-wrap gap-1 border-b border-slate-200 bg-slate-50 p-2" role="tablist" aria-label="Analysis results">
         {visibleTabs.map((tab) => (
           <button
@@ -733,7 +749,7 @@ function ResultsPanel({
             type="button"
             role="tab"
             aria-selected={selectedTab === tab.id}
-            onClick={() => onTabChange(tab.id)}
+            onClick={() => preservePanelPosition(() => onTabChange(tab.id))}
             className={[
               "h-9 border px-3 text-sm font-medium",
               selectedTab === tab.id
@@ -767,18 +783,30 @@ function ResultsPanel({
         ) : null}
 
         {selectedTab === "chains" ? (
-          <ChainTable chains={chains} selection={selection} onSelect={onChainSelect} />
+          <ChainTable
+            chains={chains}
+            selection={selection}
+            onSelect={onChainSelect}
+          />
         ) : null}
 
         {selectedTab === "ligands" ? (
-          <div className="grid min-w-0 gap-4">
-            <LigandTable ligands={ligands} selection={selection} onSelect={onLigandSelect} />
-            <LigandDetailPanel
-              ligand={selectedLigand}
-              interaction={selectedLigandInteraction}
-              onExport={onExportSingleLigand}
-            />
-            <LigandInteractionPanel ligandInteractions={analysis?.ligand_interactions ?? []} onExport={onExportLigands} />
+          <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
+            <div className="grid min-w-0 gap-4">
+              <LigandTable
+                ligands={ligands}
+                selection={selection}
+                onSelect={onLigandSelect}
+              />
+              <LigandInteractionPanel ligandInteractions={analysis?.ligand_interactions ?? []} onExport={onExportLigands} />
+            </div>
+            <div className="min-w-0 xl:sticky xl:top-4">
+              <LigandDetailPanel
+                ligand={selectedLigand}
+                interaction={selectedLigandInteraction}
+                onExport={onExportSingleLigand}
+              />
+            </div>
           </div>
         ) : null}
 
@@ -1644,7 +1672,12 @@ function TopContactList({ title, rows }: { title: string; rows: Array<[string, n
 
 function SelectionBar({ selection, onClear }: { selection: ViewerSelection | null; onClear: () => void }) {
   if (!selection) {
-    return null;
+    return (
+      <div className="min-h-[96px] border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-500">
+        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Selection inspector</p>
+        <p className="mt-2 text-sm leading-6">Select a chain, ligand, or contact row to focus it in Mol*.</p>
+      </div>
+    );
   }
 
   const details = selectionDetails(selection);
