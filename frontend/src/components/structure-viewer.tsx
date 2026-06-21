@@ -29,11 +29,18 @@ export function StructureViewer({
   const viewerRef = useRef<MolstarViewer | null>(null);
   const loadedStructureRef = useRef<string>("");
   const selectionRef = useRef<ViewerSelection | null>(selection);
+  const colorModeRef = useRef<StructureViewerProps["colorMode"]>(colorMode);
+  const residueConfidencesRef = useRef<ResidueConfidence[]>(residueConfidences);
   const [viewerError, setViewerError] = useState<string | null>(null);
 
   useEffect(() => {
     selectionRef.current = selection;
   }, [selection]);
+
+  useEffect(() => {
+    colorModeRef.current = colorMode;
+    residueConfidencesRef.current = residueConfidences;
+  }, [colorMode, residueConfidences]);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,6 +92,7 @@ export function StructureViewer({
           dataLabel: structureFormat === "cif" ? "Uploaded mmCIF" : "Uploaded PDB",
         });
         loadedStructureRef.current = structureSignature(structureText, structureFormat);
+        await applyColorTheme(viewer, colorModeRef.current, residueConfidencesRef.current);
         applySelection(viewer, selectionRef.current);
         viewer.handleResize();
         const modelRenderMs = elapsedMs(modelStarted);
@@ -122,6 +130,15 @@ export function StructureViewer({
   }, [selection, structureFormat, structureText]);
 
   useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer || loadedStructureRef.current !== structureSignature(structureText, structureFormat)) {
+      return;
+    }
+
+    void applyColorTheme(viewer, colorMode, residueConfidences);
+  }, [colorMode, residueConfidences, structureFormat, structureText]);
+
+  useEffect(() => {
     return () => {
       viewerRef.current?.dispose();
       viewerRef.current = null;
@@ -141,8 +158,8 @@ export function StructureViewer({
     <div className="relative h-[420px] w-full overflow-hidden border border-slate-200 bg-white">
       <div ref={containerRef} className="absolute inset-0" />
       {colorMode === "plddt" && residueConfidences.length ? (
-        <div className="pointer-events-none absolute left-3 top-3 max-w-[240px] border border-amber-200 bg-amber-50/95 px-3 py-2 text-xs leading-5 text-amber-900 shadow-sm">
-          pLDDT summaries are shown in the analysis panels. Mol* confidence coloring is queued as a viewer-theme follow-up.
+        <div className="pointer-events-none absolute left-3 top-3 max-w-[260px] border border-slate-200 bg-white/95 px-3 py-2 text-xs leading-5 text-slate-700 shadow-sm">
+          Mol* pLDDT coloring is active using residue B-factor confidence values.
         </div>
       ) : null}
       {viewerError ? (
@@ -152,6 +169,20 @@ export function StructureViewer({
       ) : null}
     </div>
   );
+}
+
+async function applyColorTheme(
+  viewer: MolstarViewer,
+  colorMode: StructureViewerProps["colorMode"],
+  residueConfidences: ResidueConfidence[],
+) {
+  const color = colorMode === "plddt" && residueConfidences.length ? "uncertainty" : "default";
+
+  await viewer.plugin.dataTransaction(async () => {
+    for (const structure of viewer.plugin.managers.structure.hierarchy.current.structures) {
+      await viewer.plugin.managers.structure.component.updateRepresentationsTheme(structure.components, { color });
+    }
+  });
 }
 
 function applySelection(viewer: MolstarViewer, selection: ViewerSelection | null) {

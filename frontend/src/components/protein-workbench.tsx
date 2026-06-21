@@ -19,6 +19,7 @@ import type {
   PaeSummary,
   ResidueConfidence,
   RcsbAnalysisResponse,
+  StructureComparisonResponse,
   StructureMetadata,
   ViewerSelection,
 } from "@/lib/types";
@@ -40,6 +41,9 @@ export function ProteinWorkbench() {
   const [uniprotId, setUniprotId] = useState("");
   const [cutoff, setCutoff] = useState(4.0);
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
+  const [comparisonFileA, setComparisonFileA] = useState<File | null>(null);
+  const [comparisonFileB, setComparisonFileB] = useState<File | null>(null);
+  const [comparison, setComparison] = useState<StructureComparisonResponse | null>(null);
   const [selection, setSelection] = useState<ViewerSelection | null>(null);
   const [viewerColorMode, setViewerColorMode] = useState<ViewerColorMode>("structure");
   const [contactFilter, setContactFilter] = useState<ContactFilter>("all");
@@ -47,6 +51,7 @@ export function ProteinWorkbench() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRcsbLoading, setIsRcsbLoading] = useState(false);
   const [isAlphaFoldLoading, setIsAlphaFoldLoading] = useState(false);
+  const [isComparisonLoading, setIsComparisonLoading] = useState(false);
 
   const hasStructure = structureText.trim().length > 0;
   const contacts = useMemo(() => analysis?.contacts ?? [], [analysis]);
@@ -292,6 +297,39 @@ export function ProteinWorkbench() {
     }
   }
 
+  async function compareStructures() {
+    if (!comparisonFileA || !comparisonFileB) {
+      setError("Choose two PDB or mmCIF files before comparing structures.");
+      return;
+    }
+
+    setIsComparisonLoading(true);
+    setComparison(null);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file_a", comparisonFileA);
+      formData.append("file_b", comparisonFileB);
+      formData.append("cutoff_angstrom", String(cutoff));
+      const response = await fetch(buildApiUrl("/api/compare"), {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as { detail?: string } | null;
+        throw new Error(body?.detail ?? `Comparison failed with status ${response.status}.`);
+      }
+
+      setComparison((await response.json()) as StructureComparisonResponse);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Comparison failed.");
+    } finally {
+      setIsComparisonLoading(false);
+    }
+  }
+
   function reset() {
     setFileName("");
     setStructureText("");
@@ -301,6 +339,9 @@ export function ProteinWorkbench() {
     setPaeFileName("");
     setPaeText("");
     setAnalysis(null);
+    setComparison(null);
+    setComparisonFileA(null);
+    setComparisonFileB(null);
     setSelection(null);
     setViewerColorMode("structure");
     setContactFilter("all");
@@ -517,6 +558,40 @@ export function ProteinWorkbench() {
               </div>
             </div>
 
+            <div className="border border-slate-200 bg-white p-4">
+              <h2 className="text-sm font-semibold text-slate-950">Structure comparison</h2>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Compare parsed counts and residue-level contact sets for two structures.
+              </p>
+              <div className="mt-4 grid gap-3">
+                <ComparisonFileInput
+                  label="First structure"
+                  fileName={comparisonFileA?.name ?? ""}
+                  onChange={(file) => {
+                    setComparisonFileA(file);
+                    setComparison(null);
+                  }}
+                />
+                <ComparisonFileInput
+                  label="Second structure"
+                  fileName={comparisonFileB?.name ?? ""}
+                  onChange={(file) => {
+                    setComparisonFileB(file);
+                    setComparison(null);
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={compareStructures}
+                  disabled={!comparisonFileA || !comparisonFileB || isComparisonLoading}
+                  className="inline-flex h-10 items-center justify-center gap-2 bg-slate-900 px-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                >
+                  {isComparisonLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Atom className="h-4 w-4" />}
+                  Compare structures
+                </button>
+              </div>
+            </div>
+
             {error ? (
               <div className="border border-red-200 bg-red-50 p-4 text-sm text-red-800">
                 <div className="flex items-start gap-2">
@@ -560,6 +635,7 @@ export function ProteinWorkbench() {
               ligandInteractions={analysis?.ligand_interactions ?? []}
               onExport={exportLigandCsv}
             />
+            <StructureComparisonPanel comparison={comparison} />
             <SummaryCards analysis={analysis} />
           </section>
         </section>
@@ -654,6 +730,17 @@ function downloadCsv(csv: string, filename: string) {
 
 function baseExportName(fileName: string) {
   return fileName.replace(/\.[^.]+$/, "");
+}
+
+function formatSignedNumber(value: number) {
+  if (value > 0) {
+    return `+${value}`;
+  }
+  return String(value);
+}
+
+function formatOptionalDistance(value: number | null) {
+  return value === null ? "-" : `${value.toFixed(3)} A`;
 }
 
 function formatFromFileName(fileName: string): StructureFileFormat {
@@ -865,6 +952,90 @@ function PaePanel({ pae }: { pae: PaeSummary | null }) {
   );
 }
 
+function StructureComparisonPanel({ comparison }: { comparison: StructureComparisonResponse | null }) {
+  if (!comparison) {
+    return null;
+  }
+
+  const deltaItems = [
+    ["Atoms", comparison.delta.atom_count_delta],
+    ["Protein residues", comparison.delta.residue_count_delta],
+    ["Chains", comparison.delta.chain_count_delta],
+    ["Ligands", comparison.delta.ligand_count_delta],
+    ["Contacts", comparison.delta.contact_count_delta],
+  ];
+
+  return (
+    <div className="border border-slate-200 bg-white p-4">
+      <h2 className="text-sm font-semibold text-slate-950">Structure comparison</h2>
+      <p className="mt-1 text-xs leading-5 text-slate-500">
+        Deltas are calculated as second structure minus first structure. Contact comparison uses residue-level contact identities.
+      </p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+        {deltaItems.map(([label, value]) => (
+          <div key={label} className="border border-slate-200 px-3 py-2">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
+            <p className={`mt-1 font-mono text-sm ${Number(value) === 0 ? "text-slate-950" : Number(value) > 0 ? "text-emerald-700" : "text-red-700"}`}>
+              {formatSignedNumber(Number(value))}
+            </p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 grid gap-2 sm:grid-cols-3">
+        <ComparisonCount label="Shared contacts" value={comparison.contacts.shared_contact_count} />
+        <ComparisonCount label="Gained contacts" value={comparison.contacts.gained_contact_count} />
+        <ComparisonCount label="Lost contacts" value={comparison.contacts.lost_contact_count} />
+      </div>
+      <div className="mt-4 grid gap-4 xl:grid-cols-3">
+        <ContactDifferenceList title="Gained contacts" rows={comparison.contacts.gained_contacts} />
+        <ContactDifferenceList title="Lost contacts" rows={comparison.contacts.lost_contacts} />
+        <ContactDifferenceList title="Shared examples" rows={comparison.contacts.shared_contacts} />
+      </div>
+      {comparison.warnings.length ? (
+        <ul className="mt-4 list-inside list-disc text-xs leading-5 text-amber-800">
+          {comparison.warnings.map((warning) => (
+            <li key={warning}>{warning}</li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+function ComparisonCount({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex items-center justify-between border border-slate-200 px-3 py-2">
+      <span className="text-sm text-slate-700">{label}</span>
+      <span className="font-mono text-sm text-slate-950">{value}</span>
+    </div>
+  );
+}
+
+function ContactDifferenceList({ title, rows }: { title: string; rows: StructureComparisonResponse["contacts"]["gained_contacts"] }) {
+  return (
+    <div>
+      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{title}</p>
+      {rows.length ? (
+        <div className="mt-2 divide-y divide-slate-100 border border-slate-200">
+          {rows.map((row) => (
+            <div key={`${row.label}-${row.contact_type}-${row.distance_a_angstrom ?? ""}-${row.distance_b_angstrom ?? ""}`} className="px-3 py-2">
+              <p className="font-mono text-xs text-slate-950">{row.label}</p>
+              <p className="mt-1 text-xs text-slate-500">
+                {row.contact_type} · {row.contact_categories.join(", ")}
+              </p>
+              <p className="mt-1 font-mono text-xs text-slate-700">
+                A: {formatOptionalDistance(row.distance_a_angstrom)} / B: {formatOptionalDistance(row.distance_b_angstrom)}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-2 text-sm text-slate-500">No rows.</p>
+      )}
+    </div>
+  );
+}
+
 function InteractionSummaryPanel({ summary }: { summary: InteractionSummary | null }) {
   if (!summary) {
     return null;
@@ -995,6 +1166,34 @@ function LigandInteractionPanel({
         </table>
       </div>
     </div>
+  );
+}
+
+function ComparisonFileInput({
+  label,
+  fileName,
+  onChange,
+}: {
+  label: string;
+  fileName: string;
+  onChange: (file: File) => void;
+}) {
+  return (
+    <label className="block border border-dashed border-slate-300 bg-slate-50 px-3 py-3 hover:bg-slate-100">
+      <span className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</span>
+      <span className="mt-1 block truncate text-sm font-medium text-slate-800">{fileName || "Choose .pdb, .cif, or .mmcif"}</span>
+      <input
+        type="file"
+        accept=".pdb,.cif,.mmcif,chemical/x-pdb,chemical/x-mmcif,text/plain"
+        className="sr-only"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) {
+            onChange(file);
+          }
+        }}
+      />
+    </label>
   );
 }
 

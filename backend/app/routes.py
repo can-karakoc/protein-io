@@ -5,11 +5,11 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from starlette.responses import Response
 
 from app.integrations.alphafold import AlphaFoldFetchError
-from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, RcsbAnalysisResponse
+from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, RcsbAnalysisResponse, StructureComparisonResponse
 from app.pae import PaeParseError, analyze_pae_json
 from app.integrations.rcsb import RcsbFetchError
 from app.parser import StructureParseError
-from app.service import analyze_alphafold_id_with_timing, analyze_pdb_content_with_timing, analyze_rcsb_id_with_timing, elapsed_ms
+from app.service import analyze_alphafold_id_with_timing, analyze_pdb_content_with_timing, analyze_rcsb_id_with_timing, compare_pdb_contents, elapsed_ms
 
 
 router = APIRouter()
@@ -65,6 +65,31 @@ async def analyze_api(
     cutoff_angstrom: float = Form(4.0),
 ) -> AnalysisResponse:
     return await analyze(response=response, file=file, pae_file=pae_file, cutoff_angstrom=cutoff_angstrom)
+
+
+@router.post("/api/compare", response_model=StructureComparisonResponse)
+async def compare_structures(
+    file_a: UploadFile = File(...),
+    file_b: UploadFile = File(...),
+    cutoff_angstrom: float = Form(4.0),
+) -> StructureComparisonResponse:
+    if cutoff_angstrom <= 0:
+        raise HTTPException(status_code=400, detail="cutoff_angstrom must be greater than zero.")
+
+    try:
+        content_a = await file_a.read()
+        content_b = await file_b.read()
+        return compare_pdb_contents(
+            content_a,
+            content_b,
+            filename_a=file_a.filename,
+            filename_b=file_b.filename,
+            cutoff_angstrom=cutoff_angstrom,
+        )
+    except StructureParseError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.get("/api/rcsb/{pdb_id}/analyze", response_model=RcsbAnalysisResponse)

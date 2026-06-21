@@ -148,8 +148,8 @@ Work in small PR-sized steps:
 6. Add AlphaFold DB fetch by UniProt ID. Done.
 7. Add PAE JSON sidecar support. Done.
 8. Integrate Mol* as the primary structure viewer. Done.
-9. Add advanced ligand interaction summaries. In progress.
-10. Add structure comparison.
+9. Add advanced ligand interaction summaries. Done.
+10. Add structure comparison. Done in practical residue-contact form.
 
 Do not continue to Priority 2 until Priority 1 is reviewed and merged.
 

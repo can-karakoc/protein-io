@@ -38,8 +38,10 @@ See [Product Direction](PRODUCT_DIRECTION.md) for product framing and [Action Pl
 ## Later Priorities
 
 8. Integrate Mol* as the primary structure viewer. Done.
-9. Add MVP-safe ligand interaction summaries. In progress.
-10. Add structure comparison.
+9. Add MVP-safe ligand interaction summaries. Done.
+10. Add practical structure comparison. Done.
+
+Future comparison scope: structural alignment, RMSD, aligned contact differences, and viewer-side comparison highlighting.
 
 ## Boundaries
 

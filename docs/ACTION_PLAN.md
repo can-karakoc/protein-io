@@ -138,7 +138,7 @@ Do not add model inference, job queues, or permanent storage.
 - `[x]` Keep table-to-viewer selection wired for chains, ligands, and contacts using Mol* select/focus interactivity.
 - `[x]` Enable Mol* viewport controls, reset, expand, settings, and fullscreen controls.
 - `[x]` Add frontend bundler configuration for Mol*'s browser dependencies.
-- `[~]` Rebuild pLDDT coloring as a Mol* representation/theme follow-up.
+- `[x]` Rebuild pLDDT coloring as a Mol* representation/theme follow-up.
 
 ## Priority 9: Advanced Ligand Interaction Module
 
@@ -146,10 +146,14 @@ Do not add model inference, job queues, or permanent storage.
 - `[x]` Start with MVP-safe ligand summaries: closest ligand contacts, contacting residues per ligand, distance distribution, ligand-specific export.
 - `[x]` Add backend response data without adding heavy chemistry dependencies.
 - `[x]` Add frontend ligand interaction panel and ligand CSV export.
-- `[ ]` Evaluate ProLIF, RDKit, MDAnalysis, or PLIP-inspired output later only if the simple summaries are insufficient.
+- `[x]` Evaluate heavy ligand-analysis libraries for now and defer them because the simple summaries are sufficient for the current MVP.
 - `[x]` Preserve Render compatibility by avoiding new backend dependencies.
 
 ## Priority 10: Structure Comparison
 
-- `[ ]` Compare two structures only after single-structure analysis is strong.
-- `[ ]` Later workflows may include alignment, RMSD, contact differences, gained/lost contacts, and viewer highlighting.
+- Branch: `feature/structure-comparison`
+- `[x]` Compare two uploaded structures after single-structure analysis is strong.
+- `[x]` Add backend `/api/compare` for parsed count deltas and residue-level contact-set comparison.
+- `[x]` Show gained, lost, and shared contact examples in the frontend.
+- `[x]` Add tests for comparison service and route behavior.
+- `[ ]` Later workflows may include structural alignment, RMSD, aligned contact differences, and viewer highlighting.
