@@ -720,7 +720,7 @@ export function ProteinWorkbench() {
     >
       {mode === "explore" ? (
         <>
-        <section className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)] lg:items-start">
+        <section className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-[minmax(280px,340px)_minmax(420px,1fr)_minmax(380px,460px)] xl:items-start">
           <ExploreSidebar
             fileName={fileName}
             paeFileName={paeFileName}
@@ -767,6 +767,15 @@ export function ProteinWorkbench() {
               residueConfidences={residueConfidences}
               colorMode={viewerColorMode}
             />
+            <ViewerModeToggle
+              colorMode={viewerColorMode}
+              hasConfidence={residueConfidences.length > 0}
+              onColorModeChange={setViewerColorMode}
+            />
+            <SelectionBar selection={selection} onClear={() => setSelection(null)} />
+          </section>
+
+          <section className="grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-4">
             <ResultsPanel
               activeTab={resultsTab}
               onTabChange={setResultsTab}
@@ -817,7 +826,6 @@ export function ProteinWorkbench() {
               onFocusRcsb={() => document.getElementById("pdb-id")?.focus()}
               onFocusAlphaFold={() => document.getElementById("uniprot-id")?.focus()}
             />
-            <SelectionBar selection={selection} onClear={() => setSelection(null)} />
           </section>
         </section>
         </>
@@ -848,11 +856,15 @@ export function ProteinWorkbench() {
 
 function WorkbenchModePlaceholder() {
   return (
-    <section className="border border-dashed border-slate-300 bg-white p-6">
-      <p className="text-sm font-semibold text-slate-950">Compare workspace</p>
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+    <section className="pio-panel mx-auto grid max-w-2xl justify-items-center gap-4 p-8 text-center">
+      <Atom className="h-10 w-10 text-[var(--pio-ink)]" />
+      <p className="text-xl font-bold text-[var(--pio-ink)]">Compare workspace is coming next</p>
+      <p className="max-w-xl text-sm leading-6 text-[var(--pio-graphite)]">
         The comparison workflow is available in Explore for now. This mode is reserved for the upcoming dedicated
         structure A/B comparison workspace.
+      </p>
+      <p className="pio-badge pio-badge-caution">
+        No structural alignment. No RMSD. No TM-score. No side-by-side 3D superposition yet.
       </p>
     </section>
   );
@@ -965,8 +977,8 @@ function ResultsPanel({
   }
 
   return (
-    <section ref={panelRef} className="min-w-0 overflow-hidden border border-slate-200 bg-white">
-      <div className="flex flex-wrap gap-1 border-b border-slate-200 bg-slate-50 p-2" role="tablist" aria-label="Analysis results">
+    <section ref={panelRef} className="pio-panel min-w-0 overflow-hidden">
+      <div className="flex flex-wrap gap-2 border-b border-[var(--pio-line)] bg-[var(--pio-paper)] p-3" role="tablist" aria-label="Analysis results">
         {visibleTabs.map((tab) => (
           <button
             key={tab.id}
@@ -975,10 +987,10 @@ function ResultsPanel({
             aria-selected={selectedTab === tab.id}
             onClick={() => preservePanelPosition(() => onTabChange(tab.id))}
             className={[
-              "h-9 border px-3 text-sm font-medium",
+              "h-9 rounded-[var(--pio-radius-sm)] px-3 text-sm font-semibold transition-colors",
               selectedTab === tab.id
-                ? "border-slate-900 bg-slate-900 text-white"
-                : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100",
+                ? "bg-[var(--pio-ink)] text-[var(--pio-white)]"
+                : "text-[var(--pio-graphite)] hover:bg-[var(--pio-sand)] hover:text-[var(--pio-ink)]",
             ].join(" ")}
           >
             {tab.label}
@@ -1036,11 +1048,11 @@ function ResultsPanel({
         ) : null}
 
         {selectedTab === "contacts" ? (
-          <div className="min-w-0 border border-slate-200 bg-white">
-            <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="pio-table-card min-w-0">
+            <div className="flex flex-col gap-3 border-b border-[var(--pio-line)] p-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="text-sm font-semibold text-slate-950">Contacts</h2>
-                <p className="mt-1 text-xs leading-5 text-slate-500">
+                <h2 className="pio-section-title">Contacts</h2>
+                <p className="pio-section-copy mt-1">
                   Closest atom pair per categorized contact.
                 </p>
               </div>
@@ -1054,7 +1066,7 @@ function ResultsPanel({
                   type="button"
                   onClick={onExportContacts}
                   disabled={!allContactCount}
-                  className="inline-flex h-10 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
+                  className="pio-button-secondary h-10 px-4"
                 >
                   <Download className="h-4 w-4" />
                   Export CSV
@@ -1119,19 +1131,19 @@ function ReportWorkspace({
 }) {
   if (!analysis) {
     return (
-      <section className="border border-dashed border-slate-300 bg-white p-6">
-        <p className="text-sm font-semibold text-slate-950">No reportable analysis yet</p>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+      <section className="pio-panel p-6">
+        <p className="pio-section-title">No reportable analysis yet</p>
+        <p className="pio-section-copy mt-2 max-w-2xl">
           Load and analyze a structure first, then return here for a concise summary with methods and provenance.
         </p>
         <div className="mt-4 grid gap-2 sm:grid-cols-3">
-          <button type="button" onClick={onLoadSample} className="h-10 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100">
+          <button type="button" onClick={onLoadSample} className="pio-button-secondary h-10">
             Load sample
           </button>
-          <button type="button" onClick={onFocusRcsb} className="h-10 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100">
+          <button type="button" onClick={onFocusRcsb} className="pio-button-secondary h-10">
             Fetch PDB ID
           </button>
-          <button type="button" onClick={onFocusAlphaFold} className="h-10 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100">
+          <button type="button" onClick={onFocusAlphaFold} className="pio-button-secondary h-10">
             Fetch AlphaFold
           </button>
         </div>
@@ -1155,7 +1167,7 @@ function ReportWorkspace({
       <LigandInteractionPanel ligandInteractions={analysis.ligand_interactions} onExport={onExportLigands} />
       <ReportConfidenceSummary confidence={analysis.confidence} pae={analysis.pae} />
       <QualityPanel analysis={analysis} />
-      <ProvenancePanel provenance={provenance} />
+      <ProvenancePanel provenance={provenance} showExport={false} />
     </section>
   );
 }
@@ -1181,12 +1193,12 @@ function ReportHeader({
     "Current structure analysis";
 
   return (
-    <div className="border border-slate-200 bg-white p-4">
+    <div className="pio-panel p-4">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">Report</p>
-          <h2 className="mt-1 text-lg font-semibold text-slate-950">{title}</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+          <p className="pio-badge pio-badge-metadata">Report</p>
+          <h2 className="mt-2 text-lg font-semibold text-[var(--pio-ink)]">{title}</h2>
+          <p className="pio-section-copy mt-2 max-w-3xl">
             Clean summary of the current structure metadata, interaction metrics, ligand analysis, confidence signals,
             quality warnings, and methods/provenance.
           </p>
@@ -1195,7 +1207,7 @@ function ReportHeader({
           <button
             type="button"
             onClick={onExportContacts}
-            className="inline-flex h-10 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100"
+            className="pio-button-secondary h-10 px-3"
           >
             <Download className="h-4 w-4" />
             Contacts CSV
@@ -1204,7 +1216,7 @@ function ReportHeader({
             type="button"
             onClick={onExportLigands}
             disabled={!analysis.ligand_interactions.length}
-            className="inline-flex h-10 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
+            className="pio-button-secondary h-10 px-3"
           >
             <Download className="h-4 w-4" />
             Ligands CSV
@@ -1212,7 +1224,7 @@ function ReportHeader({
           <button
             type="button"
             onClick={onExportAnalysisJson}
-            className="inline-flex h-10 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100"
+            className="pio-button-secondary h-10 px-3"
           >
             <Download className="h-4 w-4" />
             Analysis JSON
@@ -1231,9 +1243,9 @@ function ReportHeader({
 
 function ReportFact({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="border border-slate-200 bg-slate-50 px-3 py-2">
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="mt-1 break-words text-sm text-slate-800">{value}</p>
+    <div className="pio-kv-card">
+      <p className="pio-label">{label}</p>
+      <p className="pio-value mt-1 break-words text-sm">{value}</p>
     </div>
   );
 }
@@ -1344,6 +1356,46 @@ function ConfidenceReportCard({ confidence }: { confidence: ConfidenceSummary })
   );
 }
 
+function ViewerModeToggle({
+  colorMode,
+  hasConfidence,
+  onColorModeChange,
+}: {
+  colorMode: ViewerColorMode;
+  hasConfidence: boolean;
+  onColorModeChange: (mode: ViewerColorMode) => void;
+}) {
+  if (!hasConfidence) {
+    return null;
+  }
+
+  return (
+    <div className="pio-panel flex items-center justify-between gap-3 p-3">
+      <div>
+        <p className="text-xs font-medium uppercase tracking-wide text-[var(--pio-graphite)]">Viewer color mode</p>
+        <p className="mt-1 text-xs text-[var(--pio-graphite)]">Mol* native controls remain available inside the viewer.</p>
+      </div>
+      <div className="inline-flex rounded-full border border-[var(--pio-line-strong)] bg-[var(--pio-white)] p-1">
+        {(["structure", "plddt"] as const).map((mode) => (
+          <button
+            key={mode}
+            type="button"
+            onClick={() => onColorModeChange(mode)}
+            className={[
+              "h-8 rounded-full px-3 text-xs font-semibold transition-colors",
+              colorMode === mode
+                ? "bg-[var(--pio-ink)] text-[var(--pio-white)]"
+                : "text-[var(--pio-graphite)] hover:text-[var(--pio-ink)]",
+            ].join(" ")}
+          >
+            {mode === "plddt" ? "pLDDT" : "Structure"}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function EmptyWorkbenchState({
   onLoadSample,
   onLoadExample,
@@ -1356,19 +1408,19 @@ function EmptyWorkbenchState({
   onFocusAlphaFold: () => void;
 }) {
   return (
-    <div className="border border-dashed border-slate-300 bg-slate-50 p-5">
+    <div className="rounded-[var(--pio-radius-lg)] bg-[var(--pio-sage)] p-5">
       <div className="max-w-2xl">
-        <p className="text-sm font-semibold text-slate-950">Start a structure analysis</p>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
-          Load experimental or predicted coordinates, inspect them in Mol*, then run distance-based contact and ligand
-          summaries from the same workspace.
+        <p className="pio-section-title">Start a structure analysis</p>
+        <p className="pio-section-copy mt-2">
+          Explore protein structures, contacts, ligands, and confidence in one browser workspace. Start with a structure
+          file, PDB ID, AlphaFold accession, or sample structure.
         </p>
       </div>
       <div className="mt-4 grid gap-2 sm:grid-cols-3">
         <button
           type="button"
           onClick={onLoadSample}
-          className="inline-flex h-11 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100"
+          className="pio-button-secondary h-11"
         >
           <FileUp className="h-4 w-4" />
           Load sample
@@ -1376,7 +1428,7 @@ function EmptyWorkbenchState({
         <button
           type="button"
           onClick={onFocusRcsb}
-          className="inline-flex h-11 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100"
+          className="pio-button-secondary h-11"
         >
           <Database className="h-4 w-4" />
           Fetch PDB ID
@@ -1384,7 +1436,7 @@ function EmptyWorkbenchState({
         <button
           type="button"
           onClick={onFocusAlphaFold}
-          className="inline-flex h-11 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100"
+          className="pio-button-secondary h-11"
         >
           <Search className="h-4 w-4" />
           Fetch AlphaFold
@@ -1397,42 +1449,42 @@ function EmptyWorkbenchState({
 
 function ExampleGallery({ onLoadExample }: { onLoadExample: (exampleId: ExampleId) => void }) {
   return (
-    <div className="mt-5 border-t border-slate-200 pt-5">
+    <div className="mt-5 border-t border-[var(--pio-line)] pt-5">
       <div className="flex flex-col gap-1">
-        <p className="text-sm font-semibold text-slate-950">Example gallery</p>
-        <p className="text-xs leading-5 text-slate-500">
+        <p className="pio-section-title">Example gallery</p>
+        <p className="pio-section-copy">
           Guided structures for quickly testing common experimental, predicted, ligand, large-structure, and comparison
           workflows.
         </p>
       </div>
       <div className="mt-3 grid gap-3 lg:grid-cols-2">
         {EXAMPLE_GALLERY.map((example) => (
-          <article key={example.id} className="grid min-w-0 gap-3 border border-slate-200 bg-white p-4">
+          <article key={example.id} className="pio-panel grid min-w-0 gap-3 p-4">
             <div>
               <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-950">{example.title}</h3>
-                  <p className="mt-1 font-mono text-xs text-slate-500">{example.source}</p>
+                  <h3 className="text-sm font-semibold text-[var(--pio-ink)]">{example.title}</h3>
+                  <p className="mt-1 font-mono text-xs text-[var(--pio-graphite)]">{example.source}</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => onLoadExample(example.id)}
-                  className="mt-2 inline-flex h-9 shrink-0 items-center justify-center border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 hover:bg-slate-100 sm:mt-0"
+                  className="pio-button-secondary mt-2 h-9 shrink-0 px-3 text-xs sm:mt-0"
                 >
                   {example.actionLabel}
                 </button>
               </div>
-              <p className="mt-2 text-sm leading-6 text-slate-600">{example.description}</p>
+              <p className="pio-section-copy mt-2">{example.description}</p>
             </div>
             <div className="flex flex-wrap gap-1">
               {example.tags.map((tag) => (
-                <span key={tag} className="border border-cyan-200 bg-cyan-50 px-2 py-1 text-xs font-medium text-cyan-800">
+                <span key={tag} className="pio-badge pio-badge-neutral">
                   {tag}
                 </span>
               ))}
             </div>
-            <p className="border-l-2 border-amber-300 pl-3 text-xs leading-5 text-slate-600">
-              <span className="font-semibold text-slate-800">What to look at:</span> {example.hint}
+            <p className="rounded-[var(--pio-radius-md)] bg-[var(--pio-amber-pale)] px-3 py-2 text-xs leading-5 text-[var(--pio-ink)]">
+              <span className="font-semibold text-[var(--pio-amber-deep)]">What to look at:</span> {example.hint}
             </p>
           </article>
         ))}
@@ -1509,11 +1561,13 @@ function QualityPanel({ analysis }: { analysis: AnalysisResponse | null }) {
 
   return (
     <div className="grid gap-4">
-      <div className="border border-slate-200 bg-white p-4">
-        <h2 className="text-sm font-semibold text-slate-950">Quality</h2>
-        <p className="mt-1 text-xs leading-5 text-slate-500">
-          Practical validation signals from existing contact, ligand, confidence, and PAE data. These checks flag
-          review targets; they do not replace crystallographic validation, model-quality tools, or chemical perception.
+      <div className="pio-panel p-4">
+        <h2 className="pio-section-title">Quality</h2>
+        <p className="pio-section-copy mt-1">
+          Practical validation signals from existing contact, ligand, confidence, and PAE data.
+        </p>
+        <p className="mt-3 rounded-[var(--pio-radius-md)] bg-[var(--pio-amber-pale)] px-3 py-2 text-xs font-semibold text-[var(--pio-amber-deep)]">
+          These are screening/review signals, not full crystallographic validation or chemical perception.
         </p>
         <div className="mt-4 grid gap-3 lg:grid-cols-2">
           {qualityItems.map((item) => (
@@ -1523,9 +1577,9 @@ function QualityPanel({ analysis }: { analysis: AnalysisResponse | null }) {
       </div>
 
       {warningRows.length ? (
-        <div className="border border-amber-200 bg-amber-50 p-4">
-          <h3 className="text-sm font-semibold text-amber-950">Warnings to review</h3>
-          <ul className="mt-2 list-inside list-disc space-y-1 text-sm leading-6 text-amber-900">
+        <div className="pio-alert-caution p-4">
+          <h3 className="text-sm font-semibold text-[var(--pio-amber-deep)]">Warnings to review</h3>
+          <ul className="mt-2 list-inside list-disc space-y-1 text-sm leading-6">
             {warningRows.map((warning) => (
               <li key={warning}>{warning}</li>
             ))}
@@ -1533,29 +1587,29 @@ function QualityPanel({ analysis }: { analysis: AnalysisResponse | null }) {
         </div>
       ) : null}
 
-      <div className="border border-slate-200 bg-white p-4">
-        <h3 className="text-sm font-semibold text-slate-950">Close-contact examples</h3>
-        <p className="mt-1 text-xs leading-5 text-slate-500">
+      <div className="pio-panel p-4">
+        <h3 className="pio-section-title">Close-contact examples</h3>
+        <p className="pio-section-copy mt-1">
           Representative contacts flagged as possible clashes or under 2 A.
         </p>
         {closeContactExamples.length ? (
-          <div className="mt-3 divide-y divide-slate-100 border border-slate-200">
+          <div className="pio-table-card mt-3 divide-y divide-[var(--pio-line)]">
             {closeContactExamples.map((contact) => (
               <div key={contactKey(contact)} className="grid gap-2 px-3 py-2 text-sm md:grid-cols-[1fr_1fr_auto]">
-                <span className="font-mono text-slate-900">
+                <span className="pio-value">
                   {contact.chain_a}:{contact.residue_name_a}
                   {contact.residue_a}.{contact.atom_a}
                 </span>
-                <span className="font-mono text-slate-900">
+                <span className="pio-value">
                   {contact.chain_b}:{contact.residue_name_b}
                   {contact.residue_b}.{contact.atom_b}
                 </span>
-                <span className="font-mono text-slate-700">{contact.distance_angstrom.toFixed(3)} A</span>
+                <span className="pio-value">{contact.distance_angstrom.toFixed(3)} A</span>
               </div>
             ))}
           </div>
         ) : (
-          <p className="mt-3 text-sm text-slate-500">No close-contact examples were flagged by the current analysis.</p>
+          <p className="pio-section-copy mt-3">No close-contact examples were flagged by the current analysis.</p>
         )}
       </div>
     </div>
@@ -1575,13 +1629,13 @@ function QualityCheckCard({
 }) {
   const tone =
     status === "review"
-      ? "border-amber-200 bg-amber-50 text-amber-950"
+      ? "bg-[var(--pio-amber-pale)] text-[var(--pio-amber-deep)]"
       : status === "ok"
-        ? "border-emerald-200 bg-emerald-50 text-emerald-950"
-        : "border-slate-200 bg-slate-50 text-slate-950";
+        ? "bg-[var(--pio-green-pale)] text-[var(--pio-green-deep)]"
+        : "bg-[var(--pio-sand)] text-[var(--pio-graphite)]";
 
   return (
-    <div className={`border p-3 ${tone}`}>
+    <div className={`rounded-[var(--pio-radius-md)] p-3 ${tone}`}>
       <div className="flex items-start justify-between gap-3">
         <p className="text-xs font-medium uppercase tracking-wide">{label}</p>
         <span className="font-mono text-sm font-semibold">{value}</span>
@@ -1591,12 +1645,12 @@ function QualityCheckCard({
   );
 }
 
-function ProvenancePanel({ provenance }: { provenance: ProvenanceRecord | null }) {
+function ProvenancePanel({ provenance, showExport = true }: { provenance: ProvenanceRecord | null; showExport?: boolean }) {
   if (!provenance) {
     return (
-      <div className="border border-slate-200 bg-white p-4">
-        <h2 className="text-sm font-semibold text-slate-950">Methods and provenance</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
+      <div className="pio-panel p-4">
+        <h2 className="pio-section-title">Methods and provenance</h2>
+        <p className="pio-section-copy mt-2">
           Run an analysis to generate reproducibility details for the current structure.
         </p>
       </div>
@@ -1619,16 +1673,19 @@ function ProvenancePanel({ provenance }: { provenance: ProvenanceRecord | null }
 
   return (
     <div className="grid gap-4">
-      <div className="border border-slate-200 bg-white p-4">
+      <div className="pio-panel p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-slate-950">Methods and provenance</h2>
-            <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-500">
+            <h2 className="pio-section-title">Methods and provenance</h2>
+            <p className="pio-section-copy mt-1 max-w-3xl">
               Reproducibility details for the current analysis. These values describe how the displayed contacts,
               ligand summaries, confidence warnings, and quality checks were generated.
             </p>
+            <p className="mt-2 font-mono text-xs text-[var(--pio-graphite)]">
+              Analysis generated with Gemmi parsing and distance-based contact search.
+            </p>
           </div>
-          <button
+          {showExport ? <button
             type="button"
             onClick={() =>
               downloadText(
@@ -1637,36 +1694,36 @@ function ProvenancePanel({ provenance }: { provenance: ProvenanceRecord | null }
                 "application/json;charset=utf-8",
               )
             }
-            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100"
+            className="pio-button-secondary h-10 shrink-0 px-4"
           >
             <Download className="h-4 w-4" />
             Export provenance JSON
-          </button>
+          </button> : null}
         </div>
 
         <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {rows.map(([label, value]) => (
-            <div key={label} className="border border-slate-200 bg-slate-50 px-3 py-2">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
-              <p className="mt-1 break-words text-sm text-slate-800">{value}</p>
+            <div key={label} className="pio-kv-card">
+              <p className="pio-label">{label}</p>
+              <p className="pio-value mt-1 break-words text-sm">{value}</p>
             </div>
           ))}
         </div>
       </div>
 
       {provenance.warnings.length ? (
-        <div className="border border-amber-200 bg-amber-50 p-4">
-          <h3 className="text-sm font-semibold text-amber-950">Recorded warnings</h3>
-          <ul className="mt-2 list-inside list-disc space-y-1 text-sm leading-6 text-amber-900">
+        <div className="pio-alert-caution p-4">
+          <h3 className="text-sm font-semibold text-[var(--pio-amber-deep)]">Recorded warnings</h3>
+          <ul className="mt-2 list-inside list-disc space-y-1 text-sm leading-6">
             {provenance.warnings.map((warning) => (
               <li key={warning}>{warning}</li>
             ))}
           </ul>
         </div>
       ) : (
-        <div className="border border-emerald-200 bg-emerald-50 p-4">
-          <h3 className="text-sm font-semibold text-emerald-950">Recorded warnings</h3>
-          <p className="mt-2 text-sm leading-6 text-emerald-900">
+        <div className="rounded-[var(--pio-radius-md)] bg-[var(--pio-green-pale)] p-4">
+          <h3 className="text-sm font-semibold text-[var(--pio-green-deep)]">Recorded warnings</h3>
+          <p className="mt-2 text-sm leading-6 text-[var(--pio-ink)]">
             No parser, contact, confidence, or PAE warnings were recorded for this analysis.
           </p>
         </div>
@@ -1796,10 +1853,10 @@ function SummaryCards({ analysis }: { analysis: AnalysisResponse | null }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
       {items.map(([label, value, helper]) => (
-        <div key={label} className="border border-slate-200 bg-white p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
-          <p className="mt-2 font-mono text-2xl font-semibold text-slate-950">{value}</p>
-          <p className="mt-2 text-xs leading-5 text-slate-500">{helper}</p>
+        <div key={label} className="pio-panel p-4">
+          <p className="pio-label">{label}</p>
+          <p className="pio-value mt-2 text-2xl font-bold">{value}</p>
+          <p className="pio-section-copy mt-2">{helper}</p>
         </div>
       ))}
     </div>
@@ -1838,18 +1895,18 @@ function MetadataPanel({ metadata }: { metadata: StructureMetadata | null }) {
   const entryLabel = isAlphaFold ? "AlphaFold DB entry" : "RCSB entry";
 
   return (
-    <div className="border border-slate-200 bg-white p-4">
+    <div className="pio-panel p-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-slate-950">
+          <h2 className="pio-section-title">
             {metadata.title ?? (isAlphaFold ? "AlphaFold DB model" : "RCSB structure")}
           </h2>
           <div className="mt-3 grid gap-x-5 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
             {rows.map(([label, value]) =>
               value ? (
                 <div key={label}>
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
-                  <p className="mt-1 text-sm text-slate-800">{value}</p>
+                  <p className="pio-label">{label}</p>
+                  <p className="pio-value mt-1 text-sm">{value}</p>
                 </div>
               ) : null,
             )}
@@ -1860,7 +1917,7 @@ function MetadataPanel({ metadata }: { metadata: StructureMetadata | null }) {
             href={entryUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-9 shrink-0 items-center justify-center border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100"
+            className="pio-button-secondary h-9 shrink-0 px-3"
           >
             {entryLabel}
           </a>
@@ -1886,63 +1943,63 @@ function ConfidencePanel({
   }
 
   const categories = [
-    ["Very high", confidence.very_high_count, "#2563eb"],
-    ["Confident", confidence.confident_count, "#06b6d4"],
-    ["Low", confidence.low_count, "#f59e0b"],
-    ["Very low", confidence.very_low_count, "#ef4444"],
+    ["Very high", confidence.very_high_count, "var(--pio-lavender)"],
+    ["Confident", confidence.confident_count, "var(--pio-lavender-pale)"],
+    ["Low", confidence.low_count, "var(--pio-amber)"],
+    ["Very low", confidence.very_low_count, "var(--pio-coral)"],
   ] as const;
 
   return (
-    <div className="border border-slate-200 bg-white p-4">
+    <div className="pio-panel p-4">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-slate-950">Predicted confidence</h2>
-          <p className="mt-1 text-xs leading-5 text-slate-500">
+          <h2 className="pio-section-title">Predicted confidence</h2>
+          <p className="pio-section-copy mt-1">
             pLDDT values were read from residue B-factors for this predicted structure.
           </p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Average pLDDT</p>
-              <p className="mt-1 font-mono text-xl font-semibold text-slate-950">{confidence.average_plddt.toFixed(2)}</p>
+              <p className="pio-label">Average pLDDT</p>
+              <p className="pio-value mt-1 text-xl font-bold text-[var(--pio-lavender-deep)]">{confidence.average_plddt.toFixed(2)}</p>
             </div>
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Residues</p>
-              <p className="mt-1 font-mono text-xl font-semibold text-slate-950">{confidence.residue_count}</p>
+              <p className="pio-label">Residues</p>
+              <p className="pio-value mt-1 text-xl font-bold">{confidence.residue_count}</p>
             </div>
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Low confidence</p>
-              <p className="mt-1 font-mono text-xl font-semibold text-slate-950">{confidence.low_confidence_count}</p>
+              <p className="pio-label">Low confidence</p>
+              <p className="pio-value mt-1 text-xl font-bold text-[var(--pio-amber-deep)]">{confidence.low_confidence_count}</p>
             </div>
           </div>
         </div>
 
         <div className="flex shrink-0 flex-col gap-3">
-          <div className="inline-flex border border-slate-300 bg-white p-1">
+          <div className="inline-flex rounded-full border border-[var(--pio-line-strong)] bg-[var(--pio-white)] p-1">
             {(["structure", "plddt"] as const).map((mode) => (
               <button
                 key={mode}
                 type="button"
                 onClick={() => onColorModeChange(mode)}
-                className={`h-8 px-3 text-xs font-semibold uppercase tracking-wide ${
-                  colorMode === mode ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-100"
+                className={`h-8 rounded-full px-3 text-xs font-semibold ${
+                  colorMode === mode ? "bg-[var(--pio-ink)] text-[var(--pio-white)]" : "text-[var(--pio-graphite)] hover:text-[var(--pio-ink)]"
                 }`}
               >
                 {mode === "plddt" ? "pLDDT" : "Structure"}
               </button>
             ))}
           </div>
-          <p className="text-xs text-slate-500">{residueConfidences.length} residues available for confidence coloring.</p>
+          <p className="text-xs text-[var(--pio-graphite)]">{residueConfidences.length} residues available for confidence coloring.</p>
         </div>
       </div>
 
       <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         {categories.map(([label, count, color]) => (
-          <div key={label} className="flex items-center justify-between border border-slate-200 px-3 py-2">
+          <div key={label} className="pio-kv-card flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="h-3 w-3" style={{ backgroundColor: color }} />
-              <span className="text-sm text-slate-700">{label}</span>
+              <span className="text-sm text-[var(--pio-ink)]">{label}</span>
             </div>
-            <span className="font-mono text-sm text-slate-900">{count}</span>
+            <span className="pio-value text-sm">{count}</span>
           </div>
         ))}
       </div>
@@ -1963,16 +2020,16 @@ function PaePanel({ pae }: { pae: PaeSummary | null }) {
   ];
 
   return (
-    <div className="border border-slate-200 bg-white p-4">
-      <h2 className="text-sm font-semibold text-slate-950">PAE sidecar</h2>
-      <p className="mt-1 text-xs leading-5 text-slate-500">
+    <div className="pio-panel p-4">
+      <h2 className="pio-section-title">PAE sidecar</h2>
+      <p className="pio-section-copy mt-1">
         Predicted aligned error summary from the uploaded JSON sidecar.
       </p>
       <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         {items.map(([label, value]) => (
-          <div key={label} className="border border-slate-200 px-3 py-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
-            <p className="mt-1 font-mono text-sm text-slate-950">{value}</p>
+          <div key={label} className="pio-kv-card">
+            <p className="pio-label">{label}</p>
+            <p className="pio-value mt-1 text-sm">{value}</p>
           </div>
         ))}
       </div>
@@ -1994,16 +2051,19 @@ function StructureComparisonPanel({ comparison }: { comparison: StructureCompari
   ];
 
   return (
-    <div className="border border-slate-200 bg-white p-4">
-      <h2 className="text-sm font-semibold text-slate-950">Structure comparison</h2>
-      <p className="mt-1 text-xs leading-5 text-slate-500">
+    <div className="pio-panel p-4">
+      <h2 className="pio-section-title">Structure comparison</h2>
+      <p className="pio-section-copy mt-1">
         Deltas are calculated as second structure minus first structure. Contact comparison uses residue-level contact identities.
+      </p>
+      <p className="mt-3 rounded-[var(--pio-radius-md)] bg-[var(--pio-amber-pale)] px-3 py-2 text-xs font-semibold text-[var(--pio-amber-deep)]">
+        No structural alignment. No RMSD. No TM-score. No side-by-side 3D superposition yet.
       </p>
       <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
         {deltaItems.map(([label, value]) => (
-          <div key={label} className="border border-slate-200 px-3 py-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
-            <p className={`mt-1 font-mono text-sm ${Number(value) === 0 ? "text-slate-950" : Number(value) > 0 ? "text-emerald-700" : "text-red-700"}`}>
+          <div key={label} className="pio-kv-card">
+            <p className="pio-label">{label}</p>
+            <p className={`mt-1 font-mono text-sm ${Number(value) === 0 ? "text-[var(--pio-ink)]" : Number(value) > 0 ? "text-[var(--pio-green-deep)]" : "text-[var(--pio-coral-deep)]"}`}>
               {formatSignedNumber(Number(value))}
             </p>
           </div>
@@ -2348,8 +2408,8 @@ function TopContactList({ title, rows }: { title: string; rows: Array<[string, n
 function SelectionBar({ selection, onClear }: { selection: ViewerSelection | null; onClear: () => void }) {
   if (!selection) {
     return (
-      <div className="min-h-[96px] border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-500">
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Selection inspector</p>
+      <div className="pio-panel min-h-[108px] px-4 py-3 text-sm text-[var(--pio-graphite)]">
+        <p className="text-xs font-medium uppercase tracking-wide text-[var(--pio-graphite)]">Selection inspector</p>
         <p className="mt-2 text-sm leading-6">Select a chain, ligand, or contact row to focus it in Mol*.</p>
       </div>
     );
@@ -2358,19 +2418,19 @@ function SelectionBar({ selection, onClear }: { selection: ViewerSelection | nul
   const details = selectionDetails(selection);
 
   return (
-    <div className="border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+    <div className="pio-panel p-4 text-sm text-[var(--pio-ink)]">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-amber-700">Selected in table and Mol*</p>
+          <p className="pio-badge pio-badge-active">Selected in table and Mol*</p>
           <p className="mt-1 font-mono text-sm font-semibold">{selection.label}</p>
-          <p className="mt-2 text-xs leading-5 text-amber-800">
+          <p className="mt-2 text-xs leading-5 text-[var(--pio-graphite)]">
             Mol* focuses the selected chain, ligand, or contact partners automatically.
           </p>
         </div>
         <button
           type="button"
           onClick={onClear}
-          className="inline-flex h-9 shrink-0 items-center justify-center gap-2 border border-amber-300 bg-white px-3 text-sm font-medium text-amber-950 hover:bg-amber-100"
+          className="pio-button-secondary h-9 shrink-0 px-3"
         >
           <X className="h-4 w-4" />
           Clear selection
@@ -2378,9 +2438,9 @@ function SelectionBar({ selection, onClear }: { selection: ViewerSelection | nul
       </div>
       <div className="mt-3 grid gap-2 sm:grid-cols-3">
         {details.map(([label, value]) => (
-          <div key={label} className="border border-amber-200 bg-white/70 px-3 py-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-amber-700">{label}</p>
-            <p className="mt-1 break-words font-mono text-sm text-amber-950">{value}</p>
+          <div key={label} className="rounded-[var(--pio-radius-sm)] bg-[var(--pio-paper)] px-3 py-2">
+            <p className="text-xs font-medium uppercase tracking-wide text-[var(--pio-graphite)]">{label}</p>
+            <p className="mt-1 break-words font-mono text-sm text-[var(--pio-ink)]">{value}</p>
           </div>
         ))}
       </div>
@@ -2454,8 +2514,8 @@ function ContactCategoryFilter({
           onClick={() => onChange(option)}
           className={`h-8 border px-2 text-xs font-medium ${
             value === option
-              ? "border-slate-900 bg-slate-900 text-white"
-              : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100"
+              ? "border-[var(--pio-ink)] bg-[var(--pio-ink)] text-[var(--pio-white)]"
+              : "border-[var(--pio-line-strong)] bg-[var(--pio-white)] text-[var(--pio-graphite)] hover:bg-[var(--pio-sand)] hover:text-[var(--pio-ink)]"
           }`}
         >
           {label}
@@ -2475,15 +2535,15 @@ function ContactConfidenceSummary({
   const percent = totalContactCount > 0 ? Math.round((lowConfidenceContactCount / totalContactCount) * 100) : 0;
 
   return (
-    <div className="grid gap-3 border-b border-slate-200 bg-amber-50/50 p-4 md:grid-cols-[220px_1fr]">
+    <div className="grid gap-3 border-b border-[var(--pio-line)] bg-[var(--pio-amber-pale)] p-4 md:grid-cols-[220px_1fr]">
       <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-amber-700">Low-confidence contacts</p>
-        <p className="mt-1 font-mono text-2xl font-semibold text-amber-950">
+        <p className="pio-label text-[var(--pio-amber-deep)]">Low-confidence contacts</p>
+        <p className="mt-1 font-mono text-2xl font-semibold text-[var(--pio-amber-deep)]">
           {lowConfidenceContactCount}
-          <span className="ml-2 text-sm font-normal text-amber-800">of {totalContactCount}</span>
+          <span className="ml-2 text-sm font-normal">of {totalContactCount}</span>
         </p>
       </div>
-      <p className="text-sm leading-6 text-amber-900">
+      <p className="text-sm leading-6 text-[var(--pio-ink)]">
         Contacts are flagged when either residue endpoint has low or very low pLDDT. Treat these as review targets,
         especially for predicted structures where local geometry may be uncertain. Current share: {percent}%.
       </p>
@@ -2501,15 +2561,15 @@ function ChainTable({
   onSelect: (chain: ChainSummary) => void;
 }) {
   return (
-    <div className="min-w-0 overflow-hidden border border-slate-200 bg-white">
-      <div className="border-b border-slate-200 p-4">
-        <h2 className="text-sm font-semibold text-slate-950">Chains</h2>
-        <p className="mt-1 text-xs leading-5 text-slate-500">Protein residue and atom counts grouped by chain.</p>
+    <div className="pio-table-card min-w-0">
+      <div className="border-b border-[var(--pio-line)] p-4">
+        <h2 className="pio-section-title">Chains</h2>
+        <p className="pio-section-copy mt-1">Protein residue and atom counts grouped by chain.</p>
       </div>
       {chains.length ? (
         <div className="max-w-full overflow-x-auto">
-          <table className="w-full min-w-[420px] text-left text-sm">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+          <table className="pio-responsive-table w-full min-w-[420px] text-left text-sm">
+            <thead className="text-xs uppercase tracking-wide text-[var(--pio-graphite)]">
               <tr>
                 <th className="px-4 py-3 font-medium">
                   <span className="sr-only">Select</span>
@@ -2533,12 +2593,12 @@ function ChainTable({
                   onKeyDown={(event) => handleSelectableRowKeyDown(event, () => onSelect(chain))}
                   className={selectableRowClass(selected)}
                 >
-                  <td className="w-12 px-4 py-3">
+                  <td data-label="Select" className="w-12 px-4 py-3">
                     <SelectionButton selected={selected} label={`Select chain ${chain.id}`} onClick={() => onSelect(chain)} />
                   </td>
-                  <td className="px-4 py-3 font-mono text-slate-900">{chain.id}</td>
-                  <td className="px-4 py-3 text-slate-800">{chain.residue_count}</td>
-                  <td className="px-4 py-3 text-slate-800">{chain.atom_count}</td>
+                  <td data-label="Chain" className="pio-value px-4 py-3">{chain.id}</td>
+                  <td data-label="Residues" className="pio-value px-4 py-3">{chain.residue_count}</td>
+                  <td data-label="Atoms" className="pio-value px-4 py-3">{chain.atom_count}</td>
                 </tr>
                 );
               })}
@@ -2546,7 +2606,7 @@ function ChainTable({
           </table>
         </div>
       ) : (
-        <p className="p-4 text-sm text-slate-500">Run analysis to show chains.</p>
+        <p className="pio-section-copy p-4">Run analysis to show chains.</p>
       )}
     </div>
   );
@@ -2562,15 +2622,15 @@ function LigandTable({
   onSelect: (ligand: LigandSummary) => void;
 }) {
   return (
-    <div className="border border-slate-200 bg-white">
-      <div className="border-b border-slate-200 p-4">
-        <h2 className="text-sm font-semibold text-slate-950">Ligands</h2>
-        <p className="mt-1 text-xs leading-5 text-slate-500">Non-water hetero residues detected in the structure file.</p>
+    <div className="pio-table-card">
+      <div className="border-b border-[var(--pio-line)] p-4">
+        <h2 className="pio-section-title">Ligands</h2>
+        <p className="pio-section-copy mt-1">Non-water hetero residues detected in the structure file.</p>
       </div>
       {ligands.length ? (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[420px] text-left text-sm">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+          <table className="pio-responsive-table w-full min-w-[420px] text-left text-sm">
+            <thead className="text-xs uppercase tracking-wide text-[var(--pio-graphite)]">
               <tr>
                 <th className="px-4 py-3 font-medium">
                   <span className="sr-only">Select</span>
@@ -2599,17 +2659,17 @@ function LigandTable({
                     onKeyDown={(event) => handleSelectableRowKeyDown(event, () => onSelect(ligand))}
                     className={selectableRowClass(selected)}
                   >
-                    <td className="w-12 px-4 py-3">
+                    <td data-label="Select" className="w-12 px-4 py-3">
                       <SelectionButton
                         selected={selected}
                         label={`Select ligand ${ligand.name} ${ligand.chain_id}:${ligand.residue_number}`}
                         onClick={() => onSelect(ligand)}
                       />
                     </td>
-                    <td className="px-4 py-3 font-mono text-slate-900">{ligand.name}</td>
-                    <td className="px-4 py-3 font-mono text-slate-800">{ligand.chain_id}</td>
-                    <td className="px-4 py-3 font-mono text-slate-800">{ligand.residue_number}</td>
-                    <td className="px-4 py-3 text-slate-800">{ligand.atom_count}</td>
+                    <td data-label="Name" className="pio-value px-4 py-3">{ligand.name}</td>
+                    <td data-label="Chain" className="pio-value px-4 py-3">{ligand.chain_id}</td>
+                    <td data-label="Residue" className="pio-value px-4 py-3">{ligand.residue_number}</td>
+                    <td data-label="Atoms" className="pio-value px-4 py-3">{ligand.atom_count}</td>
                   </tr>
                 );
               })}
@@ -2617,7 +2677,7 @@ function LigandTable({
           </table>
         </div>
       ) : (
-        <p className="p-4 text-sm text-slate-500">No ligand rows yet.</p>
+        <p className="pio-section-copy p-4">No ligand rows yet.</p>
       )}
     </div>
   );
@@ -2637,13 +2697,13 @@ function ContactTable({
   showConfidence: boolean;
 }) {
   if (!contacts.length) {
-    return <p className="p-4 text-sm text-slate-500">Run analysis to populate contacts.</p>;
+    return <p className="pio-section-copy p-4">Run analysis to populate contacts.</p>;
   }
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[1120px] text-left text-sm">
-        <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+      <table className="pio-responsive-table w-full min-w-[1120px] text-left text-sm">
+        <thead className="text-xs uppercase tracking-wide text-[var(--pio-graphite)]">
           <tr>
             <th className="px-4 py-3 font-medium">
               <span className="sr-only">Select</span>
@@ -2672,28 +2732,28 @@ function ContactTable({
                 onKeyDown={(event) => handleSelectableRowKeyDown(event, () => onSelect(contact))}
                 className={selectableRowClass(selected)}
               >
-                <td className="w-12 px-4 py-3">
+                <td data-label="Select" className="w-12 px-4 py-3">
                   <SelectionButton
                     selected={selected}
                     label={`Select contact ${contact.chain_a}:${contact.residue_name_a}${contact.residue_a} to ${contact.chain_b}:${contact.residue_name_b}${contact.residue_b}`}
                     onClick={() => onSelect(contact)}
                   />
                 </td>
-                <td className="px-4 py-3 text-slate-700">{contact.contact_type}</td>
-                <td className="px-4 py-3 text-slate-700">{contact.contact_categories.join(", ")}</td>
-                <td className="px-4 py-3 font-mono text-slate-900">
+                <td data-label="Type" className="px-4 py-3"><ContactTypeBadge contact={contact} /></td>
+                <td data-label="Categories" className="px-4 py-3"><ContactCategoryBadges contact={contact} /></td>
+                <td data-label="Residue A" className="pio-value px-4 py-3">
                   {contact.chain_a}:{contact.residue_name_a}
                   {contact.residue_a}
                 </td>
-                <td className="px-4 py-3 font-mono text-slate-700">{contact.atom_a}</td>
-                <td className="px-4 py-3 font-mono text-slate-900">
+                <td data-label="Atom A" className="pio-value px-4 py-3">{contact.atom_a}</td>
+                <td data-label="Residue B" className="pio-value px-4 py-3">
                   {contact.chain_b}:{contact.residue_name_b}
                   {contact.residue_b}
                 </td>
-                <td className="px-4 py-3 font-mono text-slate-700">{contact.atom_b}</td>
-                <td className="px-4 py-3 font-mono text-slate-700">{contact.distance_angstrom.toFixed(3)} A</td>
+                <td data-label="Atom B" className="pio-value px-4 py-3">{contact.atom_b}</td>
+                <td data-label="Distance" className="pio-value px-4 py-3">{contact.distance_angstrom.toFixed(3)} A</td>
                 {showConfidence ? (
-                  <td className="px-4 py-3">
+                  <td data-label="Confidence" className="px-4 py-3">
                     <ContactConfidenceBadge contact={contact} />
                   </td>
                 ) : null}
@@ -2703,7 +2763,7 @@ function ContactTable({
         </tbody>
       </table>
       {totalCount > contacts.length ? (
-        <p className="border-t border-slate-200 p-3 text-xs text-slate-500">
+        <p className="border-t border-[var(--pio-line)] p-3 text-xs text-[var(--pio-graphite)]">
           Showing first {contacts.length} of {totalCount} contacts. CSV export includes all rows.
         </p>
       ) : null}
@@ -2716,7 +2776,7 @@ function ContactConfidenceBadge({ contact }: { contact: ContactRecord }) {
     (confidence): confidence is ResidueConfidence => Boolean(confidence),
   );
   if (!confidences.length) {
-    return <span className="text-xs text-slate-400">N/A</span>;
+    return <span className="text-xs text-[var(--pio-graphite)]">N/A</span>;
   }
 
   const label = confidences
@@ -2725,23 +2785,52 @@ function ContactConfidenceBadge({ contact }: { contact: ContactRecord }) {
 
   if (contact.confidence_warning) {
     return (
-      <span title={label} className="inline-flex items-center border border-amber-300 bg-amber-100 px-2 py-1 text-xs font-medium text-amber-950">
+      <span title={label} className="pio-badge pio-badge-warning">
         Review pLDDT
       </span>
     );
   }
 
   return (
-    <span title={label} className="inline-flex items-center border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-800">
+    <span title={label} className="pio-badge pio-badge-active">
       pLDDT OK
     </span>
   );
 }
 
+function ContactTypeBadge({ contact }: { contact: ContactRecord }) {
+  const className = contact.contact_type.includes("ligand")
+    ? "pio-badge-metadata"
+    : contact.contact_type.includes("water")
+      ? "pio-badge-neutral"
+      : "pio-badge-active";
+
+  return <span className={`pio-badge ${className}`}>{contact.contact_type}</span>;
+}
+
+function ContactCategoryBadges({ contact }: { contact: ContactRecord }) {
+  if (!contact.contact_categories.length) {
+    return <span className="text-xs text-[var(--pio-graphite)]">None</span>;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1">
+      {contact.contact_categories.map((category) => (
+        <span
+          key={category}
+          className={`pio-badge ${category === "possible-clash" ? "pio-badge-warning" : "pio-badge-neutral"}`}
+        >
+          {category}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function selectableRowClass(selected: boolean) {
   return [
-    "cursor-pointer text-slate-800 outline-none hover:bg-cyan-50 focus:bg-cyan-50",
-    selected ? "bg-amber-50 ring-2 ring-inset ring-amber-400 hover:bg-amber-50 focus:bg-amber-50" : "",
+    "cursor-pointer text-[var(--pio-ink)] outline-none hover:bg-[var(--pio-paper)] focus:bg-[var(--pio-paper)]",
+    selected ? "bg-[var(--pio-green-pale)] ring-2 ring-inset ring-[var(--pio-green)] hover:bg-[var(--pio-green-pale)] focus:bg-[var(--pio-green-pale)]" : "",
   ].join(" ");
 }
 
@@ -2755,10 +2844,10 @@ function SelectionButton({ selected, label, onClick }: { selected: boolean; labe
       }}
       aria-label={label}
       className={[
-        "inline-flex h-8 w-8 items-center justify-center border focus:outline-none focus:ring-2 focus:ring-cyan-600",
+        "inline-flex h-8 w-8 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-[var(--pio-green)]",
         selected
-          ? "border-amber-400 bg-amber-100 text-amber-950"
-          : "border-slate-300 bg-white text-slate-700 hover:bg-cyan-50",
+          ? "bg-[var(--pio-green-pale)] text-[var(--pio-green-deep)]"
+          : "bg-[var(--pio-white)] text-[var(--pio-ink)] hover:bg-[var(--pio-sand)]",
       ].join(" ")}
     >
       <Atom className="h-4 w-4" />

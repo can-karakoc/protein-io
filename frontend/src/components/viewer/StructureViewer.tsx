@@ -85,7 +85,7 @@ export function StructureViewer({
           viewportShowSelectionMode: true,
           viewportShowSettings: true,
           viewportShowToggleFullscreen: true,
-          viewportBackgroundColor: "#ffffff",
+          viewportBackgroundColor: "white",
           volumeStreamingDisabled: true,
         });
         const viewerCreateMs = elapsedMs(viewerCreateStarted);
@@ -156,30 +156,36 @@ export function StructureViewer({
 
   if (!structureText.trim()) {
     return (
-      <div className="relative flex h-[420px] min-w-0 max-w-full items-center justify-center overflow-hidden border border-dashed border-slate-300 bg-white text-sm text-slate-500">
-        Upload a PDB or mmCIF file to render it with Mol*.
+      <div className="relative flex h-[520px] min-w-0 max-w-full items-center justify-center overflow-hidden rounded-[var(--pio-radius-lg)] bg-[var(--pio-sage)] p-6 text-center text-sm text-[var(--pio-graphite)] shadow-[var(--pio-shadow-sm)]">
+        <div className="max-w-sm">
+          <p className="text-lg font-bold text-[var(--pio-ink)]">Explore protein structures, contacts, ligands, and confidence in one browser workspace.</p>
+          <p className="mt-2 text-sm leading-6 text-[var(--pio-graphite)]">
+            Start with a structure file, PDB ID, AlphaFold accession, or sample structure.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="relative h-[420px] min-w-0 max-w-full overflow-hidden border border-slate-200 bg-white">
+    <div className="relative h-[520px] min-w-0 max-w-full overflow-hidden rounded-[var(--pio-radius-lg)] bg-[var(--pio-sage)] p-3 shadow-[var(--pio-shadow-sm)]">
+      <div className="absolute inset-3 overflow-hidden rounded-[var(--pio-radius-md)] bg-[var(--pio-white)]" />
       <div ref={containerRef} className="absolute inset-0" />
       {colorMode === "plddt" && residueConfidences.length ? (
-        <div className="pointer-events-none absolute left-3 top-3 max-w-[260px] border border-slate-200 bg-white/95 px-3 py-2 text-xs leading-5 text-slate-700 shadow-sm">
+        <div className="pointer-events-none absolute left-5 top-5 max-w-[260px] rounded-[var(--pio-radius-sm)] bg-[var(--pio-white)] px-3 py-2 text-xs leading-5 text-[var(--pio-graphite)] shadow-[var(--pio-shadow-sm)]">
           Mol* pLDDT coloring is active using residue B-factor confidence values.
         </div>
       ) : null}
       {isRendering && !viewerError ? (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/90 px-6 text-center text-sm leading-6 text-slate-700">
-          <div>
-            <Loader2 className="mx-auto mb-2 h-5 w-5 animate-spin text-cyan-700" />
+        <div className="pio-render-overlay absolute inset-0 flex items-center justify-center px-6 text-center text-sm leading-6 text-[var(--pio-graphite)]">
+          <div className="pio-loading-pulse">
+            <Loader2 className="mx-auto mb-2 h-5 w-5 text-[var(--pio-ink)]" />
             Rendering structure with Mol*
           </div>
         </div>
       ) : null}
       {viewerError ? (
-        <div className="absolute inset-0 flex items-center justify-center bg-white px-6 text-center text-sm leading-6 text-slate-600">
+        <div className="absolute inset-0 flex items-center justify-center bg-[var(--pio-coral-pale)] px-6 text-center text-sm leading-6 text-[var(--pio-coral-deep)]">
           {viewerError}
         </div>
       ) : null}
