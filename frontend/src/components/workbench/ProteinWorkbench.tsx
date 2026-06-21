@@ -59,6 +59,73 @@ type ProvenanceRecord = {
   paeProvided: boolean;
   structureKind: "experimental" | "predicted" | "uploaded coordinates";
 };
+type ExampleId = "sample" | "hemoglobin" | "ligand-bound" | "large-structure" | "alphafold" | "comparison";
+type ExampleCard = {
+  id: ExampleId;
+  title: string;
+  source: string;
+  description: string;
+  tags: string[];
+  hint: string;
+  actionLabel: string;
+};
+
+const EXAMPLE_GALLERY: ExampleCard[] = [
+  {
+    id: "sample",
+    title: "Bundled ligand sample",
+    source: "Local sample.pdb",
+    description: "Small fast-loading structure for checking the full upload, viewer, contact, and ligand flow.",
+    tags: ["local", "ligand", "fast"],
+    hint: "Look at ligand ATP and the possible clash flags in Quality.",
+    actionLabel: "Load sample",
+  },
+  {
+    id: "hemoglobin",
+    title: "Hemoglobin",
+    source: "RCSB 2HHB",
+    description: "Classic multi-chain experimental structure for chain metadata and inter-chain contacts.",
+    tags: ["RCSB", "experimental", "multi-chain"],
+    hint: "Compare chain counts, heme ligands, and inter-chain contact categories.",
+    actionLabel: "Load 2HHB",
+  },
+  {
+    id: "ligand-bound",
+    title: "Ligand-bound protein",
+    source: "RCSB 1A3N",
+    description: "Experimental structure useful for ligand interaction summaries and residue contact review.",
+    tags: ["RCSB", "ligand", "contacts"],
+    hint: "Open the Ligands tab and inspect closest contacts and distance buckets.",
+    actionLabel: "Load 1A3N",
+  },
+  {
+    id: "large-structure",
+    title: "Large deposited structure",
+    source: "RCSB 7K00",
+    description: "Larger deposited coordinates for stress-testing loading, Mol* rendering, and summary tables.",
+    tags: ["RCSB", "large", "performance"],
+    hint: "Watch render responsiveness and use contact filters to narrow the table.",
+    actionLabel: "Load 7K00",
+  },
+  {
+    id: "alphafold",
+    title: "AlphaFold prediction",
+    source: "AlphaFold DB P69905",
+    description: "Predicted hemoglobin alpha-chain model with pLDDT confidence coloring and contact warnings.",
+    tags: ["AlphaFold", "pLDDT", "predicted"],
+    hint: "Use Confidence, Quality, and low-confidence contact filters after analysis.",
+    actionLabel: "Load P69905",
+  },
+  {
+    id: "comparison",
+    title: "Comparison starter",
+    source: "Bundled sample pair",
+    description: "Preloads two local sample files into the comparison inputs so the compare endpoint is ready to run.",
+    tags: ["compare", "local", "starter"],
+    hint: "Run Compare structures, then review shared/gained/lost contact examples.",
+    actionLabel: "Prepare compare",
+  },
+];
 
 export function ProteinWorkbench() {
   const [mode, setMode] = useState<WorkbenchMode>("explore");
@@ -327,8 +394,8 @@ export function ProteinWorkbench() {
     }
   }
 
-  async function fetchRcsbStructure() {
-    const normalizedPdbId = pdbId.trim();
+  async function fetchRcsbStructure(targetPdbId = pdbId) {
+    const normalizedPdbId = targetPdbId.trim();
     if (!/^[a-zA-Z0-9]{4}$/.test(normalizedPdbId)) {
       setError({
         title: "Invalid PDB ID",
@@ -365,6 +432,7 @@ export function ProteinWorkbench() {
       const payload = (await response.json()) as RcsbAnalysisResponse;
       const response_json_ms = elapsedMs(parseStarted);
 
+      setPdbId(normalizedPdbId.toUpperCase());
       setFileName(payload.filename);
       setStructureText(payload.structure_text);
       setStructureFormat(payload.structure_format);
@@ -395,8 +463,8 @@ export function ProteinWorkbench() {
     }
   }
 
-  async function fetchAlphaFoldStructure() {
-    const normalizedUniprotId = uniprotId.trim();
+  async function fetchAlphaFoldStructure(targetUniprotId = uniprotId) {
+    const normalizedUniprotId = targetUniprotId.trim();
     if (!/^[a-zA-Z0-9]{6,10}$/.test(normalizedUniprotId)) {
       setError({
         title: "Invalid UniProt accession",
@@ -436,6 +504,7 @@ export function ProteinWorkbench() {
       const payload = (await response.json()) as AlphaFoldAnalysisResponse;
       const response_json_ms = elapsedMs(parseStarted);
 
+      setUniprotId(normalizedUniprotId.toUpperCase());
       setFileName(payload.filename);
       setStructureText(payload.structure_text);
       setStructureFormat(payload.structure_format);
@@ -464,6 +533,59 @@ export function ProteinWorkbench() {
       setIsAlphaFoldLoading(false);
       setStatus(null);
     }
+  }
+
+  async function prepareComparisonExample() {
+    const timingStarted = performance.now();
+    setError(null);
+    setStatus({ label: "Preparing comparison example", detail: "Loading bundled sample structures into A/B inputs." });
+    setComparison(null);
+
+    try {
+      const response = await fetch(EXAMPLE_FILE);
+      if (!response.ok) {
+        throw new Error(`Sample returned status ${response.status}.`);
+      }
+      const text = await response.text();
+      setComparisonFileA(new File([text], "sample-a.pdb", { type: "chemical/x-pdb" }));
+      setComparisonFileB(new File([text], "sample-b.pdb", { type: "chemical/x-pdb" }));
+      setMode("explore");
+      logTiming("comparison example load", timingStarted, {
+        bytes: text.length,
+      });
+    } catch (caught) {
+      setError({
+        title: "Could not prepare comparison example",
+        message: caught instanceof Error ? caught.message : "The bundled comparison sample could not be loaded.",
+        nextStep: "Try choosing two local PDB/mmCIF files in the Structure comparison section.",
+      });
+    } finally {
+      setStatus(null);
+    }
+  }
+
+  function loadGalleryExample(exampleId: ExampleId) {
+    if (exampleId === "sample") {
+      void loadExample();
+      return;
+    }
+    if (exampleId === "hemoglobin") {
+      void fetchRcsbStructure("2HHB");
+      return;
+    }
+    if (exampleId === "ligand-bound") {
+      void fetchRcsbStructure("1A3N");
+      return;
+    }
+    if (exampleId === "large-structure") {
+      void fetchRcsbStructure("7K00");
+      return;
+    }
+    if (exampleId === "alphafold") {
+      void fetchAlphaFoldStructure("P69905");
+      return;
+    }
+    void prepareComparisonExample();
   }
 
   async function compareStructures() {
@@ -670,6 +792,7 @@ export function ProteinWorkbench() {
               onExportLigands={exportLigandCsv}
               onExportSingleLigand={exportSingleLigandCsv}
               onLoadSample={loadExample}
+              onLoadExample={loadGalleryExample}
               onFocusRcsb={() => document.getElementById("pdb-id")?.focus()}
               onFocusAlphaFold={() => document.getElementById("uniprot-id")?.focus()}
             />
@@ -736,6 +859,7 @@ function ResultsPanel({
   onExportLigands,
   onExportSingleLigand,
   onLoadSample,
+  onLoadExample,
   onFocusRcsb,
   onFocusAlphaFold,
 }: {
@@ -764,6 +888,7 @@ function ResultsPanel({
   onExportLigands: () => void;
   onExportSingleLigand: (ligandInteraction: LigandInteractionSummary) => void;
   onLoadSample: () => void;
+  onLoadExample: (exampleId: ExampleId) => void;
   onFocusRcsb: () => void;
   onFocusAlphaFold: () => void;
 }) {
@@ -849,6 +974,7 @@ function ResultsPanel({
             ) : (
               <EmptyWorkbenchState
                 onLoadSample={onLoadSample}
+                onLoadExample={onLoadExample}
                 onFocusRcsb={onFocusRcsb}
                 onFocusAlphaFold={onFocusAlphaFold}
               />
@@ -999,10 +1125,12 @@ function ReportWorkspace({
 
 function EmptyWorkbenchState({
   onLoadSample,
+  onLoadExample,
   onFocusRcsb,
   onFocusAlphaFold,
 }: {
   onLoadSample: () => void;
+  onLoadExample: (exampleId: ExampleId) => void;
   onFocusRcsb: () => void;
   onFocusAlphaFold: () => void;
 }) {
@@ -1040,6 +1168,53 @@ function EmptyWorkbenchState({
           <Search className="h-4 w-4" />
           Fetch AlphaFold
         </button>
+      </div>
+      <ExampleGallery onLoadExample={onLoadExample} />
+    </div>
+  );
+}
+
+function ExampleGallery({ onLoadExample }: { onLoadExample: (exampleId: ExampleId) => void }) {
+  return (
+    <div className="mt-5 border-t border-slate-200 pt-5">
+      <div className="flex flex-col gap-1">
+        <p className="text-sm font-semibold text-slate-950">Example gallery</p>
+        <p className="text-xs leading-5 text-slate-500">
+          Guided structures for quickly testing common experimental, predicted, ligand, large-structure, and comparison
+          workflows.
+        </p>
+      </div>
+      <div className="mt-3 grid gap-3 lg:grid-cols-2">
+        {EXAMPLE_GALLERY.map((example) => (
+          <article key={example.id} className="grid min-w-0 gap-3 border border-slate-200 bg-white p-4">
+            <div>
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-950">{example.title}</h3>
+                  <p className="mt-1 font-mono text-xs text-slate-500">{example.source}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onLoadExample(example.id)}
+                  className="mt-2 inline-flex h-9 shrink-0 items-center justify-center border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 hover:bg-slate-100 sm:mt-0"
+                >
+                  {example.actionLabel}
+                </button>
+              </div>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{example.description}</p>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {example.tags.map((tag) => (
+                <span key={tag} className="border border-cyan-200 bg-cyan-50 px-2 py-1 text-xs font-medium text-cyan-800">
+                  {tag}
+                </span>
+              ))}
+            </div>
+            <p className="border-l-2 border-amber-300 pl-3 text-xs leading-5 text-slate-600">
+              <span className="font-semibold text-slate-800">What to look at:</span> {example.hint}
+            </p>
+          </article>
+        ))}
       </div>
     </div>
   );

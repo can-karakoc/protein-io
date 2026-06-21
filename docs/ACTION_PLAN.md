@@ -222,8 +222,8 @@ Goal: make the product feel reliable and professional.
 
 ### Priority 8: Example Gallery
 
-- `[ ]` Add multiple guided examples with title, source, tags, load action, and "what to look at" hint.
-- `[ ]` Include examples for hemoglobin, ligand-bound protein, large structure, AlphaFold predicted model, and comparison if available.
+- `[x]` Add multiple guided examples with title, source, tags, load action, and "what to look at" hint.
+- `[x]` Include examples for hemoglobin, ligand-bound protein, large structure, AlphaFold predicted model, and comparison if available.
 
 ### Priority 9: Richer Report / Export Experience
 
