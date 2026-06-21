@@ -148,14 +148,14 @@ export function StructureViewer({
 
   if (!structureText.trim()) {
     return (
-      <div className="relative flex h-[420px] items-center justify-center overflow-hidden border border-dashed border-slate-300 bg-white text-sm text-slate-500">
+      <div className="relative flex h-[420px] min-w-0 max-w-full items-center justify-center overflow-hidden border border-dashed border-slate-300 bg-white text-sm text-slate-500">
         Upload a PDB or mmCIF file to render it with Mol*.
       </div>
     );
   }
 
   return (
-    <div className="relative h-[420px] w-full overflow-hidden border border-slate-200 bg-white">
+    <div className="relative h-[420px] min-w-0 max-w-full overflow-hidden border border-slate-200 bg-white">
       <div ref={containerRef} className="absolute inset-0" />
       {colorMode === "plddt" && residueConfidences.length ? (
         <div className="pointer-events-none absolute left-3 top-3 max-w-[260px] border border-slate-200 bg-white/95 px-3 py-2 text-xs leading-5 text-slate-700 shadow-sm">

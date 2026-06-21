@@ -370,8 +370,8 @@ export function ProteinWorkbench() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-950">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
+    <main className="min-h-screen overflow-x-hidden bg-slate-50 text-slate-950">
+      <div className="mx-auto flex min-w-0 w-full max-w-7xl flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
         <header className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="mb-2 flex items-center gap-2 text-sm font-medium text-cyan-700">
@@ -406,8 +406,8 @@ export function ProteinWorkbench() {
           </div>
         </header>
 
-        <section className="grid gap-6 lg:grid-cols-[360px_1fr]">
-          <aside className="flex flex-col gap-4">
+        <section className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
+          <aside className="min-w-0 flex flex-col gap-4">
             <div className="border border-slate-200 bg-white p-4">
               <h2 className="text-sm font-semibold text-slate-950">Input</h2>
               <p className="mt-1 text-xs leading-5 text-slate-500">
@@ -613,7 +613,7 @@ export function ProteinWorkbench() {
             ) : null}
           </aside>
 
-          <section className="grid gap-4">
+          <section className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4">
             <StructureViewer
               structureText={structureText}
               structureFormat={structureFormat}
@@ -640,7 +640,7 @@ export function ProteinWorkbench() {
           </section>
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-2">
+        <section className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-2">
           <ChainTable
             chains={analysis?.chains ?? []}
             selection={selection}
@@ -668,7 +668,7 @@ export function ProteinWorkbench() {
           />
         </section>
 
-        <section className="border border-slate-200 bg-white">
+        <section className="min-w-0 border border-slate-200 bg-white">
           <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-sm font-semibold text-slate-950">Contacts</h2>
