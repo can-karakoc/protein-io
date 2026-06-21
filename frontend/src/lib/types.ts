@@ -34,6 +34,9 @@ export type ContactRecord = {
   distance_angstrom: number;
   contact_type: ContactType;
   contact_categories: ContactCategory[];
+  source_residue_confidence?: ResidueConfidence | null;
+  target_residue_confidence?: ResidueConfidence | null;
+  confidence_warning?: boolean;
 };
 
 export type ViewerSelection =

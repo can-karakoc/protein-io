@@ -210,10 +210,10 @@ Goal: make the product feel reliable and professional.
 
 ### Priority 6: Contact Confidence Warnings
 
-- `[ ]` Enrich predicted-structure contact rows with residue confidence when available.
-- `[ ]` Add warning badges for contacts involving low-confidence residues.
-- `[ ]` Add a low-confidence contacts filter and summary card.
-- `[ ]` Hide confidence-specific UI for structures without confidence data.
+- `[x]` Enrich predicted-structure contact rows with residue confidence when available.
+- `[x]` Add warning badges for contacts involving low-confidence residues.
+- `[x]` Add a low-confidence contacts filter and summary card.
+- `[x]` Hide confidence-specific UI for structures without confidence data.
 
 ### Priority 7: Methods / Provenance Panel
 

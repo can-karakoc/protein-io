@@ -12,6 +12,9 @@ const CONTACT_COLUMNS: Array<keyof ContactRecord> = [
   "distance_angstrom",
   "contact_type",
   "contact_categories",
+  "source_residue_confidence",
+  "target_residue_confidence",
+  "confidence_warning",
 ];
 
 export function contactsToCsv(contacts: ContactRecord[]) {
@@ -64,7 +67,13 @@ export function ligandInteractionsToCsv(ligands: LigandInteractionSummary[]) {
   return [header, ...rows].join("\n");
 }
 
-function escapeCsvValue(value: string | number | string[]) {
+function escapeCsvValue(value: ContactRecord[keyof ContactRecord] | string | number | string[]) {
+  if (value === null || value === undefined) {
+    return "";
+  }
+  if (typeof value === "object" && "plddt" in value) {
+    return `${value.plddt} ${value.category}`;
+  }
   const text = Array.isArray(value) ? value.join(";") : String(value);
   if (!/[",\n]/.test(text)) {
     return text;

@@ -32,7 +32,7 @@ const TIMING_HEADER = "X-ProteinIO-Timing";
 const EMPTY_RESIDUE_CONFIDENCES: ResidueConfidence[] = [];
 type StructureFileFormat = "pdb" | "cif";
 type ViewerColorMode = "structure" | "plddt";
-type ContactFilter = "all" | ContactCategory;
+type ContactFilter = "all" | ContactCategory | "low-confidence";
 type ResultsTab = "overview" | "chains" | "ligands" | "contacts" | "confidence" | "pae" | "quality";
 type WorkbenchError = {
   title: string;
@@ -72,12 +72,24 @@ export function ProteinWorkbench() {
   const hasStructure = structureText.trim().length > 0;
   const contacts = useMemo(() => analysis?.contacts ?? [], [analysis]);
   const residueConfidences = analysis?.residue_confidences ?? EMPTY_RESIDUE_CONFIDENCES;
+  const confidenceByResidue = useMemo(() => buildConfidenceLookup(residueConfidences), [residueConfidences]);
+  const confidenceAwareContacts = useMemo(
+    () => contacts.map((contact) => enrichContactConfidence(contact, confidenceByResidue)),
+    [confidenceByResidue, contacts],
+  );
+  const hasContactConfidence = residueConfidences.length > 0;
+  const lowConfidenceContactCount = useMemo(
+    () => confidenceAwareContacts.filter((contact) => contact.confidence_warning).length,
+    [confidenceAwareContacts],
+  );
   const filteredContacts = useMemo(
     () =>
       contactFilter === "all"
-        ? contacts
-        : contacts.filter((contact) => contact.contact_categories.includes(contactFilter)),
-    [contactFilter, contacts],
+        ? confidenceAwareContacts
+        : contactFilter === "low-confidence"
+          ? confidenceAwareContacts.filter((contact) => contact.confidence_warning)
+          : confidenceAwareContacts.filter((contact) => contact.contact_categories.includes(contactFilter)),
+    [confidenceAwareContacts, contactFilter],
   );
   const filteredContactPreview = useMemo(() => filteredContacts.slice(0, 80), [filteredContacts]);
 
@@ -486,7 +498,7 @@ export function ProteinWorkbench() {
       return;
     }
 
-    downloadCsv(contactsToCsv(contacts), `${baseExportName(fileName) || "contacts"}-contacts.csv`);
+    downloadCsv(contactsToCsv(confidenceAwareContacts), `${baseExportName(fileName) || "contacts"}-contacts.csv`);
   }
 
   function exportLigandCsv() {
@@ -578,6 +590,8 @@ export function ProteinWorkbench() {
               allContactCount={contacts.length}
               contactFilter={contactFilter}
               onContactFilterChange={setContactFilter}
+              hasContactConfidence={hasContactConfidence}
+              lowConfidenceContactCount={lowConfidenceContactCount}
               selection={selection}
               onChainSelect={(chain) =>
                 setSelection({
@@ -655,6 +669,8 @@ function ResultsPanel({
   allContactCount,
   contactFilter,
   onContactFilterChange,
+  hasContactConfidence,
+  lowConfidenceContactCount,
   selection,
   onChainSelect,
   onLigandSelect,
@@ -680,6 +696,8 @@ function ResultsPanel({
   allContactCount: number;
   contactFilter: ContactFilter;
   onContactFilterChange: (filter: ContactFilter) => void;
+  hasContactConfidence: boolean;
+  lowConfidenceContactCount: number;
   selection: ViewerSelection | null;
   onChainSelect: (chain: ChainSummary) => void;
   onLigandSelect: (ligand: LigandSummary) => void;
@@ -820,7 +838,11 @@ function ResultsPanel({
                 </p>
               </div>
               <div className="flex flex-col gap-2 sm:items-end">
-                <ContactCategoryFilter value={contactFilter} onChange={onContactFilterChange} />
+                <ContactCategoryFilter
+                  value={contactFilter}
+                  onChange={onContactFilterChange}
+                  showLowConfidence={hasContactConfidence}
+                />
                 <button
                   type="button"
                   onClick={onExportContacts}
@@ -832,11 +854,18 @@ function ResultsPanel({
                 </button>
               </div>
             </div>
+            {hasContactConfidence ? (
+              <ContactConfidenceSummary
+                lowConfidenceContactCount={lowConfidenceContactCount}
+                totalContactCount={allContactCount}
+              />
+            ) : null}
             <ContactTable
               contacts={contacts}
               totalCount={totalContactCount}
               selection={selection}
               onSelect={onContactSelect}
+              showConfidence={hasContactConfidence}
             />
           </div>
         ) : null}
@@ -1730,21 +1759,32 @@ function selectionDetails(selection: ViewerSelection): Array<[string, string]> {
   }
 
   const contact = selection.contact;
-  return [
+  const details: Array<[string, string]> = [
     ["Type", contact.contact_type],
     ["Partner A", `${contact.chain_a}:${contact.residue_name_a}${contact.residue_a}.${contact.atom_a}`],
     ["Partner B", `${contact.chain_b}:${contact.residue_name_b}${contact.residue_b}.${contact.atom_b}`],
     ["Distance", `${contact.distance_angstrom.toFixed(3)} A`],
     ["Categories", contact.contact_categories.join(", ")],
   ];
+  if (contact.source_residue_confidence || contact.target_residue_confidence) {
+    details.push([
+      "Confidence",
+      contact.confidence_warning
+        ? "Low-confidence endpoint"
+        : "Endpoints are not low-confidence",
+    ]);
+  }
+  return details;
 }
 
 function ContactCategoryFilter({
   value,
   onChange,
+  showLowConfidence,
 }: {
   value: ContactFilter;
   onChange: (value: ContactFilter) => void;
+  showLowConfidence: boolean;
 }) {
   const options: Array<[ContactFilter, string]> = [
     ["all", "All"],
@@ -1755,6 +1795,9 @@ function ContactCategoryFilter({
     ["inter-chain", "Inter-chain"],
     ["possible-clash", "Clashes"],
   ];
+  if (showLowConfidence) {
+    options.push(["low-confidence", "Low-confidence"]);
+  }
 
   return (
     <div className="flex max-w-full flex-wrap justify-end gap-1">
@@ -1772,6 +1815,32 @@ function ContactCategoryFilter({
           {label}
         </button>
       ))}
+    </div>
+  );
+}
+
+function ContactConfidenceSummary({
+  lowConfidenceContactCount,
+  totalContactCount,
+}: {
+  lowConfidenceContactCount: number;
+  totalContactCount: number;
+}) {
+  const percent = totalContactCount > 0 ? Math.round((lowConfidenceContactCount / totalContactCount) * 100) : 0;
+
+  return (
+    <div className="grid gap-3 border-b border-slate-200 bg-amber-50/50 p-4 md:grid-cols-[220px_1fr]">
+      <div>
+        <p className="text-xs font-medium uppercase tracking-wide text-amber-700">Low-confidence contacts</p>
+        <p className="mt-1 font-mono text-2xl font-semibold text-amber-950">
+          {lowConfidenceContactCount}
+          <span className="ml-2 text-sm font-normal text-amber-800">of {totalContactCount}</span>
+        </p>
+      </div>
+      <p className="text-sm leading-6 text-amber-900">
+        Contacts are flagged when either residue endpoint has low or very low pLDDT. Treat these as review targets,
+        especially for predicted structures where local geometry may be uncertain. Current share: {percent}%.
+      </p>
     </div>
   );
 }
@@ -1913,11 +1982,13 @@ function ContactTable({
   totalCount,
   selection,
   onSelect,
+  showConfidence,
 }: {
   contacts: ContactRecord[];
   totalCount: number;
   selection: ViewerSelection | null;
   onSelect: (contact: ContactRecord) => void;
+  showConfidence: boolean;
 }) {
   if (!contacts.length) {
     return <p className="p-4 text-sm text-slate-500">Run analysis to populate contacts.</p>;
@@ -1925,7 +1996,7 @@ function ContactTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[980px] text-left text-sm">
+      <table className="w-full min-w-[1120px] text-left text-sm">
         <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
           <tr>
             <th className="px-4 py-3 font-medium">
@@ -1938,6 +2009,7 @@ function ContactTable({
             <th className="px-4 py-3 font-medium">Residue B</th>
             <th className="px-4 py-3 font-medium">Atom B</th>
             <th className="px-4 py-3 font-medium">Distance</th>
+            {showConfidence ? <th className="px-4 py-3 font-medium">Confidence</th> : null}
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
@@ -1974,6 +2046,11 @@ function ContactTable({
                 </td>
                 <td className="px-4 py-3 font-mono text-slate-700">{contact.atom_b}</td>
                 <td className="px-4 py-3 font-mono text-slate-700">{contact.distance_angstrom.toFixed(3)} A</td>
+                {showConfidence ? (
+                  <td className="px-4 py-3">
+                    <ContactConfidenceBadge contact={contact} />
+                  </td>
+                ) : null}
               </tr>
             );
           })}
@@ -1985,6 +2062,33 @@ function ContactTable({
         </p>
       ) : null}
     </div>
+  );
+}
+
+function ContactConfidenceBadge({ contact }: { contact: ContactRecord }) {
+  const confidences = [contact.source_residue_confidence, contact.target_residue_confidence].filter(
+    (confidence): confidence is ResidueConfidence => Boolean(confidence),
+  );
+  if (!confidences.length) {
+    return <span className="text-xs text-slate-400">N/A</span>;
+  }
+
+  const label = confidences
+    .map((confidence) => `${confidence.chain_id}:${confidence.residue_name}${confidence.residue_number} ${confidence.plddt.toFixed(1)}`)
+    .join(" / ");
+
+  if (contact.confidence_warning) {
+    return (
+      <span title={label} className="inline-flex items-center border border-amber-300 bg-amber-100 px-2 py-1 text-xs font-medium text-amber-950">
+        Review pLDDT
+      </span>
+    );
+  }
+
+  return (
+    <span title={label} className="inline-flex items-center border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-800">
+      pLDDT OK
+    </span>
   );
 }
 
@@ -2021,6 +2125,41 @@ function handleSelectableRowKeyDown(event: React.KeyboardEvent<HTMLTableRowEleme
     event.preventDefault();
     onSelect();
   }
+}
+
+function buildConfidenceLookup(residueConfidences: ResidueConfidence[]) {
+  return new Map(
+    residueConfidences.map((confidence) => [
+      residueConfidenceKey(confidence.chain_id, confidence.residue_number, confidence.residue_name),
+      confidence,
+    ]),
+  );
+}
+
+function enrichContactConfidence(contact: ContactRecord, confidenceByResidue: Map<string, ResidueConfidence>): ContactRecord {
+  const sourceConfidence = confidenceByResidue.get(
+    residueConfidenceKey(contact.chain_a, contact.residue_a, contact.residue_name_a),
+  );
+  const targetConfidence = confidenceByResidue.get(
+    residueConfidenceKey(contact.chain_b, contact.residue_b, contact.residue_name_b),
+  );
+  const confidenceWarning =
+    isLowConfidence(sourceConfidence?.category) || isLowConfidence(targetConfidence?.category);
+
+  return {
+    ...contact,
+    source_residue_confidence: sourceConfidence ?? null,
+    target_residue_confidence: targetConfidence ?? null,
+    confidence_warning: confidenceWarning,
+  };
+}
+
+function residueConfidenceKey(chainId: string, residueNumber: string, residueName: string) {
+  return `${chainId}:${residueName}:${residueNumber}`;
+}
+
+function isLowConfidence(category: ResidueConfidence["category"] | undefined) {
+  return category === "low" || category === "very_low";
 }
 
 function contactKey(contact: ContactRecord) {
