@@ -2,6 +2,8 @@
 
 This is the working implementation roadmap for Protein Interaction Explorer. Keep it aligned with [Product Direction](PRODUCT_DIRECTION.md).
 
+The next phase is product/design polish and workflow clarity. Do not add auth, database persistence, cloud storage, background jobs, payments, user accounts, GPU/model inference, or heavyweight dependencies. Keep changes small, reviewable, and open-source friendly.
+
 ## Status Legend
 
 - `[x]` Done
@@ -157,3 +159,91 @@ Do not add model inference, job queues, or permanent storage.
 - `[x]` Show gained, lost, and shared contact examples in the frontend.
 - `[x]` Add tests for comparison service and route behavior.
 - `[ ]` Later workflows may include structural alignment, RMSD, aligned contact differences, and viewer highlighting.
+
+## Next Product Priorities
+
+### Priority 1: Frontend Workbench Redesign
+
+Goal: restructure the frontend into a scientist-facing workbench organized around `Explore | Compare | Report`.
+
+- `[ ]` Inspect the current frontend structure before implementation.
+- `[ ]` Propose a concrete component architecture before coding.
+- `[ ]` Add top navigation with app identity, mode tabs, docs/GitHub links, and export access.
+- `[ ]` Build an Explore layout with left sidebar, center Mol* viewer, and results tabs.
+- `[ ]` Group load inputs, analysis controls, and compact metadata in the left sidebar.
+- `[ ]` Move results into tabs: Overview, Chains, Ligands, Contacts, Confidence, PAE, and Quality.
+- `[ ]` Only show Confidence and PAE tabs when relevant.
+- `[ ]` Make the viewer layout stable so Mol* never widens the page after render.
+- `[ ]` Preserve all current upload, fetch, analysis, selection, and export behavior.
+- `[ ]` Run frontend lint/build and browser-check Mol* rendering before calling this done.
+
+### Priority 2: Better Empty, Loading, and Error States
+
+Goal: make the product feel reliable and professional.
+
+- `[ ]` Add a useful empty state with upload, RCSB, AlphaFold, and sample CTAs.
+- `[ ]` Show loading states for file parsing, RCSB fetch, AlphaFold fetch, PAE parsing, comparison, and Mol* rendering.
+- `[ ]` Add helpful errors for invalid file type, invalid PDB ID, failed RCSB fetch, failed AlphaFold fetch, invalid PAE JSON, backend analysis failure, and Mol* render failure.
+- `[ ]` Make every error human-readable and suggest what to try next.
+
+### Priority 3: Table-to-Viewer Selection Polish
+
+- `[ ]` Improve selected row styling for chain, ligand, and contact rows.
+- `[ ]` Add selected item detail card/drawer.
+- `[ ]` Keep clear selection visible.
+- `[ ]` Add zoom-to-selection only if it is straightforward with Mol*.
+
+### Priority 4: Ligand Detail Drawer
+
+- `[ ]` Open a ligand detail drawer when a ligand row is selected.
+- `[ ]` Show ligand name, chain, residue number, atom count, contact counts, closest contact, contacting residues, and distance buckets.
+- `[ ]` Add ligand-specific CSV export.
+- `[ ]` Highlight the selected ligand in Mol*.
+
+### Priority 5: Quality / Validation Panel
+
+- `[ ]` Add a Quality tab after analysis.
+- `[ ]` Surface possible clashes, very close contacts, empty ligand states, low-confidence residues, PAE warnings, and missing PAE notices for predicted structures.
+- `[ ]` Use non-alarmist language and avoid overclaiming biological certainty.
+
+### Priority 6: Contact Confidence Warnings
+
+- `[ ]` Enrich predicted-structure contact rows with residue confidence when available.
+- `[ ]` Add warning badges for contacts involving low-confidence residues.
+- `[ ]` Add a low-confidence contacts filter and summary card.
+- `[ ]` Hide confidence-specific UI for structures without confidence data.
+
+### Priority 7: Methods / Provenance Panel
+
+- `[ ]` Add source, source ID, format, parser, cutoff, contact method, app version, timestamp, warnings, PAE status, and experimental/predicted status.
+- `[ ]` Include provenance in Report mode/export when possible.
+
+### Priority 8: Example Gallery
+
+- `[ ]` Add multiple guided examples with title, source, tags, load action, and "what to look at" hint.
+- `[ ]` Include examples for hemoglobin, ligand-bound protein, large structure, AlphaFold predicted model, and comparison if available.
+
+### Priority 9: Richer Report / Export Experience
+
+- `[ ]` Create Report mode with metadata, summary metrics, contact summary, ligand summary, confidence/PAE summary, quality warnings, and provenance.
+- `[ ]` Keep current contact CSV and ligand CSV exports.
+- `[ ]` Add analysis JSON export if easy.
+- `[ ]` Defer HTML/PDF/ZIP exports until the report view is stable.
+
+### Priority 10: Compare Workflow Polish
+
+- `[ ]` Improve Compare mode with structure A/B inputs, summary cards, shared/gained/lost tabs, and transparent limitation copy.
+- `[ ]` Add comparison CSV export if easy.
+- `[ ]` Do not add alignment, RMSD, TM-score, Foldseek, or superposition until explicitly requested.
+
+## Step Completion Rule
+
+After each major step, stop and explain:
+
+1. what changed
+2. which files were edited
+3. why the feature matters
+4. how to run/test it
+5. tradeoffs made
+6. what needs to be understood before moving on
+7. whether to continue

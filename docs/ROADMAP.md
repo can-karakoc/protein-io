@@ -1,8 +1,8 @@
 # Roadmap
 
-Protein Interaction Explorer is an open-source structural biology workspace for uploading, fetching, visualizing, analyzing, and reporting protein structures.
+Protein Interaction Explorer is an open-source structural biology workspace for loading, visualizing, analyzing, comparing, and reporting protein structures.
 
-See [Product Direction](PRODUCT_DIRECTION.md) for product framing and [Action Plan](ACTION_PLAN.md) for implementation status.
+See [Product Direction](PRODUCT_DIRECTION.md) for product framing, [Action Plan](ACTION_PLAN.md) for implementation status, and [Implementation Guidelines](IMPLEMENTATION_GUIDELINES.md) for the next frontend/product phase.
 
 ## Completed MVP Foundation
 
@@ -21,11 +21,13 @@ See [Product Direction](PRODUCT_DIRECTION.md) for product framing and [Action Pl
 - Contact result capping.
 - Backend tests.
 - Next.js frontend with upload panel, sample loader, Mol* viewer, summary cards, tables, and CSV export.
-- Vercel frontend deployment.
-- Render backend deployment.
+- Vercel deployment.
 - Public docs, screenshots, QA checklist, and benchmark baseline.
+- Practical structure comparison endpoint and UI.
+- Ligand interaction summaries and ligand CSV export.
+- pLDDT coloring mode in Mol*.
 
-## Immediate Priorities
+## Completed Implementation Priorities
 
 1. Review and merge the Gemmi/mmCIF branch. Done.
 2. Add PDB ID fetch and RCSB metadata. Done.
@@ -35,13 +37,24 @@ See [Product Direction](PRODUCT_DIRECTION.md) for product framing and [Action Pl
 6. Add AlphaFold DB fetch by UniProt ID. Done.
 7. Add PAE JSON sidecar support. Done.
 
-## Later Priorities
-
 8. Integrate Mol* as the primary structure viewer. Done.
 9. Add MVP-safe ligand interaction summaries. Done.
 10. Add practical structure comparison. Done.
 
-Future comparison scope: structural alignment, RMSD, aligned contact differences, and viewer-side comparison highlighting.
+## Next Product Priorities
+
+1. Frontend workbench redesign around `Explore | Compare | Report`.
+2. Better empty, loading, and error states.
+3. Table-to-viewer selection polish.
+4. Ligand detail drawer.
+5. Quality / validation panel.
+6. Contact confidence warnings.
+7. Methods / provenance panel.
+8. Example gallery.
+9. Richer report/export experience.
+10. Compare workflow polish.
+
+Future comparison scope: structural alignment, RMSD, aligned contact differences, TM-score, Foldseek integration, and viewer-side comparison highlighting. Do not implement these until the base Compare workflow is clean.
 
 ## Boundaries
 

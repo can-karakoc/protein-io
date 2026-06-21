@@ -1,169 +1,142 @@
 # Product Direction
 
-## Product Goal
+Protein Interaction Explorer is a browser-based structural biology workspace for loading, visualizing, analyzing, comparing, and reporting protein structures.
 
-Protein Interaction Explorer should become an open-source, scientist-facing structural biology workspace.
+The app should feel like a serious scientist-facing workbench, not a demo page.
 
-The long-term goal is not just to build a protein viewer or parser. The goal is to create a useful product layer that unifies common structural biology workflows in one clean web app:
+## Long-Term Goal
 
-- upload or fetch protein structures
-- visualize structures in 3D
-- inspect chains, residues, ligands, and contacts
-- connect structure data to public biological metadata
-- support experimental and predicted structures
-- help researchers interpret model outputs
-- export clean reports for analysis, sharing, or documentation
+Help researchers inspect experimental and predicted protein structures by combining structure loading, Mol* visualization, contact analysis, ligand summaries, confidence interpretation, comparison workflows, and clean report exports in one open-source web app.
 
-The project should be relevant to AI-bio and computational biology engineering teams, including teams like Boltz, because it focuses on the practical workflow around structure prediction outputs:
+The project should be especially relevant to AI-bio and computational biology engineering teams, including companies like Boltz, because it focuses on practical workflows around structure model outputs:
 
-- visualizing structures
-- validating contacts
-- comparing predicted and experimental structures
-- interpreting confidence
-- generating useful reports
-- integrating open-source structural biology tools instead of reinventing them
+- loading experimental or predicted structures
+- interpreting protein contacts
+- understanding ligand interactions
+- validating confidence and uncertainty
+- comparing predicted and reference structures
+- generating clean, shareable reports
 
-## Positioning
+## Current App Status
 
-Primary framing:
+The app already includes:
 
-```text
-Protein Interaction Explorer is an open-source structural biology workspace for uploading, fetching, visualizing, analyzing, and reporting protein structures.
-```
+- Next.js frontend and FastAPI backend
+- Mol* 3D viewer
+- Vercel deployment
+- support for `.pdb`, `.cif`, and `.mmcif`
+- local file upload and bundled sample loader
+- RCSB PDB ID fetch
+- AlphaFold DB fetch by UniProt accession
+- optional PAE JSON sidecar
+- structure comparison endpoint
+- table-to-viewer selection for chains, ligands, and contacts
+- pLDDT coloring mode
+- contact CSV export and ligand interaction CSV export
+- backend/frontend timing diagnostics
+- public docs, screenshots, QA checklist, and roadmap
 
-Short framing:
+## Current Main Problems
 
-```text
-A browser-based structural biology workbench for protein structure exploration and interaction analysis.
-```
+The next work should focus on product polish and industry-relevant workflows:
 
-## Current State
+1. Full frontend redesign pass
+2. Better workflow grouping
+3. Better empty, loading, and error states
+4. Better selected states between tables and the Mol* viewer
+5. Better ligand detail workflow
+6. Quality and validation panel
+7. Contact confidence warnings
+8. Example gallery
+9. Methods and provenance panel
+10. Richer report/export experience
+11. Structure comparison upgrades later
 
-Production branch:
+## Product Modes
 
-```text
-main
-```
-
-Production features:
-
-- PDB upload
-- mmCIF upload
-- RCSB mmCIF fetch by PDB ID
-- AlphaFold DB mmCIF fetch by UniProt accession
-- optional PAE JSON sidecar upload for predicted structures
-- sample file loader
-- Mol* structure viewer
-- chain, ligand, residue/contact summary
-- residue-residue contacts
-- protein-ligand contacts
-- contact categories for protein-protein, protein-ligand, protein-water, ligand-water, intra-chain, inter-chain, and possible clash contacts
-- interaction summary output for counts, top residues, top ligands, closest contacts, and possible clashes
-- RCSB metadata panel with removed-entry replacement IDs
-- table row selection for chains, ligands, and contacts
-- AlphaFold-style pLDDT confidence summaries for predicted-structure uploads
-- AlphaFold DB metadata panel for fetched predicted models
-- PAE sidecar summary panel for uploaded PAE JSON
-- CSV export
-- backend timing diagnostics
-- frontend timing logs
-- public docs, screenshots, QA checklist, roadmap
-
-Production stack:
-
-- Frontend: Next.js, React, TypeScript, Tailwind CSS, Mol*, Vercel
-- Backend: FastAPI, Python, Gemmi, Pydantic, pytest, Render
-
-Latest completed feature branch:
+The redesigned app should be organized around three modes:
 
 ```text
-feature/pae-sidecar
+Explore | Compare | Report
 ```
 
-This branch adds:
+### Explore
 
-- optional PAE JSON sidecar upload
-- backend PAE validation and summary output
-- frontend PAE summary panel
-
-## Architecture Principle
-
-Keep `StructureData` as the internal app boundary.
-
-Target flow:
+Primary workflow:
 
 ```text
-PDB/mmCIF/AlphaFold/Boltz/OpenFold/RCSB input
-  -> parser/fetcher
-  -> StructureData
-  -> analysis modules
-  -> API response
-  -> frontend viewer/tables/reports
+Load structure -> inspect metadata -> analyze contacts/ligands/confidence -> export results
 ```
 
-Do not let raw Gemmi, Biopython, FastAPI, or provider-specific objects leak throughout the app.
+Recommended desktop layout:
 
-## Development Rules
+```text
+Top Nav
+├── App name / logo
+├── Explore / Compare / Report tabs
+├── Docs / GitHub links
+└── Export button
 
-Do not overbuild. Avoid these until there is a concrete product need:
+Main Workbench
+├── Left Sidebar: load, analysis controls, metadata
+├── Center Panel: Mol* viewer
+└── Right/Bottom Panel: result tabs
+```
+
+Results tabs:
+
+```text
+Overview | Chains | Ligands | Contacts | Confidence | PAE | Quality
+```
+
+Only show `Confidence` and `PAE` when relevant.
+
+### Compare
+
+Primary workflow:
+
+```text
+Load structure A + structure B -> compare counts/contacts -> inspect shared/gained/lost contacts
+```
+
+The current comparison is residue-contact based. Alignment, RMSD, TM-score, Foldseek integration, and side-by-side 3D superposition are future work and should not be added until the base comparison UI is clean.
+
+### Report
+
+Primary workflow:
+
+```text
+Generate clean shareable/exportable analysis summary
+```
+
+Reports should eventually include metadata, summary metrics, viewer screenshot if possible, ligand summaries, contact summaries, confidence warnings, PAE summary, comparison summary when applicable, methods/provenance, and export buttons.
+
+## Product Boundaries
+
+Do not overbuild. Avoid:
 
 - authentication
 - database
-- user accounts
-- payments
 - cloud storage
 - background jobs
+- payments
+- user accounts
 - GPU/model inference
-- plugin registry
-- Docker unless strictly necessary
-- complex infrastructure
+- complex state management unless necessary
+- unnecessary dependencies
 
-Keep the backend modular:
-
-```text
-route -> service -> parser/fetcher -> StructureData -> analysis module -> response
-```
-
-Bad pattern:
-
-```text
-route does parsing, analysis, formatting, and error handling directly
-```
-
-Work in small PR-sized steps:
-
-- Keep the diff scoped.
-- Add or update tests.
-- Update docs.
-- Preserve the existing public API unless a change is necessary.
-- Stop after each priority and explain the outcome before moving on.
-
-## Priority Roadmap
-
-1. Merge Gemmi and add mmCIF support. Done.
-2. Add PDB ID fetch and RCSB metadata. Done.
-3. Add table-to-viewer interaction. Done.
-4. Add AlphaFold/pLDDT confidence support. Done.
-5. Add contact categories and better interaction summaries. Done.
-6. Add AlphaFold DB fetch by UniProt ID. Done.
-7. Add PAE JSON sidecar support. Done.
-8. Integrate Mol* as the primary structure viewer. Done.
-9. Add advanced ligand interaction summaries. Done.
-10. Add structure comparison. Done in practical residue-contact form.
-
-Do not continue to Priority 2 until Priority 1 is reviewed and merged.
+Keep the app simple, public, fast, and open-source friendly. Work in small, reviewable steps.
 
 ## Success Criteria
 
 The project should demonstrate:
 
-- real web software, not just notebooks
-- scientist-facing product thinking
-- clean backend architecture
+- serious scientist-facing product thinking
+- clean browser-based structural biology workflows
+- reliable Mol* visualization
+- practical contact and ligand interpretation
+- confidence-aware analysis for predicted structures
+- transparent methods and provenance
+- useful reports and exports
 - open-source maintainability
-- practical structural biology workflows
-- smart use of existing tools
-- AI-bio relevance through predicted structure support
-- careful handling of uncertainty and confidence
-- simple deployment and public demo
-- clear iteration history
+- clear relevance to AI-bio workflows
