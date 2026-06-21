@@ -1261,23 +1261,23 @@ function ReportContactSummary({ contacts }: { contacts: ContactRecord[] }) {
     .slice(0, 8);
 
   return (
-    <div className="border border-slate-200 bg-white p-4">
+    <div className="rounded-[var(--pio-radius-lg)] border border-[var(--pio-line-strong)] bg-white p-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-slate-950">Contact report</h2>
-          <p className="mt-1 text-xs leading-5 text-slate-500">
+          <h2 className="text-sm font-semibold text-[var(--pio-ink)]">Contact report</h2>
+          <p className="mt-1 text-xs leading-5 text-[var(--pio-graphite)]">
             Closest contacts and confidence-aware review count for the current cutoff.
           </p>
         </div>
         {contacts.some((contact) => contact.source_residue_confidence || contact.target_residue_confidence) ? (
-          <span className="inline-flex border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">
+          <span className="inline-flex border border-[var(--pio-amber)] bg-[var(--pio-amber-pale)] px-3 py-2 text-xs font-medium text-[var(--pio-amber-deep)]">
             {lowConfidenceContacts} low-confidence contacts
           </span>
         ) : null}
       </div>
       <div className="mt-3 overflow-x-auto">
         <table className="w-full min-w-[760px] text-left text-sm">
-          <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+          <thead className="bg-[var(--pio-sand)] text-xs uppercase tracking-wide text-[var(--pio-graphite)]">
             <tr>
               <th className="px-3 py-2 font-medium">Contact</th>
               <th className="px-3 py-2 font-medium">Type</th>
@@ -1286,22 +1286,22 @@ function ReportContactSummary({ contacts }: { contacts: ContactRecord[] }) {
               <th className="px-3 py-2 font-medium">Confidence</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-[var(--pio-line)]">
             {closestContacts.map((contact) => (
               <tr key={contactKey(contact)}>
-                <td className="px-3 py-2 font-mono text-slate-900">
+                <td className="px-3 py-2 font-mono text-[var(--pio-ink)]">
                   {contact.chain_a}:{contact.residue_name_a}
                   {contact.residue_a}.{contact.atom_a} - {contact.chain_b}:{contact.residue_name_b}
                   {contact.residue_b}.{contact.atom_b}
                 </td>
-                <td className="px-3 py-2 text-slate-700">{contact.contact_type}</td>
-                <td className="px-3 py-2 text-slate-700">{contact.contact_categories.join(", ")}</td>
-                <td className="px-3 py-2 font-mono text-slate-700">{contact.distance_angstrom.toFixed(3)} A</td>
+                <td className="px-3 py-2 text-[var(--pio-graphite)]">{contact.contact_type}</td>
+                <td className="px-3 py-2 text-[var(--pio-graphite)]">{contact.contact_categories.join(", ")}</td>
+                <td className="px-3 py-2 font-mono text-[var(--pio-graphite)]">{contact.distance_angstrom.toFixed(3)} A</td>
                 <td className="px-3 py-2">
                   {contact.source_residue_confidence || contact.target_residue_confidence ? (
                     <ContactConfidenceBadge contact={contact} />
                   ) : (
-                    <span className="text-xs text-slate-400">N/A</span>
+                    <span className="text-xs text-[var(--pio-graphite)]">N/A</span>
                   )}
                 </td>
               </tr>
@@ -1335,9 +1335,9 @@ function ConfidenceReportCard({ confidence }: { confidence: ConfidenceSummary })
   ] as const;
 
   return (
-    <div className="border border-slate-200 bg-white p-4">
-      <h2 className="text-sm font-semibold text-slate-950">Confidence summary</h2>
-      <p className="mt-1 text-xs leading-5 text-slate-500">
+    <div className="rounded-[var(--pio-radius-lg)] border border-[var(--pio-line-strong)] bg-white p-4">
+      <h2 className="text-sm font-semibold text-[var(--pio-ink)]">Confidence summary</h2>
+      <p className="mt-1 text-xs leading-5 text-[var(--pio-graphite)]">
         pLDDT distribution for predicted-structure interpretation.
       </p>
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -1346,9 +1346,9 @@ function ConfidenceReportCard({ confidence }: { confidence: ConfidenceSummary })
       </div>
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         {categories.map(([label, value]) => (
-          <div key={label} className="flex items-center justify-between border border-slate-200 px-3 py-2">
-            <span className="text-sm text-slate-700">{label}</span>
-            <span className="font-mono text-sm text-slate-950">{value}</span>
+          <div key={label} className="flex items-center justify-between rounded-[var(--pio-radius-sm)] border border-[var(--pio-line-strong)] px-3 py-2">
+            <span className="text-sm text-[var(--pio-graphite)]">{label}</span>
+            <span className="font-mono text-sm text-[var(--pio-ink)]">{value}</span>
           </div>
         ))}
       </div>
@@ -2092,9 +2092,9 @@ function StructureComparisonPanel({ comparison }: { comparison: StructureCompari
 
 function ComparisonCount({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex items-center justify-between border border-slate-200 px-3 py-2">
-      <span className="text-sm text-slate-700">{label}</span>
-      <span className="font-mono text-sm text-slate-950">{value}</span>
+    <div className="flex items-center justify-between rounded-[var(--pio-radius-sm)] border border-[var(--pio-line-strong)] px-3 py-2">
+      <span className="text-sm text-[var(--pio-graphite)]">{label}</span>
+      <span className="font-mono text-sm text-[var(--pio-ink)]">{value}</span>
     </div>
   );
 }
@@ -2102,23 +2102,23 @@ function ComparisonCount({ label, value }: { label: string; value: number }) {
 function ContactDifferenceList({ title, rows }: { title: string; rows: StructureComparisonResponse["contacts"]["gained_contacts"] }) {
   return (
     <div>
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{title}</p>
+      <p className="text-xs font-medium uppercase tracking-wide text-[var(--pio-graphite)]">{title}</p>
       {rows.length ? (
-        <div className="mt-2 divide-y divide-slate-100 border border-slate-200">
+        <div className="mt-2 divide-y divide-[var(--pio-line)] border border-[var(--pio-line-strong)]">
           {rows.map((row) => (
             <div key={`${row.label}-${row.contact_type}-${row.distance_a_angstrom ?? ""}-${row.distance_b_angstrom ?? ""}`} className="px-3 py-2">
-              <p className="font-mono text-xs text-slate-950">{row.label}</p>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="font-mono text-xs text-[var(--pio-ink)]">{row.label}</p>
+              <p className="mt-1 text-xs text-[var(--pio-graphite)]">
                 {row.contact_type} · {row.contact_categories.join(", ")}
               </p>
-              <p className="mt-1 font-mono text-xs text-slate-700">
+              <p className="mt-1 font-mono text-xs text-[var(--pio-graphite)]">
                 A: {formatOptionalDistance(row.distance_a_angstrom)} / B: {formatOptionalDistance(row.distance_b_angstrom)}
               </p>
             </div>
           ))}
         </div>
       ) : (
-        <p className="mt-2 text-sm text-slate-500">No rows.</p>
+        <p className="mt-2 text-sm text-[var(--pio-graphite)]">No rows.</p>
       )}
     </div>
   );
@@ -2139,16 +2139,16 @@ function InteractionSummaryPanel({ summary }: { summary: InteractionSummary | nu
   ];
 
   return (
-    <div className="border border-slate-200 bg-white p-4">
-      <h2 className="text-sm font-semibold text-slate-950">Interaction summary</h2>
-      <p className="mt-1 text-xs leading-5 text-slate-500">
+    <div className="rounded-[var(--pio-radius-lg)] border border-[var(--pio-line-strong)] bg-white p-4">
+      <h2 className="text-sm font-semibold text-[var(--pio-ink)]">Interaction summary</h2>
+      <p className="mt-1 text-xs leading-5 text-[var(--pio-graphite)]">
         Distance-based contact categories and top contact participants.
       </p>
       <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {items.map(([label, value]) => (
-          <div key={label} className="flex items-center justify-between border border-slate-200 px-3 py-2">
-            <span className="text-sm text-slate-700">{label}</span>
-            <span className="font-mono text-sm text-slate-950">{value}</span>
+          <div key={label} className="flex items-center justify-between rounded-[var(--pio-radius-sm)] border border-[var(--pio-line-strong)] px-3 py-2">
+            <span className="text-sm text-[var(--pio-graphite)]">{label}</span>
+            <span className="font-mono text-sm text-[var(--pio-ink)]">{value}</span>
           </div>
         ))}
       </div>
@@ -2184,18 +2184,18 @@ function LigandInteractionPanel({
   }
 
   return (
-    <div className="min-w-0 overflow-hidden border border-slate-200 bg-white">
-      <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="min-w-0 overflow-hidden rounded-[var(--pio-radius-lg)] border border-[var(--pio-line-strong)] bg-white">
+      <div className="flex flex-col gap-3 border-b border-[var(--pio-line-strong)] p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-slate-950">Ligand interaction summary</h2>
-          <p className="mt-1 text-xs leading-5 text-slate-500">
+          <h2 className="text-sm font-semibold text-[var(--pio-ink)]">Ligand interaction summary</h2>
+          <p className="mt-1 text-xs leading-5 text-[var(--pio-graphite)]">
             Per-ligand contact counts, closest atom pair, contacting residues, and distance distribution.
           </p>
         </div>
         <button
           type="button"
           onClick={onExport}
-          className="inline-flex h-10 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100"
+          className="pio-button-secondary px-4 text-sm"
         >
           <Download className="h-4 w-4" />
           Export ligand CSV
@@ -2203,7 +2203,7 @@ function LigandInteractionPanel({
       </div>
       <div className="max-w-full overflow-x-auto">
         <table className="w-full min-w-[980px] text-left text-sm">
-          <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+          <thead className="bg-[var(--pio-sand)] text-xs uppercase tracking-wide text-[var(--pio-graphite)]">
             <tr>
               <th className="px-4 py-3 font-medium">Ligand</th>
               <th className="px-4 py-3 font-medium">Contacts</th>
@@ -2215,17 +2215,17 @@ function LigandInteractionPanel({
               <th className="px-4 py-3 font-medium">Distance buckets</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-[var(--pio-line)]">
             {ligandInteractions.map((ligand) => (
               <tr key={`${ligand.name}-${ligand.chain_id}-${ligand.residue_number}`}>
-                <td className="px-4 py-3 font-mono text-slate-950">
+                <td className="px-4 py-3 font-mono text-[var(--pio-ink)]">
                   {ligand.name} {ligand.chain_id}:{ligand.residue_number}
                 </td>
-                <td className="px-4 py-3 font-mono text-slate-800">{ligand.contact_count}</td>
-                <td className="px-4 py-3 font-mono text-slate-800">{ligand.protein_contact_count}</td>
-                <td className="px-4 py-3 font-mono text-slate-800">{ligand.water_contact_count}</td>
-                <td className="px-4 py-3 font-mono text-slate-800">{ligand.possible_clash_count}</td>
-                <td className="px-4 py-3 text-slate-700">
+                <td className="px-4 py-3 font-mono text-[var(--pio-ink)]">{ligand.contact_count}</td>
+                <td className="px-4 py-3 font-mono text-[var(--pio-ink)]">{ligand.protein_contact_count}</td>
+                <td className="px-4 py-3 font-mono text-[var(--pio-ink)]">{ligand.water_contact_count}</td>
+                <td className="px-4 py-3 font-mono text-[var(--pio-ink)]">{ligand.possible_clash_count}</td>
+                <td className="px-4 py-3 text-[var(--pio-graphite)]">
                   {ligand.closest_contact && ligand.closest_distance_angstrom !== null ? (
                     <span className="font-mono">
                       {ligand.closest_distance_angstrom.toFixed(3)} A, {ligand.closest_contact.atom_a}-
@@ -2235,14 +2235,14 @@ function LigandInteractionPanel({
                     "None"
                   )}
                 </td>
-                <td className="px-4 py-3 text-slate-700">
+                <td className="px-4 py-3 text-[var(--pio-graphite)]">
                   {ligand.contacting_residues.length
                     ? ligand.contacting_residues
                         .map((residue) => `${residue.chain_id}:${residue.residue_name}${residue.residue_number} (${residue.contact_count})`)
                         .join(", ")
                     : "None"}
                 </td>
-                <td className="px-4 py-3 font-mono text-slate-700">
+                <td className="px-4 py-3 font-mono text-[var(--pio-graphite)]">
                   &lt;2:{ligand.distance_distribution.under_2_angstrom} / 2-3:
                   {ligand.distance_distribution.two_to_3_angstrom} / 3-4:
                   {ligand.distance_distribution.three_to_4_angstrom} / &gt;4:
@@ -2268,9 +2268,9 @@ function LigandDetailPanel({
 }) {
   if (!ligand) {
     return (
-      <div className="min-w-0 border border-dashed border-slate-300 bg-slate-50 p-4">
-        <h2 className="text-sm font-semibold text-slate-950">Ligand detail</h2>
-        <p className="mt-1 text-sm leading-6 text-slate-600">
+      <div className="min-w-0 rounded-[var(--pio-radius-md)] border border-dashed border-[var(--pio-line-strong)] bg-[var(--pio-sand)] p-4">
+        <h2 className="text-sm font-semibold text-[var(--pio-ink)]">Ligand detail</h2>
+        <p className="mt-1 text-sm leading-6 text-[var(--pio-graphite)]">
           Select a ligand row to inspect its contacts, closest atom pair, distance buckets, and contacting residues.
         </p>
       </div>
@@ -2294,14 +2294,14 @@ function LigandDetailPanel({
   ];
 
   return (
-    <div className="min-w-0 overflow-hidden border border-cyan-200 bg-cyan-50 p-4">
+    <div className="min-w-0 overflow-hidden rounded-[var(--pio-radius-lg)] border border-[var(--pio-blue)] bg-[var(--pio-blue-pale)] p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">Ligand detail</p>
-          <h2 className="mt-1 font-mono text-lg font-semibold text-slate-950">
+          <p className="text-xs font-medium uppercase tracking-wide text-[var(--pio-blue-deep)]">Ligand detail</p>
+          <h2 className="mt-1 font-mono text-lg font-semibold text-[var(--pio-ink)]">
             {ligand.name} {ligand.chain_id}:{ligand.residue_number}
           </h2>
-          <p className="mt-1 text-xs leading-5 text-cyan-900">
+          <p className="mt-1 text-xs leading-5 text-[var(--pio-blue-deep)]">
             Selecting this ligand highlights it in Mol* and keeps the detailed interaction summary in view.
           </p>
         </div>
@@ -2309,7 +2309,7 @@ function LigandDetailPanel({
           type="button"
           onClick={() => interaction && onExport(interaction)}
           disabled={!interaction}
-          className="inline-flex h-10 shrink-0 items-center justify-center gap-2 border border-cyan-300 bg-white px-3 text-sm font-medium text-cyan-950 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:text-slate-400"
+          className="pio-button-secondary shrink-0 px-4 text-sm disabled:cursor-not-allowed disabled:opacity-45"
         >
           <Download className="h-4 w-4" />
           Export this ligand
@@ -2318,19 +2318,19 @@ function LigandDetailPanel({
 
       <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {metrics.map(([label, value]) => (
-          <div key={label} className="border border-cyan-200 bg-white/80 px-3 py-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">{label}</p>
-            <p className="mt-1 font-mono text-sm text-slate-950">{value}</p>
+          <div key={label} className="border border-[var(--pio-blue)] bg-white/80 px-3 py-2">
+            <p className="text-xs font-medium uppercase tracking-wide text-[var(--pio-blue-deep)]">{label}</p>
+            <p className="mt-1 font-mono text-sm text-[var(--pio-ink)]">{value}</p>
           </div>
         ))}
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <div className="border border-cyan-200 bg-white/80 p-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">Closest contact</p>
+        <div className="border border-[var(--pio-blue)] bg-white/80 p-3">
+          <p className="text-xs font-medium uppercase tracking-wide text-[var(--pio-blue-deep)]">Closest contact</p>
           {closestContact && interaction?.closest_distance_angstrom !== null ? (
-            <div className="mt-2 text-sm text-slate-800">
-              <p className="font-mono text-slate-950">{interaction?.closest_distance_angstrom.toFixed(3)} A</p>
+            <div className="mt-2 text-sm text-[var(--pio-ink)]">
+              <p className="font-mono text-[var(--pio-ink)]">{interaction?.closest_distance_angstrom.toFixed(3)} A</p>
               <p className="mt-1 font-mono text-xs">
                 {closestContact.chain_a}:{closestContact.residue_name_a}
                 {closestContact.residue_a}.{closestContact.atom_a} - {closestContact.chain_b}:
@@ -2339,12 +2339,12 @@ function LigandDetailPanel({
               </p>
             </div>
           ) : (
-            <p className="mt-2 text-sm text-slate-500">No contacts detected for this ligand.</p>
+            <p className="mt-2 text-sm text-[var(--pio-graphite)]">No contacts detected for this ligand.</p>
           )}
         </div>
 
-        <div className="border border-cyan-200 bg-white/80 p-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">Distance buckets</p>
+        <div className="border border-[var(--pio-blue)] bg-white/80 p-3">
+          <p className="text-xs font-medium uppercase tracking-wide text-[var(--pio-blue-deep)]">Distance buckets</p>
           <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
             <DistanceBucket label="<2 A" value={buckets.under_2_angstrom} />
             <DistanceBucket label="2-3 A" value={buckets.two_to_3_angstrom} />
@@ -2354,14 +2354,14 @@ function LigandDetailPanel({
         </div>
       </div>
 
-      <div className="mt-4 border border-cyan-200 bg-white/80 p-3">
-        <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">Contacting residues</p>
+      <div className="mt-4 border border-[var(--pio-blue)] bg-white/80 p-3">
+        <p className="text-xs font-medium uppercase tracking-wide text-[var(--pio-blue-deep)]">Contacting residues</p>
         {interaction?.contacting_residues.length ? (
           <div className="mt-2 flex flex-wrap gap-2">
             {interaction.contacting_residues.map((residue) => (
               <span
                 key={`${residue.chain_id}-${residue.residue_name}-${residue.residue_number}`}
-                className="inline-flex border border-slate-200 bg-white px-2 py-1 font-mono text-xs text-slate-800"
+                className="inline-flex rounded-[var(--pio-radius-sm)] border border-[var(--pio-line-strong)] bg-white px-2 py-1 font-mono text-xs text-[var(--pio-ink)]"
               >
                 {residue.chain_id}:{residue.residue_name}
                 {residue.residue_number} ({residue.contact_count})
@@ -2369,7 +2369,7 @@ function LigandDetailPanel({
             ))}
           </div>
         ) : (
-          <p className="mt-2 text-sm text-slate-500">No protein residues are within the current cutoff for this ligand.</p>
+          <p className="mt-2 text-sm text-[var(--pio-graphite)]">No protein residues are within the current cutoff for this ligand.</p>
         )}
       </div>
     </div>
@@ -2378,9 +2378,9 @@ function LigandDetailPanel({
 
 function DistanceBucket({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex items-center justify-between border border-slate-200 bg-white px-2 py-1">
-      <span className="font-mono text-xs text-slate-600">{label}</span>
-      <span className="font-mono text-xs text-slate-950">{value}</span>
+    <div className="flex items-center justify-between rounded-[var(--pio-radius-sm)] border border-[var(--pio-line-strong)] bg-white px-2 py-1">
+      <span className="font-mono text-xs text-[var(--pio-graphite)]">{label}</span>
+      <span className="font-mono text-xs text-[var(--pio-ink)]">{value}</span>
     </div>
   );
 }
@@ -2388,18 +2388,18 @@ function DistanceBucket({ label, value }: { label: string; value: number }) {
 function TopContactList({ title, rows }: { title: string; rows: Array<[string, number]> }) {
   return (
     <div>
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{title}</p>
+      <p className="text-xs font-medium uppercase tracking-wide text-[var(--pio-graphite)]">{title}</p>
       {rows.length ? (
-        <div className="mt-2 divide-y divide-slate-100 border border-slate-200">
+        <div className="mt-2 divide-y divide-[var(--pio-line)] border border-[var(--pio-line-strong)]">
           {rows.map(([label, count]) => (
             <div key={label} className="flex items-center justify-between px-3 py-2">
-              <span className="font-mono text-sm text-slate-800">{label}</span>
-              <span className="font-mono text-sm text-slate-950">{count}</span>
+              <span className="font-mono text-sm text-[var(--pio-ink)]">{label}</span>
+              <span className="font-mono text-sm text-[var(--pio-ink)]">{count}</span>
             </div>
           ))}
         </div>
       ) : (
-        <p className="mt-2 text-sm text-slate-500">No rows.</p>
+        <p className="mt-2 text-sm text-[var(--pio-graphite)]">No rows.</p>
       )}
     </div>
   );
@@ -2579,7 +2579,7 @@ function ChainTable({
                 <th className="px-4 py-3 font-medium">Atoms</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-[var(--pio-line)]">
               {chains.map((chain) => {
                 const selected = selection?.kind === "chain" && selection.chainId === chain.id;
 
@@ -2641,7 +2641,7 @@ function LigandTable({
                 <th className="px-4 py-3 font-medium">Atoms</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-[var(--pio-line)]">
               {ligands.map((ligand) => {
                 const selected =
                   selection?.kind === "ligand" &&
@@ -2718,7 +2718,7 @@ function ContactTable({
             {showConfidence ? <th className="px-4 py-3 font-medium">Confidence</th> : null}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-[var(--pio-line)]">
           {contacts.map((contact) => {
             const selected = selection?.kind === "contact" && contactKey(selection.contact) === contactKey(contact);
 
