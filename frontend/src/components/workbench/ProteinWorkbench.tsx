@@ -33,6 +33,7 @@ const EMPTY_RESIDUE_CONFIDENCES: ResidueConfidence[] = [];
 type StructureFileFormat = "pdb" | "cif";
 type ViewerColorMode = "structure" | "plddt";
 type ContactFilter = "all" | ContactCategory;
+type ResultsTab = "overview" | "chains" | "ligands" | "contacts" | "confidence" | "pae" | "quality";
 
 export function ProteinWorkbench() {
   const [mode, setMode] = useState<WorkbenchMode>("explore");
@@ -51,6 +52,7 @@ export function ProteinWorkbench() {
   const [selection, setSelection] = useState<ViewerSelection | null>(null);
   const [viewerColorMode, setViewerColorMode] = useState<ViewerColorMode>("structure");
   const [contactFilter, setContactFilter] = useState<ContactFilter>("all");
+  const [resultsTab, setResultsTab] = useState<ResultsTab>("overview");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isRcsbLoading, setIsRcsbLoading] = useState(false);
@@ -76,6 +78,7 @@ export function ProteinWorkbench() {
     setSelection(null);
     setViewerColorMode("structure");
     setContactFilter("all");
+    setResultsTab("overview");
     setPaeFileName("");
     setPaeText("");
     setFileName(file.name);
@@ -96,6 +99,7 @@ export function ProteinWorkbench() {
     setSelection(null);
     setViewerColorMode("structure");
     setContactFilter("all");
+    setResultsTab("overview");
     setPaeFileName("");
     setPaeText("");
     const fetchStarted = performance.now();
@@ -120,6 +124,7 @@ export function ProteinWorkbench() {
     setAnalysis(null);
     setSelection(null);
     setContactFilter("all");
+    setResultsTab("overview");
     const text = await file.text();
     setPaeFileName(file.name);
     setPaeText(text);
@@ -179,6 +184,7 @@ export function ProteinWorkbench() {
       setSelection(null);
       setViewerColorMode(nextAnalysis.confidence ? "plddt" : "structure");
       setContactFilter("all");
+      setResultsTab("overview");
       logTiming("analysis request", timingStarted, {
         form_ms,
         request_ms,
@@ -208,6 +214,7 @@ export function ProteinWorkbench() {
     setSelection(null);
     setViewerColorMode("structure");
     setContactFilter("all");
+    setResultsTab("overview");
 
     try {
       const timingStarted = performance.now();
@@ -233,6 +240,7 @@ export function ProteinWorkbench() {
       setSelection(null);
       setViewerColorMode(payload.analysis.confidence ? "plddt" : "structure");
       setContactFilter("all");
+      setResultsTab("overview");
       logTiming("rcsb fetch analysis", timingStarted, {
         request_ms,
         response_json_ms,
@@ -261,6 +269,7 @@ export function ProteinWorkbench() {
     setSelection(null);
     setViewerColorMode("structure");
     setContactFilter("all");
+    setResultsTab("overview");
 
     try {
       const timingStarted = performance.now();
@@ -286,6 +295,7 @@ export function ProteinWorkbench() {
       setSelection(null);
       setViewerColorMode(payload.analysis.confidence ? "plddt" : "structure");
       setContactFilter("all");
+      setResultsTab("overview");
       logTiming("alphafold fetch analysis", timingStarted, {
         request_ms,
         response_json_ms,
@@ -349,6 +359,7 @@ export function ProteinWorkbench() {
     setSelection(null);
     setViewerColorMode("structure");
     setContactFilter("all");
+    setResultsTab("overview");
     setError(null);
     setCutoff(4.0);
   }
@@ -374,13 +385,23 @@ export function ProteinWorkbench() {
   }
 
   return (
-    <WorkbenchShell mode={mode} onModeChange={setMode} onLoadSample={loadExample} onReset={reset}>
+    <WorkbenchShell
+      mode={mode}
+      onModeChange={setMode}
+      onLoadSample={loadExample}
+      onReset={reset}
+      onExport={exportCsv}
+      canExport={contacts.length > 0}
+    >
       {mode === "explore" ? (
         <>
         <section className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
           <ExploreSidebar
             fileName={fileName}
             paeFileName={paeFileName}
+            structureFormat={structureFormat}
+            analysis={analysis}
+            metadata={analysis?.metadata ?? null}
             cutoff={cutoff}
             onCutoffChange={setCutoff}
             onStructureFile={(file) => void handleFile(file)}
@@ -421,85 +442,49 @@ export function ProteinWorkbench() {
               colorMode={viewerColorMode}
             />
             <SelectionBar selection={selection} onClear={() => setSelection(null)} />
-            <MetadataPanel metadata={analysis?.metadata ?? null} />
-            <ConfidencePanel
-              confidence={analysis?.confidence ?? null}
+            <ResultsPanel
+              activeTab={resultsTab}
+              onTabChange={setResultsTab}
+              analysis={analysis}
+              comparison={comparison}
+              chains={analysis?.chains ?? []}
+              ligands={analysis?.ligands ?? []}
+              contacts={filteredContactPreview}
+              totalContactCount={filteredContacts.length}
+              allContactCount={contacts.length}
+              contactFilter={contactFilter}
+              onContactFilterChange={setContactFilter}
+              selection={selection}
+              onChainSelect={(chain) =>
+                setSelection({
+                  kind: "chain",
+                  chainId: chain.id,
+                  label: `Chain ${chain.id}`,
+                })
+              }
+              onLigandSelect={(ligand) =>
+                setSelection({
+                  kind: "ligand",
+                  chainId: ligand.chain_id,
+                  residueName: ligand.name,
+                  residueNumber: ligand.residue_number,
+                  label: `${ligand.name} ${ligand.chain_id}:${ligand.residue_number}`,
+                })
+              }
+              onContactSelect={(contact) =>
+                setSelection({
+                  kind: "contact",
+                  contact,
+                  label: `${contact.chain_a}:${contact.residue_name_a}${contact.residue_a} - ${contact.chain_b}:${contact.residue_name_b}${contact.residue_b}`,
+                })
+              }
               residueConfidences={residueConfidences}
-              colorMode={viewerColorMode}
-              onColorModeChange={setViewerColorMode}
+              viewerColorMode={viewerColorMode}
+              onViewerColorModeChange={setViewerColorMode}
+              onExportContacts={exportCsv}
+              onExportLigands={exportLigandCsv}
             />
-            <PaePanel pae={analysis?.pae ?? null} />
-            <InteractionSummaryPanel summary={analysis?.interaction_summary ?? null} />
-            <LigandInteractionPanel
-              ligandInteractions={analysis?.ligand_interactions ?? []}
-              onExport={exportLigandCsv}
-            />
-            <StructureComparisonPanel comparison={comparison} />
-            <SummaryCards analysis={analysis} />
           </section>
-        </section>
-
-        <section className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-2">
-          <ChainTable
-            chains={analysis?.chains ?? []}
-            selection={selection}
-            onSelect={(chain) =>
-              setSelection({
-                kind: "chain",
-                chainId: chain.id,
-                label: `Chain ${chain.id}`,
-              })
-            }
-          />
-
-          <LigandTable
-            ligands={analysis?.ligands ?? []}
-            selection={selection}
-            onSelect={(ligand) =>
-              setSelection({
-                kind: "ligand",
-                chainId: ligand.chain_id,
-                residueName: ligand.name,
-                residueNumber: ligand.residue_number,
-                label: `${ligand.name} ${ligand.chain_id}:${ligand.residue_number}`,
-              })
-            }
-          />
-        </section>
-
-        <section className="min-w-0 border border-slate-200 bg-white">
-          <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-sm font-semibold text-slate-950">Contacts</h2>
-              <p className="mt-1 text-xs leading-5 text-slate-500">
-                Closest atom pair per categorized contact.
-              </p>
-            </div>
-            <div className="flex flex-col gap-2 sm:items-end">
-              <ContactCategoryFilter value={contactFilter} onChange={setContactFilter} />
-              <button
-                type="button"
-                onClick={exportCsv}
-                disabled={!contacts.length}
-                className="inline-flex h-10 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
-              >
-                <Download className="h-4 w-4" />
-                Export CSV
-              </button>
-            </div>
-          </div>
-          <ContactTable
-            contacts={filteredContactPreview}
-            totalCount={filteredContacts.length}
-            selection={selection}
-            onSelect={(contact) =>
-              setSelection({
-                kind: "contact",
-                contact,
-                label: `${contact.chain_a}:${contact.residue_name_a}${contact.residue_a} - ${contact.chain_b}:${contact.residue_name_b}${contact.residue_b}`,
-              })
-            }
-          />
         </section>
         </>
       ) : (
@@ -526,6 +511,181 @@ function WorkbenchModePlaceholder({ mode }: { mode: Exclude<WorkbenchMode, "expl
       <p className="text-sm font-semibold text-slate-950">{copy.title}</p>
       <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">{copy.body}</p>
     </section>
+  );
+}
+
+function ResultsPanel({
+  activeTab,
+  onTabChange,
+  analysis,
+  comparison,
+  chains,
+  ligands,
+  contacts,
+  totalContactCount,
+  allContactCount,
+  contactFilter,
+  onContactFilterChange,
+  selection,
+  onChainSelect,
+  onLigandSelect,
+  onContactSelect,
+  residueConfidences,
+  viewerColorMode,
+  onViewerColorModeChange,
+  onExportContacts,
+  onExportLigands,
+}: {
+  activeTab: ResultsTab;
+  onTabChange: (tab: ResultsTab) => void;
+  analysis: AnalysisResponse | null;
+  comparison: StructureComparisonResponse | null;
+  chains: ChainSummary[];
+  ligands: LigandSummary[];
+  contacts: ContactRecord[];
+  totalContactCount: number;
+  allContactCount: number;
+  contactFilter: ContactFilter;
+  onContactFilterChange: (filter: ContactFilter) => void;
+  selection: ViewerSelection | null;
+  onChainSelect: (chain: ChainSummary) => void;
+  onLigandSelect: (ligand: LigandSummary) => void;
+  onContactSelect: (contact: ContactRecord) => void;
+  residueConfidences: ResidueConfidence[];
+  viewerColorMode: ViewerColorMode;
+  onViewerColorModeChange: (mode: ViewerColorMode) => void;
+  onExportContacts: () => void;
+  onExportLigands: () => void;
+}) {
+  const tabs: Array<{ id: ResultsTab; label: string; visible: boolean }> = [
+    { id: "overview", label: "Overview", visible: true },
+    { id: "chains", label: "Chains", visible: true },
+    { id: "ligands", label: "Ligands", visible: true },
+    { id: "contacts", label: "Contacts", visible: true },
+    { id: "confidence", label: "Confidence", visible: Boolean(analysis?.confidence) },
+    { id: "pae", label: "PAE", visible: Boolean(analysis?.pae) },
+    { id: "quality", label: "Quality", visible: Boolean(analysis) },
+  ];
+  const visibleTabs = tabs.filter((tab) => tab.visible);
+  const selectedTab = visibleTabs.some((tab) => tab.id === activeTab) ? activeTab : "overview";
+
+  return (
+    <section className="min-w-0 border border-slate-200 bg-white">
+      <div className="flex flex-wrap gap-1 border-b border-slate-200 bg-slate-50 p-2" role="tablist" aria-label="Analysis results">
+        {visibleTabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={selectedTab === tab.id}
+            onClick={() => onTabChange(tab.id)}
+            className={[
+              "h-9 border px-3 text-sm font-medium",
+              selectedTab === tab.id
+                ? "border-slate-900 bg-slate-900 text-white"
+                : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100",
+            ].join(" ")}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="min-w-0 p-4">
+        {selectedTab === "overview" ? (
+          <div className="grid min-w-0 gap-4">
+            <MetadataPanel metadata={analysis?.metadata ?? null} />
+            <SummaryCards analysis={analysis} />
+            <InteractionSummaryPanel summary={analysis?.interaction_summary ?? null} />
+            <StructureComparisonPanel comparison={comparison} />
+          </div>
+        ) : null}
+
+        {selectedTab === "chains" ? (
+          <ChainTable chains={chains} selection={selection} onSelect={onChainSelect} />
+        ) : null}
+
+        {selectedTab === "ligands" ? (
+          <div className="grid min-w-0 gap-4">
+            <LigandTable ligands={ligands} selection={selection} onSelect={onLigandSelect} />
+            <LigandInteractionPanel ligandInteractions={analysis?.ligand_interactions ?? []} onExport={onExportLigands} />
+          </div>
+        ) : null}
+
+        {selectedTab === "contacts" ? (
+          <div className="min-w-0 border border-slate-200 bg-white">
+            <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-950">Contacts</h2>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  Closest atom pair per categorized contact.
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 sm:items-end">
+                <ContactCategoryFilter value={contactFilter} onChange={onContactFilterChange} />
+                <button
+                  type="button"
+                  onClick={onExportContacts}
+                  disabled={!allContactCount}
+                  className="inline-flex h-10 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
+                >
+                  <Download className="h-4 w-4" />
+                  Export CSV
+                </button>
+              </div>
+            </div>
+            <ContactTable
+              contacts={contacts}
+              totalCount={totalContactCount}
+              selection={selection}
+              onSelect={onContactSelect}
+            />
+          </div>
+        ) : null}
+
+        {selectedTab === "confidence" ? (
+          <ConfidencePanel
+            confidence={analysis?.confidence ?? null}
+            residueConfidences={residueConfidences}
+            colorMode={viewerColorMode}
+            onColorModeChange={onViewerColorModeChange}
+          />
+        ) : null}
+
+        {selectedTab === "pae" ? <PaePanel pae={analysis?.pae ?? null} /> : null}
+
+        {selectedTab === "quality" ? <QualityPlaceholder analysis={analysis} /> : null}
+      </div>
+    </section>
+  );
+}
+
+function QualityPlaceholder({ analysis }: { analysis: AnalysisResponse | null }) {
+  const possibleClashes = analysis?.interaction_summary?.possible_clash_count ?? 0;
+  const lowConfidence = analysis?.confidence?.low_confidence_count ?? 0;
+  const paeProvided = Boolean(analysis?.pae);
+
+  return (
+    <div className="border border-slate-200 bg-white p-4">
+      <h2 className="text-sm font-semibold text-slate-950">Quality</h2>
+      <p className="mt-1 text-xs leading-5 text-slate-500">
+        Early validation summary using currently available contact, confidence, and PAE data.
+      </p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+        <div className="border border-slate-200 px-3 py-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Possible clashes</p>
+          <p className="mt-1 font-mono text-sm text-slate-950">{possibleClashes}</p>
+        </div>
+        <div className="border border-slate-200 px-3 py-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Low-confidence residues</p>
+          <p className="mt-1 font-mono text-sm text-slate-950">{lowConfidence}</p>
+        </div>
+        <div className="border border-slate-200 px-3 py-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">PAE sidecar</p>
+          <p className="mt-1 font-mono text-sm text-slate-950">{paeProvided ? "Provided" : "Not provided"}</p>
+        </div>
+      </div>
+    </div>
   );
 }
 

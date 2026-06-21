@@ -169,15 +169,15 @@ Goal: restructure the frontend into a scientist-facing workbench organized aroun
 - `[x]` Inspect the current frontend structure before implementation.
 - `[x]` Propose a concrete component architecture before coding.
 - `[x]` Add initial workbench shell and mode tabs with app identity.
-- `[ ]` Add top navigation links for docs/GitHub and export access.
-- `[ ]` Build an Explore layout with left sidebar, center Mol* viewer, and results tabs.
+- `[x]` Add top navigation links for docs/GitHub and export access.
+- `[x]` Build an Explore layout with left sidebar, center Mol* viewer, and results tabs.
 - `[x]` Extract load inputs, analysis controls, and current sidebar alerts into a focused Explore sidebar component.
-- `[ ]` Add compact metadata to the left sidebar.
-- `[ ]` Move results into tabs: Overview, Chains, Ligands, Contacts, Confidence, PAE, and Quality.
-- `[ ]` Only show Confidence and PAE tabs when relevant.
-- `[ ]` Make the viewer layout stable so Mol* never widens the page after render.
-- `[ ]` Preserve all current upload, fetch, analysis, selection, and export behavior.
-- `[ ]` Run frontend lint/build and browser-check Mol* rendering before calling this done.
+- `[x]` Add compact metadata to the left sidebar.
+- `[x]` Move results into tabs: Overview, Chains, Ligands, Contacts, Confidence, PAE, and Quality.
+- `[x]` Only show Confidence and PAE tabs when relevant.
+- `[x]` Make the viewer layout stable so Mol* never widens the page after render.
+- `[x]` Preserve all current upload, fetch, analysis, selection, and export behavior.
+- `[x]` Run frontend lint/build and browser-check Mol* rendering before calling this done.
 
 ### Priority 2: Better Empty, Loading, and Error States
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Atom, FileUp, RotateCcw } from "lucide-react";
+import { Atom, Download, ExternalLink, FileText, FileUp, RotateCcw } from "lucide-react";
 
 export type WorkbenchMode = "explore" | "compare" | "report";
 
@@ -9,6 +9,8 @@ type TopNavProps = {
   onModeChange: (mode: WorkbenchMode) => void;
   onLoadSample: () => void;
   onReset: () => void;
+  onExport: () => void;
+  canExport: boolean;
 };
 
 const MODES: Array<{ id: WorkbenchMode; label: string }> = [
@@ -17,7 +19,7 @@ const MODES: Array<{ id: WorkbenchMode; label: string }> = [
   { id: "report", label: "Report" },
 ];
 
-export function TopNav({ mode, onModeChange, onLoadSample, onReset }: TopNavProps) {
+export function TopNav({ mode, onModeChange, onLoadSample, onReset, onExport, canExport }: TopNavProps) {
   return (
     <header className="flex flex-col gap-4 border-b border-slate-200 pb-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -35,6 +37,33 @@ export function TopNav({ mode, onModeChange, onLoadSample, onReset }: TopNavProp
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <a
+            href="https://github.com/can-karakoc/protein-io/tree/main/docs"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-10 items-center gap-2 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100"
+          >
+            <FileText className="h-4 w-4" />
+            Docs
+          </a>
+          <a
+            href="https://github.com/can-karakoc/protein-io"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-10 items-center gap-2 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100"
+          >
+            <ExternalLink className="h-4 w-4" />
+            GitHub
+          </a>
+          <button
+            type="button"
+            onClick={onExport}
+            disabled={!canExport}
+            className="inline-flex h-10 items-center gap-2 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
+          >
+            <Download className="h-4 w-4" />
+            Export
+          </button>
           <button
             type="button"
             onClick={onLoadSample}

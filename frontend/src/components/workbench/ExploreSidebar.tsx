@@ -2,9 +2,14 @@
 
 import { AlertCircle, Atom, FileUp, Loader2, Play, Search } from "lucide-react";
 
+import type { AnalysisResponse, StructureMetadata } from "@/lib/types";
+
 type ExploreSidebarProps = {
   fileName: string;
   paeFileName: string;
+  structureFormat: "pdb" | "cif";
+  analysis: AnalysisResponse | null;
+  metadata: StructureMetadata | null;
   cutoff: number;
   onCutoffChange: (cutoff: number) => void;
   onStructureFile: (file: File) => void;
@@ -33,6 +38,9 @@ type ExploreSidebarProps = {
 export function ExploreSidebar({
   fileName,
   paeFileName,
+  structureFormat,
+  analysis,
+  metadata,
   cutoff,
   onCutoffChange,
   onStructureFile,
@@ -146,6 +154,14 @@ export function ExploreSidebar({
         ) : null}
       </div>
 
+      <CompactMetadataSummary
+        fileName={fileName}
+        structureFormat={structureFormat}
+        analysis={analysis}
+        metadata={metadata}
+        paeFileName={paeFileName}
+      />
+
       <div className="border border-slate-200 bg-white p-4">
         <h2 className="text-sm font-semibold text-slate-950">RCSB fetch</h2>
         <p className="mt-1 text-xs leading-5 text-slate-500">
@@ -254,6 +270,66 @@ export function ExploreSidebar({
         </div>
       ) : null}
     </aside>
+  );
+}
+
+function CompactMetadataSummary({
+  fileName,
+  structureFormat,
+  analysis,
+  metadata,
+  paeFileName,
+}: {
+  fileName: string;
+  structureFormat: "pdb" | "cif";
+  analysis: AnalysisResponse | null;
+  metadata: StructureMetadata | null;
+  paeFileName: string;
+}) {
+  if (!fileName && !metadata && !analysis) {
+    return null;
+  }
+
+  const source =
+    metadata?.source === "rcsb"
+      ? "RCSB"
+      : metadata?.source === "alphafold"
+        ? "AlphaFold DB"
+        : fileName
+          ? "Upload / sample"
+          : "Unknown";
+  const sourceId = metadata?.pdb_id ?? metadata?.uniprot_id ?? null;
+  const method = metadata?.method ?? (metadata?.source === "alphafold" ? "Predicted model" : null);
+  const resolution = metadata?.resolution_angstrom ? `${metadata.resolution_angstrom.toFixed(2)} A` : null;
+  const organism = metadata?.organism ?? null;
+  const meanPlddt = analysis?.confidence ? analysis.confidence.average_plddt.toFixed(2) : null;
+  const rows = [
+    ["Source", source],
+    ["ID", sourceId],
+    ["Method", method],
+    ["Resolution", resolution],
+    ["Organism", organism],
+    ["Format", structureFormat === "cif" ? "mmCIF" : "PDB"],
+    ["Chains", analysis?.summary.chain_count ?? null],
+    ["Ligands", analysis?.summary.ligand_count ?? null],
+    ["Mean pLDDT", meanPlddt],
+    ["PAE", paeFileName ? "Provided" : analysis?.confidence ? "Not provided" : null],
+  ];
+
+  return (
+    <div className="border border-slate-200 bg-white p-4">
+      <h2 className="text-sm font-semibold text-slate-950">Metadata summary</h2>
+      <div className="mt-3 grid gap-2">
+        {rows.map(([label, value]) =>
+          value !== null && value !== undefined && value !== "" ? (
+            <div key={label} className="flex items-start justify-between gap-3 border-b border-slate-100 pb-2 last:border-b-0 last:pb-0">
+              <span className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</span>
+              <span className="text-right text-sm text-slate-800">{value}</span>
+            </div>
+          ) : null,
+        )}
+      </div>
+    </div>
   );
 }
 
