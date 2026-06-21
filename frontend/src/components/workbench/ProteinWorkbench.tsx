@@ -824,7 +824,7 @@ function ResultsPanel({
 
         {selectedTab === "pae" ? <PaePanel pae={analysis?.pae ?? null} /> : null}
 
-        {selectedTab === "quality" ? <QualityPlaceholder analysis={analysis} /> : null}
+        {selectedTab === "quality" ? <QualityPanel analysis={analysis} /> : null}
       </div>
     </section>
   );
@@ -878,31 +878,152 @@ function EmptyWorkbenchState({
   );
 }
 
-function QualityPlaceholder({ analysis }: { analysis: AnalysisResponse | null }) {
-  const possibleClashes = analysis?.interaction_summary?.possible_clash_count ?? 0;
-  const lowConfidence = analysis?.confidence?.low_confidence_count ?? 0;
-  const paeProvided = Boolean(analysis?.pae);
+function QualityPanel({ analysis }: { analysis: AnalysisResponse | null }) {
+  if (!analysis) {
+    return null;
+  }
+
+  const possibleClashes = analysis.interaction_summary?.possible_clash_count ?? 0;
+  const veryCloseContacts = analysis.contacts.filter((contact) => contact.distance_angstrom < 2).length;
+  const lowConfidence = analysis.confidence?.low_confidence_count ?? 0;
+  const isPredicted = analysis.metadata?.source === "alphafold" || Boolean(analysis.confidence);
+  const paeProvided = Boolean(analysis.pae);
+  const hasLigands = analysis.summary.ligand_count > 0;
+  const qualityItems = [
+    {
+      label: "Possible steric clashes",
+      value: possibleClashes,
+      status: possibleClashes > 0 ? "review" : "ok",
+      detail:
+        possibleClashes > 0
+          ? "These are distance-based flags, not a full stereochemical validation."
+          : "No possible clash contacts were flagged by the current distance cutoff.",
+    },
+    {
+      label: "Very close contacts",
+      value: veryCloseContacts,
+      status: veryCloseContacts > 0 ? "review" : "ok",
+      detail: "Atom pairs under 2 A are worth checking before interpreting contacts.",
+    },
+    {
+      label: "Ligand state",
+      value: hasLigands ? analysis.summary.ligand_count : "None",
+      status: hasLigands ? "ok" : "info",
+      detail: hasLigands
+        ? "Ligands are available for interaction review."
+        : "No non-water ligands were detected in this structure.",
+    },
+    {
+      label: "Low-confidence residues",
+      value: analysis.confidence ? lowConfidence : "N/A",
+      status: lowConfidence > 0 ? "review" : "ok",
+      detail: analysis.confidence
+        ? "Low or very low pLDDT regions should not be over-interpreted."
+        : "No pLDDT confidence data was detected for this structure.",
+    },
+    {
+      label: "PAE sidecar",
+      value: paeProvided ? "Provided" : "Not provided",
+      status: isPredicted && !paeProvided ? "review" : "info",
+      detail:
+        isPredicted && !paeProvided
+          ? "Predicted structures are easier to interpret with PAE when domain placement matters."
+          : paeProvided
+            ? "PAE summary is available in the PAE tab."
+            : "PAE is usually relevant for AlphaFold-style predicted structures.",
+    },
+  ] as const;
+  const warningRows = [
+    ...analysis.warnings,
+    ...(isPredicted && !paeProvided ? ["Predicted model has no PAE sidecar; treat domain-domain placement cautiously."] : []),
+  ];
+  const closeContactExamples = [
+    ...(analysis.interaction_summary?.possible_clashes ?? []),
+    ...analysis.contacts.filter((contact) => contact.distance_angstrom < 2),
+  ]
+    .filter((contact, index, rows) => rows.findIndex((row) => contactKey(row) === contactKey(contact)) === index)
+    .slice(0, 6);
 
   return (
-    <div className="border border-slate-200 bg-white p-4">
-      <h2 className="text-sm font-semibold text-slate-950">Quality</h2>
-      <p className="mt-1 text-xs leading-5 text-slate-500">
-        Early validation summary using currently available contact, confidence, and PAE data.
-      </p>
-      <div className="mt-3 grid gap-2 sm:grid-cols-3">
-        <div className="border border-slate-200 px-3 py-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Possible clashes</p>
-          <p className="mt-1 font-mono text-sm text-slate-950">{possibleClashes}</p>
-        </div>
-        <div className="border border-slate-200 px-3 py-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Low-confidence residues</p>
-          <p className="mt-1 font-mono text-sm text-slate-950">{lowConfidence}</p>
-        </div>
-        <div className="border border-slate-200 px-3 py-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">PAE sidecar</p>
-          <p className="mt-1 font-mono text-sm text-slate-950">{paeProvided ? "Provided" : "Not provided"}</p>
+    <div className="grid gap-4">
+      <div className="border border-slate-200 bg-white p-4">
+        <h2 className="text-sm font-semibold text-slate-950">Quality</h2>
+        <p className="mt-1 text-xs leading-5 text-slate-500">
+          Practical validation signals from existing contact, ligand, confidence, and PAE data. These checks flag
+          review targets; they do not replace crystallographic validation, model-quality tools, or chemical perception.
+        </p>
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+          {qualityItems.map((item) => (
+            <QualityCheckCard key={item.label} {...item} />
+          ))}
         </div>
       </div>
+
+      {warningRows.length ? (
+        <div className="border border-amber-200 bg-amber-50 p-4">
+          <h3 className="text-sm font-semibold text-amber-950">Warnings to review</h3>
+          <ul className="mt-2 list-inside list-disc space-y-1 text-sm leading-6 text-amber-900">
+            {warningRows.map((warning) => (
+              <li key={warning}>{warning}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      <div className="border border-slate-200 bg-white p-4">
+        <h3 className="text-sm font-semibold text-slate-950">Close-contact examples</h3>
+        <p className="mt-1 text-xs leading-5 text-slate-500">
+          Representative contacts flagged as possible clashes or under 2 A.
+        </p>
+        {closeContactExamples.length ? (
+          <div className="mt-3 divide-y divide-slate-100 border border-slate-200">
+            {closeContactExamples.map((contact) => (
+              <div key={contactKey(contact)} className="grid gap-2 px-3 py-2 text-sm md:grid-cols-[1fr_1fr_auto]">
+                <span className="font-mono text-slate-900">
+                  {contact.chain_a}:{contact.residue_name_a}
+                  {contact.residue_a}.{contact.atom_a}
+                </span>
+                <span className="font-mono text-slate-900">
+                  {contact.chain_b}:{contact.residue_name_b}
+                  {contact.residue_b}.{contact.atom_b}
+                </span>
+                <span className="font-mono text-slate-700">{contact.distance_angstrom.toFixed(3)} A</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-3 text-sm text-slate-500">No close-contact examples were flagged by the current analysis.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function QualityCheckCard({
+  label,
+  value,
+  status,
+  detail,
+}: {
+  label: string;
+  value: string | number;
+  status: "ok" | "review" | "info";
+  detail: string;
+}) {
+  const tone =
+    status === "review"
+      ? "border-amber-200 bg-amber-50 text-amber-950"
+      : status === "ok"
+        ? "border-emerald-200 bg-emerald-50 text-emerald-950"
+        : "border-slate-200 bg-slate-50 text-slate-950";
+
+  return (
+    <div className={`border p-3 ${tone}`}>
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-xs font-medium uppercase tracking-wide">{label}</p>
+        <span className="font-mono text-sm font-semibold">{value}</span>
+      </div>
+      <p className="mt-2 text-xs leading-5">{detail}</p>
     </div>
   );
 }

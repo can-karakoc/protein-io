@@ -204,9 +204,9 @@ Goal: make the product feel reliable and professional.
 
 ### Priority 5: Quality / Validation Panel
 
-- `[ ]` Add a Quality tab after analysis.
-- `[ ]` Surface possible clashes, very close contacts, empty ligand states, low-confidence residues, PAE warnings, and missing PAE notices for predicted structures.
-- `[ ]` Use non-alarmist language and avoid overclaiming biological certainty.
+- `[x]` Add a Quality tab after analysis.
+- `[x]` Surface possible clashes, very close contacts, empty ligand states, low-confidence residues, PAE warnings, and missing PAE notices for predicted structures.
+- `[x]` Use non-alarmist language and avoid overclaiming biological certainty.
 
 ### Priority 6: Contact Confidence Warnings
 
