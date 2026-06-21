@@ -171,7 +171,8 @@ Goal: restructure the frontend into a scientist-facing workbench organized aroun
 - `[x]` Add initial workbench shell and mode tabs with app identity.
 - `[ ]` Add top navigation links for docs/GitHub and export access.
 - `[ ]` Build an Explore layout with left sidebar, center Mol* viewer, and results tabs.
-- `[ ]` Group load inputs, analysis controls, and compact metadata in the left sidebar.
+- `[x]` Extract load inputs, analysis controls, and current sidebar alerts into a focused Explore sidebar component.
+- `[ ]` Add compact metadata to the left sidebar.
 - `[ ]` Move results into tabs: Overview, Chains, Ligands, Contacts, Confidence, PAE, and Quality.
 - `[ ]` Only show Confidence and PAE tabs when relevant.
 - `[ ]` Make the viewer layout stable so Mol* never widens the page after render.
