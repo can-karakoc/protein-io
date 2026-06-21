@@ -1365,22 +1365,63 @@ function SelectionBar({ selection, onClear }: { selection: ViewerSelection | nul
     return null;
   }
 
+  const details = selectionDetails(selection);
+
   return (
-    <div className="flex items-center justify-between gap-3 border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-      <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-amber-700">Selected</p>
-        <p className="mt-1 font-mono text-sm">{selection.label}</p>
+    <div className="border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wide text-amber-700">Selected in table and Mol*</p>
+          <p className="mt-1 font-mono text-sm font-semibold">{selection.label}</p>
+          <p className="mt-2 text-xs leading-5 text-amber-800">
+            Mol* focuses the selected chain, ligand, or contact partners automatically.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClear}
+          className="inline-flex h-9 shrink-0 items-center justify-center gap-2 border border-amber-300 bg-white px-3 text-sm font-medium text-amber-950 hover:bg-amber-100"
+        >
+          <X className="h-4 w-4" />
+          Clear selection
+        </button>
       </div>
-      <button
-        type="button"
-        onClick={onClear}
-        aria-label="Clear selected structure item"
-        className="inline-flex h-9 w-9 shrink-0 items-center justify-center border border-amber-300 bg-white text-amber-900 hover:bg-amber-100"
-      >
-        <X className="h-4 w-4" />
-      </button>
+      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+        {details.map(([label, value]) => (
+          <div key={label} className="border border-amber-200 bg-white/70 px-3 py-2">
+            <p className="text-xs font-medium uppercase tracking-wide text-amber-700">{label}</p>
+            <p className="mt-1 break-words font-mono text-sm text-amber-950">{value}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
+}
+
+function selectionDetails(selection: ViewerSelection): Array<[string, string]> {
+  if (selection.kind === "chain") {
+    return [
+      ["Type", "Chain"],
+      ["Chain", selection.chainId],
+    ];
+  }
+
+  if (selection.kind === "ligand") {
+    return [
+      ["Type", "Ligand"],
+      ["Chain", selection.chainId],
+      ["Residue", `${selection.residueName} ${selection.residueNumber}`],
+    ];
+  }
+
+  const contact = selection.contact;
+  return [
+    ["Type", contact.contact_type],
+    ["Partner A", `${contact.chain_a}:${contact.residue_name_a}${contact.residue_a}.${contact.atom_a}`],
+    ["Partner B", `${contact.chain_b}:${contact.residue_name_b}${contact.residue_b}.${contact.atom_b}`],
+    ["Distance", `${contact.distance_angstrom.toFixed(3)} A`],
+    ["Categories", contact.contact_categories.join(", ")],
+  ];
 }
 
 function ContactCategoryFilter({
@@ -1449,19 +1490,28 @@ function ChainTable({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {chains.map((chain) => (
+              {chains.map((chain) => {
+                const selected = selection?.kind === "chain" && selection.chainId === chain.id;
+
+                return (
                 <tr
                   key={chain.id}
-                  className={selectableRowClass(selection?.kind === "chain" && selection.chainId === chain.id)}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={selected}
+                  onClick={() => onSelect(chain)}
+                  onKeyDown={(event) => handleSelectableRowKeyDown(event, () => onSelect(chain))}
+                  className={selectableRowClass(selected)}
                 >
                   <td className="w-12 px-4 py-3">
-                    <SelectionButton label={`Select chain ${chain.id}`} onClick={() => onSelect(chain)} />
+                    <SelectionButton selected={selected} label={`Select chain ${chain.id}`} onClick={() => onSelect(chain)} />
                   </td>
                   <td className="px-4 py-3 font-mono text-slate-900">{chain.id}</td>
                   <td className="px-4 py-3 text-slate-800">{chain.residue_count}</td>
                   <td className="px-4 py-3 text-slate-800">{chain.atom_count}</td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -1512,10 +1562,16 @@ function LigandTable({
                 return (
                   <tr
                     key={`${ligand.name}-${ligand.chain_id}-${ligand.residue_number}`}
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={selected}
+                    onClick={() => onSelect(ligand)}
+                    onKeyDown={(event) => handleSelectableRowKeyDown(event, () => onSelect(ligand))}
                     className={selectableRowClass(selected)}
                   >
                     <td className="w-12 px-4 py-3">
                       <SelectionButton
+                        selected={selected}
                         label={`Select ligand ${ligand.name} ${ligand.chain_id}:${ligand.residue_number}`}
                         onClick={() => onSelect(ligand)}
                       />
@@ -1570,16 +1626,22 @@ function ContactTable({
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
-          {contacts.map((contact, index) => {
-            const selected = selection?.kind === "contact" && contactKey(selection.contact, index) === contactKey(contact, index);
+          {contacts.map((contact) => {
+            const selected = selection?.kind === "contact" && contactKey(selection.contact) === contactKey(contact);
 
             return (
               <tr
-                key={contactKey(contact, index)}
+                key={contactKey(contact)}
+                role="button"
+                tabIndex={0}
+                aria-pressed={selected}
+                onClick={() => onSelect(contact)}
+                onKeyDown={(event) => handleSelectableRowKeyDown(event, () => onSelect(contact))}
                 className={selectableRowClass(selected)}
               >
                 <td className="w-12 px-4 py-3">
                   <SelectionButton
+                    selected={selected}
                     label={`Select contact ${contact.chain_a}:${contact.residue_name_a}${contact.residue_a} to ${contact.chain_b}:${contact.residue_name_b}${contact.residue_b}`}
                     onClick={() => onSelect(contact)}
                   />
@@ -1613,33 +1675,50 @@ function ContactTable({
 
 function selectableRowClass(selected: boolean) {
   return [
-    "text-slate-800",
-    selected ? "bg-amber-50 ring-2 ring-inset ring-amber-400 hover:bg-amber-50" : "",
+    "cursor-pointer text-slate-800 outline-none hover:bg-cyan-50 focus:bg-cyan-50",
+    selected ? "bg-amber-50 ring-2 ring-inset ring-amber-400 hover:bg-amber-50 focus:bg-amber-50" : "",
   ].join(" ");
 }
 
-function SelectionButton({ label, onClick }: { label: string; onClick: () => void }) {
+function SelectionButton({ selected, label, onClick }: { selected: boolean; label: string; onClick: () => void }) {
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick();
+      }}
       aria-label={label}
-      className="inline-flex h-8 w-8 items-center justify-center border border-slate-300 bg-white text-slate-700 hover:bg-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-600"
+      className={[
+        "inline-flex h-8 w-8 items-center justify-center border focus:outline-none focus:ring-2 focus:ring-cyan-600",
+        selected
+          ? "border-amber-400 bg-amber-100 text-amber-950"
+          : "border-slate-300 bg-white text-slate-700 hover:bg-cyan-50",
+      ].join(" ")}
     >
       <Atom className="h-4 w-4" />
     </button>
   );
 }
 
-function contactKey(contact: ContactRecord, index: number) {
+function handleSelectableRowKeyDown(event: React.KeyboardEvent<HTMLTableRowElement>, onSelect: () => void) {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    onSelect();
+  }
+}
+
+function contactKey(contact: ContactRecord) {
   return [
     contact.contact_type,
     contact.chain_a,
     contact.residue_a,
+    contact.residue_name_a,
     contact.atom_a,
     contact.chain_b,
     contact.residue_b,
+    contact.residue_name_b,
     contact.atom_b,
-    index,
+    contact.distance_angstrom.toFixed(3),
   ].join("-");
 }

@@ -190,10 +190,10 @@ Goal: make the product feel reliable and professional.
 
 ### Priority 3: Table-to-Viewer Selection Polish
 
-- `[ ]` Improve selected row styling for chain, ligand, and contact rows.
-- `[ ]` Add selected item detail card/drawer.
-- `[ ]` Keep clear selection visible.
-- `[ ]` Add zoom-to-selection only if it is straightforward with Mol*.
+- `[x]` Improve selected row styling for chain, ligand, and contact rows.
+- `[x]` Add selected item detail card/drawer.
+- `[x]` Keep clear selection visible.
+- `[x]` Add zoom-to-selection only if it is straightforward with Mol*.
 
 ### Priority 4: Ligand Detail Drawer
 
