@@ -29,11 +29,13 @@ import type {
 
 const EXAMPLE_FILE = "/sample.pdb";
 const TIMING_HEADER = "X-ProteinIO-Timing";
+const APP_VERSION = "0.1.0";
 const EMPTY_RESIDUE_CONFIDENCES: ResidueConfidence[] = [];
 type StructureFileFormat = "pdb" | "cif";
 type ViewerColorMode = "structure" | "plddt";
 type ContactFilter = "all" | ContactCategory | "low-confidence";
-type ResultsTab = "overview" | "chains" | "ligands" | "contacts" | "confidence" | "pae" | "quality";
+type ResultsTab = "overview" | "chains" | "ligands" | "contacts" | "confidence" | "pae" | "quality" | "methods";
+type InputSource = "upload" | "sample" | "rcsb" | "alphafold";
 type WorkbenchError = {
   title: string;
   message: string;
@@ -43,6 +45,20 @@ type WorkbenchStatus = {
   label: string;
   detail: string;
 } | null;
+type ProvenanceRecord = {
+  inputSource: InputSource;
+  sourceId: string;
+  fileName: string;
+  fileFormat: string;
+  parser: string;
+  contactCutoffAngstrom: number;
+  contactMethod: string;
+  appVersion: string;
+  analysisTimestamp: string;
+  warnings: string[];
+  paeProvided: boolean;
+  structureKind: "experimental" | "predicted" | "uploaded coordinates";
+};
 
 export function ProteinWorkbench() {
   const [mode, setMode] = useState<WorkbenchMode>("explore");
@@ -62,6 +78,8 @@ export function ProteinWorkbench() {
   const [viewerColorMode, setViewerColorMode] = useState<ViewerColorMode>("structure");
   const [contactFilter, setContactFilter] = useState<ContactFilter>("all");
   const [resultsTab, setResultsTab] = useState<ResultsTab>("overview");
+  const [inputSource, setInputSource] = useState<InputSource>("upload");
+  const [analysisTimestamp, setAnalysisTimestamp] = useState<string | null>(null);
   const [error, setError] = useState<WorkbenchError>(null);
   const [status, setStatus] = useState<WorkbenchStatus>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -92,6 +110,21 @@ export function ProteinWorkbench() {
     [confidenceAwareContacts, contactFilter],
   );
   const filteredContactPreview = useMemo(() => filteredContacts.slice(0, 80), [filteredContacts]);
+  const provenance = useMemo(
+    () =>
+      analysis
+        ? buildProvenanceRecord({
+            analysis,
+            inputSource,
+            fileName,
+            structureFormat,
+            cutoff,
+            analysisTimestamp,
+            paeFileName,
+          })
+        : null,
+    [analysis, analysisTimestamp, cutoff, fileName, inputSource, paeFileName, structureFormat],
+  );
 
   async function handleFile(file: File) {
     const timingStarted = performance.now();
@@ -107,6 +140,7 @@ export function ProteinWorkbench() {
       return;
     }
     setAnalysis(null);
+    setAnalysisTimestamp(null);
     setSelection(null);
     setViewerColorMode("structure");
     setContactFilter("all");
@@ -115,6 +149,7 @@ export function ProteinWorkbench() {
     setPaeText("");
     setFileName(file.name);
     setStructureFormat(formatFromFileName(file.name));
+    setInputSource("upload");
     try {
       const text = await file.text();
       setStructureText(text);
@@ -139,6 +174,7 @@ export function ProteinWorkbench() {
     setError(null);
     setStatus({ label: "Loading bundled sample", detail: "Fetching the local demo PDB file." });
     setAnalysis(null);
+    setAnalysisTimestamp(null);
     setSelection(null);
     setViewerColorMode("structure");
     setContactFilter("all");
@@ -158,6 +194,7 @@ export function ProteinWorkbench() {
       setFileName("sample.pdb");
       setStructureText(text);
       setStructureFormat("pdb");
+      setInputSource("sample");
       logTiming("sample load", timingStarted, {
         fetch_ms: fetchMs,
         response_text_ms: textMs,
@@ -188,6 +225,7 @@ export function ProteinWorkbench() {
       return;
     }
     setAnalysis(null);
+    setAnalysisTimestamp(null);
     setSelection(null);
     setContactFilter("all");
     setResultsTab("overview");
@@ -263,6 +301,7 @@ export function ProteinWorkbench() {
       const nextAnalysis = (await response.json()) as AnalysisResponse;
       const response_json_ms = elapsedMs(parseStarted);
       setAnalysis(nextAnalysis);
+      setAnalysisTimestamp(new Date().toISOString());
       setSelection(null);
       setViewerColorMode(nextAnalysis.confidence ? "plddt" : "structure");
       setContactFilter("all");
@@ -303,6 +342,7 @@ export function ProteinWorkbench() {
     setError(null);
     setStatus({ label: "Fetching RCSB entry", detail: `Downloading and analyzing ${normalizedPdbId.toUpperCase()} as mmCIF.` });
     setAnalysis(null);
+    setAnalysisTimestamp(null);
     setSelection(null);
     setViewerColorMode("structure");
     setContactFilter("all");
@@ -329,6 +369,8 @@ export function ProteinWorkbench() {
       setStructureText(payload.structure_text);
       setStructureFormat(payload.structure_format);
       setAnalysis(payload.analysis);
+      setAnalysisTimestamp(new Date().toISOString());
+      setInputSource("rcsb");
       setSelection(null);
       setViewerColorMode(payload.analysis.confidence ? "plddt" : "structure");
       setContactFilter("all");
@@ -371,6 +413,7 @@ export function ProteinWorkbench() {
       detail: `Downloading and analyzing the predicted model for ${normalizedUniprotId.toUpperCase()}.`,
     });
     setAnalysis(null);
+    setAnalysisTimestamp(null);
     setSelection(null);
     setViewerColorMode("structure");
     setContactFilter("all");
@@ -397,6 +440,8 @@ export function ProteinWorkbench() {
       setStructureText(payload.structure_text);
       setStructureFormat(payload.structure_format);
       setAnalysis(payload.analysis);
+      setAnalysisTimestamp(new Date().toISOString());
+      setInputSource("alphafold");
       setSelection(null);
       setViewerColorMode(payload.analysis.confidence ? "plddt" : "structure");
       setContactFilter("all");
@@ -481,6 +526,7 @@ export function ProteinWorkbench() {
     setPaeFileName("");
     setPaeText("");
     setAnalysis(null);
+    setAnalysisTimestamp(null);
     setComparison(null);
     setComparisonFileA(null);
     setComparisonFileB(null);
@@ -592,6 +638,7 @@ export function ProteinWorkbench() {
               onContactFilterChange={setContactFilter}
               hasContactConfidence={hasContactConfidence}
               lowConfidenceContactCount={lowConfidenceContactCount}
+              provenance={provenance}
               selection={selection}
               onChainSelect={(chain) =>
                 setSelection({
@@ -630,29 +677,35 @@ export function ProteinWorkbench() {
           </section>
         </section>
         </>
+      ) : mode === "report" ? (
+        <ReportWorkspace
+          analysis={analysis}
+          provenance={provenance}
+          onLoadSample={loadExample}
+          onFocusRcsb={() => {
+            setMode("explore");
+            window.requestAnimationFrame(() => document.getElementById("pdb-id")?.focus());
+          }}
+          onFocusAlphaFold={() => {
+            setMode("explore");
+            window.requestAnimationFrame(() => document.getElementById("uniprot-id")?.focus());
+          }}
+        />
       ) : (
-        <WorkbenchModePlaceholder mode={mode} />
+        <WorkbenchModePlaceholder />
       )}
     </WorkbenchShell>
   );
 }
 
-function WorkbenchModePlaceholder({ mode }: { mode: Exclude<WorkbenchMode, "explore"> }) {
-  const copy =
-    mode === "compare"
-      ? {
-          title: "Compare workspace",
-          body: "The comparison workflow is available in Explore for now. This mode is reserved for the upcoming dedicated structure A/B comparison workspace.",
-        }
-      : {
-          title: "Report workspace",
-          body: "Report mode is reserved for the upcoming clean analysis summary, provenance, and export workflow.",
-        };
-
+function WorkbenchModePlaceholder() {
   return (
     <section className="border border-dashed border-slate-300 bg-white p-6">
-      <p className="text-sm font-semibold text-slate-950">{copy.title}</p>
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">{copy.body}</p>
+      <p className="text-sm font-semibold text-slate-950">Compare workspace</p>
+      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+        The comparison workflow is available in Explore for now. This mode is reserved for the upcoming dedicated
+        structure A/B comparison workspace.
+      </p>
     </section>
   );
 }
@@ -671,6 +724,7 @@ function ResultsPanel({
   onContactFilterChange,
   hasContactConfidence,
   lowConfidenceContactCount,
+  provenance,
   selection,
   onChainSelect,
   onLigandSelect,
@@ -698,6 +752,7 @@ function ResultsPanel({
   onContactFilterChange: (filter: ContactFilter) => void;
   hasContactConfidence: boolean;
   lowConfidenceContactCount: number;
+  provenance: ProvenanceRecord | null;
   selection: ViewerSelection | null;
   onChainSelect: (chain: ChainSummary) => void;
   onLigandSelect: (ligand: LigandSummary) => void;
@@ -721,6 +776,7 @@ function ResultsPanel({
     { id: "confidence", label: "Confidence", visible: Boolean(analysis?.confidence) },
     { id: "pae", label: "PAE", visible: Boolean(analysis?.pae) },
     { id: "quality", label: "Quality", visible: Boolean(analysis) },
+    { id: "methods", label: "Methods", visible: Boolean(analysis) },
   ];
   const visibleTabs = tabs.filter((tab) => tab.visible);
   const selectedTab = visibleTabs.some((tab) => tab.id === activeTab) ? activeTab : "overview";
@@ -882,7 +938,61 @@ function ResultsPanel({
         {selectedTab === "pae" ? <PaePanel pae={analysis?.pae ?? null} /> : null}
 
         {selectedTab === "quality" ? <QualityPanel analysis={analysis} /> : null}
+
+        {selectedTab === "methods" ? <ProvenancePanel provenance={provenance} /> : null}
       </div>
+    </section>
+  );
+}
+
+function ReportWorkspace({
+  analysis,
+  provenance,
+  onLoadSample,
+  onFocusRcsb,
+  onFocusAlphaFold,
+}: {
+  analysis: AnalysisResponse | null;
+  provenance: ProvenanceRecord | null;
+  onLoadSample: () => void;
+  onFocusRcsb: () => void;
+  onFocusAlphaFold: () => void;
+}) {
+  if (!analysis) {
+    return (
+      <section className="border border-dashed border-slate-300 bg-white p-6">
+        <p className="text-sm font-semibold text-slate-950">No reportable analysis yet</p>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+          Load and analyze a structure first, then return here for a concise summary with methods and provenance.
+        </p>
+        <div className="mt-4 grid gap-2 sm:grid-cols-3">
+          <button type="button" onClick={onLoadSample} className="h-10 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100">
+            Load sample
+          </button>
+          <button type="button" onClick={onFocusRcsb} className="h-10 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100">
+            Fetch PDB ID
+          </button>
+          <button type="button" onClick={onFocusAlphaFold} className="h-10 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100">
+            Fetch AlphaFold
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="grid min-w-0 gap-4">
+      <div className="border border-slate-200 bg-white p-4">
+        <p className="text-sm font-semibold text-slate-950">Report summary</p>
+        <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-500">
+          Current analysis summary for review and export preparation. Rich HTML/PDF reporting remains planned for a
+          later priority.
+        </p>
+      </div>
+      <MetadataPanel metadata={analysis.metadata ?? null} />
+      <SummaryCards analysis={analysis} />
+      <InteractionSummaryPanel summary={analysis.interaction_summary ?? null} />
+      <ProvenancePanel provenance={provenance} />
     </section>
   );
 }
@@ -1085,6 +1195,90 @@ function QualityCheckCard({
   );
 }
 
+function ProvenancePanel({ provenance }: { provenance: ProvenanceRecord | null }) {
+  if (!provenance) {
+    return (
+      <div className="border border-slate-200 bg-white p-4">
+        <h2 className="text-sm font-semibold text-slate-950">Methods and provenance</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          Run an analysis to generate reproducibility details for the current structure.
+        </p>
+      </div>
+    );
+  }
+
+  const rows: Array<[string, string | number]> = [
+    ["Input source", provenance.inputSource],
+    ["Source ID", provenance.sourceId],
+    ["File", provenance.fileName],
+    ["Format", provenance.fileFormat],
+    ["Parser", provenance.parser],
+    ["Contact method", provenance.contactMethod],
+    ["Cutoff", `${provenance.contactCutoffAngstrom} A`],
+    ["Structure type", provenance.structureKind],
+    ["PAE sidecar", provenance.paeProvided ? "Provided" : "Not provided"],
+    ["App version", provenance.appVersion],
+    ["Analyzed", formatTimestamp(provenance.analysisTimestamp)],
+  ];
+
+  return (
+    <div className="grid gap-4">
+      <div className="border border-slate-200 bg-white p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-950">Methods and provenance</h2>
+            <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-500">
+              Reproducibility details for the current analysis. These values describe how the displayed contacts,
+              ligand summaries, confidence warnings, and quality checks were generated.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() =>
+              downloadText(
+                JSON.stringify(provenance, null, 2),
+                `${baseExportName(provenance.fileName) || "analysis"}-provenance.json`,
+                "application/json;charset=utf-8",
+              )
+            }
+            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100"
+          >
+            <Download className="h-4 w-4" />
+            Export provenance JSON
+          </button>
+        </div>
+
+        <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          {rows.map(([label, value]) => (
+            <div key={label} className="border border-slate-200 bg-slate-50 px-3 py-2">
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
+              <p className="mt-1 break-words text-sm text-slate-800">{value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {provenance.warnings.length ? (
+        <div className="border border-amber-200 bg-amber-50 p-4">
+          <h3 className="text-sm font-semibold text-amber-950">Recorded warnings</h3>
+          <ul className="mt-2 list-inside list-disc space-y-1 text-sm leading-6 text-amber-900">
+            {provenance.warnings.map((warning) => (
+              <li key={warning}>{warning}</li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <div className="border border-emerald-200 bg-emerald-50 p-4">
+          <h3 className="text-sm font-semibold text-emerald-950">Recorded warnings</h3>
+          <p className="mt-2 text-sm leading-6 text-emerald-900">
+            No parser, contact, confidence, or PAE warnings were recorded for this analysis.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function elapsedMs(startedAt: number) {
   return Math.round((performance.now() - startedAt) * 100) / 100;
 }
@@ -1097,7 +1291,11 @@ function logTiming(label: string, startedAt: number, details: Record<string, num
 }
 
 function downloadCsv(csv: string, filename: string) {
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  downloadText(csv, filename, "text/csv;charset=utf-8");
+}
+
+function downloadText(text: string, filename: string, type: string) {
+  const blob = new Blob([text], { type });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -1135,6 +1333,58 @@ function defaultUploadName(format: StructureFileFormat): string {
 
 function contentTypeForFormat(format: StructureFileFormat): string {
   return format === "cif" ? "chemical/x-mmcif" : "chemical/x-pdb";
+}
+
+function buildProvenanceRecord({
+  analysis,
+  inputSource,
+  fileName,
+  structureFormat,
+  cutoff,
+  analysisTimestamp,
+  paeFileName,
+}: {
+  analysis: AnalysisResponse;
+  inputSource: InputSource;
+  fileName: string;
+  structureFormat: StructureFileFormat;
+  cutoff: number;
+  analysisTimestamp: string | null;
+  paeFileName: string;
+}): ProvenanceRecord {
+  const metadata = analysis.metadata;
+  const sourceId =
+    metadata?.pdb_id ??
+    metadata?.uniprot_id ??
+    (inputSource === "sample" ? "bundled sample" : fileName || "uploaded structure");
+  const structureKind =
+    metadata?.source === "alphafold" || analysis.confidence
+      ? "predicted"
+      : metadata?.source === "rcsb"
+        ? "experimental"
+        : "uploaded coordinates";
+
+  return {
+    inputSource,
+    sourceId,
+    fileName: fileName || defaultUploadName(structureFormat),
+    fileFormat: structureFormat === "cif" ? "mmCIF" : "PDB",
+    parser: "Gemmi via backend parser",
+    contactCutoffAngstrom: cutoff,
+    contactMethod: "Distance-based heavy-atom contacts using Gemmi NeighborSearch",
+    appVersion: APP_VERSION,
+    analysisTimestamp: analysisTimestamp ?? new Date().toISOString(),
+    warnings: analysis.warnings,
+    paeProvided: Boolean(analysis.pae || paeFileName),
+    structureKind,
+  };
+}
+
+function formatTimestamp(timestamp: string) {
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(timestamp));
 }
 
 function SummaryCards({ analysis }: { analysis: AnalysisResponse | null }) {

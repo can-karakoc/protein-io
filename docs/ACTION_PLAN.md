@@ -217,8 +217,8 @@ Goal: make the product feel reliable and professional.
 
 ### Priority 7: Methods / Provenance Panel
 
-- `[ ]` Add source, source ID, format, parser, cutoff, contact method, app version, timestamp, warnings, PAE status, and experimental/predicted status.
-- `[ ]` Include provenance in Report mode/export when possible.
+- `[x]` Add source, source ID, format, parser, cutoff, contact method, app version, timestamp, warnings, PAE status, and experimental/predicted status.
+- `[x]` Include provenance in Report mode/export when possible.
 
 ### Priority 8: Example Gallery
 
