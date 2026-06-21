@@ -725,7 +725,7 @@ function ResultsPanel({
       : null;
 
   return (
-    <section className="min-w-0 border border-slate-200 bg-white">
+    <section className="min-w-0 overflow-hidden border border-slate-200 bg-white">
       <div className="flex flex-wrap gap-1 border-b border-slate-200 bg-slate-50 p-2" role="tablist" aria-label="Analysis results">
         {visibleTabs.map((tab) => (
           <button
@@ -746,9 +746,9 @@ function ResultsPanel({
         ))}
       </div>
 
-      <div className="min-w-0 p-4">
+      <div className="min-w-0 overflow-hidden p-4">
         {selectedTab === "overview" ? (
-          <div className="grid min-w-0 gap-4">
+          <div className="grid min-w-0 max-w-full gap-4 overflow-hidden">
             {analysis ? (
               <>
                 <MetadataPanel metadata={analysis.metadata ?? null} />
@@ -1421,7 +1421,7 @@ function LigandInteractionPanel({
   }
 
   return (
-    <div className="border border-slate-200 bg-white">
+    <div className="min-w-0 overflow-hidden border border-slate-200 bg-white">
       <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-sm font-semibold text-slate-950">Ligand interaction summary</h2>
@@ -1438,7 +1438,7 @@ function LigandInteractionPanel({
           Export ligand CSV
         </button>
       </div>
-      <div className="overflow-x-auto">
+      <div className="max-w-full overflow-x-auto">
         <table className="w-full min-w-[980px] text-left text-sm">
           <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
             <tr>
@@ -1505,7 +1505,7 @@ function LigandDetailPanel({
 }) {
   if (!ligand) {
     return (
-      <div className="border border-dashed border-slate-300 bg-slate-50 p-4">
+      <div className="min-w-0 border border-dashed border-slate-300 bg-slate-50 p-4">
         <h2 className="text-sm font-semibold text-slate-950">Ligand detail</h2>
         <p className="mt-1 text-sm leading-6 text-slate-600">
           Select a ligand row to inspect its contacts, closest atom pair, distance buckets, and contacting residues.
@@ -1531,7 +1531,7 @@ function LigandDetailPanel({
   ];
 
   return (
-    <div className="border border-cyan-200 bg-cyan-50 p-4">
+    <div className="min-w-0 overflow-hidden border border-cyan-200 bg-cyan-50 p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">Ligand detail</p>
@@ -1753,13 +1753,13 @@ function ChainTable({
   onSelect: (chain: ChainSummary) => void;
 }) {
   return (
-    <div className="border border-slate-200 bg-white">
+    <div className="min-w-0 overflow-hidden border border-slate-200 bg-white">
       <div className="border-b border-slate-200 p-4">
         <h2 className="text-sm font-semibold text-slate-950">Chains</h2>
         <p className="mt-1 text-xs leading-5 text-slate-500">Protein residue and atom counts grouped by chain.</p>
       </div>
       {chains.length ? (
-        <div className="overflow-x-auto">
+        <div className="max-w-full overflow-x-auto">
           <table className="w-full min-w-[420px] text-left text-sm">
             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
