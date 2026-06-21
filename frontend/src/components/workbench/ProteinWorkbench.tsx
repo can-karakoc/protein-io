@@ -501,6 +501,13 @@ export function ProteinWorkbench() {
     );
   }
 
+  function exportSingleLigandCsv(ligandInteraction: LigandInteractionSummary) {
+    downloadCsv(
+      ligandInteractionsToCsv([ligandInteraction]),
+      `${baseExportName(fileName) || "ligand"}-${ligandInteraction.name}-${ligandInteraction.chain_id}-${ligandInteraction.residue_number}.csv`,
+    );
+  }
+
   return (
     <WorkbenchShell
       mode={mode}
@@ -601,6 +608,7 @@ export function ProteinWorkbench() {
               onViewerColorModeChange={setViewerColorMode}
               onExportContacts={exportCsv}
               onExportLigands={exportLigandCsv}
+              onExportSingleLigand={exportSingleLigandCsv}
               onLoadSample={loadExample}
               onFocusRcsb={() => document.getElementById("pdb-id")?.focus()}
               onFocusAlphaFold={() => document.getElementById("uniprot-id")?.focus()}
@@ -656,6 +664,7 @@ function ResultsPanel({
   onViewerColorModeChange,
   onExportContacts,
   onExportLigands,
+  onExportSingleLigand,
   onLoadSample,
   onFocusRcsb,
   onFocusAlphaFold,
@@ -680,6 +689,7 @@ function ResultsPanel({
   onViewerColorModeChange: (mode: ViewerColorMode) => void;
   onExportContacts: () => void;
   onExportLigands: () => void;
+  onExportSingleLigand: (ligandInteraction: LigandInteractionSummary) => void;
   onLoadSample: () => void;
   onFocusRcsb: () => void;
   onFocusAlphaFold: () => void;
@@ -695,6 +705,24 @@ function ResultsPanel({
   ];
   const visibleTabs = tabs.filter((tab) => tab.visible);
   const selectedTab = visibleTabs.some((tab) => tab.id === activeTab) ? activeTab : "overview";
+  const selectedLigand =
+    selection?.kind === "ligand"
+      ? ligands.find(
+          (ligand) =>
+            ligand.name === selection.residueName &&
+            ligand.chain_id === selection.chainId &&
+            ligand.residue_number === selection.residueNumber,
+        ) ?? null
+      : null;
+  const selectedLigandInteraction =
+    selection?.kind === "ligand"
+      ? analysis?.ligand_interactions.find(
+          (ligand) =>
+            ligand.name === selection.residueName &&
+            ligand.chain_id === selection.chainId &&
+            ligand.residue_number === selection.residueNumber,
+        ) ?? null
+      : null;
 
   return (
     <section className="min-w-0 border border-slate-200 bg-white">
@@ -745,6 +773,11 @@ function ResultsPanel({
         {selectedTab === "ligands" ? (
           <div className="grid min-w-0 gap-4">
             <LigandTable ligands={ligands} selection={selection} onSelect={onLigandSelect} />
+            <LigandDetailPanel
+              ligand={selectedLigand}
+              interaction={selectedLigandInteraction}
+              onExport={onExportSingleLigand}
+            />
             <LigandInteractionPanel ligandInteractions={analysis?.ligand_interactions ?? []} onExport={onExportLigands} />
           </div>
         ) : null}
@@ -1336,6 +1369,134 @@ function LigandInteractionPanel({
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+function LigandDetailPanel({
+  ligand,
+  interaction,
+  onExport,
+}: {
+  ligand: LigandSummary | null;
+  interaction: LigandInteractionSummary | null;
+  onExport: (ligandInteraction: LigandInteractionSummary) => void;
+}) {
+  if (!ligand) {
+    return (
+      <div className="border border-dashed border-slate-300 bg-slate-50 p-4">
+        <h2 className="text-sm font-semibold text-slate-950">Ligand detail</h2>
+        <p className="mt-1 text-sm leading-6 text-slate-600">
+          Select a ligand row to inspect its contacts, closest atom pair, distance buckets, and contacting residues.
+        </p>
+      </div>
+    );
+  }
+
+  const closestContact = interaction?.closest_contact ?? null;
+  const buckets = interaction?.distance_distribution ?? {
+    under_2_angstrom: 0,
+    two_to_3_angstrom: 0,
+    three_to_4_angstrom: 0,
+    over_4_angstrom: 0,
+  };
+  const metrics: Array<[string, string | number]> = [
+    ["Chain", ligand.chain_id],
+    ["Residue", ligand.residue_number],
+    ["Atoms", ligand.atom_count],
+    ["Protein contacts", interaction?.protein_contact_count ?? 0],
+    ["Water contacts", interaction?.water_contact_count ?? 0],
+    ["Possible clashes", interaction?.possible_clash_count ?? 0],
+  ];
+
+  return (
+    <div className="border border-cyan-200 bg-cyan-50 p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">Ligand detail</p>
+          <h2 className="mt-1 font-mono text-lg font-semibold text-slate-950">
+            {ligand.name} {ligand.chain_id}:{ligand.residue_number}
+          </h2>
+          <p className="mt-1 text-xs leading-5 text-cyan-900">
+            Selecting this ligand highlights it in Mol* and keeps the detailed interaction summary in view.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => interaction && onExport(interaction)}
+          disabled={!interaction}
+          className="inline-flex h-10 shrink-0 items-center justify-center gap-2 border border-cyan-300 bg-white px-3 text-sm font-medium text-cyan-950 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:text-slate-400"
+        >
+          <Download className="h-4 w-4" />
+          Export this ligand
+        </button>
+      </div>
+
+      <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {metrics.map(([label, value]) => (
+          <div key={label} className="border border-cyan-200 bg-white/80 px-3 py-2">
+            <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">{label}</p>
+            <p className="mt-1 font-mono text-sm text-slate-950">{value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <div className="border border-cyan-200 bg-white/80 p-3">
+          <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">Closest contact</p>
+          {closestContact && interaction?.closest_distance_angstrom !== null ? (
+            <div className="mt-2 text-sm text-slate-800">
+              <p className="font-mono text-slate-950">{interaction?.closest_distance_angstrom.toFixed(3)} A</p>
+              <p className="mt-1 font-mono text-xs">
+                {closestContact.chain_a}:{closestContact.residue_name_a}
+                {closestContact.residue_a}.{closestContact.atom_a} - {closestContact.chain_b}:
+                {closestContact.residue_name_b}
+                {closestContact.residue_b}.{closestContact.atom_b}
+              </p>
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-slate-500">No contacts detected for this ligand.</p>
+          )}
+        </div>
+
+        <div className="border border-cyan-200 bg-white/80 p-3">
+          <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">Distance buckets</p>
+          <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+            <DistanceBucket label="<2 A" value={buckets.under_2_angstrom} />
+            <DistanceBucket label="2-3 A" value={buckets.two_to_3_angstrom} />
+            <DistanceBucket label="3-4 A" value={buckets.three_to_4_angstrom} />
+            <DistanceBucket label=">4 A" value={buckets.over_4_angstrom} />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 border border-cyan-200 bg-white/80 p-3">
+        <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">Contacting residues</p>
+        {interaction?.contacting_residues.length ? (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {interaction.contacting_residues.map((residue) => (
+              <span
+                key={`${residue.chain_id}-${residue.residue_name}-${residue.residue_number}`}
+                className="inline-flex border border-slate-200 bg-white px-2 py-1 font-mono text-xs text-slate-800"
+              >
+                {residue.chain_id}:{residue.residue_name}
+                {residue.residue_number} ({residue.contact_count})
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-2 text-sm text-slate-500">No protein residues are within the current cutoff for this ligand.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DistanceBucket({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex items-center justify-between border border-slate-200 bg-white px-2 py-1">
+      <span className="font-mono text-xs text-slate-600">{label}</span>
+      <span className="font-mono text-xs text-slate-950">{value}</span>
     </div>
   );
 }

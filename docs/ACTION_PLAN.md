@@ -197,10 +197,10 @@ Goal: make the product feel reliable and professional.
 
 ### Priority 4: Ligand Detail Drawer
 
-- `[ ]` Open a ligand detail drawer when a ligand row is selected.
-- `[ ]` Show ligand name, chain, residue number, atom count, contact counts, closest contact, contacting residues, and distance buckets.
-- `[ ]` Add ligand-specific CSV export.
-- `[ ]` Highlight the selected ligand in Mol*.
+- `[x]` Open a ligand detail drawer when a ligand row is selected.
+- `[x]` Show ligand name, chain, residue number, atom count, contact counts, closest contact, contacting residues, and distance buckets.
+- `[x]` Add ligand-specific CSV export.
+- `[x]` Highlight the selected ligand in Mol*.
 
 ### Priority 5: Quality / Validation Panel
 
