@@ -227,10 +227,10 @@ Goal: make the product feel reliable and professional.
 
 ### Priority 9: Richer Report / Export Experience
 
-- `[ ]` Create Report mode with metadata, summary metrics, contact summary, ligand summary, confidence/PAE summary, quality warnings, and provenance.
-- `[ ]` Keep current contact CSV and ligand CSV exports.
-- `[ ]` Add analysis JSON export if easy.
-- `[ ]` Defer HTML/PDF/ZIP exports until the report view is stable.
+- `[x]` Create Report mode with metadata, summary metrics, contact summary, ligand summary, confidence/PAE summary, quality warnings, and provenance.
+- `[x]` Keep current contact CSV and ligand CSV exports.
+- `[x]` Add analysis JSON export if easy.
+- `[x]` Defer HTML/PDF/ZIP exports until the report view is stable.
 
 ### Priority 10: Compare Workflow Polish
 

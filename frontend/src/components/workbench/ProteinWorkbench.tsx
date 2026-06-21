@@ -669,6 +669,27 @@ export function ProteinWorkbench() {
     downloadCsv(contactsToCsv(confidenceAwareContacts), `${baseExportName(fileName) || "contacts"}-contacts.csv`);
   }
 
+  function exportAnalysisJson() {
+    if (!analysis) {
+      return;
+    }
+
+    const payload = {
+      generated_at: new Date().toISOString(),
+      app_version: APP_VERSION,
+      provenance,
+      analysis: {
+        ...analysis,
+        contacts: confidenceAwareContacts,
+      },
+    };
+    downloadText(
+      JSON.stringify(payload, null, 2),
+      `${baseExportName(fileName) || "analysis"}-analysis.json`,
+      "application/json;charset=utf-8",
+    );
+  }
+
   function exportLigandCsv() {
     const ligandInteractions = analysis?.ligand_interactions ?? [];
     if (!ligandInteractions.length) {
@@ -804,6 +825,10 @@ export function ProteinWorkbench() {
         <ReportWorkspace
           analysis={analysis}
           provenance={provenance}
+          contacts={confidenceAwareContacts}
+          onExportContacts={exportCsv}
+          onExportLigands={exportLigandCsv}
+          onExportAnalysisJson={exportAnalysisJson}
           onLoadSample={loadExample}
           onFocusRcsb={() => {
             setMode("explore");
@@ -1074,12 +1099,20 @@ function ResultsPanel({
 function ReportWorkspace({
   analysis,
   provenance,
+  contacts,
+  onExportContacts,
+  onExportLigands,
+  onExportAnalysisJson,
   onLoadSample,
   onFocusRcsb,
   onFocusAlphaFold,
 }: {
   analysis: AnalysisResponse | null;
   provenance: ProvenanceRecord | null;
+  contacts: ContactRecord[];
+  onExportContacts: () => void;
+  onExportLigands: () => void;
+  onExportAnalysisJson: () => void;
   onLoadSample: () => void;
   onFocusRcsb: () => void;
   onFocusAlphaFold: () => void;
@@ -1108,18 +1141,206 @@ function ReportWorkspace({
 
   return (
     <section className="grid min-w-0 gap-4">
-      <div className="border border-slate-200 bg-white p-4">
-        <p className="text-sm font-semibold text-slate-950">Report summary</p>
-        <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-500">
-          Current analysis summary for review and export preparation. Rich HTML/PDF reporting remains planned for a
-          later priority.
-        </p>
-      </div>
+      <ReportHeader
+        analysis={analysis}
+        provenance={provenance}
+        onExportContacts={onExportContacts}
+        onExportLigands={onExportLigands}
+        onExportAnalysisJson={onExportAnalysisJson}
+      />
       <MetadataPanel metadata={analysis.metadata ?? null} />
       <SummaryCards analysis={analysis} />
       <InteractionSummaryPanel summary={analysis.interaction_summary ?? null} />
+      <ReportContactSummary contacts={contacts} />
+      <LigandInteractionPanel ligandInteractions={analysis.ligand_interactions} onExport={onExportLigands} />
+      <ReportConfidenceSummary confidence={analysis.confidence} pae={analysis.pae} />
+      <QualityPanel analysis={analysis} />
       <ProvenancePanel provenance={provenance} />
     </section>
+  );
+}
+
+function ReportHeader({
+  analysis,
+  provenance,
+  onExportContacts,
+  onExportLigands,
+  onExportAnalysisJson,
+}: {
+  analysis: AnalysisResponse;
+  provenance: ProvenanceRecord | null;
+  onExportContacts: () => void;
+  onExportLigands: () => void;
+  onExportAnalysisJson: () => void;
+}) {
+  const title =
+    analysis.metadata?.title ??
+    analysis.metadata?.pdb_id ??
+    analysis.metadata?.uniprot_id ??
+    provenance?.fileName ??
+    "Current structure analysis";
+
+  return (
+    <div className="border border-slate-200 bg-white p-4">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">Report</p>
+          <h2 className="mt-1 text-lg font-semibold text-slate-950">{title}</h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+            Clean summary of the current structure metadata, interaction metrics, ligand analysis, confidence signals,
+            quality warnings, and methods/provenance.
+          </p>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[520px]">
+          <button
+            type="button"
+            onClick={onExportContacts}
+            className="inline-flex h-10 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100"
+          >
+            <Download className="h-4 w-4" />
+            Contacts CSV
+          </button>
+          <button
+            type="button"
+            onClick={onExportLigands}
+            disabled={!analysis.ligand_interactions.length}
+            className="inline-flex h-10 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
+          >
+            <Download className="h-4 w-4" />
+            Ligands CSV
+          </button>
+          <button
+            type="button"
+            onClick={onExportAnalysisJson}
+            className="inline-flex h-10 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100"
+          >
+            <Download className="h-4 w-4" />
+            Analysis JSON
+          </button>
+        </div>
+      </div>
+      <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <ReportFact label="Source" value={provenance?.inputSource ?? analysis.metadata?.source ?? "upload"} />
+        <ReportFact label="Source ID" value={provenance?.sourceId ?? "N/A"} />
+        <ReportFact label="Structure type" value={provenance?.structureKind ?? "uploaded coordinates"} />
+        <ReportFact label="Generated" value={provenance ? formatTimestamp(provenance.analysisTimestamp) : "N/A"} />
+      </div>
+    </div>
+  );
+}
+
+function ReportFact({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="border border-slate-200 bg-slate-50 px-3 py-2">
+      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="mt-1 break-words text-sm text-slate-800">{value}</p>
+    </div>
+  );
+}
+
+function ReportContactSummary({ contacts }: { contacts: ContactRecord[] }) {
+  if (!contacts.length) {
+    return null;
+  }
+
+  const lowConfidenceContacts = contacts.filter((contact) => contact.confidence_warning).length;
+  const closestContacts = [...contacts]
+    .sort((a, b) => a.distance_angstrom - b.distance_angstrom)
+    .slice(0, 8);
+
+  return (
+    <div className="border border-slate-200 bg-white p-4">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-sm font-semibold text-slate-950">Contact report</h2>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Closest contacts and confidence-aware review count for the current cutoff.
+          </p>
+        </div>
+        {contacts.some((contact) => contact.source_residue_confidence || contact.target_residue_confidence) ? (
+          <span className="inline-flex border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">
+            {lowConfidenceContacts} low-confidence contacts
+          </span>
+        ) : null}
+      </div>
+      <div className="mt-3 overflow-x-auto">
+        <table className="w-full min-w-[760px] text-left text-sm">
+          <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <tr>
+              <th className="px-3 py-2 font-medium">Contact</th>
+              <th className="px-3 py-2 font-medium">Type</th>
+              <th className="px-3 py-2 font-medium">Categories</th>
+              <th className="px-3 py-2 font-medium">Distance</th>
+              <th className="px-3 py-2 font-medium">Confidence</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {closestContacts.map((contact) => (
+              <tr key={contactKey(contact)}>
+                <td className="px-3 py-2 font-mono text-slate-900">
+                  {contact.chain_a}:{contact.residue_name_a}
+                  {contact.residue_a}.{contact.atom_a} - {contact.chain_b}:{contact.residue_name_b}
+                  {contact.residue_b}.{contact.atom_b}
+                </td>
+                <td className="px-3 py-2 text-slate-700">{contact.contact_type}</td>
+                <td className="px-3 py-2 text-slate-700">{contact.contact_categories.join(", ")}</td>
+                <td className="px-3 py-2 font-mono text-slate-700">{contact.distance_angstrom.toFixed(3)} A</td>
+                <td className="px-3 py-2">
+                  {contact.source_residue_confidence || contact.target_residue_confidence ? (
+                    <ContactConfidenceBadge contact={contact} />
+                  ) : (
+                    <span className="text-xs text-slate-400">N/A</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function ReportConfidenceSummary({ confidence, pae }: { confidence: ConfidenceSummary | null; pae: PaeSummary | null }) {
+  if (!confidence && !pae) {
+    return null;
+  }
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      {confidence ? <ConfidenceReportCard confidence={confidence} /> : null}
+      {pae ? <PaePanel pae={pae} /> : null}
+    </div>
+  );
+}
+
+function ConfidenceReportCard({ confidence }: { confidence: ConfidenceSummary }) {
+  const categories = [
+    ["Very high", confidence.very_high_count],
+    ["Confident", confidence.confident_count],
+    ["Low", confidence.low_count],
+    ["Very low", confidence.very_low_count],
+  ] as const;
+
+  return (
+    <div className="border border-slate-200 bg-white p-4">
+      <h2 className="text-sm font-semibold text-slate-950">Confidence summary</h2>
+      <p className="mt-1 text-xs leading-5 text-slate-500">
+        pLDDT distribution for predicted-structure interpretation.
+      </p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <ReportFact label="Average pLDDT" value={confidence.average_plddt.toFixed(2)} />
+        <ReportFact label="Low-confidence residues" value={confidence.low_confidence_count} />
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        {categories.map(([label, value]) => (
+          <div key={label} className="flex items-center justify-between border border-slate-200 px-3 py-2">
+            <span className="text-sm text-slate-700">{label}</span>
+            <span className="font-mono text-sm text-slate-950">{value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
