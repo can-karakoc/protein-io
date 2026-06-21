@@ -206,6 +206,39 @@ class AnalysisResponse(BaseModel):
     warnings: list[str] = Field(default_factory=list)
 
 
+class StructureComparisonDelta(BaseModel):
+    atom_count_delta: int
+    residue_count_delta: int
+    chain_count_delta: int
+    ligand_count_delta: int
+    contact_count_delta: int
+
+
+class ContactDifference(BaseModel):
+    label: str
+    contact_type: ContactType
+    contact_categories: list[ContactCategory] = Field(default_factory=list)
+    distance_a_angstrom: float | None = None
+    distance_b_angstrom: float | None = None
+
+
+class ContactComparisonSummary(BaseModel):
+    shared_contact_count: int
+    gained_contact_count: int
+    lost_contact_count: int
+    shared_contacts: list[ContactDifference] = Field(default_factory=list)
+    gained_contacts: list[ContactDifference] = Field(default_factory=list)
+    lost_contacts: list[ContactDifference] = Field(default_factory=list)
+
+
+class StructureComparisonResponse(BaseModel):
+    structure_a: AnalysisResponse
+    structure_b: AnalysisResponse
+    delta: StructureComparisonDelta
+    contacts: ContactComparisonSummary
+    warnings: list[str] = Field(default_factory=list)
+
+
 class FetchedStructureAnalysisResponse(BaseModel):
     filename: str
     structure_format: Literal["cif"] = "cif"

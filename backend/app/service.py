@@ -3,11 +3,12 @@ from time import perf_counter
 
 from app.contacts import calculate_contacts
 from app.contact_classification import summarize_interactions, summarize_ligand_interactions
+from app.comparison import compare_analyses
 from app.confidence import analyze_plddt_confidence
 from app.integrations.alphafold import AlphaFoldStructure, fetch_alphafold_structure
 from app.integrations.rcsb import fetch_rcsb_structure
 from app.integrations.rcsb import RcsbStructure
-from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, PaeSummary, RcsbAnalysisResponse, StructureMetadata
+from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, PaeSummary, RcsbAnalysisResponse, StructureComparisonResponse, StructureMetadata
 from app.parser import detect_structure_format_from_filename, parse_pdb_content
 
 
@@ -69,6 +70,18 @@ def analyze_pdb_content(
         pae=pae,
         pae_warnings=pae_warnings,
     ).response
+
+
+def compare_pdb_contents(
+    content_a: bytes,
+    content_b: bytes,
+    filename_a: str | None = None,
+    filename_b: str | None = None,
+    cutoff_angstrom: float = 4.0,
+) -> StructureComparisonResponse:
+    analysis_a = analyze_pdb_content(content_a, filename=filename_a, cutoff_angstrom=cutoff_angstrom)
+    analysis_b = analyze_pdb_content(content_b, filename=filename_b, cutoff_angstrom=cutoff_angstrom)
+    return compare_analyses(analysis_a, analysis_b)
 
 
 def analyze_pdb_content_with_timing(

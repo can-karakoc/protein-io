@@ -94,6 +94,30 @@ def test_analyze_endpoint_accepts_pae_sidecar():
     assert any("PAE sidecar" in warning for warning in data["warnings"])
 
 
+def test_compare_endpoint_returns_structure_and_contact_differences():
+    client = TestClient(app)
+
+    with SAMPLE_PDB.open("rb") as first_handle, SAMPLE_CIF.open("rb") as second_handle:
+        response = client.post(
+            "/api/compare",
+            files={
+                "file_a": ("sample.pdb", first_handle, "chemical/x-pdb"),
+                "file_b": ("sample.cif", second_handle, "chemical/x-mmcif"),
+            },
+            data={"cutoff_angstrom": "4.0"},
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["delta"]["atom_count_delta"] == 0
+    assert data["delta"]["contact_count_delta"] == 0
+    assert data["contacts"]["shared_contact_count"] == data["structure_a"]["summary"]["contact_count"]
+    assert data["contacts"]["gained_contact_count"] == 0
+    assert data["contacts"]["lost_contact_count"] == 0
+    assert data["contacts"]["shared_contacts"]
+    assert data["warnings"]
+
+
 def test_analyze_endpoint_rejects_invalid_pae_sidecar():
     client = TestClient(app)
 

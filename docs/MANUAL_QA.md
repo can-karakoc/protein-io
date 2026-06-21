@@ -78,8 +78,15 @@ Use this checklist before public demo updates and after meaningful frontend or b
 - `[ ]` Upload an AlphaFold-style file with a filename such as `AF-P69905-F1-model_v4.pdb`.
 - `[ ]` Confirm the confidence panel appears after analysis.
 - `[ ]` Confirm average pLDDT, category counts, and low-confidence warnings are shown when applicable.
-- `[ ]` Switch between `Structure` and `pLDDT` coloring modes and confirm the pLDDT follow-up notice appears when Mol* confidence coloring is not yet available.
+- `[ ]` Switch between `Structure` and `pLDDT` coloring modes and confirm the Mol* viewer updates its confidence coloring.
 - `[ ]` Upload a normal experimental-style file and confirm no confidence panel appears.
+
+## Structure Comparison Flow
+
+- `[ ]` Choose two local `.pdb`, `.cif`, or `.mmcif` files in the comparison panel.
+- `[ ]` Click `Compare structures`.
+- `[ ]` Confirm structure deltas, shared contacts, gained contacts, and lost contacts appear.
+- `[ ]` Confirm the comparison warning says residue-level contact identities are used without structural alignment.
 
 ## RCSB Fetch Flow
 

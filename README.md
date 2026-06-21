@@ -15,8 +15,9 @@ The project is intentionally simple for the public MVP: no authentication, no da
 - Calculate residue-residue contacts.
 - Calculate protein-ligand contacts when ligands are present.
 - Categorize contacts as protein-protein, protein-ligand, protein-water, ligand-water, intra-chain, inter-chain, or possible clash.
-- Summarize top contacting residues, top contacting ligands, closest contacts, ligand interaction details, and category counts.
+- Summarize top contacting residues, top contacting ligands, closest contacts, ligand interaction details, structure comparisons, and category counts.
 - Detect AlphaFold-style pLDDT confidence values from predicted structures.
+- Color predicted structures by pLDDT confidence in Mol*.
 - Summarize PAE sidecars with residue count, mean PAE, max PAE, and high-error pair count.
 - Ignore hydrogen atoms during contact detection.
 - Use Gemmi NeighborSearch for contact search.

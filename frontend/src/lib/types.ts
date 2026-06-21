@@ -174,6 +174,39 @@ export type AnalysisResponse = {
   warnings: string[];
 };
 
+export type StructureComparisonDelta = {
+  atom_count_delta: number;
+  residue_count_delta: number;
+  chain_count_delta: number;
+  ligand_count_delta: number;
+  contact_count_delta: number;
+};
+
+export type ContactDifference = {
+  label: string;
+  contact_type: ContactType;
+  contact_categories: ContactCategory[];
+  distance_a_angstrom: number | null;
+  distance_b_angstrom: number | null;
+};
+
+export type ContactComparisonSummary = {
+  shared_contact_count: number;
+  gained_contact_count: number;
+  lost_contact_count: number;
+  shared_contacts: ContactDifference[];
+  gained_contacts: ContactDifference[];
+  lost_contacts: ContactDifference[];
+};
+
+export type StructureComparisonResponse = {
+  structure_a: AnalysisResponse;
+  structure_b: AnalysisResponse;
+  delta: StructureComparisonDelta;
+  contacts: ContactComparisonSummary;
+  warnings: string[];
+};
+
 export type RcsbAnalysisResponse = {
   filename: string;
   structure_format: "cif";

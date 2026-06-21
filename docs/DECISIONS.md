@@ -85,7 +85,7 @@ Why:
 Tradeoff:
 
 - Mol* is heavier to bundle than 3Dmol.js and needs a browser alias for its MP4 encoder dependency.
-- pLDDT coloring now needs a Mol* representation/theme implementation instead of the old per-residue 3Dmol.js styles.
+- pLDDT coloring uses Mol* representation theme updates over residue B-factor confidence values.
 
 ## Keep One Closest Atom Pair Per Residue Pair
 
