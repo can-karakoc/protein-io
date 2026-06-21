@@ -1,6 +1,6 @@
 "use client";
 
-import { Atom, Download, X } from "lucide-react";
+import { Atom, Database, Download, FileUp, Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { StructureViewer } from "@/components/viewer/StructureViewer";
@@ -34,6 +34,15 @@ type StructureFileFormat = "pdb" | "cif";
 type ViewerColorMode = "structure" | "plddt";
 type ContactFilter = "all" | ContactCategory;
 type ResultsTab = "overview" | "chains" | "ligands" | "contacts" | "confidence" | "pae" | "quality";
+type WorkbenchError = {
+  title: string;
+  message: string;
+  nextStep: string;
+} | null;
+type WorkbenchStatus = {
+  label: string;
+  detail: string;
+} | null;
 
 export function ProteinWorkbench() {
   const [mode, setMode] = useState<WorkbenchMode>("explore");
@@ -53,7 +62,8 @@ export function ProteinWorkbench() {
   const [viewerColorMode, setViewerColorMode] = useState<ViewerColorMode>("structure");
   const [contactFilter, setContactFilter] = useState<ContactFilter>("all");
   const [resultsTab, setResultsTab] = useState<ResultsTab>("overview");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<WorkbenchError>(null);
+  const [status, setStatus] = useState<WorkbenchStatus>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isRcsbLoading, setIsRcsbLoading] = useState(false);
   const [isAlphaFoldLoading, setIsAlphaFoldLoading] = useState(false);
@@ -74,6 +84,16 @@ export function ProteinWorkbench() {
   async function handleFile(file: File) {
     const timingStarted = performance.now();
     setError(null);
+    setStatus({ label: "Reading structure file", detail: "Loading local coordinates into the browser." });
+    if (!isStructureFile(file.name)) {
+      setStatus(null);
+      setError({
+        title: "Unsupported structure file",
+        message: `${file.name} is not a supported structure file.`,
+        nextStep: "Choose a plain-text .pdb, .cif, or .mmcif file.",
+      });
+      return;
+    }
     setAnalysis(null);
     setSelection(null);
     setViewerColorMode("structure");
@@ -83,18 +103,29 @@ export function ProteinWorkbench() {
     setPaeText("");
     setFileName(file.name);
     setStructureFormat(formatFromFileName(file.name));
-    const text = await file.text();
-    setStructureText(text);
-    logTiming("file upload read", timingStarted, {
-      fileName: file.name,
-      bytes: file.size,
-      characters: text.length,
-    });
+    try {
+      const text = await file.text();
+      setStructureText(text);
+      logTiming("file upload read", timingStarted, {
+        fileName: file.name,
+        bytes: file.size,
+        characters: text.length,
+      });
+    } catch {
+      setError({
+        title: "Could not read structure file",
+        message: `The browser could not read ${file.name}.`,
+        nextStep: "Try the file again, or export a fresh PDB/mmCIF copy from the source database.",
+      });
+    } finally {
+      setStatus(null);
+    }
   }
 
   async function loadExample() {
     const timingStarted = performance.now();
     setError(null);
+    setStatus({ label: "Loading bundled sample", detail: "Fetching the local demo PDB file." });
     setAnalysis(null);
     setSelection(null);
     setViewerColorMode("structure");
@@ -103,46 +134,85 @@ export function ProteinWorkbench() {
     setPaeFileName("");
     setPaeText("");
     const fetchStarted = performance.now();
-    const response = await fetch(EXAMPLE_FILE);
-    const fetchMs = elapsedMs(fetchStarted);
-    const textStarted = performance.now();
-    const text = await response.text();
-    const textMs = elapsedMs(textStarted);
-    setFileName("sample.pdb");
-    setStructureText(text);
-    setStructureFormat("pdb");
-    logTiming("sample load", timingStarted, {
-      fetch_ms: fetchMs,
-      response_text_ms: textMs,
-      bytes: text.length,
-    });
+    try {
+      const response = await fetch(EXAMPLE_FILE);
+      if (!response.ok) {
+        throw new Error(`Sample returned status ${response.status}.`);
+      }
+      const fetchMs = elapsedMs(fetchStarted);
+      const textStarted = performance.now();
+      const text = await response.text();
+      const textMs = elapsedMs(textStarted);
+      setFileName("sample.pdb");
+      setStructureText(text);
+      setStructureFormat("pdb");
+      logTiming("sample load", timingStarted, {
+        fetch_ms: fetchMs,
+        response_text_ms: textMs,
+        bytes: text.length,
+      });
+    } catch (caught) {
+      setError({
+        title: "Could not load sample",
+        message: caught instanceof Error ? caught.message : "The bundled sample could not be loaded.",
+        nextStep: "Try uploading a local PDB/mmCIF file or fetching an RCSB entry.",
+      });
+    } finally {
+      setStatus(null);
+    }
   }
 
   async function handlePaeFile(file: File) {
     const timingStarted = performance.now();
     setError(null);
+    setStatus({ label: "Reading PAE JSON", detail: "Validating the optional AlphaFold error sidecar." });
+    if (!file.name.toLowerCase().endsWith(".json")) {
+      setStatus(null);
+      setError({
+        title: "Unsupported PAE file",
+        message: `${file.name} is not a JSON file.`,
+        nextStep: "Choose the PAE sidecar as a .json file, or continue without PAE.",
+      });
+      return;
+    }
     setAnalysis(null);
     setSelection(null);
     setContactFilter("all");
     setResultsTab("overview");
-    const text = await file.text();
-    setPaeFileName(file.name);
-    setPaeText(text);
-    logTiming("pae sidecar read", timingStarted, {
-      fileName: file.name,
-      bytes: file.size,
-      characters: text.length,
-    });
+    try {
+      const text = await file.text();
+      JSON.parse(text);
+      setPaeFileName(file.name);
+      setPaeText(text);
+      logTiming("pae sidecar read", timingStarted, {
+        fileName: file.name,
+        bytes: file.size,
+        characters: text.length,
+      });
+    } catch (caught) {
+      setError({
+        title: "Invalid PAE JSON",
+        message: caught instanceof Error ? caught.message : "The PAE sidecar could not be parsed as JSON.",
+        nextStep: "Use the PAE JSON downloaded with an AlphaFold prediction, or remove the sidecar.",
+      });
+    } finally {
+      setStatus(null);
+    }
   }
 
   async function analyzeStructure() {
     if (!hasStructure) {
-      setError("Upload or load a PDB or mmCIF file before analysis.");
+      setError({
+        title: "No structure loaded",
+        message: "There are no coordinates to analyze yet.",
+        nextStep: "Upload a .pdb/.cif/.mmcif file, load the sample, or fetch a structure by ID.",
+      });
       return;
     }
 
     setIsLoading(true);
     setError(null);
+    setStatus({ label: "Analyzing structure", detail: "Sending coordinates to the backend contact pipeline." });
 
     try {
       const timingStarted = performance.now();
@@ -195,21 +265,31 @@ export function ProteinWorkbench() {
         contacts: nextAnalysis.summary.contact_count,
       });
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Analysis failed.");
+      setError({
+        title: "Analysis failed",
+        message: caught instanceof Error ? caught.message : "The backend could not analyze this structure.",
+        nextStep: "Confirm the file is valid PDB/mmCIF text, try a 3-5 A cutoff, or use an RCSB/AlphaFold fetch.",
+      });
     } finally {
       setIsLoading(false);
+      setStatus(null);
     }
   }
 
   async function fetchRcsbStructure() {
     const normalizedPdbId = pdbId.trim();
-    if (!normalizedPdbId) {
-      setError("Enter a 4-character PDB ID before fetching from RCSB.");
+    if (!/^[a-zA-Z0-9]{4}$/.test(normalizedPdbId)) {
+      setError({
+        title: "Invalid PDB ID",
+        message: "RCSB PDB IDs must be exactly 4 letters or numbers.",
+        nextStep: "Enter an ID like 2HHB, 1A3N, or 7K00.",
+      });
       return;
     }
 
     setIsRcsbLoading(true);
     setError(null);
+    setStatus({ label: "Fetching RCSB entry", detail: `Downloading and analyzing ${normalizedPdbId.toUpperCase()} as mmCIF.` });
     setAnalysis(null);
     setSelection(null);
     setViewerColorMode("structure");
@@ -250,21 +330,34 @@ export function ProteinWorkbench() {
         contacts: payload.analysis.summary.contact_count,
       });
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "RCSB fetch failed.");
+      setError({
+        title: "RCSB fetch failed",
+        message: caught instanceof Error ? caught.message : "The RCSB entry could not be fetched.",
+        nextStep: "Check the PDB ID, try a current replacement entry, or upload the structure file directly.",
+      });
     } finally {
       setIsRcsbLoading(false);
+      setStatus(null);
     }
   }
 
   async function fetchAlphaFoldStructure() {
     const normalizedUniprotId = uniprotId.trim();
-    if (!normalizedUniprotId) {
-      setError("Enter a UniProt accession before fetching from AlphaFold DB.");
+    if (!/^[a-zA-Z0-9]{6,10}$/.test(normalizedUniprotId)) {
+      setError({
+        title: "Invalid UniProt accession",
+        message: "AlphaFold DB fetch expects a UniProt accession.",
+        nextStep: "Enter an accession like P69905 or P68871.",
+      });
       return;
     }
 
     setIsAlphaFoldLoading(true);
     setError(null);
+    setStatus({
+      label: "Fetching AlphaFold model",
+      detail: `Downloading and analyzing the predicted model for ${normalizedUniprotId.toUpperCase()}.`,
+    });
     setAnalysis(null);
     setSelection(null);
     setViewerColorMode("structure");
@@ -305,21 +398,39 @@ export function ProteinWorkbench() {
         contacts: payload.analysis.summary.contact_count,
       });
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "AlphaFold DB fetch failed.");
+      setError({
+        title: "AlphaFold DB fetch failed",
+        message: caught instanceof Error ? caught.message : "The AlphaFold DB model could not be fetched.",
+        nextStep: "Check the UniProt accession, or upload an AlphaFold PDB/mmCIF file directly.",
+      });
     } finally {
       setIsAlphaFoldLoading(false);
+      setStatus(null);
     }
   }
 
   async function compareStructures() {
     if (!comparisonFileA || !comparisonFileB) {
-      setError("Choose two PDB or mmCIF files before comparing structures.");
+      setError({
+        title: "Comparison needs two files",
+        message: "Both structure A and structure B are required.",
+        nextStep: "Choose two .pdb, .cif, or .mmcif files before comparing.",
+      });
+      return;
+    }
+    if (!isStructureFile(comparisonFileA.name) || !isStructureFile(comparisonFileB.name)) {
+      setError({
+        title: "Unsupported comparison file",
+        message: "Comparison currently accepts PDB and mmCIF coordinate files.",
+        nextStep: "Choose two .pdb, .cif, or .mmcif files.",
+      });
       return;
     }
 
     setIsComparisonLoading(true);
     setComparison(null);
     setError(null);
+    setStatus({ label: "Comparing structures", detail: "Analyzing both files and calculating shared/gained/lost contacts." });
 
     try {
       const formData = new FormData();
@@ -338,9 +449,14 @@ export function ProteinWorkbench() {
 
       setComparison((await response.json()) as StructureComparisonResponse);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Comparison failed.");
+      setError({
+        title: "Comparison failed",
+        message: caught instanceof Error ? caught.message : "The backend could not compare these structures.",
+        nextStep: "Confirm both files are valid PDB/mmCIF coordinate files and try again.",
+      });
     } finally {
       setIsComparisonLoading(false);
+      setStatus(null);
     }
   }
 
@@ -361,6 +477,7 @@ export function ProteinWorkbench() {
     setContactFilter("all");
     setResultsTab("overview");
     setError(null);
+    setStatus(null);
     setCutoff(4.0);
   }
 
@@ -430,6 +547,7 @@ export function ProteinWorkbench() {
             onCompareStructures={compareStructures}
             isComparisonLoading={isComparisonLoading}
             error={error}
+            status={status}
             warnings={analysis?.warnings ?? []}
           />
 
@@ -483,6 +601,9 @@ export function ProteinWorkbench() {
               onViewerColorModeChange={setViewerColorMode}
               onExportContacts={exportCsv}
               onExportLigands={exportLigandCsv}
+              onLoadSample={loadExample}
+              onFocusRcsb={() => document.getElementById("pdb-id")?.focus()}
+              onFocusAlphaFold={() => document.getElementById("uniprot-id")?.focus()}
             />
           </section>
         </section>
@@ -535,6 +656,9 @@ function ResultsPanel({
   onViewerColorModeChange,
   onExportContacts,
   onExportLigands,
+  onLoadSample,
+  onFocusRcsb,
+  onFocusAlphaFold,
 }: {
   activeTab: ResultsTab;
   onTabChange: (tab: ResultsTab) => void;
@@ -556,6 +680,9 @@ function ResultsPanel({
   onViewerColorModeChange: (mode: ViewerColorMode) => void;
   onExportContacts: () => void;
   onExportLigands: () => void;
+  onLoadSample: () => void;
+  onFocusRcsb: () => void;
+  onFocusAlphaFold: () => void;
 }) {
   const tabs: Array<{ id: ResultsTab; label: string; visible: boolean }> = [
     { id: "overview", label: "Overview", visible: true },
@@ -594,10 +721,20 @@ function ResultsPanel({
       <div className="min-w-0 p-4">
         {selectedTab === "overview" ? (
           <div className="grid min-w-0 gap-4">
-            <MetadataPanel metadata={analysis?.metadata ?? null} />
-            <SummaryCards analysis={analysis} />
-            <InteractionSummaryPanel summary={analysis?.interaction_summary ?? null} />
-            <StructureComparisonPanel comparison={comparison} />
+            {analysis ? (
+              <>
+                <MetadataPanel metadata={analysis.metadata ?? null} />
+                <SummaryCards analysis={analysis} />
+                <InteractionSummaryPanel summary={analysis.interaction_summary ?? null} />
+                <StructureComparisonPanel comparison={comparison} />
+              </>
+            ) : (
+              <EmptyWorkbenchState
+                onLoadSample={onLoadSample}
+                onFocusRcsb={onFocusRcsb}
+                onFocusAlphaFold={onFocusAlphaFold}
+              />
+            )}
           </div>
         ) : null}
 
@@ -660,6 +797,54 @@ function ResultsPanel({
   );
 }
 
+function EmptyWorkbenchState({
+  onLoadSample,
+  onFocusRcsb,
+  onFocusAlphaFold,
+}: {
+  onLoadSample: () => void;
+  onFocusRcsb: () => void;
+  onFocusAlphaFold: () => void;
+}) {
+  return (
+    <div className="border border-dashed border-slate-300 bg-slate-50 p-5">
+      <div className="max-w-2xl">
+        <p className="text-sm font-semibold text-slate-950">Start a structure analysis</p>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          Load experimental or predicted coordinates, inspect them in Mol*, then run distance-based contact and ligand
+          summaries from the same workspace.
+        </p>
+      </div>
+      <div className="mt-4 grid gap-2 sm:grid-cols-3">
+        <button
+          type="button"
+          onClick={onLoadSample}
+          className="inline-flex h-11 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100"
+        >
+          <FileUp className="h-4 w-4" />
+          Load sample
+        </button>
+        <button
+          type="button"
+          onClick={onFocusRcsb}
+          className="inline-flex h-11 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100"
+        >
+          <Database className="h-4 w-4" />
+          Fetch PDB ID
+        </button>
+        <button
+          type="button"
+          onClick={onFocusAlphaFold}
+          className="inline-flex h-11 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 hover:bg-slate-100"
+        >
+          <Search className="h-4 w-4" />
+          Fetch AlphaFold
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function QualityPlaceholder({ analysis }: { analysis: AnalysisResponse | null }) {
   const possibleClashes = analysis?.interaction_summary?.possible_clash_count ?? 0;
   const lowConfidence = analysis?.confidence?.low_confidence_count ?? 0;
@@ -712,6 +897,10 @@ function downloadCsv(csv: string, filename: string) {
 
 function baseExportName(fileName: string) {
   return fileName.replace(/\.[^.]+$/, "");
+}
+
+function isStructureFile(fileName: string) {
+  return /\.(pdb|cif|mmcif)$/i.test(fileName);
 }
 
 function formatSignedNumber(value: number) {

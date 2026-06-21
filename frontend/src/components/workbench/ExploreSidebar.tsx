@@ -31,7 +31,15 @@ type ExploreSidebarProps = {
   onComparisonFileBChange: (file: File | null) => void;
   onCompareStructures: () => void;
   isComparisonLoading: boolean;
-  error: string | null;
+  error: {
+    title: string;
+    message: string;
+    nextStep: string;
+  } | null;
+  status: {
+    label: string;
+    detail: string;
+  } | null;
   warnings: string[];
 };
 
@@ -63,6 +71,7 @@ export function ExploreSidebar({
   onCompareStructures,
   isComparisonLoading,
   error,
+  status,
   warnings,
 }: ExploreSidebarProps) {
   return (
@@ -250,11 +259,27 @@ export function ExploreSidebar({
         </div>
       </div>
 
+      {status ? (
+        <div className="border border-cyan-200 bg-cyan-50 p-4 text-sm text-cyan-950">
+          <div className="flex items-start gap-2">
+            <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin" />
+            <div>
+              <p className="font-semibold">{status.label}</p>
+              <p className="mt-1 text-xs leading-5 text-cyan-800">{status.detail}</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {error ? (
         <div className="border border-red-200 bg-red-50 p-4 text-sm text-red-800">
           <div className="flex items-start gap-2">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>{error}</span>
+            <div>
+              <p className="font-semibold">{error.title}</p>
+              <p className="mt-1 text-xs leading-5">{error.message}</p>
+              <p className="mt-2 text-xs leading-5 text-red-700">{error.nextStep}</p>
+            </div>
           </div>
         </div>
       ) : null}

@@ -183,10 +183,10 @@ Goal: restructure the frontend into a scientist-facing workbench organized aroun
 
 Goal: make the product feel reliable and professional.
 
-- `[ ]` Add a useful empty state with upload, RCSB, AlphaFold, and sample CTAs.
-- `[ ]` Show loading states for file parsing, RCSB fetch, AlphaFold fetch, PAE parsing, comparison, and Mol* rendering.
-- `[ ]` Add helpful errors for invalid file type, invalid PDB ID, failed RCSB fetch, failed AlphaFold fetch, invalid PAE JSON, backend analysis failure, and Mol* render failure.
-- `[ ]` Make every error human-readable and suggest what to try next.
+- `[x]` Add a useful empty state with upload, RCSB, AlphaFold, and sample CTAs.
+- `[x]` Show loading states for file parsing, RCSB fetch, AlphaFold fetch, PAE parsing, comparison, and Mol* rendering.
+- `[x]` Add helpful errors for invalid file type, invalid PDB ID, failed RCSB fetch, failed AlphaFold fetch, invalid PAE JSON, backend analysis failure, and Mol* render failure.
+- `[x]` Make every error human-readable and suggest what to try next.
 
 ### Priority 3: Table-to-Viewer Selection Polish
 

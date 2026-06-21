@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 import type { ContactRecord, ResidueConfidence, ViewerSelection } from "@/lib/types";
 import type { Viewer as MolstarViewer } from "molstar/lib/apps/viewer/app";
@@ -32,6 +33,7 @@ export function StructureViewer({
   const colorModeRef = useRef<StructureViewerProps["colorMode"]>(colorMode);
   const residueConfidencesRef = useRef<ResidueConfidence[]>(residueConfidences);
   const [viewerError, setViewerError] = useState<string | null>(null);
+  const [isRendering, setIsRendering] = useState(false);
 
   useEffect(() => {
     selectionRef.current = selection;
@@ -52,8 +54,10 @@ export function StructureViewer({
 
       try {
         setViewerError(null);
+        setIsRendering(true);
         if (!isWebGlAvailable()) {
           setViewerError("Mol* needs WebGL, which is unavailable in this browser.");
+          setIsRendering(false);
           return;
         }
 
@@ -110,6 +114,10 @@ export function StructureViewer({
         loadedStructureRef.current = "";
         console.error("[protein.io viewer] render failed", caught);
         setViewerError("Mol* could not render this structure. Check that WebGL is enabled and the file is valid.");
+      } finally {
+        if (!cancelled) {
+          setIsRendering(false);
+        }
       }
     }
 
@@ -160,6 +168,14 @@ export function StructureViewer({
       {colorMode === "plddt" && residueConfidences.length ? (
         <div className="pointer-events-none absolute left-3 top-3 max-w-[260px] border border-slate-200 bg-white/95 px-3 py-2 text-xs leading-5 text-slate-700 shadow-sm">
           Mol* pLDDT coloring is active using residue B-factor confidence values.
+        </div>
+      ) : null}
+      {isRendering && !viewerError ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-white/90 px-6 text-center text-sm leading-6 text-slate-700">
+          <div>
+            <Loader2 className="mx-auto mb-2 h-5 w-5 animate-spin text-cyan-700" />
+            Rendering structure with Mol*
+          </div>
         </div>
       ) : null}
       {viewerError ? (
