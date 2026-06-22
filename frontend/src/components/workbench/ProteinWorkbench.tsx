@@ -1150,7 +1150,7 @@ function ResultsPanel({
   }
 
   return (
-    <section ref={panelRef} className="min-w-0 overflow-hidden">
+    <section ref={panelRef} className="min-w-0">
       <div
         className="flex flex-nowrap overflow-x-auto border-b border-[rgba(20,20,15,0.08)] bg-[var(--pio-white)] px-3.5"
         style={{ scrollbarWidth: "none" }}
@@ -1176,7 +1176,7 @@ function ResultsPanel({
         ))}
       </div>
 
-      <div className="min-w-0 overflow-hidden p-4">
+      <div className="min-w-0 p-4">
         {selectedTab === "overview" ? (
           <div className="grid min-w-0 max-w-full gap-4 overflow-hidden">
             {analysis ? (
