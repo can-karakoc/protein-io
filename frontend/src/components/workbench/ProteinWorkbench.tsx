@@ -773,8 +773,9 @@ export function ProteinWorkbench() {
           />
 
           {/* Viewer column */}
-          <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-[var(--pio-sage)]">
-            <div className="min-h-0 flex-1">
+          <div className="flex h-full min-h-0 flex-col gap-2 p-3">
+            {/* Viewer card — fills available space */}
+            <div className="relative min-h-0 flex-1">
               <StructureViewer
                 structureText={structureText}
                 structureFormat={structureFormat}
@@ -782,8 +783,30 @@ export function ProteinWorkbench() {
                 residueConfidences={residueConfidences}
                 colorMode={viewerColorMode}
               />
+              {/* Loading overlay inside viewer card */}
+              {isAnyLoading && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center rounded-[var(--pio-radius-lg)] bg-[var(--pio-sage)]">
+                  <svg
+                    viewBox="0 0 100 100"
+                    className="pio-loading-pulse h-14 w-14 text-[var(--pio-green-deep)]"
+                    aria-hidden="true"
+                  >
+                    <g filter="url(#goo)">
+                      <circle cx="42" cy="45" r="17" fill="currentColor" />
+                      <circle cx="66" cy="30" r="10" fill="currentColor" />
+                      <circle cx="64" cy="56" r="9" fill="currentColor" />
+                      <circle cx="28" cy="68" r="12" fill="currentColor" />
+                      <circle cx="20" cy="38" r="7" fill="currentColor" />
+                    </g>
+                  </svg>
+                  {viewerStatusLabel && (
+                    <p className="mt-3 font-mono text-xs text-[var(--pio-green-deep)]">{viewerStatusLabel}</p>
+                  )}
+                </div>
+              )}
             </div>
-            <div className="shrink-0 flex flex-col gap-2 p-2">
+            {/* Controls strip — compact, only when structure or always for mode toggle */}
+            <div className="shrink-0 flex flex-col gap-1.5">
               <ViewerModeToggle
                 colorMode={viewerColorMode}
                 hasConfidence={residueConfidences.length > 0}
@@ -791,27 +814,6 @@ export function ProteinWorkbench() {
               />
               <SelectionBar selection={selection} onClear={() => setSelection(null)} />
             </div>
-            {/* Loading overlay */}
-            {isAnyLoading && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--pio-sage)]">
-                <svg
-                  viewBox="0 0 100 100"
-                  className="pio-loading-pulse h-14 w-14 text-[var(--pio-green-deep)]"
-                  aria-hidden="true"
-                >
-                  <g filter="url(#goo)">
-                    <circle cx="42" cy="45" r="17" fill="currentColor" />
-                    <circle cx="66" cy="30" r="10" fill="currentColor" />
-                    <circle cx="64" cy="56" r="9" fill="currentColor" />
-                    <circle cx="28" cy="68" r="12" fill="currentColor" />
-                    <circle cx="20" cy="38" r="7" fill="currentColor" />
-                  </g>
-                </svg>
-                {viewerStatusLabel && (
-                  <p className="mt-3 font-mono text-xs text-[var(--pio-green-deep)]">{viewerStatusLabel}</p>
-                )}
-              </div>
-            )}
           </div>
 
           {/* Results column */}
@@ -905,7 +907,8 @@ export function ProteinWorkbench() {
             key={card.id}
             className="flex flex-col rounded-[var(--pio-radius-lg)] bg-[var(--pio-sand)] p-3"
           >
-            <div className="mb-3 flex h-20 items-center justify-center rounded-[var(--pio-radius-md)] bg-[var(--pio-sage)]">
+            {/* Fixed-height thumbnail */}
+            <div className="mb-3 flex h-20 shrink-0 items-center justify-center rounded-[var(--pio-radius-md)] bg-[var(--pio-sage)]">
               <svg
                 viewBox="0 0 100 100"
                 className="pio-loading-pulse h-10 w-10 text-[var(--pio-green-deep)]"
@@ -919,21 +922,27 @@ export function ProteinWorkbench() {
                 </g>
               </svg>
             </div>
-            <p className="text-sm font-bold leading-tight text-[var(--pio-ink)]">{card.title}</p>
-            <p className="pio-value mt-0.5 text-[11px]">{card.source}</p>
-            <p className="pio-section-copy mt-1.5 text-[11px] leading-snug">{card.description}</p>
-            <div className="mt-2 flex flex-wrap gap-1">
+            {/* Fixed-height title */}
+            <p className="line-clamp-1 text-sm font-bold leading-tight text-[var(--pio-ink)]">{card.title}</p>
+            {/* Fixed-height source */}
+            <p className="pio-value mt-0.5 line-clamp-1 text-[11px]">{card.source}</p>
+            {/* Fixed-height description — 3 lines */}
+            <p className="pio-section-copy mt-1.5 line-clamp-3 text-[11px] leading-snug">{card.description}</p>
+            {/* Fixed-height tags row — 1 line */}
+            <div className="mt-2 flex h-[22px] shrink-0 flex-wrap gap-1 overflow-hidden">
               {card.tags.map((tag) => (
                 <span key={tag} className="pio-badge pio-badge-neutral px-2 py-0.5 text-[10px]">
                   {tag}
                 </span>
               ))}
             </div>
-            <p className="mt-2 text-[11px] italic text-[var(--pio-graphite)]">{card.hint}</p>
+            {/* Fixed-height hint — 2 lines */}
+            <p className="mt-2 line-clamp-2 text-[11px] italic text-[var(--pio-graphite)]">{card.hint}</p>
+            {/* Button always at bottom */}
             <button
               type="button"
               onClick={() => loadGalleryExample(card.id)}
-              className="pio-button-secondary mt-3 h-8 w-full text-xs"
+              className="pio-button-secondary mt-auto h-8 w-full shrink-0 text-xs"
             >
               {card.actionLabel}
             </button>
@@ -1511,25 +1520,25 @@ function EmptyWorkbenchState({
         <button
           type="button"
           onClick={onLoadSample}
-          className="pio-button-secondary h-11"
+          className="pio-button-secondary h-9 whitespace-nowrap text-xs"
         >
-          <FileUp className="h-4 w-4" />
+          <FileUp className="h-3.5 w-3.5" />
           Load sample
         </button>
         <button
           type="button"
           onClick={onFocusRcsb}
-          className="pio-button-secondary h-11"
+          className="pio-button-secondary h-9 whitespace-nowrap text-xs"
         >
-          <Database className="h-4 w-4" />
+          <Database className="h-3.5 w-3.5" />
           Fetch PDB ID
         </button>
         <button
           type="button"
           onClick={onFocusAlphaFold}
-          className="pio-button-secondary h-11"
+          className="pio-button-secondary h-9 whitespace-nowrap text-xs"
         >
-          <Search className="h-4 w-4" />
+          <Search className="h-3.5 w-3.5" />
           Fetch AlphaFold
         </button>
       </div>
