@@ -33,9 +33,9 @@ The current UI has three structural issues:
 - `Docs` and `GitHub` as plain text links (right, `--pio-graphite`, no border)
 
 **Move out of nav:**
-- `Export contacts CSV` → moves to the results panel header (contextual: only visible when contacts are loaded)
-- `Load sample` → moves to sidebar (below the drop zone as a small secondary link)
-- `Reset` → moves to sidebar (small secondary button below Analyze, only shown when a structure is loaded)
+- `Export contacts CSV` → moves to the results panel Contacts tab header (contextual)
+- `Load sample` → moves to sidebar as a small link below the drop zone
+- `Reset` → moves to sidebar below Analyze, only shown when a structure is loaded
 
 `TopNav.tsx` receives no new props — the action buttons it currently renders are removed; the mode tabs and links stay.
 
@@ -76,11 +76,11 @@ Active segment = ink fill pill. Switching swaps the input below it. Default: `Fi
 - `▶ Analyze structure` — full-width `pio-button-primary`, disabled when no structure loaded or loading
 - `↺ Reset` — small `pio-button-secondary` below Analyze, only rendered when `hasStructure === true`
 
-**Status / error / warning banners** — same as today, rendered below the card.
+**Status / error / warning banners** — same as today, rendered below the card (errors and warnings only — in-progress status moves to the viewer overlay).
 
 ### 2b. Metadata summary card
 
-Same `CompactMetadataSummary` component as today — appears below the load card once a structure is loaded. No changes to content, just remove duplicate spacing.
+Same `CompactMetadataSummary` component as today — appears below the load card once a structure is loaded. No changes to content.
 
 ### 2c. Structure comparison — moved to Compare mode
 
@@ -89,8 +89,6 @@ The "Structure comparison" panel currently lives in the Explore sidebar. Move it
 ---
 
 ## 3. Main layout — WorkbenchShell
-
-Current layout: full-height scroll with sidebar on left. 
 
 New layout: fixed-height 3-column grid that fills the viewport:
 
@@ -107,7 +105,20 @@ On screens ≤ 900px: collapse to single column, sidebar on top, viewer, results
 
 ---
 
-## 4. Results panel (right column)
+## 4. Viewer loading overlay
+
+When a fetch or upload is in progress, the Mol* viewer column shows a centered overlay instead of a blank/stale canvas:
+
+- Semi-transparent `--pio-sage` background (`position: absolute; inset: 0`)
+- Centered: blob logo mark (pulsing via `pio-loading-pulse`) + mono status label that updates with the current step: `"Fetching from RCSB…"` / `"Fetching from AlphaFold…"` / `"Uploading…"` / `"Analyzing…"`
+- The overlay sits on top of the viewer — Mol* stays mounted underneath so it doesn't reinitialise on success
+- Dismissed as soon as `isLoading` returns false and analysis data arrives
+
+This replaces the sidebar status banner for the in-progress moment. The sidebar banner is kept only for errors and warnings.
+
+---
+
+## 5. Results panel (right column)
 
 No content changes — same tabs (Overview / Chains / Ligands / Contacts / Confidence / PAE / Quality / Methods), same data, same components.
 
@@ -116,24 +127,42 @@ Changes:
 - `Export ligand CSV` button moves here — rendered in the Ligands tab header when ligands are loaded
 - Panel header shows the loaded structure name (filename or PDB ID) as a small mono badge
 
-Empty state (no structure loaded): show a concise prompt — "Load a structure to begin" with the example gallery cards below it. Gallery stays in the results panel, not the sidebar.
+Empty state (no structure loaded): concise prompt — "Load a structure to begin." No gallery here — gallery moves below the 3-column layout (see Section 6).
 
 ---
 
-## 5. Files to change
+## 6. Example gallery (below the 3-column workbench)
+
+The example gallery moves out of the results panel and becomes a full-width section **below** the 3-column workbench, always visible regardless of whether a structure is loaded.
+
+**Layout:** horizontal scroll row of cards. Each card:
+- Uses the `cap-card` / card-in-card pattern from the design system (sand outer frame, white inner panel, `--pio-radius-lg`)
+- Inner panel: structure type icon or a small molecule blob SVG in `--pio-sage` background
+- Tags as `pio-badge-neutral` mono chips (e.g. `local`, `ligand`, `fast`)
+- Title, source line (mono), one-line description
+- "What to look at" hint in `--pio-graphite`
+- A single `pio-button-secondary` CTA ("Load 2HHB", "Load sample", etc.)
+
+**Section header:** eyebrow label "Example gallery" + subtitle "Guided structures for quickly testing common workflows."
+
+**Data source:** the existing `EXAMPLE_GALLERY` array in `ProteinWorkbench.tsx` — no new data, just re-rendered with the new card style.
+
+---
+
+## 7. Files to change
 
 | File | Change |
 |---|---|
 | `TopNav.tsx` | Remove Export/Reset/Load sample buttons; keep mode tabs + Docs/GitHub links |
 | `ExploreSidebar.tsx` | Replace 4-panel stack with unified load card (pill switcher) + metadata card; remove comparison panel |
 | `WorkbenchShell.tsx` | Change to fixed-height 3-column grid layout |
-| `ProteinWorkbench.tsx` | Update prop wiring for new sidebar, move Export buttons into results tab headers, add Reset to sidebar, move comparison to Compare mode |
+| `ProteinWorkbench.tsx` | Update prop wiring, viewer overlay, Export buttons into results tab headers, Reset into sidebar, comparison into Compare mode, gallery below workbench |
 
-No new components needed. PAE sidecar stays in `ExploreSidebar` (File tab only).
+No new component files needed.
 
 ---
 
-## 6. Out of scope
+## 8. Out of scope
 
 - No changes to result tab content (Overview, Chains, Contacts, Ligands, Confidence, PAE, Quality, Methods)
 - No changes to `StructureViewer.tsx`
