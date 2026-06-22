@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Plus_Jakarta_Sans } from "next/font/google";
+import { IBM_Plex_Mono, DM_Sans } from "next/font/google";
 import "molstar/build/viewer/molstar.css";
 import "./globals.css";
 
-const pioSans = Plus_Jakarta_Sans({
+const pioSans = DM_Sans({
   variable: "--font-pio-sans",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
