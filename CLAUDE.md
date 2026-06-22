@@ -22,6 +22,18 @@ add another `<link>` for them.
 | `frontend/src/components/workbench/WorkbenchShell.tsx` | Layout shell |
 | `frontend/src/components/viewer/StructureViewer.tsx` | Mol* 3-D viewer wrapper |
 
+## Explore workspace polish pass — 2026-06-22 (third session)
+
+**Files touched:**
+- `frontend/src/app/layout.tsx` — font swapped from Plus Jakarta Sans to DM Sans (`DM_Sans` from `next/font/google`).
+- `frontend/src/app/globals.css` — `--pio-radius-lg` 28px → 24px; `--pio-bg-page: #EDEAE2` added; `.pio-shell` background → `var(--pio-bg-page)`; `--background` → `var(--pio-bg-page)`.
+- `frontend/src/components/workbench/ExploreSidebar.tsx` — removed `border-r` divider; sidebar bg changed to `#F5F2EA`.
+- `frontend/src/components/workbench/ProteinWorkbench.tsx` — removed `border-l` on results column; results bg → `#F5F2EA`; outer 3-col wrapper gains 3-layer shadow; loading overlay extracted to `LoadingOverlay` component with cycling `LOADING_LINES` text; gallery grid changed to `grid-cols-2 sm:grid-cols-3` with semantic tag colors via `tagBackground`/`tagColor` helpers.
+
+**Deliberately NOT touched:**
+- Mol* internals, dark mode, Compare mode, Report tab.
+- `--pio-paper`, `--pio-green`, `--pio-green-deep` token values — only the page bg (`--pio-bg-page`) is new.
+
 ## UI polish & bug-fix pass — 2026-06-22 (second session)
 
 **Files touched:**
