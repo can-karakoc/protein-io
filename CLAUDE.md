@@ -22,6 +22,26 @@ add another `<link>` for them.
 | `frontend/src/components/workbench/WorkbenchShell.tsx` | Layout shell |
 | `frontend/src/components/viewer/StructureViewer.tsx` | Mol* 3-D viewer wrapper |
 
+## UI polish & bug-fix pass — 2026-06-22 (second session)
+
+**Files touched:**
+- `frontend/src/components/workbench/WorkbenchShell.tsx` — removed `overflow:hidden` on container wrapper, added `px-4 pb-4 pt-3` so the 3-col grid's 16px corners are visible against the page background.
+- `frontend/src/components/workbench/ProteinWorkbench.tsx` — 3-col grid: added unified `rounded-[16px] border overflow-hidden shadow` wrapper; viewer column now edge-to-edge sage bg (no `p-3` card-inside-column); `ViewerModeToggle` replaced by inline absolute top-right pill; `SelectionBar` replaced by inline absolute bottom bar; results column gets `bg-[var(--pio-paper)] border-l`; results tab strip changed to `flex-nowrap overflow-x-auto` with underline-style active; `EmptyWorkbenchState` action buttons stacked vertically as full-width pill links; `ExampleGallery` cards in right panel get `overflow:hidden line-clamp-3` treatment.
+- `frontend/src/components/workbench/ExploreSidebar.tsx` — sidebar gets `bg-[var(--pio-paper)] border-r border-[rgba(20,20,15,0.08)]`; "or load bundled sample →" link changed to `--pio-green-deep` with hover underline.
+- `frontend/src/components/viewer/StructureViewer.tsx` — removed `rounded-[var(--pio-radius-lg)]` and `shadow` from both empty-state and loaded-state root divs (parent wrapper + `overflow:hidden` clips corners now).
+
+**Deliberately NOT touched:**
+- Mol* internals — no changes to Mol* canvas behaviour, only the outer wrapper div.
+- `ViewerModeToggle` / `SelectionBar` functions still exist at bottom of `ProteinWorkbench.tsx` as dead code (safe to delete in a future pass).
+- Report, Compare, Confidence, PAE, Quality, Methods tab content — out of scope for this pass.
+- Dark mode — unchanged.
+
+**Known remaining gaps:**
+- Compare mode sidebar still placeholder.
+- The bottom-left Mol* mini-map bar (visible when structure is loaded) overlaps the sidebar/viewer seam — it's a Mol* artifact, not custom code; requires hiding via Mol* PluginUISpec if desired.
+- Tab count badges (e.g. "Contacts 1,284") not yet implemented.
+- Metadata KV row hover tints not added.
+
 ## Visual alignment pass — 2026-06-22
 **What changed:** Replaced all `slate-*`, `cyan-*`, and `amber-*` Tailwind color utilities in
 `ProteinWorkbench.tsx` with the design-system tokens (`--pio-ink`, `--pio-graphite`,

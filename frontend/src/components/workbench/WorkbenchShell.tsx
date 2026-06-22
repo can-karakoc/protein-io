@@ -14,9 +14,10 @@ export function WorkbenchShell({ mode, onModeChange, children }: WorkbenchShellP
   return (
     <main className="pio-shell">
       <TopNav mode={mode} onModeChange={onModeChange} />
+      {/* px-4 pb-4 pt-3 gives the 3-col grid space so its 16px rounded corners are visible */}
       <div
-        className="mx-auto w-full max-w-[1500px]"
-        style={{ height: "calc(100svh - 60px)", overflow: "hidden" }}
+        className="mx-auto w-full max-w-[1500px] px-4 pb-4 pt-3"
+        style={{ height: "calc(100svh - 60px)" }}
       >
         {children}
       </div>

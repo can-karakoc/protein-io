@@ -156,7 +156,7 @@ export function StructureViewer({
 
   if (!structureText.trim()) {
     return (
-      <div className="relative flex h-full min-w-0 items-center justify-center overflow-hidden rounded-[var(--pio-radius-lg)] bg-[var(--pio-sage)] p-6 text-center text-sm text-[var(--pio-graphite)]">
+      <div className="relative flex h-full min-w-0 items-center justify-center overflow-hidden bg-[var(--pio-sage)] p-6 text-center text-sm text-[var(--pio-graphite)]">
         <div className="max-w-sm">
           <p className="text-lg font-bold text-[var(--pio-ink)]">Explore protein structures, contacts, ligands, and confidence in one browser workspace.</p>
           <p className="mt-2 text-sm leading-6 text-[var(--pio-graphite)]">
@@ -168,7 +168,7 @@ export function StructureViewer({
   }
 
   return (
-    <div className="relative h-full min-w-0 overflow-hidden rounded-[var(--pio-radius-lg)] bg-[var(--pio-sage)] p-3">
+    <div className="relative h-full min-w-0 overflow-hidden bg-[var(--pio-sage)] p-3">
       <div className="absolute inset-3 overflow-hidden rounded-[var(--pio-radius-md)] bg-[var(--pio-white)]" />
       <div ref={containerRef} className="absolute inset-0" />
       {colorMode === "plddt" && residueConfidences.length ? (

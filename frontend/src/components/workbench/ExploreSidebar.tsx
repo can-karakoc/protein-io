@@ -70,7 +70,7 @@ export function ExploreSidebar({
   ];
 
   return (
-    <aside className="flex h-full flex-col gap-3 overflow-y-auto border-r border-[var(--pio-line)] p-4">
+    <aside className="flex h-full flex-col gap-3 overflow-y-auto border-r border-[rgba(20,20,15,0.08)] bg-[var(--pio-paper)] p-4">
       {/* ── Load structure card ── */}
       <div className="pio-panel p-4">
         <p className="pio-label mb-3">Load structure</p>
@@ -117,7 +117,7 @@ export function ExploreSidebar({
             <button
               type="button"
               onClick={onLoadSample}
-              className="text-center text-[11px] text-[var(--pio-graphite)] transition-colors hover:text-[var(--pio-ink)]"
+              className="text-center text-[11px] text-[var(--pio-green-deep)] transition-colors hover:underline"
             >
               or load bundled sample →
             </button>

@@ -742,7 +742,7 @@ export function ProteinWorkbench() {
     >
       {mode === "explore" ? (
         <div
-          className="grid h-full min-w-0"
+          className="grid h-full min-w-0 overflow-hidden rounded-[16px] border border-[rgba(20,20,15,0.09)] bg-[var(--pio-white)] shadow-[0_1px_2px_rgba(20,20,15,0.05)]"
           style={{ gridTemplateColumns: "260px 1fr 340px" }}
         >
           <ExploreSidebar
@@ -772,52 +772,82 @@ export function ProteinWorkbench() {
             warnings={analysis?.warnings ?? []}
           />
 
-          {/* Viewer column */}
-          <div className="flex h-full min-h-0 flex-col gap-2 p-3">
-            {/* Viewer card — fills available space */}
-            <div className="relative min-h-0 flex-1">
-              <StructureViewer
-                structureText={structureText}
-                structureFormat={structureFormat}
-                selection={selection}
-                residueConfidences={residueConfidences}
-                colorMode={viewerColorMode}
-              />
-              {/* Loading overlay inside viewer card */}
-              {isAnyLoading && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center rounded-[var(--pio-radius-lg)] bg-[var(--pio-sage)]">
-                  <svg
-                    viewBox="0 0 100 100"
-                    className="pio-loading-pulse h-14 w-14 text-[var(--pio-green-deep)]"
-                    aria-hidden="true"
+          {/* Viewer column — fills column edge-to-edge, wrapper clips corners */}
+          <div className="relative h-full min-h-0 bg-[var(--pio-sage)]">
+            <StructureViewer
+              structureText={structureText}
+              structureFormat={structureFormat}
+              selection={selection}
+              residueConfidences={residueConfidences}
+              colorMode={viewerColorMode}
+            />
+
+            {/* Color mode toggle — absolute overlay, top-right */}
+            {residueConfidences.length > 0 && (
+              <div className="absolute right-3 top-3 z-10 inline-flex rounded-full border border-[rgba(20,20,15,0.14)] bg-[var(--pio-white)] p-[3px]">
+                {(["structure", "plddt"] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setViewerColorMode(m)}
+                    className={[
+                      "rounded-full px-3 py-1 text-[11px] font-semibold transition-colors",
+                      viewerColorMode === m
+                        ? "bg-[var(--pio-ink)] text-[var(--pio-white)]"
+                        : "bg-transparent text-[var(--pio-graphite)] hover:text-[var(--pio-ink)]",
+                    ].join(" ")}
                   >
-                    <g filter="url(#goo)">
-                      <circle cx="42" cy="45" r="17" fill="currentColor" />
-                      <circle cx="66" cy="30" r="10" fill="currentColor" />
-                      <circle cx="64" cy="56" r="9" fill="currentColor" />
-                      <circle cx="28" cy="68" r="12" fill="currentColor" />
-                      <circle cx="20" cy="38" r="7" fill="currentColor" />
-                    </g>
-                  </svg>
-                  {viewerStatusLabel && (
-                    <p className="mt-3 font-mono text-xs text-[var(--pio-green-deep)]">{viewerStatusLabel}</p>
-                  )}
+                    {m === "plddt" ? "pLDDT" : "Structure"}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Selection inspector — absolute bottom bar */}
+            <div className="absolute bottom-0 left-0 right-0 border-t border-[rgba(20,20,15,0.08)] bg-[var(--pio-white)] px-4 py-2">
+              {selection ? (
+                <div className="flex items-center justify-between gap-3">
+                  <p className="truncate text-xs font-semibold text-[var(--pio-ink)]">{selection.label}</p>
+                  <button
+                    type="button"
+                    onClick={() => setSelection(null)}
+                    className="shrink-0 text-[11px] text-[var(--pio-graphite)] underline hover:text-[var(--pio-ink)]"
+                  >
+                    Clear
+                  </button>
                 </div>
+              ) : (
+                <p className="text-xs text-[var(--pio-graphite)]">
+                  Select a chain, ligand, or contact row to focus it in Mol*.
+                </p>
               )}
             </div>
-            {/* Controls strip — compact, only when structure or always for mode toggle */}
-            <div className="shrink-0 flex flex-col gap-1.5">
-              <ViewerModeToggle
-                colorMode={viewerColorMode}
-                hasConfidence={residueConfidences.length > 0}
-                onColorModeChange={setViewerColorMode}
-              />
-              <SelectionBar selection={selection} onClear={() => setSelection(null)} />
-            </div>
+
+            {/* Loading overlay */}
+            {isAnyLoading && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--pio-sage)]">
+                <svg
+                  viewBox="0 0 100 100"
+                  className="pio-loading-pulse h-14 w-14 text-[var(--pio-green-deep)]"
+                  aria-hidden="true"
+                >
+                  <g filter="url(#goo)">
+                    <circle cx="42" cy="45" r="17" fill="currentColor" />
+                    <circle cx="66" cy="30" r="10" fill="currentColor" />
+                    <circle cx="64" cy="56" r="9" fill="currentColor" />
+                    <circle cx="28" cy="68" r="12" fill="currentColor" />
+                    <circle cx="20" cy="38" r="7" fill="currentColor" />
+                  </g>
+                </svg>
+                {viewerStatusLabel && (
+                  <p className="mt-3 font-mono text-xs text-[var(--pio-green-deep)]">{viewerStatusLabel}</p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Results column */}
-          <section className="flex h-full min-h-0 flex-col overflow-y-auto border-l border-[var(--pio-line)]">
+          <section className="flex h-full min-h-0 flex-col overflow-y-auto border-l border-[rgba(20,20,15,0.08)] bg-[var(--pio-paper)]">
             <ResultsPanel
               activeTab={resultsTab}
               onTabChange={setResultsTab}
@@ -1077,8 +1107,13 @@ function ResultsPanel({
   }
 
   return (
-    <section ref={panelRef} className="pio-panel min-w-0 overflow-hidden">
-      <div className="flex flex-wrap gap-2 border-b border-[var(--pio-line)] bg-[var(--pio-paper)] p-3" role="tablist" aria-label="Analysis results">
+    <section ref={panelRef} className="min-w-0 overflow-hidden">
+      <div
+        className="flex flex-nowrap overflow-x-auto border-b border-[rgba(20,20,15,0.08)] bg-[var(--pio-white)] px-3.5"
+        style={{ scrollbarWidth: "none" }}
+        role="tablist"
+        aria-label="Analysis results"
+      >
         {visibleTabs.map((tab) => (
           <button
             key={tab.id}
@@ -1087,10 +1122,10 @@ function ResultsPanel({
             aria-selected={selectedTab === tab.id}
             onClick={() => preservePanelPosition(() => onTabChange(tab.id))}
             className={[
-              "h-9 rounded-[var(--pio-radius-sm)] px-3 text-sm font-semibold transition-colors",
+              "shrink-0 whitespace-nowrap border-b-2 px-2.5 pb-[9px] pt-2.5 text-[11.5px] font-bold transition-colors",
               selectedTab === tab.id
-                ? "bg-[var(--pio-ink)] text-[var(--pio-white)]"
-                : "text-[var(--pio-graphite)] hover:bg-[var(--pio-sand)] hover:text-[var(--pio-ink)]",
+                ? "border-[var(--pio-ink)] text-[var(--pio-ink)]"
+                : "border-transparent text-[var(--pio-graphite)] hover:text-[var(--pio-ink)]",
             ].join(" ")}
           >
             {tab.label}
@@ -1516,31 +1551,22 @@ function EmptyWorkbenchState({
           file, PDB ID, AlphaFold accession, or sample structure.
         </p>
       </div>
-      <div className="mt-4 grid gap-2 sm:grid-cols-3">
-        <button
-          type="button"
-          onClick={onLoadSample}
-          className="pio-button-secondary h-9 whitespace-nowrap text-xs"
-        >
-          <FileUp className="h-3.5 w-3.5" />
-          Load sample
-        </button>
-        <button
-          type="button"
-          onClick={onFocusRcsb}
-          className="pio-button-secondary h-9 whitespace-nowrap text-xs"
-        >
-          <Database className="h-3.5 w-3.5" />
-          Fetch PDB ID
-        </button>
-        <button
-          type="button"
-          onClick={onFocusAlphaFold}
-          className="pio-button-secondary h-9 whitespace-nowrap text-xs"
-        >
-          <Search className="h-3.5 w-3.5" />
-          Fetch AlphaFold
-        </button>
+      <div className="mt-3 flex flex-col gap-[7px]">
+        {[
+          { label: "Load sample", icon: <FileUp className="h-3.5 w-3.5 shrink-0" />, action: onLoadSample },
+          { label: "Fetch PDB ID", icon: <Database className="h-3.5 w-3.5 shrink-0" />, action: onFocusRcsb },
+          { label: "Fetch AlphaFold", icon: <Search className="h-3.5 w-3.5 shrink-0" />, action: onFocusAlphaFold },
+        ].map(({ label, icon, action }) => (
+          <button
+            key={label}
+            type="button"
+            onClick={action}
+            className="flex w-full items-center gap-2 rounded-full border border-[rgba(20,20,15,0.14)] bg-[var(--pio-white)] px-3.5 py-2 text-left text-[11.5px] font-semibold text-[var(--pio-ink)] transition-colors hover:bg-[var(--pio-sand)]"
+          >
+            {icon}
+            {label}
+          </button>
+        ))}
       </div>
       <ExampleGallery onLoadExample={onLoadExample} />
     </div>
@@ -1559,33 +1585,43 @@ function ExampleGallery({ onLoadExample }: { onLoadExample: (exampleId: ExampleI
       </div>
       <div className="mt-3 grid gap-3 lg:grid-cols-2">
         {EXAMPLE_GALLERY.map((example) => (
-          <article key={example.id} className="pio-panel grid min-w-0 gap-3 p-4">
-            <div>
-              <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold text-[var(--pio-ink)]">{example.title}</h3>
-                  <p className="mt-1 font-mono text-xs text-[var(--pio-graphite)]">{example.source}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onLoadExample(example.id)}
-                  className="pio-button-secondary mt-2 h-9 shrink-0 px-3 text-xs sm:mt-0"
-                >
-                  {example.actionLabel}
-                </button>
+          <article
+            key={example.id}
+            className="flex min-w-0 flex-col gap-2 overflow-hidden rounded-[14px] border border-[rgba(20,20,15,0.09)] bg-[var(--pio-white)] p-3.5"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <h3 className="line-clamp-1 text-[13px] font-bold leading-snug text-[var(--pio-ink)]">
+                  {example.title}
+                </h3>
+                <p className="font-mono text-[10.5px] text-[var(--pio-graphite)]">{example.source}</p>
               </div>
-              <p className="pio-section-copy mt-2">{example.description}</p>
+              <button
+                type="button"
+                onClick={() => onLoadExample(example.id)}
+                className="pio-button-secondary mt-0.5 h-8 shrink-0 px-3 text-[11px]"
+              >
+                {example.actionLabel}
+              </button>
             </div>
-            <div className="flex flex-wrap gap-1">
+            <p
+              className="text-[10.5px] leading-relaxed text-[var(--pio-graphite)]"
+              style={{
+                display: "-webkit-box",
+                WebkitLineClamp: 3,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+              }}
+            >
+              {example.description}
+            </p>
+            <div className="flex flex-wrap gap-1 overflow-hidden">
               {example.tags.map((tag) => (
                 <span key={tag} className="pio-badge pio-badge-neutral">
                   {tag}
                 </span>
               ))}
             </div>
-            <p className="rounded-[var(--pio-radius-md)] bg-[var(--pio-amber-pale)] px-3 py-2 text-xs leading-5 text-[var(--pio-ink)]">
-              <span className="font-semibold text-[var(--pio-amber-deep)]">What to look at:</span> {example.hint}
-            </p>
           </article>
         ))}
       </div>
