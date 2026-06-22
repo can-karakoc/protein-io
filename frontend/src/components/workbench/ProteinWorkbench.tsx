@@ -1,7 +1,7 @@
 "use client";
 
 import { Atom, Database, Download, FileUp, Search, X } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { StructureViewer } from "@/components/viewer/StructureViewer";
 import { ExploreSidebar } from "@/components/workbench/ExploreSidebar";
@@ -824,26 +824,7 @@ export function ProteinWorkbench() {
             </div>
 
             {/* Loading overlay */}
-            {isAnyLoading && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--pio-sage)]">
-                <svg
-                  viewBox="0 0 100 100"
-                  className="pio-loading-pulse h-14 w-14 text-[var(--pio-green-deep)]"
-                  aria-hidden="true"
-                >
-                  <g filter="url(#goo)">
-                    <circle cx="42" cy="45" r="17" fill="currentColor" />
-                    <circle cx="66" cy="30" r="10" fill="currentColor" />
-                    <circle cx="64" cy="56" r="9" fill="currentColor" />
-                    <circle cx="28" cy="68" r="12" fill="currentColor" />
-                    <circle cx="20" cy="38" r="7" fill="currentColor" />
-                  </g>
-                </svg>
-                {viewerStatusLabel && (
-                  <p className="mt-3 font-mono text-xs text-[var(--pio-green-deep)]">{viewerStatusLabel}</p>
-                )}
-              </div>
-            )}
+            {isAnyLoading && <LoadingOverlay statusLabel={viewerStatusLabel} />}
           </div>
 
           {/* Results column */}
@@ -997,6 +978,46 @@ function WorkbenchModePlaceholder() {
         No structural alignment. No RMSD. No TM-score. No side-by-side 3D superposition yet.
       </p>
     </section>
+  );
+}
+
+const LOADING_LINES = [
+  "Parsing structure…",
+  "Computing contacts…",
+  "Building interaction graph…",
+  "Mapping ligands…",
+  "Finalising analysis…",
+];
+
+function LoadingOverlay({ statusLabel }: { statusLabel: string | null }) {
+  const [lineIndex, setLineIndex] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setLineIndex((i) => (i + 1) % LOADING_LINES.length);
+    }, 1400);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--pio-sage)]">
+      <svg
+        viewBox="0 0 100 100"
+        className="pio-loading-pulse h-14 w-14 text-[var(--pio-green-deep)]"
+        aria-hidden="true"
+      >
+        <g filter="url(#goo)">
+          <circle cx="42" cy="45" r="17" fill="currentColor" />
+          <circle cx="66" cy="30" r="10" fill="currentColor" />
+          <circle cx="64" cy="56" r="9" fill="currentColor" />
+          <circle cx="28" cy="68" r="12" fill="currentColor" />
+          <circle cx="20" cy="38" r="7" fill="currentColor" />
+        </g>
+      </svg>
+      <p className="mt-3 font-mono text-xs text-[var(--pio-green-deep)]">
+        {statusLabel ?? LOADING_LINES[lineIndex]}
+      </p>
+    </div>
   );
 }
 
