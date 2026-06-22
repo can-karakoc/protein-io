@@ -709,18 +709,42 @@ export function ProteinWorkbench() {
     );
   }
 
+  const isAnyLoading = isLoading || isRcsbLoading || isAlphaFoldLoading;
+  const viewerStatusLabel = isRcsbLoading
+    ? "Fetching from RCSB…"
+    : isAlphaFoldLoading
+      ? "Fetching from AlphaFold…"
+      : isLoading
+        ? "Analyzing…"
+        : null;
+
   return (
+    <>
+      {/* SVG filter for the loading blob */}
+      <svg className="absolute h-0 w-0 overflow-hidden" aria-hidden="true">
+        <defs>
+          <filter id="goo">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="blur" />
+            <feColorMatrix
+              in="blur"
+              mode="matrix"
+              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -9"
+              result="goo"
+            />
+            <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+          </filter>
+        </defs>
+      </svg>
+
     <WorkbenchShell
       mode={mode}
       onModeChange={setMode}
-      onLoadSample={loadExample}
-      onReset={reset}
-      onExport={exportCsv}
-      canExport={contacts.length > 0}
     >
       {mode === "explore" ? (
-        <>
-        <section className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-[minmax(280px,340px)_minmax(420px,1fr)_minmax(380px,460px)] xl:items-start">
+        <div
+          className="grid h-full min-w-0"
+          style={{ gridTemplateColumns: "260px 1fr 340px" }}
+        >
           <ExploreSidebar
             fileName={fileName}
             paeFileName={paeFileName}
@@ -732,6 +756,8 @@ export function ProteinWorkbench() {
             onStructureFile={(file) => void handleFile(file)}
             onPaeFile={(file) => void handlePaeFile(file)}
             onAnalyze={analyzeStructure}
+            onLoadSample={() => void loadExample()}
+            onReset={reset}
             hasStructure={hasStructure}
             isLoading={isLoading}
             pdbId={pdbId}
@@ -742,40 +768,54 @@ export function ProteinWorkbench() {
             onUniprotIdChange={setUniprotId}
             onFetchAlphaFold={fetchAlphaFoldStructure}
             isAlphaFoldLoading={isAlphaFoldLoading}
-            comparisonFileA={comparisonFileA}
-            comparisonFileB={comparisonFileB}
-            onComparisonFileAChange={(file) => {
-              setComparisonFileA(file);
-              setComparison(null);
-            }}
-            onComparisonFileBChange={(file) => {
-              setComparisonFileB(file);
-              setComparison(null);
-            }}
-            onCompareStructures={compareStructures}
-            isComparisonLoading={isComparisonLoading}
             error={error}
-            status={status}
             warnings={analysis?.warnings ?? []}
           />
 
-          <section className="grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-4">
-            <StructureViewer
-              structureText={structureText}
-              structureFormat={structureFormat}
-              selection={selection}
-              residueConfidences={residueConfidences}
-              colorMode={viewerColorMode}
-            />
-            <ViewerModeToggle
-              colorMode={viewerColorMode}
-              hasConfidence={residueConfidences.length > 0}
-              onColorModeChange={setViewerColorMode}
-            />
-            <SelectionBar selection={selection} onClear={() => setSelection(null)} />
-          </section>
+          {/* Viewer column */}
+          <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-[var(--pio-sage)]">
+            <div className="min-h-0 flex-1">
+              <StructureViewer
+                structureText={structureText}
+                structureFormat={structureFormat}
+                selection={selection}
+                residueConfidences={residueConfidences}
+                colorMode={viewerColorMode}
+              />
+            </div>
+            <div className="shrink-0 flex flex-col gap-2 p-2">
+              <ViewerModeToggle
+                colorMode={viewerColorMode}
+                hasConfidence={residueConfidences.length > 0}
+                onColorModeChange={setViewerColorMode}
+              />
+              <SelectionBar selection={selection} onClear={() => setSelection(null)} />
+            </div>
+            {/* Loading overlay */}
+            {isAnyLoading && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--pio-sage)]">
+                <svg
+                  viewBox="0 0 100 100"
+                  className="pio-loading-pulse h-14 w-14 text-[var(--pio-green-deep)]"
+                  aria-hidden="true"
+                >
+                  <g filter="url(#goo)">
+                    <circle cx="42" cy="45" r="17" fill="currentColor" />
+                    <circle cx="66" cy="30" r="10" fill="currentColor" />
+                    <circle cx="64" cy="56" r="9" fill="currentColor" />
+                    <circle cx="28" cy="68" r="12" fill="currentColor" />
+                    <circle cx="20" cy="38" r="7" fill="currentColor" />
+                  </g>
+                </svg>
+                {viewerStatusLabel && (
+                  <p className="mt-3 font-mono text-xs text-[var(--pio-green-deep)]">{viewerStatusLabel}</p>
+                )}
+              </div>
+            )}
+          </div>
 
-          <section className="grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-4">
+          {/* Results column */}
+          <section className="flex h-full min-h-0 flex-col overflow-y-auto border-l border-[var(--pio-line)]">
             <ResultsPanel
               activeTab={resultsTab}
               onTabChange={setResultsTab}
@@ -827,30 +867,81 @@ export function ProteinWorkbench() {
               onFocusAlphaFold={() => document.getElementById("uniprot-id")?.focus()}
             />
           </section>
-        </section>
-        </>
+        </div>
       ) : mode === "report" ? (
-        <ReportWorkspace
-          analysis={analysis}
-          provenance={provenance}
-          contacts={confidenceAwareContacts}
-          onExportContacts={exportCsv}
-          onExportLigands={exportLigandCsv}
-          onExportAnalysisJson={exportAnalysisJson}
-          onLoadSample={loadExample}
-          onFocusRcsb={() => {
-            setMode("explore");
-            window.requestAnimationFrame(() => document.getElementById("pdb-id")?.focus());
-          }}
-          onFocusAlphaFold={() => {
-            setMode("explore");
-            window.requestAnimationFrame(() => document.getElementById("uniprot-id")?.focus());
-          }}
-        />
+        <div className="h-full overflow-y-auto">
+          <ReportWorkspace
+            analysis={analysis}
+            provenance={provenance}
+            contacts={confidenceAwareContacts}
+            onExportContacts={exportCsv}
+            onExportLigands={exportLigandCsv}
+            onExportAnalysisJson={exportAnalysisJson}
+            onLoadSample={loadExample}
+            onFocusRcsb={() => {
+              setMode("explore");
+              window.requestAnimationFrame(() => document.getElementById("pdb-id")?.focus());
+            }}
+            onFocusAlphaFold={() => {
+              setMode("explore");
+              window.requestAnimationFrame(() => document.getElementById("uniprot-id")?.focus());
+            }}
+          />
+        </div>
       ) : (
-        <WorkbenchModePlaceholder />
+        <div className="flex h-full items-center justify-center p-8">
+          <WorkbenchModePlaceholder />
+        </div>
       )}
     </WorkbenchShell>
+
+    {/* ── Example gallery — always visible below the workbench ── */}
+    <section className="mx-auto w-full max-w-[1500px] px-6 py-10">
+      <p className="pio-label mb-1">Example gallery</p>
+      <p className="pio-section-copy mb-6">Guided structures for quickly testing common workflows.</p>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+        {EXAMPLE_GALLERY.map((card) => (
+          <div
+            key={card.id}
+            className="flex flex-col rounded-[var(--pio-radius-lg)] bg-[var(--pio-sand)] p-3"
+          >
+            <div className="mb-3 flex h-20 items-center justify-center rounded-[var(--pio-radius-md)] bg-[var(--pio-sage)]">
+              <svg
+                viewBox="0 0 100 100"
+                className="pio-loading-pulse h-10 w-10 text-[var(--pio-green-deep)]"
+                aria-hidden="true"
+              >
+                <g filter="url(#goo)">
+                  <circle cx="42" cy="45" r="17" fill="currentColor" opacity="0.7" />
+                  <circle cx="66" cy="30" r="10" fill="currentColor" opacity="0.7" />
+                  <circle cx="64" cy="56" r="9" fill="currentColor" opacity="0.7" />
+                  <circle cx="28" cy="68" r="12" fill="currentColor" opacity="0.7" />
+                </g>
+              </svg>
+            </div>
+            <p className="text-sm font-bold leading-tight text-[var(--pio-ink)]">{card.title}</p>
+            <p className="pio-value mt-0.5 text-[11px]">{card.source}</p>
+            <p className="pio-section-copy mt-1.5 text-[11px] leading-snug">{card.description}</p>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {card.tags.map((tag) => (
+                <span key={tag} className="pio-badge pio-badge-neutral px-2 py-0.5 text-[10px]">
+                  {tag}
+                </span>
+              ))}
+            </div>
+            <p className="mt-2 text-[11px] italic text-[var(--pio-graphite)]">{card.hint}</p>
+            <button
+              type="button"
+              onClick={() => loadGalleryExample(card.id)}
+              className="pio-button-secondary mt-3 h-8 w-full text-xs"
+            >
+              {card.actionLabel}
+            </button>
+          </div>
+        ))}
+      </div>
+    </section>
+    </>
   );
 }
 
