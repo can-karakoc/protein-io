@@ -912,11 +912,11 @@ export function ProteinWorkbench() {
     <section className="mx-auto w-full max-w-[1500px] px-6 py-10">
       <p className="pio-label mb-1">Example gallery</p>
       <p className="pio-section-copy mb-6">Guided structures for quickly testing common workflows.</p>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         {EXAMPLE_GALLERY.map((card) => (
           <div
             key={card.id}
-            className="flex flex-col rounded-[var(--pio-radius-lg)] bg-[var(--pio-sand)] p-3"
+            className="flex flex-col overflow-hidden rounded-[var(--pio-radius-lg)] bg-[var(--pio-sand)] p-3"
           >
             {/* Fixed-height thumbnail */}
             <div className="mb-3 flex h-20 shrink-0 items-center justify-center rounded-[var(--pio-radius-md)] bg-[var(--pio-sage)]">
@@ -942,7 +942,11 @@ export function ProteinWorkbench() {
             {/* Fixed-height tags row — 1 line */}
             <div className="mt-2 flex h-[22px] shrink-0 flex-wrap gap-1 overflow-hidden">
               {card.tags.map((tag) => (
-                <span key={tag} className="pio-badge pio-badge-neutral px-2 py-0.5 text-[10px]">
+                <span
+                  key={tag}
+                  className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
+                  style={{ background: tagBackground(tag), color: tagColor(tag) }}
+                >
                   {tag}
                 </span>
               ))}
@@ -1019,6 +1023,24 @@ function LoadingOverlay({ statusLabel }: { statusLabel: string | null }) {
       </p>
     </div>
   );
+}
+
+function tagBackground(tag: string): string {
+  const t = tag.toLowerCase();
+  if (t === "alphafold" || t === "plddt" || t === "predicted") return "var(--pio-lavender-pale)";
+  if (t === "rcsb" || t === "experimental" || t === "multi-chain") return "var(--pio-blue-pale)";
+  if (t === "ligand" || t === "contacts") return "var(--pio-green-pale)";
+  if (t === "large" || t === "performance") return "var(--pio-amber-pale)";
+  return "var(--pio-sand)";
+}
+
+function tagColor(tag: string): string {
+  const t = tag.toLowerCase();
+  if (t === "alphafold" || t === "plddt" || t === "predicted") return "var(--pio-lavender-deep)";
+  if (t === "rcsb" || t === "experimental" || t === "multi-chain") return "var(--pio-blue-deep)";
+  if (t === "ligand" || t === "contacts") return "var(--pio-green-deep)";
+  if (t === "large" || t === "performance") return "var(--pio-amber-deep)";
+  return "var(--pio-graphite)";
 }
 
 function ResultsPanel({
