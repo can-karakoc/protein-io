@@ -742,7 +742,7 @@ export function ProteinWorkbench() {
     >
       {mode === "explore" ? (
         <div
-          className="grid h-full min-w-0 overflow-hidden rounded-[16px] border border-[rgba(20,20,15,0.09)] bg-[var(--pio-white)] shadow-[0_1px_2px_rgba(20,20,15,0.05)]"
+          className="grid h-full min-w-0 overflow-hidden rounded-[16px] border border-[rgba(20,20,15,0.09)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]"
           style={{ gridTemplateColumns: "260px 1fr 340px" }}
         >
           <ExploreSidebar
@@ -847,7 +847,7 @@ export function ProteinWorkbench() {
           </div>
 
           {/* Results column */}
-          <section className="flex h-full min-h-0 flex-col overflow-y-auto border-l border-[rgba(20,20,15,0.08)] bg-[var(--pio-paper)]">
+          <section className="flex h-full min-h-0 flex-col overflow-y-auto bg-[#F5F2EA]">
             <ResultsPanel
               activeTab={resultsTab}
               onTabChange={setResultsTab}
