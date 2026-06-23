@@ -1396,12 +1396,16 @@ function ReportHeader({
   onExportLigands: () => void;
   onExportAnalysisJson: () => void;
 }) {
-  const title =
-    analysis.metadata?.title ??
-    analysis.metadata?.pdb_id ??
-    analysis.metadata?.uniprot_id ??
+  const metadata = analysis.metadata;
+  const isAlphaFold = metadata?.source === "alphafold";
+  const rawTitle =
+    metadata?.title ??
+    metadata?.pdb_id ??
+    metadata?.uniprot_id ??
     provenance?.fileName ??
     "Current structure analysis";
+  const title = toTitleCase(rawTitle.replace(/\s+at\s+[\d.]+\s+angstroms?\s+resolution\s*$/i, "").trim());
+  const entryUrl = isAlphaFold ? metadata?.alphafold_url : metadata?.rcsb_url;
 
   const facts: Array<[string, string]> = [
     ["Source", String(provenance?.inputSource ?? analysis.metadata?.source ?? "upload")],
@@ -1422,10 +1426,17 @@ function ReportHeader({
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.1em", color: "#1A406A", textTransform: "uppercase", marginBottom: 8 }}>Report</p>
-          <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.02em", color: "#111610", lineHeight: 1.2 }}>{title}</h1>
-          <p style={{ ...REPORT_SUB, maxWidth: 560, marginTop: 8 }}>
-            Structure metadata, interaction metrics, ligand analysis, confidence signals, quality warnings, and provenance.
-          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.02em", color: "#111610", lineHeight: 1.2 }}>{title}</h1>
+            {entryUrl ? (
+              <a href={entryUrl} target="_blank" rel="noreferrer" aria-label={isAlphaFold ? "AlphaFold DB entry" : "RCSB entry"}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: "50%", background: "#1A406A", color: "white", flexShrink: 0, textDecoration: "none" }}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                  <path d="M2.5 11.5L11.5 2.5M11.5 2.5H6M11.5 2.5V8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </a>
+            ) : null}
+          </div>
         </div>
         {/* Export buttons */}
         <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "center", paddingTop: 4 }}>
@@ -2207,32 +2218,8 @@ function MetadataPanel({ metadata }: { metadata: StructureMetadata | null }) {
 
   return (
     <div>
-      {/* Title row */}
-      <div className="flex items-start justify-between gap-3">
-        <h2
-          className="flex-1 min-w-0 text-[22px] font-bold leading-[1.25] tracking-[-0.015em] text-[#111610]"
-          style={{ overflowWrap: "break-word", wordBreak: "break-word" }}
-        >
-          {displayTitle}
-        </h2>
-        {entryUrl ? (
-          <a
-            href={entryUrl}
-            target="_blank"
-            rel="noreferrer"
-            aria-label={isAlphaFold ? "AlphaFold DB entry" : "RCSB entry"}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1A406A] text-white transition-colors hover:bg-[#163558]"
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-              <path d="M2.5 11.5L11.5 2.5M11.5 2.5H6M11.5 2.5V8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </a>
-        ) : null}
-      </div>
-
       {/* Metadata grid */}
       <div
-        className="mt-3 pt-3"
         style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 24px" }}
       >
         {rows.map((row) => (
