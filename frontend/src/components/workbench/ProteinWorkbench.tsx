@@ -2485,7 +2485,7 @@ function LigandInteractionPanel({
         <button
           type="button"
           onClick={onExport}
-          style={{ background: "rgba(17,22,16,0.07)", border: "none", borderRadius: "50%", width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#111610" }}
+          style={{ background: "#C8E3EE", border: "none", borderRadius: "50%", width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#1A406A" }}
           title="Export ligand CSV"
         >
           <Download size={14} />
@@ -2791,15 +2791,15 @@ function ContactCategoryFilter({
           type="button"
           onClick={() => onChange(option)}
           style={{
-            borderRadius: 999,
-            padding: "6px 14px",
-            fontSize: 12.5,
+            borderRadius: 10,
+            padding: "8px 18px",
+            fontSize: 13,
             fontWeight: 500,
             lineHeight: 1,
-            border: `1px solid ${value === option ? "#1A406A" : "rgba(17,22,16,0.1)"}`,
-            background: value === option ? "rgba(199,217,236,0.6)" : "rgba(17,22,16,0.04)",
+            border: "none",
+            background: value === option ? "rgba(199,217,236,0.5)" : "rgba(17,22,16,0.05)",
             color: value === option ? "#1A406A" : "#636860",
-            transition: "background 150ms, color 150ms, border-color 150ms",
+            transition: "background 150ms, color 150ms",
           }}
         >
           {label}
