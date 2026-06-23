@@ -2958,6 +2958,7 @@ function FloatingLigandPanel({
 
   const PANEL_W = 327;
   const SELECTION_BAR_H = 52; // height of the frosted selection bar at viewer bottom
+  const EDGE_PAD = 10; // minimum gap between panel and any viewer edge
 
   function clamp(value: number, min: number, max: number) {
     return Math.max(min, Math.min(max, value));
@@ -2977,8 +2978,8 @@ function FloatingLigandPanel({
     if (!container) return;
     const rect = container.getBoundingClientRect();
     const panelH = panelRef.current?.offsetHeight ?? 44;
-    const newX = clamp(e.clientX - dragOffset.current.dx, 0, rect.width - PANEL_W);
-    const newY = clamp(e.clientY - dragOffset.current.dy, 0, rect.height - panelH - SELECTION_BAR_H);
+    const newX = clamp(e.clientX - dragOffset.current.dx, EDGE_PAD, rect.width - PANEL_W - EDGE_PAD);
+    const newY = clamp(e.clientY - dragOffset.current.dy, EDGE_PAD, rect.height - panelH - SELECTION_BAR_H - EDGE_PAD);
     setPos({ x: newX, y: newY });
   }
 
@@ -3054,8 +3055,8 @@ function FloatingLigandPanel({
                   if (container) {
                     const panelH = 509;
                     setPos((p) => ({
-                      x: clamp(p.x, 0, container.offsetWidth - PANEL_W),
-                      y: clamp(p.y, 0, container.offsetHeight - panelH - SELECTION_BAR_H),
+                      x: clamp(p.x, EDGE_PAD, container.offsetWidth - PANEL_W - EDGE_PAD),
+                      y: clamp(p.y, EDGE_PAD, container.offsetHeight - panelH - SELECTION_BAR_H - EDGE_PAD),
                     }));
                   }
                 }
