@@ -3041,6 +3041,28 @@ function FloatingLigandPanel({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // When expanding, re-clamp pos every frame while the height animates so the
+  // panel slides up to stay within bounds instead of overflowing into borders.
+  useEffect(() => {
+    if (minimized) return;
+    const container = viewerRef.current;
+    if (!container) return;
+    let raf: number;
+    const loop = () => {
+      const panelH = panelRef.current?.offsetHeight ?? 44;
+      setPos((p) => ({
+        x: clamp(p.x, EDGE_PAD, container.offsetWidth - PANEL_W - EDGE_PAD),
+        y: clamp(p.y, EDGE_PAD, container.offsetHeight - panelH - SELECTION_BAR_H - EDGE_PAD),
+      }));
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    // Stop after the expand animation finishes (250ms covers the 220ms transition)
+    const stop = setTimeout(() => cancelAnimationFrame(raf), 260);
+    return () => { cancelAnimationFrame(raf); clearTimeout(stop); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [minimized]);
+
   const buckets = interaction?.distance_distribution ?? {
     under_2_angstrom: 0,
     two_to_3_angstrom: 0,
