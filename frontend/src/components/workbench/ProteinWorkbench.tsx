@@ -1,6 +1,7 @@
 "use client";
 
 import { Atom, Database, Download, FileUp, Search, X } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { StructureViewer } from "@/components/viewer/StructureViewer";
@@ -741,8 +742,14 @@ export function ProteinWorkbench() {
       mode={mode}
       onModeChange={setMode}
     >
+      <AnimatePresence mode="wait" initial={false}>
       {mode === "explore" ? (
-        <div
+        <motion.div
+          key="explore"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
           className="grid h-full min-w-0 overflow-hidden rounded-[16px] border border-[rgba(20,20,15,0.09)] bg-transparent shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]"
           style={{ gridTemplateColumns: "280px 1fr 400px" }}
         >
@@ -805,8 +812,16 @@ export function ProteinWorkbench() {
             )}
 
             {/* Selection indicator — only shown when something is selected */}
+            <AnimatePresence>
             {selection && (
-              <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between gap-4 bg-[rgba(26,64,106,0.75)] px-5 py-3 backdrop-blur-md">
+              <motion.div
+                key="selection-bar"
+                initial={{ y: "100%", opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: "100%", opacity: 0 }}
+                transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+                className="absolute bottom-0 left-0 right-0 flex items-center justify-between gap-4 bg-[rgba(26,64,106,0.75)] px-5 py-3 backdrop-blur-md"
+              >
                 <div className="min-w-0">
                   <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-white/50">Selected</p>
                   <p className="truncate text-[14px] font-bold text-white">{selection.label}</p>
@@ -819,8 +834,9 @@ export function ProteinWorkbench() {
                 >
                   <X size={13} />
                 </button>
-              </div>
+              </motion.div>
             )}
+            </AnimatePresence>
 
             {/* Floating ligand panel — rendered in viewer column for absolute positioning */}
             {(() => {
@@ -830,15 +846,19 @@ export function ProteinWorkbench() {
               const selInteraction = selection?.kind === "ligand"
                 ? (analysis?.ligand_interactions ?? []).find(l => l.name === selection.residueName && l.chain_id === selection.chainId && l.residue_number === selection.residueNumber) ?? null
                 : null;
-              return selLigand ? (
-                <FloatingLigandPanel
-                  ligand={selLigand}
-                  interaction={selInteraction}
-                  viewerRef={viewerColumnRef}
-                  onClose={() => setSelection(null)}
-                  onExport={(interaction) => exportSingleLigandCsv(interaction)}
-                />
-              ) : null;
+              return (
+                <AnimatePresence>
+                  {selLigand ? (
+                    <FloatingLigandPanel
+                      ligand={selLigand}
+                      interaction={selInteraction}
+                      viewerRef={viewerColumnRef}
+                      onClose={() => setSelection(null)}
+                      onExport={(interaction) => exportSingleLigandCsv(interaction)}
+                    />
+                  ) : null}
+                </AnimatePresence>
+              );
             })()}
 
             {/* Loading overlay */}
@@ -898,9 +918,16 @@ export function ProteinWorkbench() {
               onFocusAlphaFold={() => document.getElementById("uniprot-id")?.focus()}
             />
           </section>
-        </div>
+        </motion.div>
       ) : mode === "report" ? (
-        <div className="h-full overflow-y-auto">
+        <motion.div
+          key="report"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
+          className="h-full overflow-y-auto"
+        >
           <ReportWorkspace
             analysis={analysis}
             provenance={provenance}
@@ -918,12 +945,20 @@ export function ProteinWorkbench() {
               window.requestAnimationFrame(() => document.getElementById("uniprot-id")?.focus());
             }}
           />
-        </div>
+        </motion.div>
       ) : (
-        <div className="flex h-full items-center justify-center p-8">
+        <motion.div
+          key="compare"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
+          className="flex h-full items-center justify-center p-8"
+        >
           <WorkbenchModePlaceholder />
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </WorkbenchShell>
 
     {/* ── Example gallery — hidden for now ── */}
@@ -1212,7 +1247,15 @@ function ResultsPanel({
         )}
       </div>
 
-      <div className="min-w-0 px-5 pb-6 pt-6">
+      <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={selectedTab}
+        initial={{ opacity: 0, y: 5 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -5 }}
+        transition={{ duration: 0.14, ease: "easeOut" }}
+        className="min-w-0 px-5 pb-6 pt-6"
+      >
         {selectedTab === "overview" ? (
           <div className="grid min-w-0 max-w-full gap-6 overflow-hidden">
             <>
@@ -1290,7 +1333,8 @@ function ResultsPanel({
         {selectedTab === "quality" ? <QualityPanel analysis={analysis} /> : null}
 
         {selectedTab === "methods" ? <ProvenancePanel provenance={provenance} /> : null}
-      </div>
+      </motion.div>
+      </AnimatePresence>
     </section>
   );
 }
@@ -3008,8 +3052,12 @@ function FloatingLigandPanel({
   const MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)", color: "#1A406A" };
 
   return (
-    <div
+    <motion.div
       ref={panelRef}
+      initial={{ opacity: 0, scale: 0.94, y: 8 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.94, y: 8 }}
+      transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
       style={{
         position: "absolute",
         left: pos.x,
@@ -3226,7 +3274,7 @@ function FloatingLigandPanel({
           )}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 
