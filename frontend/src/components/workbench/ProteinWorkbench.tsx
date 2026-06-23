@@ -3134,7 +3134,16 @@ function FloatingLigandPanel({
       </div>
 
       {/* Body */}
+      <AnimatePresence initial={false}>
       {!minimized && (
+        <motion.div
+          key="panel-body"
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: "auto", opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+          style={{ overflow: "hidden" }}
+        >
         <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 12 }}>
           {/* Ligand name heading */}
           <div style={{ borderBottom: "1px solid rgba(26,64,106,0.12)", paddingBottom: 10 }}>
@@ -3273,7 +3282,9 @@ function FloatingLigandPanel({
             </button>
           )}
         </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </motion.div>
   );
 }
