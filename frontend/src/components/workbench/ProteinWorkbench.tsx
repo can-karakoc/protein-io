@@ -2520,16 +2520,16 @@ function LigandInteractionPanel({
 
       {/* Scrollable table */}
       <div style={{ overflowX: "auto", marginTop: 12 }}>
-        <div style={{ minWidth: 700 }}>
+        <div style={{ minWidth: 1050 }}>
           {/* Header */}
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 2fr 3fr 2fr", columnGap: 12, borderBottom: "1px solid rgba(17,22,16,0.08)", padding: "8px 0" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "140px 80px 80px 70px 80px 130px 220px 150px", columnGap: 12, borderBottom: "1px solid rgba(17,22,16,0.08)", padding: "8px 0" }}>
             {["LIGAND","CONTACTS","PROTEIN","WATER","CLASHES","CLOSEST","TOP RESIDUES","BUCKETS"].map((col) => (
               <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "#636860" }}>{col}</p>
             ))}
           </div>
           {ligandInteractions.map((ligand, i) => (
             <div key={`${ligand.name}-${ligand.chain_id}-${ligand.residue_number}`}>
-              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 2fr 3fr 2fr", columnGap: 12, padding: "10px 0", alignItems: "start" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "140px 80px 80px 70px 80px 130px 220px 150px", columnGap: 12, padding: "10px 0", alignItems: "start" }}>
                 <p style={{ ...MONO, fontSize: 12, color: "#111610" }}>{ligand.name} {ligand.chain_id}:{ligand.residue_number}</p>
                 <p style={{ ...MONO, fontSize: 13, fontWeight: 500, color: "#111610" }}>{ligand.contact_count}</p>
                 <p style={{ ...MONO, fontSize: 13, fontWeight: 500, color: "#111610" }}>{ligand.protein_contact_count}</p>
