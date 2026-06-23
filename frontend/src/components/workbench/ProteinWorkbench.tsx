@@ -2957,6 +2957,7 @@ function FloatingLigandPanel({
   const panelRef = useRef<HTMLDivElement | null>(null);
 
   const PANEL_W = 327;
+  const SELECTION_BAR_H = 52; // height of the frosted selection bar at viewer bottom
 
   function clamp(value: number, min: number, max: number) {
     return Math.max(min, Math.min(max, value));
@@ -2977,7 +2978,7 @@ function FloatingLigandPanel({
     const rect = container.getBoundingClientRect();
     const panelH = panelRef.current?.offsetHeight ?? 44;
     const newX = clamp(e.clientX - dragOffset.current.dx, 0, rect.width - PANEL_W);
-    const newY = clamp(e.clientY - dragOffset.current.dy, 0, rect.height - panelH);
+    const newY = clamp(e.clientY - dragOffset.current.dy, 0, rect.height - panelH - SELECTION_BAR_H);
     setPos({ x: newX, y: newY });
   }
 
@@ -3054,7 +3055,7 @@ function FloatingLigandPanel({
                     const panelH = 509;
                     setPos((p) => ({
                       x: clamp(p.x, 0, container.offsetWidth - PANEL_W),
-                      y: clamp(p.y, 0, container.offsetHeight - panelH),
+                      y: clamp(p.y, 0, container.offsetHeight - panelH - SELECTION_BAR_H),
                     }));
                   }
                 }
