@@ -11,6 +11,8 @@ add another `<link>` for them.
 - Every primary button must use `pio-button-primary` (ink in light, bright green in dark). No flat gray buttons.
 - Badges: `pio-badge pio-badge-{active|metadata|predicted|warning|caution|neutral}`.
 - Panel cards: `pio-panel` (28px radius, box-shadow). Inner panels: `pio-panel-nested` (18px radius).
+- **Section headings** (Chains, Quality, Contacts, etc.) use `.pio-section-title` — `font-size: 20px`, `font-weight: 700`. Left sidebar headings (Load Structure, Analysis Controls, Metadata) use `text-[20px] font-bold text-[#111610]`.
+- **Primary colour** for interactive elements (active tabs, primary buttons, links): `#1A406A`. Right panel width: `400px`. Left sidebar: `280px`.
 
 ## Component map
 | File | Purpose |

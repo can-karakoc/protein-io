@@ -156,20 +156,30 @@ export function StructureViewer({
 
   if (!structureText.trim()) {
     return (
-      <div className="relative flex h-full min-w-0 items-center justify-center overflow-hidden bg-[var(--pio-sage)] p-6 text-center text-sm text-[var(--pio-graphite)]">
-        <div className="max-w-sm">
-          <p className="text-lg font-bold text-[var(--pio-ink)]">Explore protein structures, contacts, ligands, and confidence in one browser workspace.</p>
-          <p className="mt-2 text-sm leading-6 text-[var(--pio-graphite)]">
-            Start with a structure file, PDB ID, AlphaFold accession, or sample structure.
-          </p>
-        </div>
+      <div className="relative flex h-full min-w-0 items-center justify-center overflow-hidden bg-white">
+        {/* Geometric molecular graph placeholder */}
+        <svg width="120" height="120" viewBox="0 0 120 120" fill="none" aria-hidden="true" style={{ opacity: 0.18 }}>
+          {/* edges */}
+          <line x1="60" y1="10" x2="107" y2="85" stroke="#14140f" strokeWidth="2" strokeLinecap="round" />
+          <line x1="60" y1="10" x2="13"  y2="85" stroke="#14140f" strokeWidth="2" strokeLinecap="round" />
+          <line x1="13"  y1="85" x2="107" y2="85" stroke="#14140f" strokeWidth="2" strokeLinecap="round" />
+          <line x1="60" y1="10" x2="60"  y2="85" stroke="#14140f" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="4 3" />
+          <line x1="13"  y1="85" x2="84"  y2="47" stroke="#14140f" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="4 3" />
+          <line x1="107" y1="85" x2="36"  y2="47" stroke="#14140f" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="4 3" />
+          {/* nodes */}
+          <circle cx="60"  cy="10"  r="6" fill="#14140f" />
+          <circle cx="107" cy="85"  r="6" fill="#14140f" />
+          <circle cx="13"  cy="85"  r="6" fill="#14140f" />
+          <circle cx="60"  cy="85"  r="4.5" fill="#14140f" />
+          <circle cx="84"  cy="47"  r="4.5" fill="#14140f" />
+          <circle cx="36"  cy="47"  r="4.5" fill="#14140f" />
+        </svg>
       </div>
     );
   }
 
   return (
-    <div className="relative h-full min-w-0 overflow-hidden bg-[var(--pio-sage)] p-3">
-      <div className="absolute inset-3 overflow-hidden rounded-[var(--pio-radius-md)] bg-[var(--pio-white)]" />
+    <div className="relative h-full min-w-0 overflow-hidden bg-white">
       <div ref={containerRef} className="absolute inset-0" />
       {colorMode === "plddt" && residueConfidences.length ? (
         <div className="pointer-events-none absolute left-5 top-5 max-w-[260px] rounded-[var(--pio-radius-sm)] bg-[var(--pio-white)] px-3 py-2 text-xs leading-5 text-[var(--pio-graphite)] shadow-[var(--pio-shadow-sm)]">

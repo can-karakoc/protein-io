@@ -742,8 +742,8 @@ export function ProteinWorkbench() {
     >
       {mode === "explore" ? (
         <div
-          className="grid h-full min-w-0 overflow-hidden rounded-[16px] border border-[rgba(20,20,15,0.09)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]"
-          style={{ gridTemplateColumns: "260px 1fr 340px" }}
+          className="grid h-full min-w-0 overflow-hidden rounded-[16px] border border-[rgba(20,20,15,0.09)] bg-transparent shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]"
+          style={{ gridTemplateColumns: "280px 1fr 400px" }}
         >
           <ExploreSidebar
             fileName={fileName}
@@ -762,18 +762,18 @@ export function ProteinWorkbench() {
             isLoading={isLoading}
             pdbId={pdbId}
             onPdbIdChange={setPdbId}
-            onFetchRcsb={fetchRcsbStructure}
+            onFetchRcsb={() => fetchRcsbStructure()}
             isRcsbLoading={isRcsbLoading}
             uniprotId={uniprotId}
             onUniprotIdChange={setUniprotId}
-            onFetchAlphaFold={fetchAlphaFoldStructure}
+            onFetchAlphaFold={() => fetchAlphaFoldStructure()}
             isAlphaFoldLoading={isAlphaFoldLoading}
             error={error}
             warnings={analysis?.warnings ?? []}
           />
 
-          {/* Viewer column — fills column edge-to-edge, wrapper clips corners */}
-          <div className="relative h-full min-h-0 bg-[var(--pio-sage)]">
+          {/* Viewer column — white background, columns shadow over it */}
+          <div className="relative h-full min-h-0 bg-white">
             <StructureViewer
               structureText={structureText}
               structureFormat={structureFormat}
@@ -803,11 +803,11 @@ export function ProteinWorkbench() {
               </div>
             )}
 
-            {/* Selection inspector — absolute bottom bar */}
-            <div className="absolute bottom-0 left-0 right-0 border-t border-[rgba(20,20,15,0.08)] bg-[var(--pio-white)] px-4 py-2">
-              {selection ? (
+            {/* Selection indicator — only shown when something is selected */}
+            {selection && (
+              <div className="absolute bottom-0 left-0 right-0 bg-[rgba(17,22,16,0.04)] px-4 py-2">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="truncate text-xs font-semibold text-[var(--pio-ink)]">{selection.label}</p>
+                  <p className="truncate text-[12.5px] font-semibold text-[var(--pio-ink)]">{selection.label}</p>
                   <button
                     type="button"
                     onClick={() => setSelection(null)}
@@ -816,19 +816,15 @@ export function ProteinWorkbench() {
                     Clear
                   </button>
                 </div>
-              ) : (
-                <p className="text-xs text-[var(--pio-graphite)]">
-                  Select a chain, ligand, or contact row to focus it in Mol*.
-                </p>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Loading overlay */}
             {isAnyLoading && <LoadingOverlay statusLabel={viewerStatusLabel} />}
           </div>
 
           {/* Results column */}
-          <section className="flex h-full min-h-0 flex-col overflow-y-auto bg-[#F5F2EA]">
+          <section className="relative z-[1] flex h-full min-h-0 flex-col overflow-y-auto bg-white shadow-[-8px_0_24px_rgba(17,22,16,0.07)]">
             <ResultsPanel
               activeTab={resultsTab}
               onTabChange={setResultsTab}
@@ -908,8 +904,8 @@ export function ProteinWorkbench() {
       )}
     </WorkbenchShell>
 
-    {/* ── Example gallery — always visible below the workbench ── */}
-    <section className="mx-auto w-full max-w-[1500px] px-6 py-10">
+    {/* ── Example gallery — hidden for now ── */}
+    {false && <section className="mx-auto w-full max-w-[1500px] px-6 py-10">
       <p className="pio-label mb-1">Example gallery</p>
       <p className="pio-section-copy mb-6">Guided structures for quickly testing common workflows.</p>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
@@ -964,7 +960,7 @@ export function ProteinWorkbench() {
           </div>
         ))}
       </div>
-    </section>
+    </section>}
     </>
   );
 }
@@ -1003,44 +999,32 @@ function LoadingOverlay({ statusLabel }: { statusLabel: string | null }) {
     return () => clearInterval(id);
   }, []);
 
+  const headline = statusLabel === "Fetching from RCSB…" || statusLabel === "Fetching from AlphaFold…"
+    ? "Fetching! Hold on tight…"
+    : statusLabel === "Analyzing…"
+      ? "Analyzing structure…"
+      : LOADING_LINES[lineIndex];
+
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--pio-sage)]">
-      <svg
-        viewBox="0 0 100 100"
-        className="pio-loading-pulse h-14 w-14 text-[var(--pio-green-deep)]"
-        aria-hidden="true"
-      >
-        <g filter="url(#goo)">
-          <circle cx="42" cy="45" r="17" fill="currentColor" />
-          <circle cx="66" cy="30" r="10" fill="currentColor" />
-          <circle cx="64" cy="56" r="9" fill="currentColor" />
-          <circle cx="28" cy="68" r="12" fill="currentColor" />
-          <circle cx="20" cy="38" r="7" fill="currentColor" />
-        </g>
-      </svg>
-      <p className="mt-3 font-mono text-xs text-[var(--pio-green-deep)]">
-        {statusLabel ?? LOADING_LINES[lineIndex]}
+      <p className="text-[22px] font-semibold text-[var(--pio-ink)] tracking-tight">
+        {headline}
       </p>
+      <p className="mt-2 text-sm text-[var(--pio-graphite)]">This might take a minute.</p>
     </div>
   );
 }
 
 function tagBackground(tag: string): string {
   const t = tag.toLowerCase();
-  if (t === "alphafold" || t === "plddt" || t === "predicted") return "var(--pio-lavender-pale)";
-  if (t === "rcsb" || t === "experimental" || t === "multi-chain") return "var(--pio-blue-pale)";
-  if (t === "ligand" || t === "contacts") return "var(--pio-green-pale)";
-  if (t === "large" || t === "performance") return "var(--pio-amber-pale)";
-  return "var(--pio-sand)";
+  if (t === "ligand" || t === "contacts" || t === "experimental" || t === "multi-chain" || t === "predicted" || t === "plddt" || t === "performance" || t === "starter") return "#DCEEDC";
+  return "#C7D9EC";
 }
 
 function tagColor(tag: string): string {
   const t = tag.toLowerCase();
-  if (t === "alphafold" || t === "plddt" || t === "predicted") return "var(--pio-lavender-deep)";
-  if (t === "rcsb" || t === "experimental" || t === "multi-chain") return "var(--pio-blue-deep)";
-  if (t === "ligand" || t === "contacts") return "var(--pio-green-deep)";
-  if (t === "large" || t === "performance") return "var(--pio-amber-deep)";
-  return "var(--pio-graphite)";
+  if (t === "ligand" || t === "contacts" || t === "experimental" || t === "multi-chain" || t === "predicted" || t === "plddt" || t === "performance" || t === "starter") return "#4A724C";
+  return "#1A406A";
 }
 
 function ResultsPanel({
@@ -1149,51 +1133,69 @@ function ResultsPanel({
     });
   }
 
+  if (!analysis) {
+    return (
+      <section ref={panelRef} className="min-w-0">
+        <EmptyWorkbenchState
+          onLoadSample={onLoadSample}
+          onLoadExample={onLoadExample}
+          onFocusRcsb={onFocusRcsb}
+          onFocusAlphaFold={onFocusAlphaFold}
+        />
+      </section>
+    );
+  }
+
+  const ROW1_IDS: ResultsTab[] = ["overview", "chains", "ligands", "contacts"];
+  const row1 = visibleTabs.filter((t) => ROW1_IDS.includes(t.id));
+  const row2 = visibleTabs.filter((t) => !ROW1_IDS.includes(t.id));
+
+  function TabButton({ tab }: { tab: { id: ResultsTab; label: string } }) {
+    return (
+      <button
+        key={tab.id}
+        type="button"
+        role="tab"
+        aria-selected={selectedTab === tab.id}
+        onClick={() => preservePanelPosition(() => onTabChange(tab.id))}
+        className={[
+          "rounded-full px-3.5 py-[7px] text-[13px] transition-colors",
+          selectedTab === tab.id
+            ? "bg-[#1A406A] font-semibold text-white"
+            : "font-medium text-[#1A406A] hover:bg-[rgba(26,64,106,0.08)]",
+        ].join(" ")}
+      >
+        {tab.label}
+      </button>
+    );
+  }
+
   return (
     <section ref={panelRef} className="min-w-0">
       <div
-        className="flex flex-nowrap overflow-x-auto border-b border-[rgba(20,20,15,0.08)] bg-[var(--pio-white)] px-3.5"
-        style={{ scrollbarWidth: "none" }}
+        className="flex flex-col gap-3 px-5 pb-0 pt-4"
         role="tablist"
         aria-label="Analysis results"
       >
-        {visibleTabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            aria-selected={selectedTab === tab.id}
-            onClick={() => preservePanelPosition(() => onTabChange(tab.id))}
-            className={[
-              "shrink-0 whitespace-nowrap border-b-2 px-2.5 pb-[9px] pt-2.5 text-[11.5px] font-bold transition-colors",
-              selectedTab === tab.id
-                ? "border-[var(--pio-ink)] text-[var(--pio-ink)]"
-                : "border-transparent text-[var(--pio-graphite)] hover:text-[var(--pio-ink)]",
-            ].join(" ")}
-          >
-            {tab.label}
-          </button>
-        ))}
+        <div className="flex gap-0.5">
+          {row1.map((tab) => <TabButton key={tab.id} tab={tab} />)}
+        </div>
+        {row2.length > 0 && (
+          <div className="flex gap-0.5">
+            {row2.map((tab) => <TabButton key={tab.id} tab={tab} />)}
+          </div>
+        )}
       </div>
 
-      <div className="min-w-0 p-4">
+      <div className="min-w-0 px-5 pb-6 pt-6">
         {selectedTab === "overview" ? (
-          <div className="grid min-w-0 max-w-full gap-4 overflow-hidden">
-            {analysis ? (
-              <>
-                <MetadataPanel metadata={analysis.metadata ?? null} />
-                <SummaryCards analysis={analysis} />
-                <InteractionSummaryPanel summary={analysis.interaction_summary ?? null} />
-                <StructureComparisonPanel comparison={comparison} />
-              </>
-            ) : (
-              <EmptyWorkbenchState
-                onLoadSample={onLoadSample}
-                onLoadExample={onLoadExample}
-                onFocusRcsb={onFocusRcsb}
-                onFocusAlphaFold={onFocusAlphaFold}
-              />
-            )}
+          <div className="grid min-w-0 max-w-full gap-6 overflow-hidden">
+            <>
+              <MetadataPanel metadata={analysis.metadata ?? null} />
+              <SummaryCards analysis={analysis} />
+              <InteractionSummaryPanel summary={analysis.interaction_summary ?? null} />
+              <StructureComparisonPanel comparison={comparison} />
+            </>
           </div>
         ) : null}
 
@@ -1206,16 +1208,14 @@ function ResultsPanel({
         ) : null}
 
         {selectedTab === "ligands" ? (
-          <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
-            <div className="grid min-w-0 gap-4">
-              <LigandTable
-                ligands={ligands}
-                selection={selection}
-                onSelect={onLigandSelect}
-              />
-              <LigandInteractionPanel ligandInteractions={analysis?.ligand_interactions ?? []} onExport={onExportLigands} />
-            </div>
-            <div className="min-w-0 xl:sticky xl:top-4">
+          <div className="grid min-w-0 gap-4">
+            <LigandTable
+              ligands={ligands}
+              selection={selection}
+              onSelect={onLigandSelect}
+            />
+            <LigandInteractionPanel ligandInteractions={analysis?.ligand_interactions ?? []} onExport={onExportLigands} />
+            <div className="min-w-0">
               <LigandDetailPanel
                 ligand={selectedLigand}
                 interaction={selectedLigandInteraction}
@@ -1375,7 +1375,7 @@ function ReportHeader({
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="pio-badge pio-badge-metadata">Report</p>
-          <h2 className="mt-2 text-lg font-semibold text-[var(--pio-ink)]">{title}</h2>
+          <h2 className="mt-2 text-[20px] font-bold text-[var(--pio-ink)]">{title}</h2>
           <p className="pio-section-copy mt-2 max-w-3xl">
             Clean summary of the current structure metadata, interaction metrics, ligand analysis, confidence signals,
             quality warnings, and methods/provenance.
@@ -1586,85 +1586,77 @@ function EmptyWorkbenchState({
   onFocusAlphaFold: () => void;
 }) {
   return (
-    <div className="rounded-[var(--pio-radius-lg)] bg-[var(--pio-sage)] p-5">
-      <div className="max-w-2xl">
-        <p className="pio-section-title">Start a structure analysis</p>
-        <p className="pio-section-copy mt-2">
-          Explore protein structures, contacts, ligands, and confidence in one browser workspace. Start with a structure
-          file, PDB ID, AlphaFold accession, or sample structure.
-        </p>
+    <div className="p-6">
+      <h2 className="text-[21px] font-bold tracking-[-0.01em] text-[var(--pio-ink)]">
+        Start a structure analysis
+      </h2>
+      <p className="mt-2 text-[14px] leading-relaxed text-[var(--pio-graphite)]">
+        Explore protein structures, contacts, ligands, and confidence in one browser workspace. Start with a
+        structure file, PDB ID, AlphaFold accession, or sample structure.
+      </p>
+      <div className="mt-5 border-t border-[var(--pio-line)] pt-5">
+        <ExampleGallery onLoadExample={onLoadExample} onLoadSample={onLoadSample} onFocusRcsb={onFocusRcsb} onFocusAlphaFold={onFocusAlphaFold} />
       </div>
-      <div className="mt-3 flex flex-col gap-[7px]">
-        {[
-          { label: "Load sample", icon: <FileUp className="h-3.5 w-3.5 shrink-0" />, action: onLoadSample },
-          { label: "Fetch PDB ID", icon: <Database className="h-3.5 w-3.5 shrink-0" />, action: onFocusRcsb },
-          { label: "Fetch AlphaFold", icon: <Search className="h-3.5 w-3.5 shrink-0" />, action: onFocusAlphaFold },
-        ].map(({ label, icon, action }) => (
-          <button
-            key={label}
-            type="button"
-            onClick={action}
-            className="flex w-full items-center gap-2 rounded-full border border-[rgba(20,20,15,0.14)] bg-[var(--pio-white)] px-3.5 py-2 text-left text-[11.5px] font-semibold text-[var(--pio-ink)] transition-colors hover:bg-[var(--pio-sand)]"
-          >
-            {icon}
-            {label}
-          </button>
-        ))}
-      </div>
-      <ExampleGallery onLoadExample={onLoadExample} />
     </div>
   );
 }
 
-function ExampleGallery({ onLoadExample }: { onLoadExample: (exampleId: ExampleId) => void }) {
+function ExampleGallery({
+  onLoadExample,
+  onLoadSample: _onLoadSample,
+  onFocusRcsb: _onFocusRcsb,
+  onFocusAlphaFold: _onFocusAlphaFold,
+}: {
+  onLoadExample: (exampleId: ExampleId) => void;
+  onLoadSample: () => void;
+  onFocusRcsb: () => void;
+  onFocusAlphaFold: () => void;
+}) {
   return (
-    <div className="mt-5 border-t border-[var(--pio-line)] pt-5">
-      <div className="flex flex-col gap-1">
-        <p className="pio-section-title">Example gallery</p>
-        <p className="pio-section-copy">
-          Guided structures for quickly testing common experimental, predicted, ligand, large-structure, and comparison
-          workflows.
-        </p>
-      </div>
-      <div className="mt-3 grid gap-3 lg:grid-cols-2">
+    <div>
+      <h3 className="text-[18px] font-bold tracking-[-0.01em] text-[var(--pio-ink)]">Example Gallery</h3>
+      <div className="mt-4 flex flex-col gap-3">
         {EXAMPLE_GALLERY.map((example) => (
           <article
             key={example.id}
-            className="flex min-w-0 flex-col gap-2 overflow-hidden rounded-[14px] border border-[rgba(20,20,15,0.09)] bg-[var(--pio-white)] p-3.5"
+            className="flex min-w-0 flex-col gap-3 rounded-[8px] bg-[#F5F5F5] p-4"
           >
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <h3 className="line-clamp-1 text-[13px] font-bold leading-snug text-[var(--pio-ink)]">
-                  {example.title}
-                </h3>
-                <p className="font-mono text-[10.5px] text-[var(--pio-graphite)]">{example.source}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => onLoadExample(example.id)}
-                className="pio-button-secondary mt-0.5 h-8 shrink-0 px-3 text-[11px]"
+            <div className="min-w-0">
+              <h4 className="text-[15.5px] font-bold leading-snug text-[var(--pio-ink)]">
+                {example.title}
+              </h4>
+              <p className="mt-0.5 font-[family-name:var(--font-pio-mono)] text-[12px] text-[var(--pio-graphite)]">
+                {example.source}
+              </p>
+              <p className="mt-1.5 text-[13.5px] leading-[1.5] text-[var(--pio-graphite)]"
+                style={{
+                  display: "-webkit-box",
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                }}
               >
-                {example.actionLabel}
-              </button>
+                {example.description}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {example.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full px-[10px] py-[3px] text-[11px] font-semibold"
+                    style={{ background: tagBackground(tag), color: tagColor(tag) }}
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
             </div>
-            <p
-              className="text-[10.5px] leading-relaxed text-[var(--pio-graphite)]"
-              style={{
-                display: "-webkit-box",
-                WebkitLineClamp: 3,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-              }}
+            <button
+              type="button"
+              onClick={() => onLoadExample(example.id)}
+              className="flex w-full items-center justify-center rounded-[12px] bg-[#1A406A] py-[6px] text-[13px] font-semibold text-white transition-colors hover:bg-[#163558]"
             >
-              {example.description}
-            </p>
-            <div className="flex flex-wrap gap-1 overflow-hidden">
-              {example.tags.map((tag) => (
-                <span key={tag} className="pio-badge pio-badge-neutral">
-                  {tag}
-                </span>
-              ))}
-            </div>
+              Load
+            </button>
           </article>
         ))}
       </div>
@@ -2021,25 +2013,42 @@ function formatTimestamp(timestamp: string) {
 
 function SummaryCards({ analysis }: { analysis: AnalysisResponse | null }) {
   const summary = analysis?.summary;
-  const items = [
-    ["Atoms", summary?.atom_count ?? 0, "Coordinate records parsed from the structure file."],
-    ["Protein residues", summary?.residue_count ?? 0, "Amino acid residues counted across chains."],
-    ["Chains", summary?.chain_count ?? 0, "Distinct protein chains in the structure."],
-    ["Ligands", summary?.ligand_count ?? 0, "Non-water hetero residues detected."],
-    ["Contacts", summary?.contact_count ?? 0, "Residue and ligand contacts under cutoff."],
+  const items: [string, number, string][] = [
+    ["ATOMS", summary?.atom_count ?? 0, "Coordinate records parsed from the structure file."],
+    ["PROTEIN RESIDUES", summary?.residue_count ?? 0, "Amino acid residues counted across chains."],
+    ["CHAINS", summary?.chain_count ?? 0, "Distinct protein chains in the structure."],
+    ["LIGANDS", summary?.ligand_count ?? 0, "Non-water hetero residues detected."],
+    ["CONTACTS", summary?.contact_count ?? 0, "Residue and ligand contacts under cutoff."],
   ];
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-      {items.map(([label, value, helper]) => (
-        <div key={label} className="pio-panel p-4">
-          <p className="pio-label">{label}</p>
-          <p className="pio-value mt-2 text-2xl font-bold">{value}</p>
-          <p className="pio-section-copy mt-2">{helper}</p>
-        </div>
-      ))}
+    <div className="border-t border-[rgba(17,22,16,0.08)] pt-4">
+      <div className="flex flex-col gap-2">
+        {items.map(([label, value, description]) => (
+          <div
+            key={label}
+            className="flex items-center justify-between rounded-[12px] bg-[#F5F5F5] px-4 py-3"
+          >
+            <div>
+              <p className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-[rgba(17,22,16,0.5)]">{label}</p>
+              <p className="mt-0.5 text-[22px] font-bold leading-none text-[#111610]">{value.toLocaleString()}</p>
+            </div>
+            <p className="max-w-[160px] text-right text-[12px] leading-[1.4] text-[rgba(17,22,16,0.5)]">{description}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
+}
+
+function toTitleCase(str: string): string {
+  return str.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function formatDepositedDate(raw: string | null): string | null {
+  if (!raw) return null;
+  const match = raw.match(/^\d{4}-\d{2}-\d{2}/);
+  return match ? match[0] : raw;
 }
 
 function MetadataPanel({ metadata }: { metadata: StructureMetadata | null }) {
@@ -2048,59 +2057,78 @@ function MetadataPanel({ metadata }: { metadata: StructureMetadata | null }) {
   }
 
   const isAlphaFold = metadata.source === "alphafold";
-  const rows = isAlphaFold
-    ? [
-        ["UniProt", metadata.uniprot_id],
-        ["Method", metadata.method],
-        ["Organism", metadata.organism],
-        ["Model version", metadata.model_version],
-        ["Model date", metadata.deposition_date],
-        ["Entities", metadata.entity_count],
-        ["Chains", metadata.chain_count],
-      ]
-    : [
-        ["PDB ID", metadata.pdb_id],
-        ["Status", metadata.status === "removed" ? "Removed entry" : metadata.status],
-        ["Replaced by", metadata.replaced_by.length ? metadata.replaced_by.join(", ") : null],
-        ["Method", metadata.method],
-        ["Resolution", metadata.resolution_angstrom ? `${metadata.resolution_angstrom.toFixed(2)} A` : null],
-        ["Organism", metadata.organism],
-        ["Deposited", metadata.deposition_date],
-        ["Entities", metadata.entity_count],
-        ["Chains", metadata.chain_count],
-      ];
-
   const entryUrl = isAlphaFold ? metadata.alphafold_url : metadata.rcsb_url;
-  const entryLabel = isAlphaFold ? "AlphaFold DB entry" : "RCSB entry";
+  const rawTitle = metadata.title ?? (isAlphaFold ? "AlphaFold DB model" : "RCSB structure");
+  const strippedTitle = rawTitle.replace(/\s+at\s+[\d.]+\s+angstroms?\s+resolution\s*$/i, "").trim();
+  const displayTitle = toTitleCase(strippedTitle);
+
+  type MetaRow = { label: string; value: string | number | null; mono?: boolean };
+
+  const rcsbRows: MetaRow[] = [
+    { label: "PDB ID", value: metadata.pdb_id, mono: true },
+    { label: "STATUS", value: metadata.status ? toTitleCase(metadata.status) : null },
+    { label: "METHOD", value: metadata.method ? toTitleCase(metadata.method) : null },
+    {
+      label: "RESOLUTION",
+      value: metadata.resolution_angstrom != null ? `${metadata.resolution_angstrom.toFixed(2)} Å` : null,
+      mono: true,
+    },
+    { label: "ORGANISM", value: metadata.organism ? toTitleCase(metadata.organism) : null },
+    { label: "ENTITIES", value: metadata.entity_count },
+    { label: "DEPOSITED", value: formatDepositedDate(metadata.deposition_date), mono: true },
+  ];
+
+  const alphaFoldRows: MetaRow[] = [
+    { label: "UNIPROT", value: metadata.uniprot_id, mono: true },
+    { label: "METHOD", value: metadata.method ? toTitleCase(metadata.method) : null },
+    { label: "ORGANISM", value: metadata.organism ? toTitleCase(metadata.organism) : null },
+    { label: "MODEL VERSION", value: metadata.model_version, mono: true },
+    { label: "MODEL DATE", value: formatDepositedDate(metadata.deposition_date), mono: true },
+    { label: "ENTITIES", value: metadata.entity_count },
+  ];
+
+  const rows = (isAlphaFold ? alphaFoldRows : rcsbRows).filter((r) => r.value != null);
 
   return (
-    <div className="pio-panel p-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="pio-section-title">
-            {metadata.title ?? (isAlphaFold ? "AlphaFold DB model" : "RCSB structure")}
-          </h2>
-          <div className="mt-3 grid gap-x-5 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
-            {rows.map(([label, value]) =>
-              value ? (
-                <div key={label}>
-                  <p className="pio-label">{label}</p>
-                  <p className="pio-value mt-1 text-sm">{value}</p>
-                </div>
-              ) : null,
-            )}
-          </div>
-        </div>
+    <div>
+      {/* Title row */}
+      <div className="flex items-start justify-between gap-3">
+        <h2
+          className="flex-1 min-w-0 text-[22px] font-bold leading-[1.25] tracking-[-0.015em] text-[#111610]"
+          style={{ overflowWrap: "break-word", wordBreak: "break-word" }}
+        >
+          {displayTitle}
+        </h2>
         {entryUrl ? (
           <a
             href={entryUrl}
             target="_blank"
             rel="noreferrer"
-            className="pio-button-secondary h-9 shrink-0 px-3"
+            aria-label={isAlphaFold ? "AlphaFold DB entry" : "RCSB entry"}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1A406A] text-white transition-colors hover:bg-[#163558]"
           >
-            {entryLabel}
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M2.5 11.5L11.5 2.5M11.5 2.5H6M11.5 2.5V8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </a>
         ) : null}
+      </div>
+
+      {/* Metadata grid */}
+      <div
+        className="mt-3 border-t border-[rgba(17,22,16,0.08)] pt-3"
+        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 24px" }}
+      >
+        {rows.map((row) => (
+          <div key={row.label}>
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-[#636860]">{row.label}</p>
+            {row.mono ? (
+              <p className="mt-0.5 font-mono text-[12px] font-medium text-[#111610]">{row.value}</p>
+            ) : (
+              <p className="mt-0.5 text-[13px] font-medium text-[#111610]">{row.value}</p>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -2730,6 +2758,18 @@ function ContactConfidenceSummary({
   );
 }
 
+const CHAIN_GRID = "1fr 1fr 1fr";
+
+function ChainNodeIcon({ size = 20, color = "#636860" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <circle cx="7" cy="7" r="4.5" stroke={color} strokeWidth="1.4" />
+      <circle cx="13" cy="13" r="4.5" stroke={color} strokeWidth="1.4" />
+      <line x1="7" y1="11.5" x2="13" y2="8.5" stroke={color} strokeWidth="1.2" strokeLinecap="round" opacity="0.5" />
+    </svg>
+  );
+}
+
 function ChainTable({
   chains,
   selection,
@@ -2740,52 +2780,65 @@ function ChainTable({
   onSelect: (chain: ChainSummary) => void;
 }) {
   return (
-    <div className="pio-table-card min-w-0">
-      <div className="border-b border-[var(--pio-line)] p-4">
-        <h2 className="pio-section-title">Chains</h2>
-        <p className="pio-section-copy mt-1">Protein residue and atom counts grouped by chain.</p>
-      </div>
-      {chains.length ? (
-        <div className="max-w-full overflow-x-auto">
-          <table className="pio-responsive-table w-full min-w-[420px] text-left text-sm">
-            <thead className="text-xs uppercase tracking-wide text-[var(--pio-graphite)]">
-              <tr>
-                <th className="px-4 py-3 font-medium">
-                  <span className="sr-only">Select</span>
-                </th>
-                <th className="px-4 py-3 font-medium">Chain</th>
-                <th className="px-4 py-3 font-medium">Residues</th>
-                <th className="px-4 py-3 font-medium">Atoms</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--pio-line)]">
-              {chains.map((chain) => {
-                const selected = selection?.kind === "chain" && selection.chainId === chain.id;
+    <div className="min-w-0">
+      {/* Heading */}
+      <h2 className="text-[20px] font-bold text-[#111610]">Chains</h2>
+      <p className="mt-1 text-[13.5px] leading-[1.5] text-[#636860]">Protein residue and atom counts grouped by chain.</p>
 
-                return (
-                <tr
-                  key={chain.id}
-                  role="button"
-                  tabIndex={0}
-                  aria-pressed={selected}
-                  onClick={() => onSelect(chain)}
-                  onKeyDown={(event) => handleSelectableRowKeyDown(event, () => onSelect(chain))}
-                  className={selectableRowClass(selected)}
-                >
-                  <td data-label="Select" className="w-12 px-4 py-3">
-                    <SelectionButton selected={selected} label={`Select chain ${chain.id}`} onClick={() => onSelect(chain)} />
-                  </td>
-                  <td data-label="Chain" className="pio-value px-4 py-3">{chain.id}</td>
-                  <td data-label="Residues" className="pio-value px-4 py-3">{chain.residue_count}</td>
-                  <td data-label="Atoms" className="pio-value px-4 py-3">{chain.atom_count}</td>
-                </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      {chains.length ? (
+        <div className="mt-4">
+          {/* Header row */}
+          <div
+            className="border-b border-[rgba(17,22,16,0.08)] px-3 pb-2"
+            style={{ display: "grid", gridTemplateColumns: CHAIN_GRID }}
+          >
+            {["CHAIN", "RESIDUES", "ATOMS"].map((col) => (
+              <p key={col} className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-[#636860]">{col}</p>
+            ))}
+          </div>
+
+          {/* Data rows — dividers are separate elements so selection card stays clean */}
+          <div className="flex flex-col">
+            {chains.map((chain, i) => {
+              const selected = selection?.kind === "chain" && selection.chainId === chain.id;
+              return (
+                <div key={chain.id}>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={selected}
+                    onClick={() => onSelect(chain)}
+                    onKeyDown={(e) => handleSelectableRowKeyDown(e, () => onSelect(chain))}
+                    className={`cursor-pointer rounded-[8px] transition-colors duration-150 ${
+                      selected
+                        ? "bg-[rgba(199,217,236,0.6)]"
+                        : "hover:bg-[rgba(17,22,16,0.04)]"
+                    }`}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: CHAIN_GRID,
+                      alignItems: "center",
+                      padding: "12px",
+                      boxShadow: selected ? "0 0 0 2px #1A406A" : undefined,
+                    }}
+                  >
+                    <p className="text-[15px] font-semibold text-[#111610]">{chain.id}</p>
+                    <p className="font-mono text-[14px] font-medium text-[#111610]">{chain.residue_count.toLocaleString()}</p>
+                    <p className="font-mono text-[14px] font-medium text-[#111610]">{chain.atom_count.toLocaleString()}</p>
+                  </div>
+                  {i < chains.length - 1 && (
+                    <div className="mx-3 h-px bg-[rgba(17,22,16,0.08)]" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       ) : (
-        <p className="pio-section-copy p-4">Run analysis to show chains.</p>
+        <div className="mt-8 flex flex-col items-center">
+          <ChainNodeIcon size={40} color="rgba(17,22,16,0.15)" />
+          <p className="mt-3 text-center text-[13.5px] text-[#636860]">No chains detected in this structure.</p>
+        </div>
       )}
     </div>
   );
@@ -3034,7 +3087,7 @@ function SelectionButton({ selected, label, onClick }: { selected: boolean; labe
   );
 }
 
-function handleSelectableRowKeyDown(event: React.KeyboardEvent<HTMLTableRowElement>, onSelect: () => void) {
+function handleSelectableRowKeyDown(event: React.KeyboardEvent<HTMLElement>, onSelect: () => void) {
   if (event.key === "Enter" || event.key === " ") {
     event.preventDefault();
     onSelect();

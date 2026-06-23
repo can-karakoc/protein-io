@@ -3,7 +3,7 @@
 :root {
   --pio-white: #ffffff;
   --pio-paper: #fbfbf8;
-  --pio-sage: #eef3ea;
+  --pio-sage: #e0ebe5;
   --pio-sky: #e3edf5;
   --pio-sand: #f0eee7;
   --pio-ink: #14140f;
@@ -67,7 +67,7 @@ input {
 .pio-shell {
   min-height: 100vh;
   overflow-x: hidden;
-  background: var(--pio-bg-page);
+  background: linear-gradient(180deg, #fbfbf8 0%, rgba(200, 227, 238, 0.45) 100%);
   color: var(--pio-ink);
 }
 
@@ -81,7 +81,7 @@ input {
 .pio-panel {
   border-radius: var(--pio-radius-lg);
   background: var(--pio-white);
-  box-shadow: var(--pio-shadow-sm);
+  box-shadow: var(--pio-shadow-md);
 }
 
 .pio-panel-nested {
@@ -128,7 +128,7 @@ input {
 
 .pio-button-secondary:hover {
   border-color: color-mix(in srgb, var(--pio-ink) 30%, transparent);
-  background: var(--pio-sand);
+  background: #e5e0d6;
 }
 
 .pio-button-primary:disabled,
@@ -219,16 +219,14 @@ input {
 }
 
 .pio-topnav {
-  border-bottom: 1px solid var(--pio-line);
-  background: color-mix(in srgb, var(--pio-paper) 86%, transparent);
-  backdrop-filter: blur(18px);
+  background: transparent;
 }
 
 .pio-label {
   color: var(--pio-graphite);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -244,7 +242,7 @@ input {
 
 .pio-section-title {
   color: var(--pio-ink);
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 700;
 }
 
