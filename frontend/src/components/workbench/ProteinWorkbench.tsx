@@ -1,7 +1,7 @@
 "use client";
 
 import { Atom, Database, Download, FileUp, Search, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { StructureViewer } from "@/components/viewer/StructureViewer";
 import { ExploreSidebar } from "@/components/workbench/ExploreSidebar";
@@ -142,6 +142,7 @@ export function ProteinWorkbench() {
   const [comparisonFileB, setComparisonFileB] = useState<File | null>(null);
   const [comparison, setComparison] = useState<StructureComparisonResponse | null>(null);
   const [selection, setSelection] = useState<ViewerSelection | null>(null);
+  const viewerColumnRef = useRef<HTMLDivElement | null>(null);
   const [viewerColorMode, setViewerColorMode] = useState<ViewerColorMode>("structure");
   const [contactFilter, setContactFilter] = useState<ContactFilter>("all");
   const [resultsTab, setResultsTab] = useState<ResultsTab>("overview");
@@ -773,7 +774,7 @@ export function ProteinWorkbench() {
           />
 
           {/* Viewer column — white background, columns shadow over it */}
-          <div className="relative h-full min-h-0 bg-white">
+          <div ref={viewerColumnRef} className="relative h-full min-h-0 bg-white">
             <StructureViewer
               structureText={structureText}
               structureFormat={structureFormat}
@@ -805,19 +806,40 @@ export function ProteinWorkbench() {
 
             {/* Selection indicator — only shown when something is selected */}
             {selection && (
-              <div className="absolute bottom-0 left-0 right-0 bg-[rgba(17,22,16,0.04)] px-4 py-2">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="truncate text-[12.5px] font-semibold text-[var(--pio-ink)]">{selection.label}</p>
-                  <button
-                    type="button"
-                    onClick={() => setSelection(null)}
-                    className="shrink-0 text-[11px] text-[var(--pio-graphite)] underline hover:text-[var(--pio-ink)]"
-                  >
-                    Clear
-                  </button>
+              <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between gap-4 bg-[rgba(26,64,106,0.75)] px-5 py-3 backdrop-blur-md">
+                <div className="min-w-0">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-white/50">Selected</p>
+                  <p className="truncate text-[14px] font-bold text-white">{selection.label}</p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setSelection(null)}
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+                  title="Clear selection"
+                >
+                  <X size={13} />
+                </button>
               </div>
             )}
+
+            {/* Floating ligand panel — rendered in viewer column for absolute positioning */}
+            {(() => {
+              const selLigand = selection?.kind === "ligand"
+                ? (analysis?.ligands ?? []).find(l => l.name === selection.residueName && l.chain_id === selection.chainId && l.residue_number === selection.residueNumber) ?? null
+                : null;
+              const selInteraction = selection?.kind === "ligand"
+                ? (analysis?.ligand_interactions ?? []).find(l => l.name === selection.residueName && l.chain_id === selection.chainId && l.residue_number === selection.residueNumber) ?? null
+                : null;
+              return selLigand ? (
+                <FloatingLigandPanel
+                  ligand={selLigand}
+                  interaction={selInteraction}
+                  viewerRef={viewerColumnRef}
+                  onClose={() => setSelection(null)}
+                  onExport={(interaction) => exportSingleLigandCsv(interaction)}
+                />
+              ) : null;
+            })()}
 
             {/* Loading overlay */}
             {isAnyLoading && <LoadingOverlay statusLabel={viewerStatusLabel} />}
@@ -1006,7 +1028,7 @@ function LoadingOverlay({ statusLabel }: { statusLabel: string | null }) {
       : LOADING_LINES[lineIndex];
 
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--pio-sage)]">
+    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white">
       <p className="text-[22px] font-semibold text-[var(--pio-ink)] tracking-tight">
         {headline}
       </p>
@@ -1159,10 +1181,10 @@ function ResultsPanel({
         aria-selected={selectedTab === tab.id}
         onClick={() => preservePanelPosition(() => onTabChange(tab.id))}
         className={[
-          "rounded-full px-3.5 py-[7px] text-[13px] transition-colors",
+          "rounded-[12px] px-3.5 py-[7px] text-[13px] font-semibold transition-colors",
           selectedTab === tab.id
-            ? "bg-[#1A406A] font-semibold text-white"
-            : "font-medium text-[#1A406A] hover:bg-[rgba(26,64,106,0.08)]",
+            ? "bg-[#1A406A] text-white"
+            : "text-[#1A406A] opacity-70 hover:opacity-100 hover:bg-[rgba(26,64,106,0.08)]",
         ].join(" ")}
       >
         {tab.label}
@@ -1173,7 +1195,7 @@ function ResultsPanel({
   return (
     <section ref={panelRef} className="min-w-0">
       <div
-        className="flex flex-col gap-3 px-5 pb-0 pt-4"
+        className="sticky top-0 z-10 flex flex-col gap-3 bg-white px-5 pb-4 pt-4 shadow-[0_1px_0_rgba(17,22,16,0.07)]"
         role="tablist"
         aria-label="Analysis results"
       >
@@ -1208,49 +1230,33 @@ function ResultsPanel({
         ) : null}
 
         {selectedTab === "ligands" ? (
-          <div className="grid min-w-0 gap-4">
-            <LigandTable
-              ligands={ligands}
-              selection={selection}
-              onSelect={onLigandSelect}
-            />
+          <div className="min-w-0" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+            <LigandTable ligands={ligands} selection={selection} onSelect={onLigandSelect} />
             <LigandInteractionPanel ligandInteractions={analysis?.ligand_interactions ?? []} onExport={onExportLigands} />
-            <div className="min-w-0">
-              <LigandDetailPanel
-                ligand={selectedLigand}
-                interaction={selectedLigandInteraction}
-                onExport={onExportSingleLigand}
-              />
-            </div>
           </div>
         ) : null}
 
         {selectedTab === "contacts" ? (
-          <div className="pio-table-card min-w-0">
-            <div className="flex flex-col gap-3 border-b border-[var(--pio-line)] p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="pio-section-title">Contacts</h2>
-                <p className="pio-section-copy mt-1">
-                  Closest atom pair per categorized contact.
-                </p>
-              </div>
-              <div className="flex flex-col gap-2 sm:items-end">
-                <ContactCategoryFilter
-                  value={contactFilter}
-                  onChange={onContactFilterChange}
-                  showLowConfidence={hasContactConfidence}
-                />
-                <button
-                  type="button"
-                  onClick={onExportContacts}
-                  disabled={!allContactCount}
-                  className="pio-button-secondary h-10 px-4"
-                >
-                  <Download className="h-4 w-4" />
-                  Export CSV
-                </button>
-              </div>
+          <div className="min-w-0">
+            {/* Heading row */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "#111610", flex: 1, minWidth: 0 }}>Contacts</h2>
+              <button
+                type="button"
+                onClick={onExportContacts}
+                disabled={!allContactCount}
+                style={{ background: "#C8E3EE", border: "none", borderRadius: "50%", width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: 12, color: "#1A406A", opacity: !allContactCount ? 0.45 : 1 }}
+                title="Export CSV"
+              >
+                <Download size={14} />
+              </button>
             </div>
+            <p style={{ fontSize: 13.5, color: "#636860", lineHeight: 1.5, marginTop: 4 }}>Closest atom pair per categorized contact.</p>
+            <ContactCategoryFilter
+              value={contactFilter}
+              onChange={onContactFilterChange}
+              showLowConfidence={hasContactConfidence}
+            />
             {hasContactConfidence ? (
               <ContactConfidenceSummary
                 lowConfidenceContactCount={lowConfidenceContactCount}
@@ -1719,10 +1725,52 @@ function QualityPanel({ analysis }: { analysis: AnalysisResponse | null }) {
             : "PAE is usually relevant for AlphaFold-style predicted structures.",
     },
   ] as const;
-  const warningRows = [
-    ...analysis.warnings,
-    ...(isPredicted && !paeProvided ? ["Predicted model has no PAE sidecar; treat domain-domain placement cautiously."] : []),
+  const cards: Array<{
+    label: string;
+    value: string | number;
+    description: string;
+    tone: "amber" | "green" | "neutral";
+    fullWidth?: boolean;
+  }> = [
+    {
+      label: "POSSIBLE STERIC CLASHES",
+      value: possibleClashes,
+      description: "These are distance-based flags, not a full stereochemical validation.",
+      tone: "amber",
+    },
+    {
+      label: "VERY CLOSE CONTACTS",
+      value: veryCloseContacts,
+      description: "Atom pairs under 2 Å are worth checking before interpreting contacts.",
+      tone: "amber",
+    },
+    {
+      label: "LIGAND STATE",
+      value: hasLigands ? analysis.summary.ligand_count : "None",
+      description: hasLigands
+        ? "Ligands are available for interaction review."
+        : "No non-water ligands were detected in this structure.",
+      tone: "green",
+    },
+    {
+      label: "LOW-CONFIDENCE RESIDUES",
+      value: analysis.confidence ? lowConfidence : "N/A",
+      description: analysis.confidence
+        ? "Low or very low pLDDT regions should not be over-interpreted."
+        : "No pLDDT confidence data was detected for this structure.",
+      tone: "green",
+    },
+    {
+      label: "PAE SIDECAR",
+      value: paeProvided ? "Provided" : "N/A",
+      description: paeProvided
+        ? "PAE summary is available in the PAE tab."
+        : "PAE is usually relevant for AlphaFold-style predicted structures.",
+      tone: "neutral",
+      fullWidth: true,
+    },
   ];
+
   const closeContactExamples = [
     ...(analysis.interaction_summary?.possible_clashes ?? []),
     ...analysis.contacts.filter((contact) => contact.distance_angstrom < 2),
@@ -1731,56 +1779,76 @@ function QualityPanel({ analysis }: { analysis: AnalysisResponse | null }) {
     .slice(0, 6);
 
   return (
-    <div className="grid gap-4">
-      <div className="pio-panel p-4">
-        <h2 className="pio-section-title">Quality</h2>
-        <p className="pio-section-copy mt-1">
-          Practical validation signals from existing contact, ligand, confidence, and PAE data.
-        </p>
-        <p className="mt-3 rounded-[var(--pio-radius-md)] bg-[var(--pio-amber-pale)] px-3 py-2 text-xs font-semibold text-[var(--pio-amber-deep)]">
+    <div>
+      <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "#111610" }}>Quality</h2>
+      <p style={{ fontSize: 13.5, color: "#636860", lineHeight: 1.5, marginTop: 4 }}>
+        Practical validation signals from existing contact, ligand, confidence, and PAE data.
+      </p>
+
+      <div style={{
+        marginTop: 12,
+        background: "rgba(194,160,64,0.12)",
+        border: "1px solid rgba(194,160,64,0.3)",
+        borderRadius: 10,
+        padding: "10px 14px",
+      }}>
+        <p style={{ fontSize: 12.5, fontWeight: 400, color: "#5C4A00", lineHeight: 1.5 }}>
           These are screening/review signals, not full crystallographic validation or chemical perception.
         </p>
-        <div className="mt-4 grid gap-3 lg:grid-cols-2">
-          {qualityItems.map((item) => (
-            <QualityCheckCard key={item.label} {...item} />
-          ))}
-        </div>
       </div>
 
-      {warningRows.length ? (
-        <div className="pio-alert-caution p-4">
-          <h3 className="text-sm font-semibold text-[var(--pio-amber-deep)]">Warnings to review</h3>
-          <ul className="mt-2 list-inside list-disc space-y-1 text-sm leading-6">
-            {warningRows.map((warning) => (
-              <li key={warning}>{warning}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
+        {cards.map((card) => (
+          <QualityCheckCard key={card.label} {...card} />
+        ))}
+      </div>
 
-      <div className="pio-panel p-4">
-        <h3 className="pio-section-title">Close-contact examples</h3>
-        <p className="pio-section-copy mt-1">
-          Representative contacts flagged as possible clashes or under 2 A.
+      <div style={{ marginTop: 20, borderTop: "1px solid rgba(17,22,16,0.08)", paddingTop: 16 }}>
+        <h3 style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.01em", color: "#111610" }}>
+          Close-Contact Examples
+        </h3>
+        <p style={{ fontSize: 13.5, color: "#636860", marginTop: 4 }}>
+          Representative contacts flagged as possible clashes or under 2 Å.
         </p>
+
         {closeContactExamples.length ? (
-          <div className="pio-table-card mt-3 divide-y divide-[var(--pio-line)]">
-            {closeContactExamples.map((contact) => (
-              <div key={contactKey(contact)} className="grid gap-2 px-3 py-2 text-sm md:grid-cols-[1fr_1fr_auto]">
-                <span className="pio-value">
-                  {contact.chain_a}:{contact.residue_name_a}
-                  {contact.residue_a}.{contact.atom_a}
-                </span>
-                <span className="pio-value">
-                  {contact.chain_b}:{contact.residue_name_b}
-                  {contact.residue_b}.{contact.atom_b}
-                </span>
-                <span className="pio-value">{contact.distance_angstrom.toFixed(3)} A</span>
-              </div>
-            ))}
+          <div style={{ marginTop: 12, overflow: "hidden" }}>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr auto",
+              borderBottom: "1px solid rgba(17,22,16,0.08)",
+              padding: "8px 0",
+            }}>
+              {["ATOM 1", "ATOM 2", "DISTANCE"].map((col) => (
+                <p key={col} style={{
+                  fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "#636860",
+                  textAlign: col === "DISTANCE" ? "right" : "left",
+                }}>{col}</p>
+              ))}
+            </div>
+            {closeContactExamples.map((contact, i) => {
+              const atom1 = `${contact.chain_a}:${contact.residue_name_a}${contact.residue_a}.${contact.atom_a}`;
+              const atom2 = `${contact.chain_b}:${contact.residue_name_b}${contact.residue_b}.${contact.atom_b}`;
+              const dist = `${parseFloat(String(contact.distance_angstrom)).toFixed(3)} Å`;
+              return (
+                <div key={contactKey(contact)} style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr auto",
+                  padding: "10px 0",
+                  borderBottom: i < closeContactExamples.length - 1 ? "1px solid rgba(17,22,16,0.06)" : "none",
+                }}>
+                  <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 500, color: "#111610" }}>{atom1}</span>
+                  <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 500, color: "#111610" }}>{atom2}</span>
+                  <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 600, color: "#111610", textAlign: "right" }}>{dist}</span>
+                </div>
+              );
+            })}
           </div>
         ) : (
-          <p className="pio-section-copy mt-3">No close-contact examples were flagged by the current analysis.</p>
+          <div style={{ textAlign: "center", paddingTop: 24 }}>
+            <ChainNodeIcon size={40} color="rgba(17,22,16,0.15)" />
+            <p style={{ fontSize: 13.5, color: "#636860", marginTop: 12 }}>No close contacts detected.</p>
+          </div>
         )}
       </div>
     </div>
@@ -1790,28 +1858,28 @@ function QualityPanel({ analysis }: { analysis: AnalysisResponse | null }) {
 function QualityCheckCard({
   label,
   value,
-  status,
-  detail,
+  description,
+  tone,
+  fullWidth,
 }: {
   label: string;
   value: string | number;
-  status: "ok" | "review" | "info";
-  detail: string;
+  description: string;
+  tone: "amber" | "green" | "neutral";
+  fullWidth?: boolean;
 }) {
-  const tone =
-    status === "review"
-      ? "bg-[var(--pio-amber-pale)] text-[var(--pio-amber-deep)]"
-      : status === "ok"
-        ? "bg-[var(--pio-green-pale)] text-[var(--pio-green-deep)]"
-        : "bg-[var(--pio-sand)] text-[var(--pio-graphite)]";
+  const bg = tone === "amber" ? "rgba(194,160,64,0.12)" : tone === "green" ? "rgba(74,140,100,0.1)" : "rgba(17,22,16,0.04)";
+  const labelColor = tone === "amber" ? "#5C4A00" : tone === "green" ? "#1B3D28" : "#636860";
+  const valueColor = tone === "amber" ? "#5C4A00" : tone === "green" ? "#1B3D28" : "#111610";
+  const descColor = tone === "amber" ? "rgba(92,74,0,0.7)" : tone === "green" ? "rgba(27,61,40,0.7)" : "#636860";
 
   return (
-    <div className={`rounded-[var(--pio-radius-md)] p-3 ${tone}`}>
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-xs font-medium uppercase tracking-wide">{label}</p>
-        <span className="font-mono text-sm font-semibold">{value}</span>
+    <div style={{ background: bg, borderRadius: 12, padding: "14px 16px", overflow: "hidden", gridColumn: fullWidth ? "1 / -1" : undefined }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <p style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: labelColor, lineHeight: 1.3 }}>{label}</p>
+        <span style={{ fontSize: 22, fontWeight: 700, color: valueColor, lineHeight: 1.1, marginLeft: 8, flexShrink: 0 }}>{value}</span>
       </div>
-      <p className="mt-2 text-xs leading-5">{detail}</p>
+      <p style={{ fontSize: 12, lineHeight: 1.5, marginTop: 8, color: descColor }}>{description}</p>
     </div>
   );
 }
@@ -1819,86 +1887,108 @@ function QualityCheckCard({
 function ProvenancePanel({ provenance, showExport = true }: { provenance: ProvenanceRecord | null; showExport?: boolean }) {
   if (!provenance) {
     return (
-      <div className="pio-panel p-4">
-        <h2 className="pio-section-title">Methods and provenance</h2>
-        <p className="pio-section-copy mt-2">
+      <div>
+        <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "#111610" }}>Methods And Provenance</h2>
+        <p style={{ fontSize: 13.5, color: "#636860", lineHeight: 1.5, marginTop: 4 }}>
           Run an analysis to generate reproducibility details for the current structure.
         </p>
       </div>
     );
   }
 
-  const rows: Array<[string, string | number]> = [
-    ["Input source", provenance.inputSource],
-    ["Source ID", provenance.sourceId],
-    ["File", provenance.fileName],
-    ["Format", provenance.fileFormat],
-    ["Parser", provenance.parser],
-    ["Contact method", provenance.contactMethod],
-    ["Cutoff", `${provenance.contactCutoffAngstrom} A`],
-    ["Structure type", provenance.structureKind],
-    ["PAE sidecar", provenance.paeProvided ? "Provided" : "Not provided"],
-    ["App version", provenance.appVersion],
-    ["Analyzed", formatTimestamp(provenance.analysisTimestamp)],
+  const MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 500 };
+
+  type CardDef = { label: string; value: string; style?: React.CSSProperties; faded?: boolean; fullWidth?: boolean };
+  const cards: CardDef[] = [
+    { label: "INPUT SOURCE", value: provenance.inputSource },
+    { label: "SOURCE ID", value: provenance.sourceId, style: { ...MONO, textTransform: "uppercase" } },
+    { label: "FILE", value: provenance.fileName, style: MONO },
+    { label: "FORMAT", value: provenance.fileFormat, style: MONO },
+    { label: "CUTOFF", value: `${provenance.contactCutoffAngstrom} Å`, style: MONO },
+    { label: "STRUCTURE TYPE", value: provenance.structureKind.charAt(0).toUpperCase() + provenance.structureKind.slice(1) },
+    { label: "PAE SIDECAR", value: provenance.paeProvided ? "Provided" : "Not provided", faded: !provenance.paeProvided },
+    { label: "APP VERSION", value: provenance.appVersion, style: MONO },
+    { label: "ANALYZED", value: new Date(provenance.analysisTimestamp).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) },
+    { label: "PARSER", value: provenance.parser, fullWidth: true },
+    { label: "CONTACT METHOD", value: provenance.contactMethod, fullWidth: true },
   ];
 
-  return (
-    <div className="grid gap-4">
-      <div className="pio-panel p-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h2 className="pio-section-title">Methods and provenance</h2>
-            <p className="pio-section-copy mt-1 max-w-3xl">
-              Reproducibility details for the current analysis. These values describe how the displayed contacts,
-              ligand summaries, confidence warnings, and quality checks were generated.
-            </p>
-            <p className="mt-2 font-mono text-xs text-[var(--pio-graphite)]">
-              Analysis generated with Gemmi parsing and distance-based contact search.
-            </p>
-          </div>
-          {showExport ? <button
-            type="button"
-            onClick={() =>
-              downloadText(
-                JSON.stringify(provenance, null, 2),
-                `${baseExportName(provenance.fileName) || "analysis"}-provenance.json`,
-                "application/json;charset=utf-8",
-              )
-            }
-            className="pio-button-secondary h-10 shrink-0 px-4"
-          >
-            <Download className="h-4 w-4" />
-            Export provenance JSON
-          </button> : null}
-        </div>
+  const hasWarnings = provenance.warnings.length > 0;
 
-        <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-          {rows.map(([label, value]) => (
-            <div key={label} className="pio-kv-card">
-              <p className="pio-label">{label}</p>
-              <p className="pio-value mt-1 break-words text-sm">{value}</p>
-            </div>
-          ))}
-        </div>
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "#111610", flex: 1, minWidth: 0 }}>
+          Methods And Provenance
+        </h2>
+        {showExport ? (
+          <button
+            type="button"
+            onClick={() => downloadText(JSON.stringify(provenance, null, 2), `${baseExportName(provenance.fileName) || "analysis"}-provenance.json`, "application/json;charset=utf-8")}
+            style={{ background: "rgba(17,22,16,0.07)", border: "none", borderRadius: "50%", width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: 12, color: "#111610" }}
+            title="Export provenance JSON"
+          >
+            <Download size={14} />
+          </button>
+        ) : null}
       </div>
 
-      {provenance.warnings.length ? (
-        <div className="pio-alert-caution p-4">
-          <h3 className="text-sm font-semibold text-[var(--pio-amber-deep)]">Recorded warnings</h3>
-          <ul className="mt-2 list-inside list-disc space-y-1 text-sm leading-6">
+      <p style={{ fontSize: 13.5, color: "#636860", lineHeight: 1.5, marginTop: 4 }}>
+        Reproducibility details for the current analysis. These values describe how the displayed contacts,
+        ligand summaries, confidence warnings, and quality checks were generated.
+      </p>
+      <p style={{ fontSize: 13, color: "#636860", marginTop: 10 }}>
+        Analysis generated with Gemmi parsing and distance-based contact search.
+      </p>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 16 }}>
+        {cards.map((card) => (
+          <div key={card.label} style={{
+            background: "rgba(17,22,16,0.04)",
+            borderRadius: 12,
+            padding: "12px 14px",
+            overflow: "hidden",
+            gridColumn: card.fullWidth ? "1 / -1" : undefined,
+          }}>
+            <p style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "#636860" }}>{card.label}</p>
+            <p style={{
+              fontSize: card.style?.fontSize ?? 13,
+              fontWeight: card.style?.fontWeight ?? 500,
+              fontFamily: card.style?.fontFamily ?? "inherit",
+              textTransform: card.style?.textTransform,
+              color: card.faded ? "#636860" : "#111610",
+              marginTop: 6,
+              overflowWrap: "break-word",
+              lineHeight: 1.4,
+            }}>
+              {card.value}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <div style={{
+        marginTop: 16,
+        background: hasWarnings ? "rgba(194,160,64,0.1)" : "rgba(74,140,100,0.08)",
+        border: `1px solid ${hasWarnings ? "rgba(194,160,64,0.3)" : "rgba(74,140,100,0.2)"}`,
+        borderRadius: 10,
+        padding: "12px 14px",
+      }}>
+        <p style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: hasWarnings ? "#5C4A00" : "#1B3D28" }}>
+          RECORDED WARNINGS
+        </p>
+        {hasWarnings ? (
+          <ul style={{ marginTop: 6, paddingLeft: 16 }}>
             {provenance.warnings.map((warning) => (
-              <li key={warning}>{warning}</li>
+              <li key={warning} style={{ fontSize: 12.5, color: "rgba(92,74,0,0.85)", lineHeight: 1.5 }}>{warning}</li>
             ))}
           </ul>
-        </div>
-      ) : (
-        <div className="rounded-[var(--pio-radius-md)] bg-[var(--pio-green-pale)] p-4">
-          <h3 className="text-sm font-semibold text-[var(--pio-green-deep)]">Recorded warnings</h3>
-          <p className="mt-2 text-sm leading-6 text-[var(--pio-ink)]">
+        ) : (
+          <p style={{ fontSize: 12.5, color: "rgba(27,61,40,0.8)", lineHeight: 1.5, marginTop: 6 }}>
             No parser, contact, confidence, or PAE warnings were recorded for this analysis.
           </p>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
@@ -2332,48 +2422,45 @@ function ContactDifferenceList({ title, rows }: { title: string; rows: Structure
 }
 
 function InteractionSummaryPanel({ summary }: { summary: InteractionSummary | null }) {
-  if (!summary) {
-    return null;
-  }
+  if (!summary) return null;
 
-  const items = [
-    ["Protein-protein", summary.protein_protein_count],
-    ["Protein-ligand", summary.protein_ligand_count],
-    ["Protein-water", summary.protein_water_count],
-    ["Ligand-water", summary.ligand_water_count],
-    ["Inter-chain", summary.inter_chain_count],
-    ["Possible clashes", summary.possible_clash_count],
+  const MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)" };
+
+  const metrics: Array<[string, number]> = [
+    ["Protein-Protein", summary.protein_protein_count],
+    ["Protein-Ligand", summary.protein_ligand_count],
+    ["Protein-Water", summary.protein_water_count],
+    ["Ligand-Water", summary.ligand_water_count],
+    ["Inter-Chain", summary.inter_chain_count],
+    ["Possible Clashes", summary.possible_clash_count],
   ];
 
   return (
-    <div className="rounded-[var(--pio-radius-lg)] border border-[var(--pio-line-strong)] bg-white p-4">
-      <h2 className="text-sm font-semibold text-[var(--pio-ink)]">Interaction summary</h2>
-      <p className="mt-1 text-xs leading-5 text-[var(--pio-graphite)]">
+    <div>
+      <h2 style={{ fontSize: 18, fontWeight: 700, color: "#111610", letterSpacing: "-0.015em" }}>Ligand Interaction Summary</h2>
+      <p style={{ fontSize: 13.5, color: "#636860", lineHeight: 1.5, marginTop: 4 }}>
         Distance-based contact categories and top contact participants.
       </p>
-      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map(([label, value]) => (
-          <div key={label} className="flex items-center justify-between rounded-[var(--pio-radius-sm)] border border-[var(--pio-line-strong)] px-3 py-2">
-            <span className="text-sm text-[var(--pio-graphite)]">{label}</span>
-            <span className="font-mono text-sm text-[var(--pio-ink)]">{value}</span>
+
+      {/* Metric cards — 3-col grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 16 }}>
+        {metrics.map(([label, value]) => (
+          <div
+            key={label}
+            style={{ background: "rgba(17,22,16,0.04)", borderRadius: 10, padding: "12px 14px" }}
+          >
+            <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "#636860", textTransform: "uppercase" }}>{label}</p>
+            <p style={{ ...MONO, fontSize: 26, fontWeight: 700, color: "#111610", marginTop: 4, lineHeight: 1 }}>
+              {value.toLocaleString()}
+            </p>
           </div>
         ))}
       </div>
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <TopContactList
-          title="Top residues"
-          rows={summary.top_contacting_residues.map((residue) => [
-            `${residue.chain_id}:${residue.residue_name}${residue.residue_number}`,
-            residue.contact_count,
-          ])}
-        />
-        <TopContactList
-          title="Top ligands"
-          rows={summary.top_contacting_ligands.map((ligand) => [
-            `${ligand.name} ${ligand.chain_id}:${ligand.residue_number}`,
-            ligand.contact_count,
-          ])}
-        />
+
+      {/* Top residue lists — 2-col */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 8 }}>
+        <TopContactList title="Top Residues" rows={summary.top_contacting_residues.map((r) => [`${r.chain_id}:${r.residue_name}${r.residue_number}`, r.contact_count])} />
+        <TopContactList title="Top Residues" rows={summary.top_contacting_ligands.map((l) => [`${l.name} ${l.chain_id}:${l.residue_number}`, l.contact_count])} />
       </div>
     </div>
   );
@@ -2386,79 +2473,66 @@ function LigandInteractionPanel({
   ligandInteractions: LigandInteractionSummary[];
   onExport: () => void;
 }) {
-  if (!ligandInteractions.length) {
-    return null;
-  }
+  if (!ligandInteractions.length) return null;
+
+  const MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)" };
 
   return (
-    <div className="min-w-0 overflow-hidden rounded-[var(--pio-radius-lg)] border border-[var(--pio-line-strong)] bg-white">
-      <div className="flex flex-col gap-3 border-b border-[var(--pio-line-strong)] p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-sm font-semibold text-[var(--pio-ink)]">Ligand interaction summary</h2>
-          <p className="mt-1 text-xs leading-5 text-[var(--pio-graphite)]">
-            Per-ligand contact counts, closest atom pair, contacting residues, and distance distribution.
-          </p>
-        </div>
+    <div style={{ borderTop: "1px solid rgba(17,22,16,0.08)", paddingTop: 16 }}>
+      {/* Heading row */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#111610" }}>Ligand Interaction Summary</h3>
         <button
           type="button"
           onClick={onExport}
-          className="pio-button-secondary px-4 text-sm"
+          style={{ background: "rgba(17,22,16,0.07)", border: "none", borderRadius: "50%", width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#111610" }}
+          title="Export ligand CSV"
         >
-          <Download className="h-4 w-4" />
-          Export ligand CSV
+          <Download size={14} />
         </button>
       </div>
-      <div className="max-w-full overflow-x-auto">
-        <table className="w-full min-w-[980px] text-left text-sm">
-          <thead className="bg-[var(--pio-sand)] text-xs uppercase tracking-wide text-[var(--pio-graphite)]">
-            <tr>
-              <th className="px-4 py-3 font-medium">Ligand</th>
-              <th className="px-4 py-3 font-medium">Contacts</th>
-              <th className="px-4 py-3 font-medium">Protein</th>
-              <th className="px-4 py-3 font-medium">Water</th>
-              <th className="px-4 py-3 font-medium">Clashes</th>
-              <th className="px-4 py-3 font-medium">Closest</th>
-              <th className="px-4 py-3 font-medium">Top residues</th>
-              <th className="px-4 py-3 font-medium">Distance buckets</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--pio-line)]">
-            {ligandInteractions.map((ligand) => (
-              <tr key={`${ligand.name}-${ligand.chain_id}-${ligand.residue_number}`}>
-                <td className="px-4 py-3 font-mono text-[var(--pio-ink)]">
-                  {ligand.name} {ligand.chain_id}:{ligand.residue_number}
-                </td>
-                <td className="px-4 py-3 font-mono text-[var(--pio-ink)]">{ligand.contact_count}</td>
-                <td className="px-4 py-3 font-mono text-[var(--pio-ink)]">{ligand.protein_contact_count}</td>
-                <td className="px-4 py-3 font-mono text-[var(--pio-ink)]">{ligand.water_contact_count}</td>
-                <td className="px-4 py-3 font-mono text-[var(--pio-ink)]">{ligand.possible_clash_count}</td>
-                <td className="px-4 py-3 text-[var(--pio-graphite)]">
-                  {ligand.closest_contact && ligand.closest_distance_angstrom !== null ? (
-                    <span className="font-mono">
-                      {ligand.closest_distance_angstrom.toFixed(3)} A, {ligand.closest_contact.atom_a}-
-                      {ligand.closest_contact.atom_b}
-                    </span>
-                  ) : (
-                    "None"
-                  )}
-                </td>
-                <td className="px-4 py-3 text-[var(--pio-graphite)]">
-                  {ligand.contacting_residues.length
-                    ? ligand.contacting_residues
-                        .map((residue) => `${residue.chain_id}:${residue.residue_name}${residue.residue_number} (${residue.contact_count})`)
-                        .join(", ")
-                    : "None"}
-                </td>
-                <td className="px-4 py-3 font-mono text-[var(--pio-graphite)]">
-                  &lt;2:{ligand.distance_distribution.under_2_angstrom} / 2-3:
-                  {ligand.distance_distribution.two_to_3_angstrom} / 3-4:
-                  {ligand.distance_distribution.three_to_4_angstrom} / &gt;4:
-                  {ligand.distance_distribution.over_4_angstrom}
-                </td>
-              </tr>
+      <p style={{ fontSize: 13, color: "#636860", lineHeight: 1.5, marginTop: 4 }}>
+        Per-ligand contact counts, closest atom pair, contacting residues, and distance distribution.
+      </p>
+
+      {/* Scrollable table */}
+      <div style={{ overflowX: "auto", marginTop: 12, maskImage: "linear-gradient(to right, black 85%, transparent 100%)" }}>
+        <div style={{ minWidth: 700 }}>
+          {/* Header */}
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 2fr 3fr 2fr", columnGap: 12, borderBottom: "1px solid rgba(17,22,16,0.08)", padding: "8px 0" }}>
+            {["LIGAND","CONTACTS","PROTEIN","WATER","CLASHES","CLOSEST","TOP RESIDUES","BUCKETS"].map((col) => (
+              <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "#636860" }}>{col}</p>
             ))}
-          </tbody>
-        </table>
+          </div>
+          {ligandInteractions.map((ligand, i) => (
+            <div key={`${ligand.name}-${ligand.chain_id}-${ligand.residue_number}`}>
+              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 2fr 3fr 2fr", columnGap: 12, padding: "10px 0", alignItems: "start" }}>
+                <p style={{ ...MONO, fontSize: 12, color: "#111610" }}>{ligand.name} {ligand.chain_id}:{ligand.residue_number}</p>
+                <p style={{ ...MONO, fontSize: 13, fontWeight: 500, color: "#111610" }}>{ligand.contact_count}</p>
+                <p style={{ ...MONO, fontSize: 13, fontWeight: 500, color: "#111610" }}>{ligand.protein_contact_count}</p>
+                <p style={{ ...MONO, fontSize: 13, fontWeight: 500, color: "#111610" }}>{ligand.water_contact_count}</p>
+                <p style={{ ...MONO, fontSize: 13, fontWeight: 500, color: "#111610" }}>{ligand.possible_clash_count}</p>
+                <div>
+                  {ligand.closest_contact && ligand.closest_distance_angstrom !== null ? (
+                    <>
+                      <p style={{ ...MONO, fontSize: 11, fontWeight: 700, color: "#111610" }}>{ligand.closest_distance_angstrom.toFixed(3)} Å</p>
+                      <p style={{ ...MONO, fontSize: 10, color: "#636860", marginTop: 2 }}>{ligand.closest_contact.atom_a}–{ligand.closest_contact.atom_b}</p>
+                    </>
+                  ) : <p style={{ fontSize: 12, color: "#636860" }}>—</p>}
+                </div>
+                <p style={{ ...MONO, fontSize: 11, color: "#636860", maxWidth: 180, overflowWrap: "break-word" }}>
+                  {ligand.contacting_residues.length
+                    ? ligand.contacting_residues.map(r => `${r.chain_id}:${r.residue_name}${r.residue_number}(${r.contact_count})`).join(", ")
+                    : "—"}
+                </p>
+                <p style={{ ...MONO, fontSize: 11, color: "#111610" }}>
+                  {"<2:"}{ligand.distance_distribution.under_2_angstrom}{" / 2–3:"}{ligand.distance_distribution.two_to_3_angstrom}{" / 3–4:"}{ligand.distance_distribution.three_to_4_angstrom}{" / >4:"}{ligand.distance_distribution.over_4_angstrom}
+                </p>
+              </div>
+              {i < ligandInteractions.length - 1 && <div style={{ height: 1, background: "rgba(17,22,16,0.06)" }} />}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -2593,20 +2667,17 @@ function DistanceBucket({ label, value }: { label: string; value: number }) {
 }
 
 function TopContactList({ title, rows }: { title: string; rows: Array<[string, number]> }) {
+  const MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)" };
   return (
-    <div>
-      <p className="text-xs font-medium uppercase tracking-wide text-[var(--pio-graphite)]">{title}</p>
-      {rows.length ? (
-        <div className="mt-2 divide-y divide-[var(--pio-line)] border border-[var(--pio-line-strong)]">
-          {rows.map(([label, count]) => (
-            <div key={label} className="flex items-center justify-between px-3 py-2">
-              <span className="font-mono text-sm text-[var(--pio-ink)]">{label}</span>
-              <span className="font-mono text-sm text-[var(--pio-ink)]">{count}</span>
-            </div>
-          ))}
+    <div style={{ background: "rgba(17,22,16,0.04)", borderRadius: 10, padding: "12px 14px" }}>
+      <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "#636860", textTransform: "uppercase", marginBottom: 8 }}>{title}</p>
+      {rows.length ? rows.map(([label, count]) => (
+        <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "3px 0" }}>
+          <span style={{ ...MONO, fontSize: 12.5, color: "#111610" }}>{label}</span>
+          <span style={{ ...MONO, fontSize: 12.5, fontWeight: 700, color: "#111610" }}>{count}</span>
         </div>
-      ) : (
-        <p className="mt-2 text-sm text-[var(--pio-graphite)]">No rows.</p>
+      )) : (
+        <p style={{ fontSize: 12.5, color: "#636860" }}>—</p>
       )}
     </div>
   );
@@ -2713,17 +2784,23 @@ function ContactCategoryFilter({
   }
 
   return (
-    <div className="flex max-w-full flex-wrap justify-end gap-1">
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
       {options.map(([option, label]) => (
         <button
           key={option}
           type="button"
           onClick={() => onChange(option)}
-          className={`h-8 border px-2 text-xs font-medium ${
-            value === option
-              ? "border-[var(--pio-ink)] bg-[var(--pio-ink)] text-[var(--pio-white)]"
-              : "border-[var(--pio-line-strong)] bg-[var(--pio-white)] text-[var(--pio-graphite)] hover:bg-[var(--pio-sand)] hover:text-[var(--pio-ink)]"
-          }`}
+          style={{
+            borderRadius: 999,
+            padding: "6px 14px",
+            fontSize: 12.5,
+            fontWeight: 500,
+            lineHeight: 1,
+            border: `1px solid ${value === option ? "#1A406A" : "rgba(17,22,16,0.1)"}`,
+            background: value === option ? "rgba(199,217,236,0.6)" : "rgba(17,22,16,0.04)",
+            color: value === option ? "#1A406A" : "#636860",
+            transition: "background 150ms, color 150ms, border-color 150ms",
+          }}
         >
           {label}
         </button>
@@ -2810,16 +2887,14 @@ function ChainTable({
                     onClick={() => onSelect(chain)}
                     onKeyDown={(e) => handleSelectableRowKeyDown(e, () => onSelect(chain))}
                     className={`cursor-pointer rounded-[8px] transition-colors duration-150 ${
-                      selected
-                        ? "bg-[rgba(199,217,236,0.6)]"
-                        : "hover:bg-[rgba(17,22,16,0.04)]"
+                      selected ? "" : "hover:bg-[rgba(17,22,16,0.04)]"
                     }`}
                     style={{
                       display: "grid",
                       gridTemplateColumns: CHAIN_GRID,
                       alignItems: "center",
                       padding: "12px",
-                      boxShadow: selected ? "0 0 0 2px #1A406A" : undefined,
+                      background: selected ? "rgba(199,217,236,0.6)" : undefined,
                     }}
                   >
                     <p className="text-[15px] font-semibold text-[#111610]">{chain.id}</p>
@@ -2844,6 +2919,303 @@ function ChainTable({
   );
 }
 
+// ─── FloatingLigandPanel ────────────────────────────────────────────────────
+
+function FloatingLigandPanel({
+  ligand,
+  interaction,
+  viewerRef,
+  onClose,
+  onExport,
+}: {
+  ligand: LigandSummary;
+  interaction: LigandInteractionSummary | null;
+  viewerRef: React.RefObject<HTMLDivElement | null>;
+  onClose: () => void;
+  onExport: (i: LigandInteractionSummary) => void;
+}) {
+  const [minimized, setMinimized] = useState(false);
+  const [pos, setPos] = useState<{ x: number; y: number }>({ x: 16, y: 16 });
+  const dragging = useRef(false);
+  const dragOffset = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  const PANEL_W = 327;
+
+  function clamp(value: number, min: number, max: number) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function startDrag(e: React.MouseEvent) {
+    e.preventDefault();
+    dragging.current = true;
+    dragOffset.current = { dx: e.clientX - pos.x, dy: e.clientY - pos.y };
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+  }
+
+  function onMouseMove(e: MouseEvent) {
+    if (!dragging.current) return;
+    const container = viewerRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    const panelH = panelRef.current?.offsetHeight ?? 44;
+    const newX = clamp(e.clientX - dragOffset.current.dx, 0, rect.width - PANEL_W);
+    const newY = clamp(e.clientY - dragOffset.current.dy, 0, rect.height - panelH);
+    setPos({ x: newX, y: newY });
+  }
+
+  function onMouseUp() {
+    dragging.current = false;
+    window.removeEventListener("mousemove", onMouseMove);
+    window.removeEventListener("mouseup", onMouseUp);
+  }
+
+  useEffect(() => {
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const buckets = interaction?.distance_distribution ?? {
+    under_2_angstrom: 0,
+    two_to_3_angstrom: 0,
+    three_to_4_angstrom: 0,
+    over_4_angstrom: 0,
+  };
+
+  const TEXT: React.CSSProperties = { color: "#1A406A" };
+  const MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)", color: "#1A406A" };
+
+  return (
+    <div
+      ref={panelRef}
+      style={{
+        position: "absolute",
+        left: pos.x,
+        top: pos.y,
+        width: PANEL_W,
+        background: "rgba(217,231,242,0.88)",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
+        borderRadius: 16,
+        border: "1px solid rgba(26,64,106,0.2)",
+        boxShadow: "0 8px 32px rgba(26,64,106,0.18)",
+        overflow: "hidden",
+        zIndex: 30,
+        userSelect: "none",
+      }}
+    >
+      {/* Header */}
+      <div
+        onMouseDown={startDrag}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "10px 12px",
+          cursor: "grab",
+        }}
+      >
+        <p style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.08em", ...TEXT }}>
+          {minimized
+            ? `LIGAND DETAILS — ${ligand.name} ${ligand.chain_id}:${ligand.residue_number}`
+            : "LIGAND DETAILS"}
+        </p>
+        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+          {/* Minimize */}
+          <button
+            type="button"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={() => {
+              setMinimized((m) => {
+                if (!m) {
+                  // expanding to full — re-clamp so bottom edge stays in view
+                  const container = viewerRef.current;
+                  if (container) {
+                    const panelH = 509;
+                    setPos((p) => ({
+                      x: clamp(p.x, 0, container.offsetWidth - PANEL_W),
+                      y: clamp(p.y, 0, container.offsetHeight - panelH),
+                    }));
+                  }
+                }
+                return !m;
+              });
+            }}
+            style={{
+              width: 14, height: 14, borderRadius: "50%",
+              background: minimized ? "#4A724C" : "#C09040",
+              border: "none", cursor: "pointer",
+            }}
+            title={minimized ? "Expand" : "Minimize"}
+          />
+          {/* Close */}
+          <button
+            type="button"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={onClose}
+            style={{
+              width: 14, height: 14, borderRadius: "50%",
+              background: "#6E2A1C",
+              border: "none", cursor: "pointer",
+            }}
+            title="Close"
+          />
+        </div>
+      </div>
+
+      {/* Body */}
+      {!minimized && (
+        <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 12 }}>
+          {/* Ligand name heading */}
+          <div style={{ borderBottom: "1px solid rgba(26,64,106,0.12)", paddingBottom: 10 }}>
+            <p style={{ ...MONO, fontSize: 20, fontWeight: 700, letterSpacing: "-0.01em" }}>
+              {ligand.name} {ligand.chain_id}:{ligand.residue_number}
+            </p>
+          </div>
+
+          {/* Identity section */}
+          <div>
+            <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 5 }}>IDENTITY</p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+              {[
+                ["CHAIN", ligand.chain_id],
+                ["RESIDUE", String(ligand.residue_number)],
+                ["ATOMS", String(ligand.atom_count)],
+              ].map(([label, value]) => (
+                <div
+                  key={label}
+                  style={{ background: "rgba(255,255,255,0.7)", borderRadius: 2, padding: "8px 10px" }}
+                >
+                  <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", ...TEXT, opacity: 0.65 }}>{label}</p>
+                  <p style={{ ...MONO, fontSize: 14, fontWeight: 700, marginTop: 2 }}>{value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Contact count section */}
+          <div>
+            <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 5 }}>CONTACT COUNTS</p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+              {[
+                ["PROTEIN", String(interaction?.protein_contact_count ?? 0)],
+                ["WATER", String(interaction?.water_contact_count ?? 0)],
+                ["CLASHES", String(interaction?.possible_clash_count ?? 0)],
+              ].map(([label, value]) => (
+                <div
+                  key={label}
+                  style={{ background: "rgba(255,255,255,0.7)", borderRadius: 2, padding: "8px 10px" }}
+                >
+                  <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", ...TEXT, opacity: 0.65 }}>{label}</p>
+                  <p style={{ ...MONO, fontSize: 14, fontWeight: 700, marginTop: 2 }}>{value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Closest contact + distance buckets */}
+          <div>
+          <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 5 }}>GEOMETRY</p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+            {/* Closest */}
+            <div style={{ background: "rgba(255,255,255,0.7)", borderRadius: 2, padding: "8px 10px" }}>
+              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", ...TEXT, opacity: 0.65 }}>CLOSEST CONTACT</p>
+              {interaction?.closest_contact && interaction.closest_distance_angstrom != null ? (
+                <>
+                  <p style={{ ...MONO, fontSize: 15, fontWeight: 700, marginTop: 2 }}>
+                    {interaction.closest_distance_angstrom.toFixed(3)} Å
+                  </p>
+                  <p style={{ ...MONO, fontSize: 10, opacity: 0.7, marginTop: 2 }}>
+                    {interaction.closest_contact.atom_a}–{interaction.closest_contact.atom_b}
+                  </p>
+                </>
+              ) : (
+                <p style={{ ...TEXT, fontSize: 13, marginTop: 2, opacity: 0.6 }}>—</p>
+              )}
+            </div>
+            {/* Distance buckets */}
+            <div style={{ background: "rgba(255,255,255,0.7)", borderRadius: 2, padding: "8px 10px" }}>
+              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", ...TEXT, opacity: 0.65 }}>DISTANCE BUCKETS</p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 6px", marginTop: 4 }}>
+                {[
+                  ["<2 Å", buckets.under_2_angstrom],
+                  ["2–3 Å", buckets.two_to_3_angstrom],
+                  ["3–4 Å", buckets.three_to_4_angstrom],
+                  [">4 Å", buckets.over_4_angstrom],
+                ].map(([label, val]) => (
+                  <div key={String(label)} style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: 10, ...TEXT, opacity: 0.65 }}>{label}</span>
+                    <span style={{ ...MONO, fontSize: 10, fontWeight: 700 }}>{val}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          </div>
+
+          {/* Contacting residue chips */}
+          {interaction?.contacting_residues && interaction.contacting_residues.length > 0 && (
+            <div>
+              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 5 }}>CONTACTING RESIDUES</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                {interaction.contacting_residues.map((r) => (
+                  <span
+                    key={`${r.chain_id}-${r.residue_name}-${r.residue_number}`}
+                    style={{
+                      background: "rgba(199,217,236,0.6)",
+                      borderRadius: 9,
+                      padding: "3px 8px",
+                      fontFamily: "var(--font-pio-mono)",
+                      fontSize: 11,
+                      fontWeight: 500,
+                      color: "#1A406A",
+                    }}
+                  >
+                    {r.chain_id}:{r.residue_name}{r.residue_number} ({r.contact_count})
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Export button */}
+          {interaction && (
+            <button
+              type="button"
+              onClick={() => onExport(interaction)}
+              style={{
+                background: "rgba(26,64,106,0.12)",
+                border: "1px solid rgba(26,64,106,0.2)",
+                borderRadius: 8,
+                padding: "8px 12px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                fontSize: 12,
+                fontWeight: 600,
+                ...TEXT,
+                cursor: "pointer",
+              }}
+            >
+              <Download size={13} />
+              Export ligand CSV
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── LigandTable ─────────────────────────────────────────────────────────────
+
+const LIGAND_GRID = "2fr 1fr 1fr 1fr";
+
 function LigandTable({
   ligands,
   selection,
@@ -2854,66 +3226,82 @@ function LigandTable({
   onSelect: (ligand: LigandSummary) => void;
 }) {
   return (
-    <div className="pio-table-card">
-      <div className="border-b border-[var(--pio-line)] p-4">
-        <h2 className="pio-section-title">Ligands</h2>
-        <p className="pio-section-copy mt-1">Non-water hetero residues detected in the structure file.</p>
-      </div>
-      {ligands.length ? (
-        <div className="overflow-x-auto">
-          <table className="pio-responsive-table w-full min-w-[420px] text-left text-sm">
-            <thead className="text-xs uppercase tracking-wide text-[var(--pio-graphite)]">
-              <tr>
-                <th className="px-4 py-3 font-medium">
-                  <span className="sr-only">Select</span>
-                </th>
-                <th className="px-4 py-3 font-medium">Name</th>
-                <th className="px-4 py-3 font-medium">Chain</th>
-                <th className="px-4 py-3 font-medium">Residue</th>
-                <th className="px-4 py-3 font-medium">Atoms</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--pio-line)]">
-              {ligands.map((ligand) => {
-                const selected =
-                  selection?.kind === "ligand" &&
-                  selection.chainId === ligand.chain_id &&
-                  selection.residueNumber === ligand.residue_number &&
-                  selection.residueName === ligand.name;
+    <div className="min-w-0">
+      <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "#111610" }}>Ligands</h2>
+      <p style={{ fontSize: 13.5, color: "#636860", lineHeight: 1.5, marginTop: 4 }}>Non-water hetero residues detected in the structure file.</p>
 
-                return (
-                  <tr
-                    key={`${ligand.name}-${ligand.chain_id}-${ligand.residue_number}`}
+      {ligands.length ? (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: LIGAND_GRID, borderBottom: "1px solid rgba(17,22,16,0.08)", padding: "8px 12px", marginTop: 16 }}>
+            {["NAME", "CHAIN", "RESIDUE", "ATOMS"].map((col) => (
+              <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "#636860" }}>{col}</p>
+            ))}
+          </div>
+          <div style={{ overflow: ligands.length > 6 ? undefined : undefined }}>
+            {ligands.map((ligand, i) => {
+              const selected =
+                selection?.kind === "ligand" &&
+                selection.chainId === ligand.chain_id &&
+                selection.residueNumber === ligand.residue_number &&
+                selection.residueName === ligand.name;
+              return (
+                <div key={`${ligand.name}-${ligand.chain_id}-${ligand.residue_number}`}>
+                  <div
                     role="button"
                     tabIndex={0}
                     aria-pressed={selected}
                     onClick={() => onSelect(ligand)}
-                    onKeyDown={(event) => handleSelectableRowKeyDown(event, () => onSelect(ligand))}
-                    className={selectableRowClass(selected)}
+                    onKeyDown={(e) => handleSelectableRowKeyDown(e, () => onSelect(ligand))}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: LIGAND_GRID,
+                      alignItems: "center",
+                      padding: "10px 12px",
+                      borderRadius: 8,
+                      background: selected ? "rgba(199,217,236,0.6)" : undefined,
+                      border: `2px solid ${selected ? "#1A406A" : "transparent"}`,
+                      cursor: "pointer",
+                    }}
+                    className={selected ? "" : "hover:bg-[rgba(17,22,16,0.04)]"}
                   >
-                    <td data-label="Select" className="w-12 px-4 py-3">
-                      <SelectionButton
-                        selected={selected}
-                        label={`Select ligand ${ligand.name} ${ligand.chain_id}:${ligand.residue_number}`}
-                        onClick={() => onSelect(ligand)}
-                      />
-                    </td>
-                    <td data-label="Name" className="pio-value px-4 py-3">{ligand.name}</td>
-                    <td data-label="Chain" className="pio-value px-4 py-3">{ligand.chain_id}</td>
-                    <td data-label="Residue" className="pio-value px-4 py-3">{ligand.residue_number}</td>
-                    <td data-label="Atoms" className="pio-value px-4 py-3">{ligand.atom_count}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                    <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 13, fontWeight: 600, color: "#111610" }}>{ligand.name}</p>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: "#111610" }}>{ligand.chain_id}</p>
+                    <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 13, fontWeight: 500, color: "#111610" }}>{ligand.residue_number}</p>
+                    <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 13, fontWeight: 500, color: "#111610" }}>{ligand.atom_count}</p>
+                  </div>
+                  {i < ligands.length - 1 && <div style={{ height: 1, background: "rgba(17,22,16,0.06)", margin: "0 12px" }} />}
+                </div>
+              );
+            })}
+          </div>
+        </>
       ) : (
-        <p className="pio-section-copy p-4">No ligand rows yet.</p>
+        <div style={{ textAlign: "center", paddingTop: 32 }}>
+          <ChainNodeIcon size={40} color="rgba(17,22,16,0.15)" />
+          <p style={{ fontSize: 13.5, color: "#636860", marginTop: 12 }}>No ligands detected in this structure.</p>
+        </div>
       )}
     </div>
   );
 }
+
+function contactChipStyle(key: string): React.CSSProperties {
+  if (key === "protein-protein" || key === "residue-residue")
+    return { background: "rgba(202,224,210,0.7)", color: "#1B3D28" };
+  if (key === "protein-ligand")
+    return { background: "rgba(199,217,236,0.7)", color: "#1A406A" };
+  if (key === "protein-water")
+    return { background: "rgba(199,217,236,0.5)", color: "#1A406A" };
+  if (key === "ligand-water")
+    return { background: "rgba(199,217,236,0.6)", color: "#1A406A" };
+  if (key === "inter-chain" || key === "intra-chain")
+    return { background: "rgba(230,220,255,0.6)", color: "#3D1A6A" };
+  if (key === "possible-clash")
+    return { background: "rgba(255,220,210,0.65)", color: "#6A1A1A" };
+  return { background: "rgba(199,217,236,0.6)", color: "#1A406A" };
+}
+
+const CONTACT_GRID = "minmax(120px,1fr) minmax(150px,1.5fr) minmax(100px,1fr)";
 
 function ContactTable({
   contacts,
@@ -2929,76 +3317,80 @@ function ContactTable({
   showConfidence: boolean;
 }) {
   if (!contacts.length) {
-    return <p className="pio-section-copy p-4">Run analysis to populate contacts.</p>;
+    return (
+      <div style={{ textAlign: "center", paddingTop: 32 }}>
+        <ChainNodeIcon size={40} color="rgba(17,22,16,0.15)" />
+        <p style={{ fontSize: 13.5, color: "#636860", marginTop: 12 }}>No contacts match this filter.</p>
+      </div>
+    );
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="pio-responsive-table w-full min-w-[1120px] text-left text-sm">
-        <thead className="text-xs uppercase tracking-wide text-[var(--pio-graphite)]">
-          <tr>
-            <th className="px-4 py-3 font-medium">
-              <span className="sr-only">Select</span>
-            </th>
-            <th className="px-4 py-3 font-medium">Type</th>
-            <th className="px-4 py-3 font-medium">Categories</th>
-            <th className="px-4 py-3 font-medium">Residue A</th>
-            <th className="px-4 py-3 font-medium">Atom A</th>
-            <th className="px-4 py-3 font-medium">Residue B</th>
-            <th className="px-4 py-3 font-medium">Atom B</th>
-            <th className="px-4 py-3 font-medium">Distance</th>
-            {showConfidence ? <th className="px-4 py-3 font-medium">Confidence</th> : null}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-[var(--pio-line)]">
-          {contacts.map((contact) => {
-            const selected = selection?.kind === "contact" && contactKey(selection.contact) === contactKey(contact);
-
-            return (
-              <tr
-                key={contactKey(contact)}
-                role="button"
-                tabIndex={0}
-                aria-pressed={selected}
-                onClick={() => onSelect(contact)}
-                onKeyDown={(event) => handleSelectableRowKeyDown(event, () => onSelect(contact))}
-                className={selectableRowClass(selected)}
-              >
-                <td data-label="Select" className="w-12 px-4 py-3">
-                  <SelectionButton
-                    selected={selected}
-                    label={`Select contact ${contact.chain_a}:${contact.residue_name_a}${contact.residue_a} to ${contact.chain_b}:${contact.residue_name_b}${contact.residue_b}`}
-                    onClick={() => onSelect(contact)}
-                  />
-                </td>
-                <td data-label="Type" className="px-4 py-3"><ContactTypeBadge contact={contact} /></td>
-                <td data-label="Categories" className="px-4 py-3"><ContactCategoryBadges contact={contact} /></td>
-                <td data-label="Residue A" className="pio-value px-4 py-3">
-                  {contact.chain_a}:{contact.residue_name_a}
-                  {contact.residue_a}
-                </td>
-                <td data-label="Atom A" className="pio-value px-4 py-3">{contact.atom_a}</td>
-                <td data-label="Residue B" className="pio-value px-4 py-3">
-                  {contact.chain_b}:{contact.residue_name_b}
-                  {contact.residue_b}
-                </td>
-                <td data-label="Atom B" className="pio-value px-4 py-3">{contact.atom_b}</td>
-                <td data-label="Distance" className="pio-value px-4 py-3">{contact.distance_angstrom.toFixed(3)} A</td>
-                {showConfidence ? (
-                  <td data-label="Confidence" className="px-4 py-3">
-                    <ContactConfidenceBadge contact={contact} />
-                  </td>
-                ) : null}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+    <div style={{ overflowX: "auto", marginTop: 16 }}>
+    <div style={{ minWidth: 420 }}>
+      {/* Header */}
+      <div style={{ display: "grid", gridTemplateColumns: CONTACT_GRID, columnGap: 16, borderBottom: "1px solid rgba(17,22,16,0.08)", padding: "8px 0" }}>
+        {["TYPE", "CATEGORIES", "RESIDUES"].map((col) => (
+          <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "#636860", textAlign: col === "RESIDUES" ? "right" : "left" }}>{col}</p>
+        ))}
+      </div>
+      {/* Rows */}
+      {contacts.map((contact, i) => {
+        const selected = selection?.kind === "contact" && contactKey(selection.contact) === contactKey(contact);
+        const chipBase: React.CSSProperties = { borderRadius: 999, fontWeight: 500, display: "inline-block" };
+        return (
+          <div key={contactKey(contact)} style={{ padding: "0 2px" }}>
+            <div
+              role="button"
+              tabIndex={0}
+              aria-pressed={selected}
+              onClick={() => onSelect(contact)}
+              onKeyDown={(e) => handleSelectableRowKeyDown(e, () => onSelect(contact))}
+              style={{
+                display: "grid",
+                gridTemplateColumns: CONTACT_GRID,
+                columnGap: 16,
+                alignItems: "start",
+                padding: "11px 0",
+                borderRadius: 8,
+                border: `2px solid ${selected ? "#1A406A" : "transparent"}`,
+                background: selected ? "rgba(199,217,236,0.6)" : undefined,
+                cursor: "pointer",
+              }}
+              className={selected ? "" : "hover:bg-[rgba(17,22,16,0.04)]"}
+            >
+              {/* TYPE */}
+              <div>
+                <span style={{ ...chipBase, ...contactChipStyle(contact.contact_type), padding: "3px 10px", fontSize: 11.5 }}>
+                  {contact.contact_type}
+                </span>
+              </div>
+              {/* CATEGORIES */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                {contact.contact_categories.length ? contact.contact_categories.map((cat) => (
+                  <span key={cat} style={{ ...chipBase, ...contactChipStyle(cat), padding: "3px 8px", fontSize: 11 }}>{cat}</span>
+                )) : <span style={{ fontSize: 12, color: "#636860" }}>—</span>}
+              </div>
+              {/* RESIDUES */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 2, alignItems: "flex-end" }}>
+                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 500, color: "#111610" }}>
+                  {contact.chain_a}:{contact.residue_name_a}{contact.residue_a}
+                </span>
+                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 500, color: "#111610" }}>
+                  {contact.chain_b}:{contact.residue_name_b}{contact.residue_b}
+                </span>
+              </div>
+            </div>
+            {i < contacts.length - 1 && <div style={{ height: 1, background: "rgba(17,22,16,0.06)" }} />}
+          </div>
+        );
+      })}
       {totalCount > contacts.length ? (
-        <p className="border-t border-[var(--pio-line)] p-3 text-xs text-[var(--pio-graphite)]">
+        <p style={{ borderTop: "1px solid rgba(17,22,16,0.06)", paddingTop: 8, paddingBottom: 4, fontSize: 12, color: "#636860", marginTop: 4 }}>
           Showing first {contacts.length} of {totalCount} contacts. CSV export includes all rows.
         </p>
       ) : null}
+    </div>
     </div>
   );
 }
@@ -3016,47 +3408,9 @@ function ContactConfidenceBadge({ contact }: { contact: ContactRecord }) {
     .join(" / ");
 
   if (contact.confidence_warning) {
-    return (
-      <span title={label} className="pio-badge pio-badge-warning">
-        Review pLDDT
-      </span>
-    );
+    return <span title={label} className="pio-badge pio-badge-warning">Review pLDDT</span>;
   }
-
-  return (
-    <span title={label} className="pio-badge pio-badge-active">
-      pLDDT OK
-    </span>
-  );
-}
-
-function ContactTypeBadge({ contact }: { contact: ContactRecord }) {
-  const className = contact.contact_type.includes("ligand")
-    ? "pio-badge-metadata"
-    : contact.contact_type.includes("water")
-      ? "pio-badge-neutral"
-      : "pio-badge-active";
-
-  return <span className={`pio-badge ${className}`}>{contact.contact_type}</span>;
-}
-
-function ContactCategoryBadges({ contact }: { contact: ContactRecord }) {
-  if (!contact.contact_categories.length) {
-    return <span className="text-xs text-[var(--pio-graphite)]">None</span>;
-  }
-
-  return (
-    <div className="flex flex-wrap gap-1">
-      {contact.contact_categories.map((category) => (
-        <span
-          key={category}
-          className={`pio-badge ${category === "possible-clash" ? "pio-badge-warning" : "pio-badge-neutral"}`}
-        >
-          {category}
-        </span>
-      ))}
-    </div>
-  );
+  return <span title={label} className="pio-badge pio-badge-active">pLDDT OK</span>;
 }
 
 function selectableRowClass(selected: boolean) {

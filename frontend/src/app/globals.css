@@ -64,6 +64,11 @@ input {
   font-family: inherit;
 }
 
+button:not(:disabled),
+[role="button"] {
+  cursor: pointer;
+}
+
 .pio-shell {
   min-height: 100vh;
   overflow-x: hidden;

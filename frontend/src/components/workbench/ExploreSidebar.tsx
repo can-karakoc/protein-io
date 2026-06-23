@@ -274,7 +274,7 @@ export function ExploreSidebar({
             type="button"
             onClick={onAnalyze}
             disabled={!hasStructure || isLoading}
-            className="flex flex-1 items-center justify-center gap-2 rounded-full bg-[#1A406A] py-[10px] text-[13px] font-semibold text-white transition-colors hover:bg-[#163558] disabled:cursor-not-allowed disabled:opacity-45"
+            className="flex flex-1 items-center justify-center gap-2 rounded-[12px] bg-[#1A406A] py-[10px] text-[13px] font-semibold text-white transition-colors hover:bg-[#163558] disabled:cursor-not-allowed disabled:opacity-45"
           >
             {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
             Analyze
@@ -283,7 +283,7 @@ export function ExploreSidebar({
             <button
               type="button"
               onClick={onReset}
-              className="flex flex-1 items-center justify-center gap-2 rounded-full border border-[rgba(17,22,16,0.14)] bg-white py-[10px] text-[13px] font-semibold text-[#111610] transition-colors hover:bg-[rgba(17,22,16,0.04)]"
+              className="flex flex-1 items-center justify-center gap-2 rounded-[12px] border border-[rgba(17,22,16,0.14)] bg-white py-[10px] text-[13px] font-semibold text-[#111610] transition-colors hover:bg-[rgba(17,22,16,0.04)]"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               Reset

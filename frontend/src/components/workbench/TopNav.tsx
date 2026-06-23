@@ -21,24 +21,17 @@ export function TopNav({ mode, onModeChange }: TopNavProps) {
         <nav className="flex h-full items-center gap-6" aria-label="Workbench mode">
           {MODES.map((item) => {
             const isActive = mode === item.id;
-            if (isActive) {
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => onModeChange(item.id)}
-                  className="flex h-full items-center rounded-[12px] bg-[#1A406A] px-5 text-[13.5px] font-semibold text-white transition-colors"
-                >
-                  {item.label}
-                </button>
-              );
-            }
             return (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => onModeChange(item.id)}
-                className="text-[13.5px] font-semibold text-[var(--pio-ink)] opacity-70 transition-opacity hover:opacity-100"
+                className={[
+                  "flex h-[34px] items-center rounded-[12px] px-5 text-[13.5px] font-semibold transition-colors",
+                  isActive
+                    ? "bg-[#1A406A] text-white"
+                    : "text-[var(--pio-ink)] opacity-70 hover:opacity-100 hover:bg-[rgba(26,64,106,0.07)]",
+                ].join(" ")}
               >
                 {item.label}
               </button>
