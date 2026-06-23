@@ -1292,6 +1292,14 @@ function ResultsPanel({
   );
 }
 
+const REPORT_DIVIDER: React.CSSProperties = { borderTop: "1px solid rgba(17,22,16,0.08)", paddingTop: 24, marginTop: 8 };
+const REPORT_H2: React.CSSProperties = { fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "#111610" };
+const REPORT_SUB: React.CSSProperties = { fontSize: 13.5, color: "#636860", lineHeight: 1.5, marginTop: 4 };
+const REPORT_TILE: React.CSSProperties = { background: "rgba(17,22,16,0.04)", borderRadius: 10, padding: "12px 14px" };
+const REPORT_LABEL: React.CSSProperties = { fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "#636860", textTransform: "uppercase" as const };
+const REPORT_MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)" };
+const REPORT_ICON_BTN: React.CSSProperties = { background: "#C8E3EE", border: "none", borderRadius: "50%", width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#1A406A", cursor: "pointer" };
+
 function ReportWorkspace({
   analysis,
   provenance,
@@ -1315,44 +1323,56 @@ function ReportWorkspace({
 }) {
   if (!analysis) {
     return (
-      <section className="pio-panel p-6">
-        <p className="pio-section-title">No reportable analysis yet</p>
-        <p className="pio-section-copy mt-2 max-w-2xl">
-          Load and analyze a structure first, then return here for a concise summary with methods and provenance.
-        </p>
-        <div className="mt-4 grid gap-2 sm:grid-cols-3">
-          <button type="button" onClick={onLoadSample} className="pio-button-secondary h-10">
-            Load sample
-          </button>
-          <button type="button" onClick={onFocusRcsb} className="pio-button-secondary h-10">
-            Fetch PDB ID
-          </button>
-          <button type="button" onClick={onFocusAlphaFold} className="pio-button-secondary h-10">
-            Fetch AlphaFold
-          </button>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
+        <div style={{ maxWidth: 480, textAlign: "center", padding: "40px 24px" }}>
+          <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(199,217,236,0.4)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+            <Database size={24} color="#1A406A" />
+          </div>
+          <h2 style={{ ...REPORT_H2, fontSize: 20, textAlign: "center" }}>No analysis yet</h2>
+          <p style={{ ...REPORT_SUB, textAlign: "center", marginTop: 8 }}>
+            Load and analyze a structure first, then return here for a concise summary with methods and provenance.
+          </p>
+          <div style={{ display: "flex", gap: 8, marginTop: 24, justifyContent: "center", flexWrap: "wrap" }}>
+            {[["Load sample", onLoadSample], ["Fetch PDB ID", onFocusRcsb], ["Fetch AlphaFold", onFocusAlphaFold]].map(([label, fn]) => (
+              <button key={label as string} type="button" onClick={fn as () => void}
+                style={{ borderRadius: 12, border: "1px solid rgba(17,22,16,0.14)", background: "white", color: "#111610", padding: "9px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                {label as string}
+              </button>
+            ))}
+          </div>
         </div>
-      </section>
+      </div>
     );
   }
 
   return (
-    <section className="grid min-w-0 gap-4">
-      <ReportHeader
-        analysis={analysis}
-        provenance={provenance}
-        onExportContacts={onExportContacts}
-        onExportLigands={onExportLigands}
-        onExportAnalysisJson={onExportAnalysisJson}
-      />
-      <MetadataPanel metadata={analysis.metadata ?? null} />
-      <SummaryCards analysis={analysis} />
-      <InteractionSummaryPanel summary={analysis.interaction_summary ?? null} />
-      <ReportContactSummary contacts={contacts} />
-      <LigandInteractionPanel ligandInteractions={analysis.ligand_interactions} onExport={onExportLigands} />
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 32px 64px" }}>
+      <ReportHeader analysis={analysis} provenance={provenance} onExportContacts={onExportContacts} onExportLigands={onExportLigands} onExportAnalysisJson={onExportAnalysisJson} />
+      <div style={REPORT_DIVIDER}>
+        <MetadataPanel metadata={analysis.metadata ?? null} />
+      </div>
+      <div style={REPORT_DIVIDER}>
+        <SummaryCards analysis={analysis} />
+      </div>
+      <div style={REPORT_DIVIDER}>
+        <InteractionSummaryPanel summary={analysis.interaction_summary ?? null} />
+      </div>
+      <div style={REPORT_DIVIDER}>
+        <ReportContactSummary contacts={contacts} />
+      </div>
+      {analysis.ligand_interactions.length > 0 && (
+        <div style={REPORT_DIVIDER}>
+          <LigandInteractionPanel ligandInteractions={analysis.ligand_interactions} onExport={onExportLigands} />
+        </div>
+      )}
       <ReportConfidenceSummary confidence={analysis.confidence} pae={analysis.pae} />
-      <QualityPanel analysis={analysis} />
-      <ProvenancePanel provenance={provenance} showExport={false} />
-    </section>
+      <div style={REPORT_DIVIDER}>
+        <QualityPanel analysis={analysis} />
+      </div>
+      <div style={REPORT_DIVIDER}>
+        <ProvenancePanel provenance={provenance} showExport={false} />
+      </div>
+    </div>
   );
 }
 
@@ -1376,50 +1396,50 @@ function ReportHeader({
     provenance?.fileName ??
     "Current structure analysis";
 
+  const facts: Array<[string, string]> = [
+    ["Source", String(provenance?.inputSource ?? analysis.metadata?.source ?? "upload")],
+    ["Source ID", String(provenance?.sourceId ?? "N/A")],
+    ["Structure type", String(provenance?.structureKind ?? "uploaded coordinates")],
+    ["Generated", provenance ? formatTimestamp(provenance.analysisTimestamp) : "N/A"],
+  ];
+
+  const exports: Array<[string, () => void, boolean]> = [
+    ["Contacts CSV", onExportContacts, false],
+    ["Ligands CSV", onExportLigands, !analysis.ligand_interactions.length],
+    ["Analysis JSON", onExportAnalysisJson, false],
+  ];
+
   return (
-    <div className="pio-panel p-4">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <p className="pio-badge pio-badge-metadata">Report</p>
-          <h2 className="mt-2 text-[20px] font-bold text-[var(--pio-ink)]">{title}</h2>
-          <p className="pio-section-copy mt-2 max-w-3xl">
-            Clean summary of the current structure metadata, interaction metrics, ligand analysis, confidence signals,
-            quality warnings, and methods/provenance.
+    <div>
+      {/* Title row */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.1em", color: "#1A406A", textTransform: "uppercase", marginBottom: 8 }}>Report</p>
+          <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.02em", color: "#111610", lineHeight: 1.2 }}>{title}</h1>
+          <p style={{ ...REPORT_SUB, maxWidth: 560, marginTop: 8 }}>
+            Structure metadata, interaction metrics, ligand analysis, confidence signals, quality warnings, and provenance.
           </p>
         </div>
-        <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[520px]">
-          <button
-            type="button"
-            onClick={onExportContacts}
-            className="pio-button-secondary h-10 px-3"
-          >
-            <Download className="h-4 w-4" />
-            Contacts CSV
-          </button>
-          <button
-            type="button"
-            onClick={onExportLigands}
-            disabled={!analysis.ligand_interactions.length}
-            className="pio-button-secondary h-10 px-3"
-          >
-            <Download className="h-4 w-4" />
-            Ligands CSV
-          </button>
-          <button
-            type="button"
-            onClick={onExportAnalysisJson}
-            className="pio-button-secondary h-10 px-3"
-          >
-            <Download className="h-4 w-4" />
-            Analysis JSON
-          </button>
+        {/* Export buttons */}
+        <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "center", paddingTop: 4 }}>
+          {exports.map(([label, fn, disabled]) => (
+            <button key={label} type="button" onClick={fn} disabled={disabled}
+              style={{ borderRadius: 12, border: "1px solid rgba(17,22,16,0.14)", background: "white", color: disabled ? "#aaa" : "#111610", padding: "8px 14px", fontSize: 12.5, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 6, opacity: disabled ? 0.45 : 1 }}>
+              <Download size={13} color={disabled ? "#aaa" : "#1A406A"} />
+              {label}
+            </button>
+          ))}
         </div>
       </div>
-      <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        <ReportFact label="Source" value={provenance?.inputSource ?? analysis.metadata?.source ?? "upload"} />
-        <ReportFact label="Source ID" value={provenance?.sourceId ?? "N/A"} />
-        <ReportFact label="Structure type" value={provenance?.structureKind ?? "uploaded coordinates"} />
-        <ReportFact label="Generated" value={provenance ? formatTimestamp(provenance.analysisTimestamp) : "N/A"} />
+
+      {/* Provenance fact tiles */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginTop: 20 }}>
+        {facts.map(([label, value]) => (
+          <div key={label} style={REPORT_TILE}>
+            <p style={REPORT_LABEL}>{label}</p>
+            <p style={{ ...REPORT_MONO, fontSize: 13, fontWeight: 600, color: "#111610", marginTop: 4 }}>{value}</p>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -1427,83 +1447,78 @@ function ReportHeader({
 
 function ReportFact({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="pio-kv-card">
-      <p className="pio-label">{label}</p>
-      <p className="pio-value mt-1 break-words text-sm">{value}</p>
+    <div style={REPORT_TILE}>
+      <p style={REPORT_LABEL}>{label}</p>
+      <p style={{ ...REPORT_MONO, fontSize: 13, fontWeight: 600, color: "#111610", marginTop: 4 }}>{value}</p>
     </div>
   );
 }
 
-function ReportContactSummary({ contacts }: { contacts: ContactRecord[] }) {
-  if (!contacts.length) {
-    return null;
-  }
+const REPORT_CONTACT_GRID = "minmax(200px,2fr) minmax(120px,1fr) minmax(160px,1.5fr) minmax(80px,0.7fr) minmax(80px,0.7fr)";
 
-  const lowConfidenceContacts = contacts.filter((contact) => contact.confidence_warning).length;
-  const closestContacts = [...contacts]
-    .sort((a, b) => a.distance_angstrom - b.distance_angstrom)
-    .slice(0, 8);
+function ReportContactSummary({ contacts }: { contacts: ContactRecord[] }) {
+  if (!contacts.length) return null;
+
+  const lowConfidenceContacts = contacts.filter((c) => c.confidence_warning).length;
+  const closestContacts = [...contacts].sort((a, b) => a.distance_angstrom - b.distance_angstrom).slice(0, 10);
+  const hasConfidence = contacts.some((c) => c.source_residue_confidence || c.target_residue_confidence);
+  const chipBase: React.CSSProperties = { borderRadius: 999, fontWeight: 500, display: "inline-block", fontSize: 11, padding: "3px 8px" };
 
   return (
-    <div className="rounded-[var(--pio-radius-lg)] border border-[var(--pio-line-strong)] bg-white p-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
-          <h2 className="text-sm font-semibold text-[var(--pio-ink)]">Contact report</h2>
-          <p className="mt-1 text-xs leading-5 text-[var(--pio-graphite)]">
-            Closest contacts and confidence-aware review count for the current cutoff.
-          </p>
+          <h2 style={REPORT_H2}>Contact Report</h2>
+          <p style={REPORT_SUB}>Closest 10 contacts by distance for the current cutoff.</p>
         </div>
-        {contacts.some((contact) => contact.source_residue_confidence || contact.target_residue_confidence) ? (
-          <span className="inline-flex border border-[var(--pio-amber)] bg-[var(--pio-amber-pale)] px-3 py-2 text-xs font-medium text-[var(--pio-amber-deep)]">
-            {lowConfidenceContacts} low-confidence contacts
+        {hasConfidence && (
+          <span style={{ background: "rgba(194,160,64,0.12)", border: "1px solid rgba(194,160,64,0.3)", borderRadius: 8, padding: "5px 12px", fontSize: 12, fontWeight: 600, color: "#5C4A00", flexShrink: 0 }}>
+            {lowConfidenceContacts} low-confidence
           </span>
-        ) : null}
+        )}
       </div>
-      <div className="mt-3 overflow-x-auto">
-        <table className="w-full min-w-[760px] text-left text-sm">
-          <thead className="bg-[var(--pio-sand)] text-xs uppercase tracking-wide text-[var(--pio-graphite)]">
-            <tr>
-              <th className="px-3 py-2 font-medium">Contact</th>
-              <th className="px-3 py-2 font-medium">Type</th>
-              <th className="px-3 py-2 font-medium">Categories</th>
-              <th className="px-3 py-2 font-medium">Distance</th>
-              <th className="px-3 py-2 font-medium">Confidence</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--pio-line)]">
-            {closestContacts.map((contact) => (
-              <tr key={contactKey(contact)}>
-                <td className="px-3 py-2 font-mono text-[var(--pio-ink)]">
-                  {contact.chain_a}:{contact.residue_name_a}
-                  {contact.residue_a}.{contact.atom_a} - {contact.chain_b}:{contact.residue_name_b}
-                  {contact.residue_b}.{contact.atom_b}
-                </td>
-                <td className="px-3 py-2 text-[var(--pio-graphite)]">{contact.contact_type}</td>
-                <td className="px-3 py-2 text-[var(--pio-graphite)]">{contact.contact_categories.join(", ")}</td>
-                <td className="px-3 py-2 font-mono text-[var(--pio-graphite)]">{contact.distance_angstrom.toFixed(3)} A</td>
-                <td className="px-3 py-2">
+
+      <div style={{ overflowX: "auto", marginTop: 16 }}>
+        <div style={{ minWidth: 600 }}>
+          {/* Header */}
+          <div style={{ display: "grid", gridTemplateColumns: REPORT_CONTACT_GRID, columnGap: 12, borderBottom: "1px solid rgba(17,22,16,0.08)", padding: "8px 0" }}>
+            {(hasConfidence ? ["ATOMS", "TYPE", "CATEGORIES", "DISTANCE", "CONFIDENCE"] : ["ATOMS", "TYPE", "CATEGORIES", "DISTANCE", ""]).map((col) => (
+              <p key={col} style={{ ...REPORT_LABEL }}>{col}</p>
+            ))}
+          </div>
+          {/* Rows */}
+          {closestContacts.map((contact, i) => (
+            <div key={contactKey(contact)}>
+              <div style={{ display: "grid", gridTemplateColumns: REPORT_CONTACT_GRID, columnGap: 12, padding: "10px 0", alignItems: "start" }}>
+                <p style={{ ...REPORT_MONO, fontSize: 12, color: "#111610" }}>
+                  {contact.chain_a}:{contact.residue_name_a}{contact.residue_a}.{contact.atom_a} – {contact.chain_b}:{contact.residue_name_b}{contact.residue_b}.{contact.atom_b}
+                </p>
+                <div><span style={{ ...chipBase, ...contactChipStyle(contact.contact_type) }}>{contact.contact_type}</span></div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+                  {contact.contact_categories.length ? contact.contact_categories.map((cat) => (
+                    <span key={cat} style={{ ...chipBase, ...contactChipStyle(cat) }}>{cat}</span>
+                  )) : <span style={{ fontSize: 12, color: "#636860" }}>—</span>}
+                </div>
+                <p style={{ ...REPORT_MONO, fontSize: 12.5, fontWeight: 600, color: "#111610" }}>{contact.distance_angstrom.toFixed(3)} Å</p>
+                <div>
                   {contact.source_residue_confidence || contact.target_residue_confidence ? (
                     <ContactConfidenceBadge contact={contact} />
-                  ) : (
-                    <span className="text-xs text-[var(--pio-graphite)]">N/A</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  ) : null}
+                </div>
+              </div>
+              {i < closestContacts.length - 1 && <div style={{ height: 1, background: "rgba(17,22,16,0.06)" }} />}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
 function ReportConfidenceSummary({ confidence, pae }: { confidence: ConfidenceSummary | null; pae: PaeSummary | null }) {
-  if (!confidence && !pae) {
-    return null;
-  }
-
+  if (!confidence && !pae) return null;
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div style={{ ...REPORT_DIVIDER, display: "grid", gap: 24, gridTemplateColumns: confidence && pae ? "1fr 1fr" : "1fr" }}>
       {confidence ? <ConfidenceReportCard confidence={confidence} /> : null}
       {pae ? <PaePanel pae={pae} /> : null}
     </div>
@@ -1511,28 +1526,32 @@ function ReportConfidenceSummary({ confidence, pae }: { confidence: ConfidenceSu
 }
 
 function ConfidenceReportCard({ confidence }: { confidence: ConfidenceSummary }) {
-  const categories = [
-    ["Very high", confidence.very_high_count],
-    ["Confident", confidence.confident_count],
-    ["Low", confidence.low_count],
-    ["Very low", confidence.very_low_count],
-  ] as const;
+  const categories: Array<[string, number, string]> = [
+    ["Very high", confidence.very_high_count, "rgba(74,140,100,0.15)"],
+    ["Confident", confidence.confident_count, "rgba(74,140,100,0.08)"],
+    ["Low", confidence.low_count, "rgba(194,160,64,0.12)"],
+    ["Very low", confidence.very_low_count, "rgba(255,100,80,0.1)"],
+  ];
 
   return (
-    <div className="rounded-[var(--pio-radius-lg)] border border-[var(--pio-line-strong)] bg-white p-4">
-      <h2 className="text-sm font-semibold text-[var(--pio-ink)]">Confidence summary</h2>
-      <p className="mt-1 text-xs leading-5 text-[var(--pio-graphite)]">
-        pLDDT distribution for predicted-structure interpretation.
-      </p>
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        <ReportFact label="Average pLDDT" value={confidence.average_plddt.toFixed(2)} />
-        <ReportFact label="Low-confidence residues" value={confidence.low_confidence_count} />
+    <div>
+      <h2 style={REPORT_H2}>Confidence Summary</h2>
+      <p style={REPORT_SUB}>pLDDT distribution for predicted-structure interpretation.</p>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 14 }}>
+        <div style={REPORT_TILE}>
+          <p style={REPORT_LABEL}>Average pLDDT</p>
+          <p style={{ ...REPORT_MONO, fontSize: 26, fontWeight: 700, color: "#111610", marginTop: 4, lineHeight: 1 }}>{confidence.average_plddt.toFixed(2)}</p>
+        </div>
+        <div style={REPORT_TILE}>
+          <p style={REPORT_LABEL}>Low-confidence residues</p>
+          <p style={{ ...REPORT_MONO, fontSize: 26, fontWeight: 700, color: "#111610", marginTop: 4, lineHeight: 1 }}>{confidence.low_confidence_count.toLocaleString()}</p>
+        </div>
       </div>
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        {categories.map(([label, value]) => (
-          <div key={label} className="flex items-center justify-between rounded-[var(--pio-radius-sm)] border border-[var(--pio-line-strong)] px-3 py-2">
-            <span className="text-sm text-[var(--pio-graphite)]">{label}</span>
-            <span className="font-mono text-sm text-[var(--pio-ink)]">{value}</span>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 8 }}>
+        {categories.map(([label, value, bg]) => (
+          <div key={label} style={{ ...REPORT_TILE, background: bg, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <p style={{ ...REPORT_LABEL, color: "#111610" }}>{label}</p>
+            <p style={{ ...REPORT_MONO, fontSize: 18, fontWeight: 700, color: "#111610" }}>{value.toLocaleString()}</p>
           </div>
         ))}
       </div>
