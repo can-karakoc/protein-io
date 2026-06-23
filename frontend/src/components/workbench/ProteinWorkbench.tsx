@@ -989,16 +989,18 @@ export function ProteinWorkbench() {
 
 function WorkbenchModePlaceholder() {
   return (
-    <section className="pio-panel mx-auto grid max-w-2xl justify-items-center gap-4 p-8 text-center">
+    <section className="mx-auto grid max-w-md justify-items-center gap-4 text-center">
       <Atom className="h-10 w-10 text-[var(--pio-ink)]" />
       <p className="text-xl font-bold text-[var(--pio-ink)]">Compare workspace is coming next</p>
-      <p className="max-w-xl text-sm leading-6 text-[var(--pio-graphite)]">
+      <p className="max-w-sm text-sm leading-6 text-[var(--pio-graphite)]">
         The comparison workflow is available in Explore for now. This mode is reserved for the upcoming dedicated
         structure A/B comparison workspace.
       </p>
-      <p className="pio-badge pio-badge-caution">
-        No structural alignment. No RMSD. No TM-score. No side-by-side 3D superposition yet.
-      </p>
+      <div className="flex flex-wrap justify-center gap-2">
+        {["No structural alignment", "No RMSD", "No TM-score", "No side-by-side 3D superposition"].map((label) => (
+          <span key={label} className="pio-badge pio-badge-caution">{label}</span>
+        ))}
+      </div>
     </section>
   );
 }
