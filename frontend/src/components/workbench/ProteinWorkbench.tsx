@@ -1295,7 +1295,7 @@ function ResultsPanel({
   );
 }
 
-const REPORT_DIVIDER: React.CSSProperties = { borderTop: "1px solid rgba(17,22,16,0.08)", paddingTop: 24, marginTop: 8 };
+const REPORT_DIVIDER: React.CSSProperties = { paddingTop: 24, marginTop: 8 };
 const REPORT_H2: React.CSSProperties = { fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "#111610" };
 const REPORT_SUB: React.CSSProperties = { fontSize: 13.5, color: "#636860", lineHeight: 1.5, marginTop: 4 };
 const REPORT_TILE: React.CSSProperties = { background: "rgba(17,22,16,0.04)", borderRadius: 10, padding: "12px 14px" };
@@ -1525,7 +1525,7 @@ function ReportContactSummary({ contacts }: { contacts: ContactRecord[] }) {
 function ReportConfidenceSummary({ confidence, pae }: { confidence: ConfidenceSummary | null; pae: PaeSummary | null }) {
   if (!confidence && !pae) return null;
   return (
-    <div style={{ ...REPORT_DIVIDER, display: "grid", gap: 24, gridTemplateColumns: confidence && pae ? "1fr 1fr" : "1fr" }}>
+    <div style={{ paddingTop: 24, marginTop: 8, display: "grid", gap: 24, gridTemplateColumns: confidence && pae ? "1fr 1fr" : "1fr" }}>
       {confidence ? <ConfidenceReportCard confidence={confidence} /> : null}
       {pae ? <PaePanel pae={pae} /> : null}
     </div>
@@ -1829,7 +1829,7 @@ function QualityPanel({ analysis }: { analysis: AnalysisResponse | null }) {
         ))}
       </div>
 
-      <div style={{ marginTop: 20, borderTop: "1px solid rgba(17,22,16,0.08)", paddingTop: 16 }}>
+      <div style={{ marginTop: 20, paddingTop: 16 }}>
         <h3 style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.01em", color: "#111610" }}>
           Close-Contact Examples
         </h3>
