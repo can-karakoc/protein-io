@@ -2231,7 +2231,7 @@ function MetadataPanel({ metadata }: { metadata: StructureMetadata | null }) {
 
       {/* Metadata grid */}
       <div
-        className="mt-3 border-t border-[rgba(17,22,16,0.08)] pt-3"
+        className="mt-3 pt-3"
         style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 24px" }}
       >
         {rows.map((row) => (
