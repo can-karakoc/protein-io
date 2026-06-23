@@ -2138,7 +2138,7 @@ function SummaryCards({ analysis }: { analysis: AnalysisResponse | null }) {
   ];
 
   return (
-    <div className="border-t border-[rgba(17,22,16,0.08)] pt-4">
+    <div>
       <div className="flex flex-col gap-2">
         {items.map(([label, value, description]) => (
           <div
@@ -2504,7 +2504,7 @@ function LigandInteractionPanel({
   const MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)" };
 
   return (
-    <div style={{ borderTop: "1px solid rgba(17,22,16,0.08)", paddingTop: 16 }}>
+    <div>
       {/* Heading row */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h3 style={{ fontSize: 15, fontWeight: 700, color: "#111610" }}>Ligand Interaction Summary</h3>
