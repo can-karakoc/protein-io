@@ -2957,7 +2957,7 @@ function FloatingLigandPanel({
   const panelRef = useRef<HTMLDivElement | null>(null);
 
   const PANEL_W = 327;
-  const SELECTION_BAR_H = 52; // height of the frosted selection bar at viewer bottom
+  const SELECTION_BAR_H = 70; // height of the frosted selection bar at viewer bottom
   const EDGE_PAD = 10; // minimum gap between panel and any viewer edge
 
   function clamp(value: number, min: number, max: number) {
