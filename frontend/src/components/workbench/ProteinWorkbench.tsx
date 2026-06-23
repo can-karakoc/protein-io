@@ -900,7 +900,7 @@ export function ProteinWorkbench() {
           </section>
         </div>
       ) : mode === "report" ? (
-        <div className="h-full overflow-y-auto">
+        <div className="h-full overflow-y-auto rounded-[16px] border border-[rgba(20,20,15,0.09)] bg-white shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
           <ReportWorkspace
             analysis={analysis}
             provenance={provenance}
