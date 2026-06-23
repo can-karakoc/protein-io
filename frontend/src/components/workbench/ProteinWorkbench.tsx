@@ -901,8 +901,6 @@ export function ProteinWorkbench() {
         </div>
       ) : mode === "report" ? (
         <div className="h-full overflow-y-auto">
-          <div className="flex min-h-full items-start justify-center p-6">
-            <div className="w-full max-w-[960px] rounded-[16px] border border-[rgba(20,20,15,0.09)] bg-white shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
           <ReportWorkspace
             analysis={analysis}
             provenance={provenance}
@@ -920,8 +918,6 @@ export function ProteinWorkbench() {
               window.requestAnimationFrame(() => document.getElementById("uniprot-id")?.focus());
             }}
           />
-            </div>
-          </div>
         </div>
       ) : (
         <div className="flex h-full items-center justify-center p-8">
@@ -1327,20 +1323,20 @@ function ReportWorkspace({
 }) {
   if (!analysis) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
-        <div style={{ maxWidth: 480, textAlign: "center", padding: "40px 24px" }}>
-          <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(199,217,236,0.4)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
-            <Database size={24} color="#1A406A" />
+      <div className="flex min-h-full items-center justify-center p-8">
+        <div className="w-full max-w-[480px] rounded-[16px] border border-[rgba(20,20,15,0.09)] bg-white p-10 text-center shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
+          <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(199,217,236,0.4)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+            <Database size={22} color="#1A406A" />
           </div>
-          <h2 style={{ ...REPORT_H2, fontSize: 20, textAlign: "center" }}>No analysis yet</h2>
-          <p style={{ ...REPORT_SUB, textAlign: "center", marginTop: 8 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: "#111610" }}>No analysis yet</h2>
+          <p style={{ fontSize: 13.5, color: "#636860", lineHeight: 1.6, marginTop: 8 }}>
             Load and analyze a structure first, then return here for a concise summary with methods and provenance.
           </p>
-          <div style={{ display: "flex", gap: 8, marginTop: 24, justifyContent: "center", flexWrap: "wrap" }}>
-            {[["Load sample", onLoadSample], ["Fetch PDB ID", onFocusRcsb], ["Fetch AlphaFold", onFocusAlphaFold]].map(([label, fn]) => (
-              <button key={label as string} type="button" onClick={fn as () => void}
-                style={{ borderRadius: 12, border: "1px solid rgba(17,22,16,0.14)", background: "white", color: "#111610", padding: "9px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                {label as string}
+          <div style={{ display: "flex", gap: 8, marginTop: 20, justifyContent: "center", flexWrap: "wrap" }}>
+            {([["Load sample", onLoadSample], ["Fetch PDB ID", onFocusRcsb], ["Fetch AlphaFold", onFocusAlphaFold]] as const).map(([label, fn]) => (
+              <button key={label} type="button" onClick={fn}
+                className="rounded-[12px] border border-[rgba(17,22,16,0.14)] bg-white px-4 py-2 text-[13px] font-semibold text-[#111610] hover:bg-[rgba(17,22,16,0.04)]">
+                {label}
               </button>
             ))}
           </div>
@@ -1350,7 +1346,9 @@ function ReportWorkspace({
   }
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 32px 64px" }}>
+    <div className="flex min-h-full items-start justify-center p-6">
+    <div className="w-full max-w-[960px] rounded-[16px] border border-[rgba(20,20,15,0.09)] bg-white shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
+    <div style={{ padding: "32px 36px 56px" }}>
       <ReportHeader analysis={analysis} provenance={provenance} onExportContacts={onExportContacts} onExportLigands={onExportLigands} onExportAnalysisJson={onExportAnalysisJson} />
       <div style={REPORT_DIVIDER}>
         <MetadataPanel metadata={analysis.metadata ?? null} />
@@ -1376,6 +1374,8 @@ function ReportWorkspace({
       <div style={REPORT_DIVIDER}>
         <ProvenancePanel provenance={provenance} showExport={false} />
       </div>
+    </div>
+    </div>
     </div>
   );
 }
@@ -2519,7 +2519,7 @@ function LigandInteractionPanel({
       </p>
 
       {/* Scrollable table */}
-      <div style={{ overflowX: "auto", marginTop: 12, maskImage: "linear-gradient(to right, black 85%, transparent 100%)" }}>
+      <div style={{ overflowX: "auto", marginTop: 12 }}>
         <div style={{ minWidth: 700 }}>
           {/* Header */}
           <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 2fr 3fr 2fr", columnGap: 12, borderBottom: "1px solid rgba(17,22,16,0.08)", padding: "8px 0" }}>
