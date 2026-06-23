@@ -1437,6 +1437,9 @@ function ReportHeader({
               </a>
             ) : null}
           </div>
+          <p style={{ ...REPORT_SUB, maxWidth: 560, marginTop: 8 }}>
+            Structure metadata, interaction metrics, ligand analysis, confidence signals, quality warnings, and provenance.
+          </p>
         </div>
         {/* Export buttons */}
         <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "center", paddingTop: 4 }}>
