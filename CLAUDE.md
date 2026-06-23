@@ -24,6 +24,39 @@ add another `<link>` for them.
 | `frontend/src/components/workbench/WorkbenchShell.tsx` | Layout shell |
 | `frontend/src/components/viewer/StructureViewer.tsx` | Mol* 3-D viewer wrapper |
 
+## Report redesign pass — 2026-06-23/24 (fourth session)
+
+**Branch:** `feat/report-redesign` (NOT merged to main yet)
+
+**Files touched:** `frontend/src/components/workbench/ProteinWorkbench.tsx`
+
+**What changed:**
+- `FloatingLigandPanel` — draggable frosted-glass panel over 3D viewer; drag clamped to viewer bounds using `panelRef.current?.offsetHeight` (dynamic, not hardcoded)
+- Loading overlay → white background
+- Minimize button → `#4A724C` when minimized
+- All pill borders → `rounded-[12px]` everywhere (nav, tabs, filter pills, buttons)
+- Tab nav + top nav: `font-semibold` on both active/inactive states; identical `h-[34px] px-5` on all nav items (prevents layout shift)
+- Tab strip: `sticky top-0 z-10`
+- Row selection highlight: `rgba(199,217,236,0.6)` bg + `2px solid #1A406A` inset border
+- Row border clipping fix: `padding: "0 2px"` wrapper around each row
+- Selection bar at bottom of viewer: dark navy frosted glass (`rgba(26,64,106,0.75)` + `backdrop-blur-md`)
+- Contact filter pills → rectangular card style (not oval), selected = `rgba(199,217,236,0.5)`
+- All download icon buttons → `#C8E3EE` circle fill + `#1A406A` icon color, 30×30px
+- `InteractionSummaryPanel` + `TopContactList` redesigned (3-col metrics, 2-col contact list)
+- `LigandInteractionPanel` — fixed-px column widths (`140px 80px ...`), `minWidth: 1050` to force horizontal scroll (fr-units expand to fill so no scroll appeared)
+- `ContactTable` — `overflowX: "auto"` + `minWidth: 420`; `padding: "0 2px"` prevents border clipping
+- **Report tab** — white card wrapper (only for loaded content, NOT empty state); `REPORT_DIVIDER` = spacing only, no border; title deduped (MetadataPanel heading removed, external link moved to h1 row); `SummaryCards` and `LigandInteractionPanel` internal `borderTop` removed (doubled REPORT_DIVIDER)
+- **Compare placeholder** — matches Report empty state card: white card, icon circle, split caution pills
+- **`DESIGN_SYSTEM.md`** created at repo root — copy-paste ready patterns for all components
+
+**Design constants to reuse (see DESIGN_SYSTEM.md for full reference):**
+- Card shadow: `shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]`
+- Card border: `border border-[rgba(20,20,15,0.09)]`
+- Primary blue: `#1A406A`
+- Selection bg: `rgba(199,217,236,0.6)`
+- Icon circle bg: `rgba(199,217,236,0.4)`
+- Download circle fill: `#C8E3EE`
+
 ## Explore workspace polish pass — 2026-06-22 (third session)
 
 **Files touched:**
