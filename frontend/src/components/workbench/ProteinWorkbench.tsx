@@ -989,19 +989,20 @@ export function ProteinWorkbench() {
 
 function WorkbenchModePlaceholder() {
   return (
-    <section className="mx-auto grid max-w-md justify-items-center gap-4 text-center">
-      <Atom className="h-10 w-10 text-[var(--pio-ink)]" />
-      <p className="text-xl font-bold text-[var(--pio-ink)]">Compare workspace is coming next</p>
-      <p className="max-w-sm text-sm leading-6 text-[var(--pio-graphite)]">
-        The comparison workflow is available in Explore for now. This mode is reserved for the upcoming dedicated
-        structure A/B comparison workspace.
+    <div className="w-full max-w-[480px] rounded-[16px] border border-[rgba(20,20,15,0.09)] bg-white p-10 text-center shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
+      <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(199,217,236,0.4)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+        <Atom size={22} color="#1A406A" />
+      </div>
+      <p className="text-[18px] font-bold text-[#111610]">Compare workspace is coming next</p>
+      <p className="mx-auto mt-2 max-w-[340px] text-[13.5px] leading-[1.6] text-[#636860]">
+        The comparison workflow is available in Explore for now. This mode is reserved for the upcoming dedicated structure A/B comparison workspace.
       </p>
-      <div className="flex flex-wrap justify-center gap-2">
-        {["No structural alignment", "No RMSD", "No TM-score", "No side-by-side 3D superposition"].map((label) => (
+      <div className="mt-5 flex flex-wrap justify-center gap-2">
+        {["No structural alignment", "No RMSD", "No TM-score", "No side-by-side 3D"].map((label) => (
           <span key={label} className="pio-badge pio-badge-caution">{label}</span>
         ))}
       </div>
-    </section>
+    </div>
   );
 }
 
