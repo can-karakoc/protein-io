@@ -3001,8 +3001,8 @@ function FloatingLigandPanel({
   const panelRef = useRef<HTMLDivElement | null>(null);
 
   const PANEL_W = 327;
-  const SELECTION_BAR_H = 70; // height of the frosted selection bar at viewer bottom
-  const EDGE_PAD = 4; // minimum gap between panel and any viewer edge
+  const SELECTION_BAR_H = 60; // height of the frosted selection bar at viewer bottom (py-3 + two text lines ≈ 56px)
+  const SIDE_PAD = 6; // gap from left / right / top edges
 
   function clamp(value: number, min: number, max: number) {
     return Math.max(min, Math.min(max, value));
@@ -3022,8 +3022,8 @@ function FloatingLigandPanel({
     if (!container) return;
     const rect = container.getBoundingClientRect();
     const panelH = panelRef.current?.offsetHeight ?? 44;
-    const newX = clamp(e.clientX - dragOffset.current.dx, EDGE_PAD, rect.width - PANEL_W - EDGE_PAD);
-    const newY = clamp(e.clientY - dragOffset.current.dy, EDGE_PAD, rect.height - panelH - SELECTION_BAR_H - EDGE_PAD);
+    const newX = clamp(e.clientX - dragOffset.current.dx, SIDE_PAD, rect.width - PANEL_W - SIDE_PAD);
+    const newY = clamp(e.clientY - dragOffset.current.dy, SIDE_PAD, rect.height - panelH - SELECTION_BAR_H - SIDE_PAD);
     setPos({ x: newX, y: newY });
   }
 
@@ -3051,8 +3051,8 @@ function FloatingLigandPanel({
     const loop = () => {
       const panelH = panelRef.current?.offsetHeight ?? 44;
       setPos((p) => ({
-        x: clamp(p.x, EDGE_PAD, container.offsetWidth - PANEL_W - EDGE_PAD),
-        y: clamp(p.y, EDGE_PAD, container.offsetHeight - panelH - SELECTION_BAR_H - EDGE_PAD),
+        x: clamp(p.x, SIDE_PAD, container.offsetWidth - PANEL_W - SIDE_PAD),
+        y: clamp(p.y, SIDE_PAD, container.offsetHeight - panelH - SELECTION_BAR_H - SIDE_PAD),
       }));
       raf = requestAnimationFrame(loop);
     };
@@ -3125,8 +3125,8 @@ function FloatingLigandPanel({
                   if (container) {
                     const panelH = 509;
                     setPos((p) => ({
-                      x: clamp(p.x, EDGE_PAD, container.offsetWidth - PANEL_W - EDGE_PAD),
-                      y: clamp(p.y, EDGE_PAD, container.offsetHeight - panelH - SELECTION_BAR_H - EDGE_PAD),
+                      x: clamp(p.x, SIDE_PAD, container.offsetWidth - PANEL_W - SIDE_PAD),
+                      y: clamp(p.y, SIDE_PAD, container.offsetHeight - panelH - SELECTION_BAR_H - SIDE_PAD),
                     }));
                   }
                 }

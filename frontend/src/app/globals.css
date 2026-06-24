@@ -55,7 +55,7 @@ body {
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--pio-green) 35%, transparent);
+  background: rgba(199, 217, 236, 0.65);
   color: var(--pio-ink);
 }
 
