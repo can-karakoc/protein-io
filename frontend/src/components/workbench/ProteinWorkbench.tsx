@@ -147,6 +147,7 @@ export function ProteinWorkbench() {
   const [viewerColorMode, setViewerColorMode] = useState<ViewerColorMode>("structure");
   const [contactFilter, setContactFilter] = useState<ContactFilter>("all");
   const [resultsTab, setResultsTab] = useState<ResultsTab>("overview");
+  const resultsColumnRef = useRef<HTMLElement | null>(null);
   const [inputSource, setInputSource] = useState<InputSource>("upload");
   const [analysisTimestamp, setAnalysisTimestamp] = useState<string | null>(null);
   const [error, setError] = useState<WorkbenchError>(null);
@@ -169,6 +170,10 @@ export function ProteinWorkbench() {
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
   }, []);
+
+  useEffect(() => {
+    if (resultsColumnRef.current) resultsColumnRef.current.scrollTop = 0;
+  }, [resultsTab]);
 
   const hasStructure = structureText.trim().length > 0;
   const contacts = useMemo(() => analysis?.contacts ?? [], [analysis]);
@@ -798,7 +803,7 @@ export function ProteinWorkbench() {
           </div>{/* end hidden lg:block sidebar wrapper */}
 
           {/* Viewer column — white background, columns shadow over it */}
-          <div ref={viewerColumnRef} className="relative min-h-[50svh] md:h-full md:min-h-0 bg-white">
+          <div ref={viewerColumnRef} className="relative min-h-0 bg-white">
             <StructureViewer
               structureText={structureText}
               structureFormat={structureFormat}
@@ -883,7 +888,7 @@ export function ProteinWorkbench() {
           </div>
 
           {/* Results column */}
-          <section className="relative z-[1] flex min-h-[40svh] flex-col overflow-y-auto bg-white md:h-full md:min-h-0 shadow-[-8px_0_24px_rgba(17,22,16,0.07)]">
+          <section ref={resultsColumnRef} className="relative z-[1] min-h-0 overflow-y-auto bg-white border-t border-[rgba(20,20,15,0.09)] md:border-t-0 md:shadow-[-8px_0_24px_rgba(17,22,16,0.07)]">
             <ResultsPanel
               activeTab={resultsTab}
               onTabChange={setResultsTab}
@@ -980,13 +985,29 @@ export function ProteinWorkbench() {
 
     {/* Sidebar drawer — rendered outside WorkbenchShell so position:fixed works
         (Framer Motion transforms on the inner motion.div would otherwise contain it) */}
-    {!isLg && sidebarOpen && (
-      <>
-        <div
+    <AnimatePresence>
+      {!isLg && sidebarOpen && (
+        <motion.div
+          key="backdrop"
           className="wb-sidebar-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18 }}
           onClick={() => setSidebarOpen(false)}
         />
-        <div className="wb-sidebar-drawer open bg-white">
+      )}
+    </AnimatePresence>
+    <AnimatePresence>
+      {!isLg && sidebarOpen && (
+        <motion.div
+          key="drawer"
+          className="wb-sidebar-drawer bg-white"
+          initial={{ x: "-100%" }}
+          animate={{ x: 0 }}
+          exit={{ x: "-100%" }}
+          transition={{ type: "spring", damping: 28, stiffness: 280 }}
+        >
           <div className="flex items-center justify-between border-b border-[rgba(20,20,15,0.08)] px-4 py-3">
             <span className="text-[13px] font-semibold text-[var(--pio-ink)]">Load Structure</span>
             <button
@@ -1023,9 +1044,9 @@ export function ProteinWorkbench() {
             error={error}
             warnings={analysis?.warnings ?? []}
           />
-        </div>
-      </>
-    )}
+        </motion.div>
+      )}
+    </AnimatePresence>
 
     {/* ── Example gallery — hidden for now ── */}
     {false && <section className="mx-auto w-full max-w-[1500px] px-6 py-10">
@@ -1272,10 +1293,6 @@ function ResultsPanel({
     );
   }
 
-  const ROW1_IDS: ResultsTab[] = ["overview", "chains", "ligands", "contacts"];
-  const row1 = visibleTabs.filter((t) => ROW1_IDS.includes(t.id));
-  const row2 = visibleTabs.filter((t) => !ROW1_IDS.includes(t.id));
-
   function TabButton({ tab }: { tab: { id: ResultsTab; label: string } }) {
     return (
       <button
@@ -1285,7 +1302,7 @@ function ResultsPanel({
         aria-selected={selectedTab === tab.id}
         onClick={() => preservePanelPosition(() => onTabChange(tab.id))}
         className={[
-          "rounded-[12px] px-3.5 py-[7px] text-[13px] font-semibold transition-colors",
+          "flex-1 min-w-max whitespace-nowrap text-center rounded-[12px] px-2 sm:px-3.5 py-[7px] text-[13px] font-semibold transition-colors",
           selectedTab === tab.id
             ? "bg-[#1A406A] text-white"
             : "text-[#1A406A] opacity-70 hover:opacity-100 hover:bg-[rgba(26,64,106,0.08)]",
@@ -1299,18 +1316,20 @@ function ResultsPanel({
   return (
     <section ref={panelRef} className="min-w-0">
       <div
-        className="sticky top-0 z-10 flex flex-col gap-3 bg-white px-5 pb-4 pt-4 shadow-[0_1px_0_rgba(17,22,16,0.07)]"
+        className="sticky top-0 z-10 bg-white px-3 sm:px-5 pb-4 pt-4 shadow-[0_1px_0_rgba(17,22,16,0.07)]"
         role="tablist"
         aria-label="Analysis results"
       >
-        <div className="flex gap-0.5">
-          {row1.map((tab) => <TabButton key={tab.id} tab={tab} />)}
-        </div>
-        {row2.length > 0 && (
-          <div className="flex gap-0.5">
-            {row2.map((tab) => <TabButton key={tab.id} tab={tab} />)}
+        {/* relative wrapper lets the fade gradient sit over the right edge */}
+        <div className="relative">
+          <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+            {visibleTabs.map((tab) => <TabButton key={tab.id} tab={tab} />)}
           </div>
-        )}
+          {/* right-edge fade — signals hidden tabs without a scrollbar */}
+          {visibleTabs.length > 4 && (
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white to-transparent" />
+          )}
+        </div>
       </div>
 
       <AnimatePresence mode="wait" initial={false}>
@@ -1325,6 +1344,25 @@ function ResultsPanel({
         {selectedTab === "overview" ? (
           <div className="grid min-w-0 max-w-full gap-6 overflow-hidden">
             <>
+              {analysis.metadata && analysis.metadata.source !== "upload" && (() => {
+                const isAlphaFold = analysis.metadata.source === "alphafold";
+                const rawTitle = analysis.metadata.title ?? analysis.metadata.pdb_id ?? analysis.metadata.uniprot_id ?? "Structure";
+                const title = toTitleCase(rawTitle.replace(/\s+at\s+[\d.]+\s+angstroms?\s+resolution\s*$/i, "").trim());
+                const entryUrl = isAlphaFold ? analysis.metadata.alphafold_url : analysis.metadata.rcsb_url;
+                return (
+                  <div className="flex items-start gap-3">
+                    <h2 className="pio-section-title">{title}</h2>
+                    {entryUrl && (
+                      <a href={entryUrl} target="_blank" rel="noreferrer" aria-label={isAlphaFold ? "AlphaFold DB entry" : "RCSB entry"}
+                        style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: "50%", background: "#1A406A", color: "white", flexShrink: 0, textDecoration: "none" }}>
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                          <path d="M2.5 11.5L11.5 2.5M11.5 2.5H6M11.5 2.5V8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </a>
+                    )}
+                  </div>
+                );
+              })()}
               <MetadataPanel metadata={analysis.metadata ?? null} />
               <SummaryCards analysis={analysis} />
               <InteractionSummaryPanel summary={analysis.interaction_summary ?? null} />
@@ -3062,13 +3100,26 @@ function FloatingLigandPanel({
 }) {
   const [minimized, setMinimized] = useState(false);
   const [pos, setPos] = useState<{ x: number; y: number }>({ x: 16, y: 16 });
+  const [containerW, setContainerW] = useState(400);
   const dragging = useRef(false);
   const dragOffset = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
   const panelRef = useRef<HTMLDivElement | null>(null);
 
-  const PANEL_W = 327;
-  const SELECTION_BAR_H = 60; // height of the frosted selection bar at viewer bottom (py-3 + two text lines ≈ 56px)
-  const SIDE_PAD = 6; // gap from left / right / top edges
+  const MAX_PANEL_W = 327;
+  const SELECTION_BAR_H = 60;
+  const SIDE_PAD = 6;
+  // Panel width adapts to viewer column so it never overflows at narrow desktop sizes
+  const PANEL_W = Math.min(MAX_PANEL_W, containerW - 2 * SIDE_PAD);
+
+  useEffect(() => {
+    const container = viewerRef.current;
+    if (!container) return;
+    setContainerW(container.offsetWidth);
+    const ro = new ResizeObserver((entries) => setContainerW(entries[0].contentRect.width));
+    ro.observe(container);
+    return () => ro.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function clamp(value: number, min: number, max: number) {
     return Math.max(min, Math.min(max, value));
@@ -3088,7 +3139,8 @@ function FloatingLigandPanel({
     if (!container) return;
     const rect = container.getBoundingClientRect();
     const panelH = panelRef.current?.offsetHeight ?? 44;
-    const newX = clamp(e.clientX - dragOffset.current.dx, SIDE_PAD, rect.width - PANEL_W - SIDE_PAD);
+    const pw = Math.min(MAX_PANEL_W, rect.width - 2 * SIDE_PAD);
+    const newX = clamp(e.clientX - dragOffset.current.dx, SIDE_PAD, rect.width - pw - SIDE_PAD);
     const newY = clamp(e.clientY - dragOffset.current.dy, SIDE_PAD, rect.height - panelH - SELECTION_BAR_H - SIDE_PAD);
     setPos({ x: newX, y: newY });
   }

@@ -80,13 +80,15 @@ button:not(:disabled),
 .wb-explore-grid {
   display: grid;
   grid-template-columns: 1fr;
-  height: auto;
-  overflow: visible;
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  height: 100%;
+  overflow: hidden;
 }
 
 @media (min-width: 768px) {
   .wb-explore-grid {
     grid-template-columns: 1fr 320px;
+    grid-template-rows: minmax(0, 1fr);
     height: 100%;
     overflow: hidden;
   }
@@ -96,6 +98,15 @@ button:not(:disabled),
   .wb-explore-grid {
     grid-template-columns: 280px 1fr 400px;
   }
+}
+
+/* ── Hide scrollbar while keeping scroll ──────────────────── */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 
 /* ── Sidebar drawer (mobile/tablet) ───────────────────────── */
@@ -115,12 +126,6 @@ button:not(:disabled),
   z-index: 61;
   overflow-y: auto;
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
-  transform: translateX(-100%);
-  transition: transform 0.22s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-.wb-sidebar-drawer.open {
-  transform: translateX(0);
 }
 
 .pio-wrap {
