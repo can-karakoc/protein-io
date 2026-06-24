@@ -53,6 +53,14 @@
   --pio-highlight-text: #ffffff;
   /* Row selection — tinted background for selected table rows */
   --pio-row-selection-bg: rgba(199, 217, 236, 0.6);
+  /* Quality card tones */
+  --pio-quality-amber-bg: rgba(194, 160, 64, 0.12);
+  --pio-quality-amber-border: rgba(194, 160, 64, 0.30);
+  --pio-quality-amber-fg: #5C4A00;
+  --pio-quality-amber-fg-soft: rgba(92, 74, 0, 0.70);
+  --pio-quality-green-bg: rgba(74, 140, 100, 0.10);
+  --pio-quality-green-fg: #1B3D28;
+  --pio-quality-green-fg-soft: rgba(27, 61, 40, 0.70);
 }
 
 /* ── Dark mode ──────────────────────────────────────────────
@@ -90,6 +98,14 @@
   --pio-highlight-text: #111610;
   /* row selection — navy tint so sky-blue pills stay visible on selected rows */
   --pio-row-selection-bg: rgba(26, 64, 106, 0.45);
+  /* Quality card tones — warm amber / sage green readable on near-black backgrounds */
+  --pio-quality-amber-bg: rgba(217, 176, 92, 0.16);
+  --pio-quality-amber-border: rgba(217, 176, 92, 0.38);
+  --pio-quality-amber-fg: #e8c068;
+  --pio-quality-amber-fg-soft: rgba(232, 192, 104, 0.68);
+  --pio-quality-green-bg: rgba(143, 191, 138, 0.13);
+  --pio-quality-green-fg: #8fbf8a;
+  --pio-quality-green-fg-soft: rgba(143, 191, 138, 0.62);
   /* accent — forest green instead of near-black */
   --pio-accent: #4a9e6e;
   --pio-accent-hover: #5ab87e;

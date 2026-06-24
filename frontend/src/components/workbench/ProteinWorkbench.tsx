@@ -1987,12 +1987,12 @@ function QualityPanel({ analysis }: { analysis: AnalysisResponse | null }) {
 
       <div style={{
         marginTop: 12,
-        background: "rgba(194,160,64,0.12)",
-        border: "1px solid rgba(194,160,64,0.3)",
+        background: "var(--pio-quality-amber-bg)",
+        border: "1px solid var(--pio-quality-amber-border)",
         borderRadius: 10,
         padding: "10px 14px",
       }}>
-        <p style={{ fontSize: 12.5, fontWeight: 400, color: "#5C4A00", lineHeight: 1.5 }}>
+        <p style={{ fontSize: 12.5, fontWeight: 400, color: "var(--pio-quality-amber-fg)", lineHeight: 1.5 }}>
           These are screening/review signals, not full crystallographic validation or chemical perception.
         </p>
       </div>
@@ -2068,10 +2068,10 @@ function QualityCheckCard({
   tone: "amber" | "green" | "neutral";
   fullWidth?: boolean;
 }) {
-  const bg = tone === "amber" ? "rgba(194,160,64,0.12)" : tone === "green" ? "rgba(74,140,100,0.1)" : "var(--pio-paper)";
-  const labelColor = tone === "amber" ? "#5C4A00" : tone === "green" ? "#1B3D28" : "var(--pio-graphite)";
-  const valueColor = tone === "amber" ? "#5C4A00" : tone === "green" ? "#1B3D28" : "var(--pio-ink)";
-  const descColor = tone === "amber" ? "rgba(92,74,0,0.7)" : tone === "green" ? "rgba(27,61,40,0.7)" : "var(--pio-graphite)";
+  const bg = tone === "amber" ? "var(--pio-quality-amber-bg)" : tone === "green" ? "var(--pio-quality-green-bg)" : "var(--pio-paper)";
+  const labelColor = tone === "amber" ? "var(--pio-quality-amber-fg)" : tone === "green" ? "var(--pio-quality-green-fg)" : "var(--pio-graphite)";
+  const valueColor = tone === "amber" ? "var(--pio-quality-amber-fg)" : tone === "green" ? "var(--pio-quality-green-fg)" : "var(--pio-ink)";
+  const descColor = tone === "amber" ? "var(--pio-quality-amber-fg-soft)" : tone === "green" ? "var(--pio-quality-green-fg-soft)" : "var(--pio-graphite)";
 
   return (
     <div style={{ background: bg, borderRadius: 12, padding: "14px 16px", overflow: "hidden", gridColumn: fullWidth ? "1 / -1" : undefined }}>
