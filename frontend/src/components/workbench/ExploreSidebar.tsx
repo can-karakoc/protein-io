@@ -86,7 +86,7 @@ export function ExploreSidebar({
               className={[
                 "flex-1 rounded-[8px] py-[5px] text-[12.5px] font-semibold transition-colors",
                 tab === t.id
-                  ? "bg-[#1A406A] text-white"
+                  ? "bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)]"
                   : "text-[var(--pio-blue-deep)] opacity-60 hover:opacity-100",
               ].join(" ")}
             >

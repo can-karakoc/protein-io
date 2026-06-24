@@ -45,7 +45,7 @@ export function TopNav({ mode, onModeChange, onSidebarToggle }: TopNavProps) {
                 className={[
                   "flex h-[34px] items-center rounded-[12px] px-3 sm:px-5 text-[13px] sm:text-[13.5px] font-semibold transition-colors",
                   isActive
-                    ? "bg-[#1A406A] text-white"
+                    ? "bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)]"
                     : "bg-[rgba(26,64,106,0.04)] text-[var(--pio-ink)] opacity-70 hover:opacity-100 hover:bg-[rgba(26,64,106,0.09)]",
                 ].join(" ")}
               >

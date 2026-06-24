@@ -1168,7 +1168,7 @@ function WorkbenchModePlaceholder() {
   return (
     <div className="w-full max-w-[480px] rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] p-10 text-center shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
       <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(199,217,236,0.4)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-        <Atom size={22} color="#1A406A" />
+        <Atom size={22} color="var(--pio-highlight)" />
       </div>
       <p className="text-[18px] font-bold text-[var(--pio-ink)]">Compare workspace is coming next</p>
       <p className="mx-auto mt-2 max-w-[340px] text-[13.5px] leading-[1.6] text-[var(--pio-graphite)]">
@@ -1360,8 +1360,8 @@ function ResultsPanel({
         className={[
           "flex-1 min-w-max whitespace-nowrap text-center rounded-[12px] px-2 sm:px-3.5 py-[7px] text-[13px] font-semibold transition-colors",
           isActive
-            ? "bg-[#1A406A] text-white"
-            : "text-[#1A406A] opacity-70 hover:opacity-100 hover:bg-[rgba(26,64,106,0.08)]",
+            ? "bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)]"
+            : "text-[var(--pio-highlight)] opacity-70 hover:opacity-100 hover:bg-[var(--pio-line)]",
         ].join(" ")}
       >
         {tab.label}
@@ -1415,7 +1415,7 @@ function ResultsPanel({
                     <h2 className="pio-section-title">{title}</h2>
                     {entryUrl && (
                       <a href={entryUrl} target="_blank" rel="noreferrer" aria-label={isAlphaFold ? "AlphaFold DB entry" : "RCSB entry"}
-                        style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: "50%", background: "#1A406A", color: "white", flexShrink: 0, textDecoration: "none" }}>
+                        style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: "50%", background: "var(--pio-highlight)", color: "var(--pio-highlight-text)", flexShrink: 0, textDecoration: "none" }}>
                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
                           <path d="M2.5 11.5L11.5 2.5M11.5 2.5H6M11.5 2.5V8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
@@ -1451,18 +1451,18 @@ function ResultsPanel({
           <div className="min-w-0">
             {/* Heading row */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "#111610", flex: 1, minWidth: 0 }}>Contacts</h2>
+              <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)", flex: 1, minWidth: 0 }}>Contacts</h2>
               <button
                 type="button"
                 onClick={onExportContacts}
                 disabled={!allContactCount}
-                style={{ background: "#C8E3EE", border: "none", borderRadius: "50%", width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: 12, color: "#1A406A", opacity: !allContactCount ? 0.45 : 1 }}
+                style={{ background: "var(--pio-sky)", border: "none", borderRadius: "50%", width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: 12, color: "var(--pio-highlight)", opacity: !allContactCount ? 0.45 : 1 }}
                 title="Export CSV"
               >
                 <Download size={14} />
               </button>
             </div>
-            <p style={{ fontSize: 13.5, color: "#636860", lineHeight: 1.5, marginTop: 4 }}>Closest atom pair per categorized contact.</p>
+            <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>Closest atom pair per categorized contact.</p>
             <ContactCategoryFilter
               value={contactFilter}
               onChange={onContactFilterChange}
@@ -1505,12 +1505,12 @@ function ResultsPanel({
 }
 
 const REPORT_DIVIDER: React.CSSProperties = { paddingTop: 24, marginTop: 8 };
-const REPORT_H2: React.CSSProperties = { fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "#111610" };
-const REPORT_SUB: React.CSSProperties = { fontSize: 13.5, color: "#636860", lineHeight: 1.5, marginTop: 4 };
-const REPORT_TILE: React.CSSProperties = { background: "rgba(17,22,16,0.04)", borderRadius: 10, padding: "12px 14px" };
-const REPORT_LABEL: React.CSSProperties = { fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "#636860", textTransform: "uppercase" as const };
+const REPORT_H2: React.CSSProperties = { fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)" };
+const REPORT_SUB: React.CSSProperties = { fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 };
+const REPORT_TILE: React.CSSProperties = { background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" };
+const REPORT_LABEL: React.CSSProperties = { fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" as const };
 const REPORT_MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)" };
-const REPORT_ICON_BTN: React.CSSProperties = { background: "#C8E3EE", border: "none", borderRadius: "50%", width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#1A406A", cursor: "pointer" };
+const REPORT_ICON_BTN: React.CSSProperties = { background: "var(--pio-sky)", border: "none", borderRadius: "50%", width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "var(--pio-highlight)", cursor: "pointer" };
 
 function ReportWorkspace({
   analysis,
@@ -1538,7 +1538,7 @@ function ReportWorkspace({
       <div className="flex min-h-full items-center justify-center p-8">
         <div className="w-full max-w-[480px] rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] p-10 text-center shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
           <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(199,217,236,0.4)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-            <Database size={22} color="#1A406A" />
+            <Database size={22} color="var(--pio-highlight)" />
           </div>
           <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--pio-ink)" }}>No analysis yet</h2>
           <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.6, marginTop: 8 }}>
@@ -1634,12 +1634,12 @@ function ReportHeader({
       {/* Title row */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.1em", color: "#1A406A", textTransform: "uppercase", marginBottom: 8 }}>Report</p>
+          <p style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.1em", color: "var(--pio-highlight)", textTransform: "uppercase", marginBottom: 8 }}>Report</p>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.02em", color: "#111610", lineHeight: 1.2 }}>{title}</h1>
+            <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.02em", color: "var(--pio-ink)", lineHeight: 1.2 }}>{title}</h1>
             {entryUrl ? (
               <a href={entryUrl} target="_blank" rel="noreferrer" aria-label={isAlphaFold ? "AlphaFold DB entry" : "RCSB entry"}
-                style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: "50%", background: "#1A406A", color: "white", flexShrink: 0, textDecoration: "none" }}>
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: "50%", background: "var(--pio-highlight)", color: "var(--pio-highlight-text)", flexShrink: 0, textDecoration: "none" }}>
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
                   <path d="M2.5 11.5L11.5 2.5M11.5 2.5H6M11.5 2.5V8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
@@ -1654,8 +1654,8 @@ function ReportHeader({
         <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "center", paddingTop: 4 }}>
           {exports.map(([label, fn, disabled]) => (
             <button key={label} type="button" onClick={fn} disabled={disabled}
-              style={{ borderRadius: 12, border: "1px solid rgba(17,22,16,0.14)", background: "white", color: disabled ? "#aaa" : "#111610", padding: "8px 14px", fontSize: 12.5, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 6, opacity: disabled ? 0.45 : 1 }}>
-              <Download size={13} color={disabled ? "#aaa" : "#1A406A"} />
+              style={{ borderRadius: 12, border: "1px solid var(--pio-line-strong)", background: "var(--pio-white)", color: "var(--pio-ink)", padding: "8px 14px", fontSize: 12.5, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 6, opacity: disabled ? 0.45 : 1 }}>
+              <Download size={13} color={disabled ? "var(--pio-graphite)" : "var(--pio-highlight)"} />
               {label}
             </button>
           ))}
@@ -1667,7 +1667,7 @@ function ReportHeader({
         {facts.map(([label, value]) => (
           <div key={label} style={REPORT_TILE}>
             <p style={REPORT_LABEL}>{label}</p>
-            <p style={{ ...REPORT_MONO, fontSize: 13, fontWeight: 600, color: "#111610", marginTop: 4 }}>{value}</p>
+            <p style={{ ...REPORT_MONO, fontSize: 13, fontWeight: 600, color: "var(--pio-ink)", marginTop: 4 }}>{value}</p>
           </div>
         ))}
       </div>
@@ -1679,7 +1679,7 @@ function ReportFact({ label, value }: { label: string; value: string | number })
   return (
     <div style={REPORT_TILE}>
       <p style={REPORT_LABEL}>{label}</p>
-      <p style={{ ...REPORT_MONO, fontSize: 13, fontWeight: 600, color: "#111610", marginTop: 4 }}>{value}</p>
+      <p style={{ ...REPORT_MONO, fontSize: 13, fontWeight: 600, color: "var(--pio-ink)", marginTop: 4 }}>{value}</p>
     </div>
   );
 }
@@ -1711,7 +1711,7 @@ function ReportContactSummary({ contacts }: { contacts: ContactRecord[] }) {
       <div style={{ overflowX: "auto", marginTop: 16 }}>
         <div style={{ minWidth: 600 }}>
           {/* Header */}
-          <div style={{ display: "grid", gridTemplateColumns: REPORT_CONTACT_GRID, columnGap: 12, borderBottom: "1px solid rgba(17,22,16,0.08)", padding: "8px 0" }}>
+          <div style={{ display: "grid", gridTemplateColumns: REPORT_CONTACT_GRID, columnGap: 12, borderBottom: "1px solid var(--pio-line)", padding: "8px 0" }}>
             {(hasConfidence ? ["ATOMS", "TYPE", "CATEGORIES", "DISTANCE", "CONFIDENCE"] : ["ATOMS", "TYPE", "CATEGORIES", "DISTANCE", ""]).map((col) => (
               <p key={col} style={{ ...REPORT_LABEL }}>{col}</p>
             ))}
@@ -1720,23 +1720,23 @@ function ReportContactSummary({ contacts }: { contacts: ContactRecord[] }) {
           {closestContacts.map((contact, i) => (
             <div key={contactKey(contact)}>
               <div style={{ display: "grid", gridTemplateColumns: REPORT_CONTACT_GRID, columnGap: 12, padding: "10px 0", alignItems: "start" }}>
-                <p style={{ ...REPORT_MONO, fontSize: 12, color: "#111610" }}>
+                <p style={{ ...REPORT_MONO, fontSize: 12, color: "var(--pio-ink)" }}>
                   {contact.chain_a}:{contact.residue_name_a}{contact.residue_a}.{contact.atom_a} – {contact.chain_b}:{contact.residue_name_b}{contact.residue_b}.{contact.atom_b}
                 </p>
                 <div><span style={{ ...chipBase, ...contactChipStyle(contact.contact_type) }}>{contact.contact_type}</span></div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
                   {contact.contact_categories.length ? contact.contact_categories.map((cat) => (
                     <span key={cat} style={{ ...chipBase, ...contactChipStyle(cat) }}>{cat}</span>
-                  )) : <span style={{ fontSize: 12, color: "#636860" }}>—</span>}
+                  )) : <span style={{ fontSize: 12, color: "var(--pio-graphite)" }}>—</span>}
                 </div>
-                <p style={{ ...REPORT_MONO, fontSize: 12.5, fontWeight: 600, color: "#111610" }}>{contact.distance_angstrom.toFixed(3)} Å</p>
+                <p style={{ ...REPORT_MONO, fontSize: 12.5, fontWeight: 600, color: "var(--pio-ink)" }}>{contact.distance_angstrom.toFixed(3)} Å</p>
                 <div>
                   {contact.source_residue_confidence || contact.target_residue_confidence ? (
                     <ContactConfidenceBadge contact={contact} />
                   ) : null}
                 </div>
               </div>
-              {i < closestContacts.length - 1 && <div style={{ height: 1, background: "rgba(17,22,16,0.06)" }} />}
+              {i < closestContacts.length - 1 && <div style={{ height: 1, background: "var(--pio-line)" }} />}
             </div>
           ))}
         </div>
@@ -1770,18 +1770,18 @@ function ConfidenceReportCard({ confidence }: { confidence: ConfidenceSummary })
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 14 }}>
         <div style={REPORT_TILE}>
           <p style={REPORT_LABEL}>Average pLDDT</p>
-          <p style={{ ...REPORT_MONO, fontSize: 26, fontWeight: 700, color: "#111610", marginTop: 4, lineHeight: 1 }}>{confidence.average_plddt.toFixed(2)}</p>
+          <p style={{ ...REPORT_MONO, fontSize: 26, fontWeight: 700, color: "var(--pio-ink)", marginTop: 4, lineHeight: 1 }}>{confidence.average_plddt.toFixed(2)}</p>
         </div>
         <div style={REPORT_TILE}>
           <p style={REPORT_LABEL}>Low-confidence residues</p>
-          <p style={{ ...REPORT_MONO, fontSize: 26, fontWeight: 700, color: "#111610", marginTop: 4, lineHeight: 1 }}>{confidence.low_confidence_count.toLocaleString()}</p>
+          <p style={{ ...REPORT_MONO, fontSize: 26, fontWeight: 700, color: "var(--pio-ink)", marginTop: 4, lineHeight: 1 }}>{confidence.low_confidence_count.toLocaleString()}</p>
         </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 8 }}>
         {categories.map(([label, value, bg]) => (
           <div key={label} style={{ ...REPORT_TILE, background: bg, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <p style={{ ...REPORT_LABEL, color: "#111610" }}>{label}</p>
-            <p style={{ ...REPORT_MONO, fontSize: 18, fontWeight: 700, color: "#111610" }}>{value.toLocaleString()}</p>
+            <p style={{ ...REPORT_LABEL, color: "var(--pio-ink)" }}>{label}</p>
+            <p style={{ ...REPORT_MONO, fontSize: 18, fontWeight: 700, color: "var(--pio-ink)" }}>{value.toLocaleString()}</p>
           </div>
         ))}
       </div>
@@ -1989,8 +1989,8 @@ function QualityPanel({ analysis }: { analysis: AnalysisResponse | null }) {
 
   return (
     <div>
-      <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "#111610" }}>Quality</h2>
-      <p style={{ fontSize: 13.5, color: "#636860", lineHeight: 1.5, marginTop: 4 }}>
+      <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)" }}>Quality</h2>
+      <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>
         Practical validation signals from existing contact, ligand, confidence, and PAE data.
       </p>
 
@@ -2013,10 +2013,10 @@ function QualityPanel({ analysis }: { analysis: AnalysisResponse | null }) {
       </div>
 
       <div style={{ marginTop: 20, paddingTop: 16 }}>
-        <h3 style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.01em", color: "#111610" }}>
+        <h3 style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--pio-ink)" }}>
           Close-Contact Examples
         </h3>
-        <p style={{ fontSize: 13.5, color: "#636860", marginTop: 4 }}>
+        <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", marginTop: 4 }}>
           Representative contacts flagged as possible clashes or under 2 Å.
         </p>
 
@@ -2025,12 +2025,12 @@ function QualityPanel({ analysis }: { analysis: AnalysisResponse | null }) {
             <div style={{
               display: "grid",
               gridTemplateColumns: "1fr 1fr auto",
-              borderBottom: "1px solid rgba(17,22,16,0.08)",
+              borderBottom: "1px solid var(--pio-line)",
               padding: "8px 0",
             }}>
               {["ATOM 1", "ATOM 2", "DISTANCE"].map((col) => (
                 <p key={col} style={{
-                  fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "#636860",
+                  fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)",
                   textAlign: col === "DISTANCE" ? "right" : "left",
                 }}>{col}</p>
               ))}
@@ -2044,19 +2044,19 @@ function QualityPanel({ analysis }: { analysis: AnalysisResponse | null }) {
                   display: "grid",
                   gridTemplateColumns: "1fr 1fr auto",
                   padding: "10px 0",
-                  borderBottom: i < closeContactExamples.length - 1 ? "1px solid rgba(17,22,16,0.06)" : "none",
+                  borderBottom: i < closeContactExamples.length - 1 ? "1px solid var(--pio-line)" : "none",
                 }}>
-                  <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 500, color: "#111610" }}>{atom1}</span>
-                  <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 500, color: "#111610" }}>{atom2}</span>
-                  <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 600, color: "#111610", textAlign: "right" }}>{dist}</span>
+                  <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 500, color: "var(--pio-ink)" }}>{atom1}</span>
+                  <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 500, color: "var(--pio-ink)" }}>{atom2}</span>
+                  <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 600, color: "var(--pio-ink)", textAlign: "right" }}>{dist}</span>
                 </div>
               );
             })}
           </div>
         ) : (
           <div style={{ textAlign: "center", paddingTop: 24 }}>
-            <ChainNodeIcon size={40} color="rgba(17,22,16,0.15)" />
-            <p style={{ fontSize: 13.5, color: "#636860", marginTop: 12 }}>No close contacts detected.</p>
+            <ChainNodeIcon size={40} color="var(--pio-line-strong)" />
+            <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", marginTop: 12 }}>No close contacts detected.</p>
           </div>
         )}
       </div>
@@ -2077,10 +2077,10 @@ function QualityCheckCard({
   tone: "amber" | "green" | "neutral";
   fullWidth?: boolean;
 }) {
-  const bg = tone === "amber" ? "rgba(194,160,64,0.12)" : tone === "green" ? "rgba(74,140,100,0.1)" : "rgba(17,22,16,0.04)";
-  const labelColor = tone === "amber" ? "#5C4A00" : tone === "green" ? "#1B3D28" : "#636860";
-  const valueColor = tone === "amber" ? "#5C4A00" : tone === "green" ? "#1B3D28" : "#111610";
-  const descColor = tone === "amber" ? "rgba(92,74,0,0.7)" : tone === "green" ? "rgba(27,61,40,0.7)" : "#636860";
+  const bg = tone === "amber" ? "rgba(194,160,64,0.12)" : tone === "green" ? "rgba(74,140,100,0.1)" : "var(--pio-paper)";
+  const labelColor = tone === "amber" ? "#5C4A00" : tone === "green" ? "#1B3D28" : "var(--pio-graphite)";
+  const valueColor = tone === "amber" ? "#5C4A00" : tone === "green" ? "#1B3D28" : "var(--pio-ink)";
+  const descColor = tone === "amber" ? "rgba(92,74,0,0.7)" : tone === "green" ? "rgba(27,61,40,0.7)" : "var(--pio-graphite)";
 
   return (
     <div style={{ background: bg, borderRadius: 12, padding: "14px 16px", overflow: "hidden", gridColumn: fullWidth ? "1 / -1" : undefined }}>
@@ -2097,8 +2097,8 @@ function ProvenancePanel({ provenance, showExport = true }: { provenance: Proven
   if (!provenance) {
     return (
       <div>
-        <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "#111610" }}>Methods And Provenance</h2>
-        <p style={{ fontSize: 13.5, color: "#636860", lineHeight: 1.5, marginTop: 4 }}>
+        <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)" }}>Methods And Provenance</h2>
+        <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>
           Run an analysis to generate reproducibility details for the current structure.
         </p>
       </div>
@@ -2127,14 +2127,14 @@ function ProvenancePanel({ provenance, showExport = true }: { provenance: Proven
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "#111610", flex: 1, minWidth: 0 }}>
+        <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)", flex: 1, minWidth: 0 }}>
           Methods And Provenance
         </h2>
         {showExport ? (
           <button
             type="button"
             onClick={() => downloadText(JSON.stringify(provenance, null, 2), `${baseExportName(provenance.fileName) || "analysis"}-provenance.json`, "application/json;charset=utf-8")}
-            style={{ background: "rgba(17,22,16,0.07)", border: "none", borderRadius: "50%", width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: 12, color: "#111610" }}
+            style={{ background: "var(--pio-line-strong)", border: "none", borderRadius: "50%", width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: 12, color: "var(--pio-ink)" }}
             title="Export provenance JSON"
           >
             <Download size={14} />
@@ -2142,30 +2142,30 @@ function ProvenancePanel({ provenance, showExport = true }: { provenance: Proven
         ) : null}
       </div>
 
-      <p style={{ fontSize: 13.5, color: "#636860", lineHeight: 1.5, marginTop: 4 }}>
+      <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>
         Reproducibility details for the current analysis. These values describe how the displayed contacts,
         ligand summaries, confidence warnings, and quality checks were generated.
       </p>
-      <p style={{ fontSize: 13, color: "#636860", marginTop: 10 }}>
+      <p style={{ fontSize: 13, color: "var(--pio-graphite)", marginTop: 10 }}>
         Analysis generated with Gemmi parsing and distance-based contact search.
       </p>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 16 }}>
         {cards.map((card) => (
           <div key={card.label} style={{
-            background: "rgba(17,22,16,0.04)",
+            background: "var(--pio-paper)",
             borderRadius: 12,
             padding: "12px 14px",
             overflow: "hidden",
             gridColumn: card.fullWidth ? "1 / -1" : undefined,
           }}>
-            <p style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "#636860" }}>{card.label}</p>
+            <p style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)" }}>{card.label}</p>
             <p style={{
               fontSize: card.style?.fontSize ?? 13,
               fontWeight: card.style?.fontWeight ?? 500,
               fontFamily: card.style?.fontFamily ?? "inherit",
               textTransform: card.style?.textTransform,
-              color: card.faded ? "#636860" : "#111610",
+              color: card.faded ? "var(--pio-graphite)" : "var(--pio-ink)",
               marginTop: 6,
               overflowWrap: "break-word",
               lineHeight: 1.4,
@@ -2326,13 +2326,13 @@ function SummaryCards({ analysis }: { analysis: AnalysisResponse | null }) {
         {items.map(([label, value, description]) => (
           <div
             key={label}
-            className="flex items-center justify-between rounded-[12px] bg-[#F5F5F5] px-4 py-3"
+            className="flex items-center justify-between rounded-[12px] bg-[var(--pio-paper)] px-4 py-3"
           >
             <div>
-              <p className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-[rgba(17,22,16,0.5)]">{label}</p>
-              <p className="mt-0.5 text-[22px] font-bold leading-none text-[#111610]">{value.toLocaleString()}</p>
+              <p className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">{label}</p>
+              <p className="mt-0.5 text-[22px] font-bold leading-none text-[var(--pio-ink)]">{value.toLocaleString()}</p>
             </div>
-            <p className="max-w-[160px] text-right text-[12px] leading-[1.4] text-[rgba(17,22,16,0.5)]">{description}</p>
+            <p className="max-w-[160px] text-right text-[12px] leading-[1.4] text-[var(--pio-graphite)]">{description}</p>
           </div>
         ))}
       </div>
@@ -2396,11 +2396,11 @@ function MetadataPanel({ metadata }: { metadata: StructureMetadata | null }) {
       >
         {rows.map((row) => (
           <div key={row.label} className="cursor-pointer rounded-[6px] px-2 py-1.5 transition-colors hover:bg-[var(--pio-sky)]">
-            <p className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-[#636860]">{row.label}</p>
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">{row.label}</p>
             {row.mono ? (
-              <p className="mt-0.5 font-mono text-[12px] font-medium text-[#111610]">{row.value}</p>
+              <p className="mt-0.5 font-mono text-[12px] font-medium text-[var(--pio-ink)]">{row.value}</p>
             ) : (
-              <p className="mt-0.5 text-[13px] font-medium text-[#111610]">{row.value}</p>
+              <p className="mt-0.5 text-[13px] font-medium text-[var(--pio-ink)]">{row.value}</p>
             )}
           </div>
         ))}
@@ -2622,8 +2622,8 @@ function InteractionSummaryPanel({ summary }: { summary: InteractionSummary | nu
 
   return (
     <div>
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: "#111610", letterSpacing: "-0.015em" }}>Ligand Interaction Summary</h2>
-      <p style={{ fontSize: 13.5, color: "#636860", lineHeight: 1.5, marginTop: 4 }}>
+      <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--pio-ink)", letterSpacing: "-0.015em" }}>Ligand Interaction Summary</h2>
+      <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>
         Distance-based contact categories and top contact participants.
       </p>
 
@@ -2632,10 +2632,10 @@ function InteractionSummaryPanel({ summary }: { summary: InteractionSummary | nu
         {metrics.map(([label, value]) => (
           <div
             key={label}
-            style={{ background: "rgba(17,22,16,0.04)", borderRadius: 10, padding: "12px 14px" }}
+            style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}
           >
-            <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "#636860", textTransform: "uppercase" }}>{label}</p>
-            <p style={{ ...MONO, fontSize: 26, fontWeight: 700, color: "#111610", marginTop: 4, lineHeight: 1 }}>
+            <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>{label}</p>
+            <p style={{ ...MONO, fontSize: 26, fontWeight: 700, color: "var(--pio-ink)", marginTop: 4, lineHeight: 1 }}>
               {value.toLocaleString()}
             </p>
           </div>
@@ -2666,17 +2666,17 @@ function LigandInteractionPanel({
     <div>
       {/* Heading row */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#111610" }}>Ligand Interaction Summary</h3>
+        <h3 style={{ fontSize: 15, fontWeight: 700, color: "var(--pio-ink)" }}>Ligand Interaction Summary</h3>
         <button
           type="button"
           onClick={onExport}
-          style={{ background: "#C8E3EE", border: "none", borderRadius: "50%", width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#1A406A" }}
+          style={{ background: "var(--pio-sky)", border: "none", borderRadius: "50%", width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "var(--pio-highlight)" }}
           title="Export ligand CSV"
         >
           <Download size={14} />
         </button>
       </div>
-      <p style={{ fontSize: 13, color: "#636860", lineHeight: 1.5, marginTop: 4 }}>
+      <p style={{ fontSize: 13, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>
         Per-ligand contact counts, closest atom pair, contacting residues, and distance distribution.
       </p>
 
@@ -2684,37 +2684,37 @@ function LigandInteractionPanel({
       <div style={{ overflowX: "auto", marginTop: 12 }}>
         <div style={{ minWidth: 1050 }}>
           {/* Header */}
-          <div style={{ display: "grid", gridTemplateColumns: "140px 80px 80px 70px 80px 130px 220px 150px", columnGap: 12, borderBottom: "1px solid rgba(17,22,16,0.08)", padding: "8px 0" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "140px 80px 80px 70px 80px 130px 220px 150px", columnGap: 12, borderBottom: "1px solid var(--pio-line)", padding: "8px 0" }}>
             {["LIGAND","CONTACTS","PROTEIN","WATER","CLASHES","CLOSEST","TOP RESIDUES","BUCKETS"].map((col) => (
-              <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "#636860" }}>{col}</p>
+              <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)" }}>{col}</p>
             ))}
           </div>
           {ligandInteractions.map((ligand, i) => (
             <div key={`${ligand.name}-${ligand.chain_id}-${ligand.residue_number}`}>
               <div style={{ display: "grid", gridTemplateColumns: "140px 80px 80px 70px 80px 130px 220px 150px", columnGap: 12, padding: "10px 0", alignItems: "start" }}>
-                <p style={{ ...MONO, fontSize: 12, color: "#111610" }}>{ligand.name} {ligand.chain_id}:{ligand.residue_number}</p>
-                <p style={{ ...MONO, fontSize: 13, fontWeight: 500, color: "#111610" }}>{ligand.contact_count}</p>
-                <p style={{ ...MONO, fontSize: 13, fontWeight: 500, color: "#111610" }}>{ligand.protein_contact_count}</p>
-                <p style={{ ...MONO, fontSize: 13, fontWeight: 500, color: "#111610" }}>{ligand.water_contact_count}</p>
-                <p style={{ ...MONO, fontSize: 13, fontWeight: 500, color: "#111610" }}>{ligand.possible_clash_count}</p>
+                <p style={{ ...MONO, fontSize: 12, color: "var(--pio-ink)" }}>{ligand.name} {ligand.chain_id}:{ligand.residue_number}</p>
+                <p style={{ ...MONO, fontSize: 13, fontWeight: 500, color: "var(--pio-ink)" }}>{ligand.contact_count}</p>
+                <p style={{ ...MONO, fontSize: 13, fontWeight: 500, color: "var(--pio-ink)" }}>{ligand.protein_contact_count}</p>
+                <p style={{ ...MONO, fontSize: 13, fontWeight: 500, color: "var(--pio-ink)" }}>{ligand.water_contact_count}</p>
+                <p style={{ ...MONO, fontSize: 13, fontWeight: 500, color: "var(--pio-ink)" }}>{ligand.possible_clash_count}</p>
                 <div>
                   {ligand.closest_contact && ligand.closest_distance_angstrom !== null ? (
                     <>
-                      <p style={{ ...MONO, fontSize: 11, fontWeight: 700, color: "#111610" }}>{ligand.closest_distance_angstrom.toFixed(3)} Å</p>
-                      <p style={{ ...MONO, fontSize: 10, color: "#636860", marginTop: 2 }}>{ligand.closest_contact.atom_a}–{ligand.closest_contact.atom_b}</p>
+                      <p style={{ ...MONO, fontSize: 11, fontWeight: 700, color: "var(--pio-ink)" }}>{ligand.closest_distance_angstrom.toFixed(3)} Å</p>
+                      <p style={{ ...MONO, fontSize: 10, color: "var(--pio-graphite)", marginTop: 2 }}>{ligand.closest_contact.atom_a}–{ligand.closest_contact.atom_b}</p>
                     </>
-                  ) : <p style={{ fontSize: 12, color: "#636860" }}>—</p>}
+                  ) : <p style={{ fontSize: 12, color: "var(--pio-graphite)" }}>—</p>}
                 </div>
-                <p style={{ ...MONO, fontSize: 11, color: "#636860", maxWidth: 180, overflowWrap: "break-word" }}>
+                <p style={{ ...MONO, fontSize: 11, color: "var(--pio-graphite)", maxWidth: 180, overflowWrap: "break-word" }}>
                   {ligand.contacting_residues.length
                     ? ligand.contacting_residues.map(r => `${r.chain_id}:${r.residue_name}${r.residue_number}(${r.contact_count})`).join(", ")
                     : "—"}
                 </p>
-                <p style={{ ...MONO, fontSize: 11, color: "#111610" }}>
+                <p style={{ ...MONO, fontSize: 11, color: "var(--pio-ink)" }}>
                   {"<2:"}{ligand.distance_distribution.under_2_angstrom}{" / 2–3:"}{ligand.distance_distribution.two_to_3_angstrom}{" / 3–4:"}{ligand.distance_distribution.three_to_4_angstrom}{" / >4:"}{ligand.distance_distribution.over_4_angstrom}
                 </p>
               </div>
-              {i < ligandInteractions.length - 1 && <div style={{ height: 1, background: "rgba(17,22,16,0.06)" }} />}
+              {i < ligandInteractions.length - 1 && <div style={{ height: 1, background: "var(--pio-line)" }} />}
             </div>
           ))}
         </div>
@@ -2854,15 +2854,15 @@ function DistanceBucket({ label, value }: { label: string; value: number }) {
 function TopContactList({ title, rows }: { title: string; rows: Array<[string, number]> }) {
   const MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)" };
   return (
-    <div style={{ background: "rgba(17,22,16,0.04)", borderRadius: 10, padding: "12px 14px" }}>
-      <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "#636860", textTransform: "uppercase", marginBottom: 8 }}>{title}</p>
+    <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
+      <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase", marginBottom: 8 }}>{title}</p>
       {rows.length ? rows.map(([label, count]) => (
         <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "3px 0" }}>
-          <span style={{ ...MONO, fontSize: 12.5, color: "#111610" }}>{label}</span>
-          <span style={{ ...MONO, fontSize: 12.5, fontWeight: 700, color: "#111610" }}>{count}</span>
+          <span style={{ ...MONO, fontSize: 12.5, color: "var(--pio-ink)" }}>{label}</span>
+          <span style={{ ...MONO, fontSize: 12.5, fontWeight: 700, color: "var(--pio-ink)" }}>{count}</span>
         </div>
       )) : (
-        <p style={{ fontSize: 12.5, color: "#636860" }}>—</p>
+        <p style={{ fontSize: 12.5, color: "var(--pio-graphite)" }}>—</p>
       )}
     </div>
   );
@@ -2904,8 +2904,8 @@ function ContactCategoryFilter({
             fontWeight: 500,
             lineHeight: 1,
             border: "none",
-            background: value === option ? "rgba(199,217,236,0.5)" : "rgba(17,22,16,0.05)",
-            color: value === option ? "#1A406A" : "#636860",
+            background: value === option ? "rgba(199,217,236,0.5)" : "var(--pio-paper)",
+            color: value === option ? "var(--pio-highlight)" : "var(--pio-graphite)",
             transition: "background 150ms, color 150ms",
           }}
         >
@@ -2966,18 +2966,18 @@ function ChainTable({
   return (
     <div className="min-w-0">
       {/* Heading */}
-      <h2 className="text-[20px] font-bold text-[#111610]">Chains</h2>
-      <p className="mt-1 text-[13.5px] leading-[1.5] text-[#636860]">Protein residue and atom counts grouped by chain.</p>
+      <h2 className="text-[20px] font-bold text-[var(--pio-ink)]">Chains</h2>
+      <p className="mt-1 text-[13.5px] leading-[1.5] text-[var(--pio-graphite)]">Protein residue and atom counts grouped by chain.</p>
 
       {chains.length ? (
         <div className="mt-4">
           {/* Header row */}
           <div
-            className="border-b border-[rgba(17,22,16,0.08)] px-3 pb-2"
+            className="border-b border-[var(--pio-line)] px-3 pb-2"
             style={{ display: "grid", gridTemplateColumns: CHAIN_GRID }}
           >
             {["CHAIN", "RESIDUES", "ATOMS"].map((col) => (
-              <p key={col} className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-[#636860]">{col}</p>
+              <p key={col} className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">{col}</p>
             ))}
           </div>
 
@@ -2994,7 +2994,7 @@ function ChainTable({
                     onClick={() => onSelect(chain)}
                     onKeyDown={(e) => handleSelectableRowKeyDown(e, () => onSelect(chain))}
                     className={`cursor-pointer rounded-[8px] transition-colors duration-150 ${
-                      selected ? "" : "hover:bg-[rgba(17,22,16,0.04)]"
+                      selected ? "" : "hover:bg-[var(--pio-paper)]"
                     }`}
                     style={{
                       display: "grid",
@@ -3004,12 +3004,12 @@ function ChainTable({
                       background: selected ? "rgba(199,217,236,0.6)" : undefined,
                     }}
                   >
-                    <p className="text-[15px] font-semibold text-[#111610]">{chain.id}</p>
-                    <p className="font-mono text-[14px] font-medium text-[#111610]">{chain.residue_count.toLocaleString()}</p>
-                    <p className="font-mono text-[14px] font-medium text-[#111610]">{chain.atom_count.toLocaleString()}</p>
+                    <p className="text-[15px] font-semibold text-[var(--pio-ink)]">{chain.id}</p>
+                    <p className="font-mono text-[14px] font-medium text-[var(--pio-ink)]">{chain.residue_count.toLocaleString()}</p>
+                    <p className="font-mono text-[14px] font-medium text-[var(--pio-ink)]">{chain.atom_count.toLocaleString()}</p>
                   </div>
                   {i < chains.length - 1 && (
-                    <div className="mx-3 h-px bg-[rgba(17,22,16,0.08)]" />
+                    <div className="mx-3 h-px bg-[var(--pio-line)]" />
                   )}
                 </div>
               );
@@ -3018,8 +3018,8 @@ function ChainTable({
         </div>
       ) : (
         <div className="mt-8 flex flex-col items-center">
-          <ChainNodeIcon size={40} color="rgba(17,22,16,0.15)" />
-          <p className="mt-3 text-center text-[13.5px] text-[#636860]">No chains detected in this structure.</p>
+          <ChainNodeIcon size={40} color="var(--pio-line-strong)" />
+          <p className="mt-3 text-center text-[13.5px] text-[var(--pio-graphite)]">No chains detected in this structure.</p>
         </div>
       )}
     </div>
@@ -3131,8 +3131,8 @@ function FloatingLigandPanel({
     over_4_angstrom: 0,
   };
 
-  const TEXT: React.CSSProperties = { color: "#1A406A" };
-  const MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)", color: "#1A406A" };
+  const TEXT: React.CSSProperties = { color: "var(--pio-highlight)" };
+  const MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)", color: "var(--pio-highlight)" };
 
   return (
     <motion.div
@@ -3330,7 +3330,7 @@ function FloatingLigandPanel({
                       fontFamily: "var(--font-pio-mono)",
                       fontSize: 11,
                       fontWeight: 500,
-                      color: "#1A406A",
+                      color: "var(--pio-highlight)",
                     }}
                   >
                     {r.chain_id}:{r.residue_name}{r.residue_number} ({r.contact_count})
@@ -3387,14 +3387,14 @@ function LigandTable({
 }) {
   return (
     <div className="min-w-0">
-      <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "#111610" }}>Ligands</h2>
-      <p style={{ fontSize: 13.5, color: "#636860", lineHeight: 1.5, marginTop: 4 }}>Non-water hetero residues detected in the structure file.</p>
+      <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)" }}>Ligands</h2>
+      <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>Non-water hetero residues detected in the structure file.</p>
 
       {ligands.length ? (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: LIGAND_GRID, borderBottom: "1px solid rgba(17,22,16,0.08)", padding: "8px 12px", marginTop: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: LIGAND_GRID, borderBottom: "1px solid var(--pio-line)", padding: "8px 12px", marginTop: 16 }}>
             {["NAME", "CHAIN", "RESIDUE", "ATOMS"].map((col) => (
-              <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "#636860" }}>{col}</p>
+              <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)" }}>{col}</p>
             ))}
           </div>
           <div style={{ overflow: ligands.length > 6 ? undefined : undefined }}>
@@ -3419,17 +3419,17 @@ function LigandTable({
                       padding: "10px 12px",
                       borderRadius: 8,
                       background: selected ? "rgba(199,217,236,0.6)" : undefined,
-                      border: `2px solid ${selected ? "#1A406A" : "transparent"}`,
+                      border: `2px solid ${selected ? "var(--pio-highlight)" : "transparent"}`,
                       cursor: "pointer",
                     }}
-                    className={selected ? "" : "hover:bg-[rgba(17,22,16,0.04)]"}
+                    className={selected ? "" : "hover:bg-[var(--pio-paper)]"}
                   >
-                    <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 13, fontWeight: 600, color: "#111610" }}>{ligand.name}</p>
-                    <p style={{ fontSize: 14, fontWeight: 600, color: "#111610" }}>{ligand.chain_id}</p>
-                    <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 13, fontWeight: 500, color: "#111610" }}>{ligand.residue_number}</p>
-                    <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 13, fontWeight: 500, color: "#111610" }}>{ligand.atom_count}</p>
+                    <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 13, fontWeight: 600, color: "var(--pio-ink)" }}>{ligand.name}</p>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: "var(--pio-ink)" }}>{ligand.chain_id}</p>
+                    <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 13, fontWeight: 500, color: "var(--pio-ink)" }}>{ligand.residue_number}</p>
+                    <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 13, fontWeight: 500, color: "var(--pio-ink)" }}>{ligand.atom_count}</p>
                   </div>
-                  {i < ligands.length - 1 && <div style={{ height: 1, background: "rgba(17,22,16,0.06)", margin: "0 12px" }} />}
+                  {i < ligands.length - 1 && <div style={{ height: 1, background: "var(--pio-line)", margin: "0 12px" }} />}
                 </div>
               );
             })}
@@ -3437,8 +3437,8 @@ function LigandTable({
         </>
       ) : (
         <div style={{ textAlign: "center", paddingTop: 32 }}>
-          <ChainNodeIcon size={40} color="rgba(17,22,16,0.15)" />
-          <p style={{ fontSize: 13.5, color: "#636860", marginTop: 12 }}>No ligands detected in this structure.</p>
+          <ChainNodeIcon size={40} color="var(--pio-line-strong)" />
+          <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", marginTop: 12 }}>No ligands detected in this structure.</p>
         </div>
       )}
     </div>
@@ -3449,16 +3449,16 @@ function contactChipStyle(key: string): React.CSSProperties {
   if (key === "protein-protein" || key === "residue-residue")
     return { background: "rgba(202,224,210,0.7)", color: "#1B3D28" };
   if (key === "protein-ligand")
-    return { background: "rgba(199,217,236,0.7)", color: "#1A406A" };
+    return { background: "rgba(199,217,236,0.7)", color: "var(--pio-highlight)" };
   if (key === "protein-water")
-    return { background: "rgba(199,217,236,0.5)", color: "#1A406A" };
+    return { background: "rgba(199,217,236,0.5)", color: "var(--pio-highlight)" };
   if (key === "ligand-water")
-    return { background: "rgba(199,217,236,0.6)", color: "#1A406A" };
+    return { background: "rgba(199,217,236,0.6)", color: "var(--pio-highlight)" };
   if (key === "inter-chain" || key === "intra-chain")
     return { background: "rgba(230,220,255,0.6)", color: "#3D1A6A" };
   if (key === "possible-clash")
     return { background: "rgba(255,220,210,0.65)", color: "#6A1A1A" };
-  return { background: "rgba(199,217,236,0.6)", color: "#1A406A" };
+  return { background: "rgba(199,217,236,0.6)", color: "var(--pio-highlight)" };
 }
 
 const CONTACT_GRID = "minmax(120px,1fr) minmax(150px,1.5fr) minmax(100px,1fr)";
@@ -3480,7 +3480,7 @@ function ContactTable({
     return (
       <div style={{ textAlign: "center", paddingTop: 32 }}>
         <ChainNodeIcon size={40} color="rgba(17,22,16,0.15)" />
-        <p style={{ fontSize: 13.5, color: "#636860", marginTop: 12 }}>No contacts match this filter.</p>
+        <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", marginTop: 12 }}>No contacts match this filter.</p>
       </div>
     );
   }
@@ -3489,9 +3489,9 @@ function ContactTable({
     <div style={{ overflowX: "auto", marginTop: 16 }}>
     <div style={{ minWidth: 420 }}>
       {/* Header */}
-      <div style={{ display: "grid", gridTemplateColumns: CONTACT_GRID, columnGap: 16, borderBottom: "1px solid rgba(17,22,16,0.08)", padding: "8px 0" }}>
+      <div style={{ display: "grid", gridTemplateColumns: CONTACT_GRID, columnGap: 16, borderBottom: "1px solid var(--pio-line)", padding: "8px 0" }}>
         {["TYPE", "CATEGORIES", "RESIDUES"].map((col) => (
-          <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "#636860", textAlign: col === "RESIDUES" ? "right" : "left" }}>{col}</p>
+          <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)", textAlign: col === "RESIDUES" ? "right" : "left" }}>{col}</p>
         ))}
       </div>
       {/* Rows */}
@@ -3513,11 +3513,11 @@ function ContactTable({
                 alignItems: "start",
                 padding: "11px 0",
                 borderRadius: 8,
-                border: `2px solid ${selected ? "#1A406A" : "transparent"}`,
+                border: `2px solid ${selected ? "var(--pio-highlight)" : "transparent"}`,
                 background: selected ? "rgba(199,217,236,0.6)" : undefined,
                 cursor: "pointer",
               }}
-              className={selected ? "" : "hover:bg-[rgba(17,22,16,0.04)]"}
+              className={selected ? "" : "hover:bg-[var(--pio-paper)]"}
             >
               {/* TYPE */}
               <div>
@@ -3529,24 +3529,24 @@ function ContactTable({
               <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                 {contact.contact_categories.length ? contact.contact_categories.map((cat) => (
                   <span key={cat} style={{ ...chipBase, ...contactChipStyle(cat), padding: "3px 8px", fontSize: 11 }}>{cat}</span>
-                )) : <span style={{ fontSize: 12, color: "#636860" }}>—</span>}
+                )) : <span style={{ fontSize: 12, color: "var(--pio-graphite)" }}>—</span>}
               </div>
               {/* RESIDUES */}
               <div style={{ display: "flex", flexDirection: "column", gap: 2, alignItems: "flex-end" }}>
-                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 500, color: "#111610" }}>
+                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 500, color: "var(--pio-ink)" }}>
                   {contact.chain_a}:{contact.residue_name_a}{contact.residue_a}
                 </span>
-                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 500, color: "#111610" }}>
+                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 500, color: "var(--pio-ink)" }}>
                   {contact.chain_b}:{contact.residue_name_b}{contact.residue_b}
                 </span>
               </div>
             </div>
-            {i < contacts.length - 1 && <div style={{ height: 1, background: "rgba(17,22,16,0.06)" }} />}
+            {i < contacts.length - 1 && <div style={{ height: 1, background: "var(--pio-line)" }} />}
           </div>
         );
       })}
       {totalCount > contacts.length ? (
-        <p style={{ borderTop: "1px solid rgba(17,22,16,0.06)", paddingTop: 8, paddingBottom: 4, fontSize: 12, color: "#636860", marginTop: 4 }}>
+        <p style={{ borderTop: "1px solid var(--pio-line)", paddingTop: 8, paddingBottom: 4, fontSize: 12, color: "var(--pio-graphite)", marginTop: 4 }}>
           Showing first {contacts.length} of {totalCount} contacts. CSV export includes all rows.
         </p>
       ) : null}

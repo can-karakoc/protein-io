@@ -65,11 +65,11 @@
   --pio-sage: #151d17;
   --pio-sky: #141820;
   --pio-sand: #18181e;
-  --pio-ink: #e6e6ea;
-  --pio-graphite: #96969e;
-  --pio-ink-hover: #c8c8cc;
-  --pio-bg-page: #0f0f14;
-  --pio-ink-rgb: 230, 230, 234;
+  --pio-ink: #fdfdfd;
+  --pio-graphite: #9898a2;
+  --pio-ink-hover: #d8d8dc;
+  --pio-bg-page: #111610;
+  --pio-ink-rgb: 253, 253, 253;
   --pio-paper-rgb: 19, 19, 22;
   /* deep → mid-tone (readable on dark surfaces) */
   --pio-green-deep: var(--pio-green);
@@ -83,6 +83,9 @@
   --pio-lavender-pale: rgba(var(--pio-lavender-rgb), 0.20);
   --pio-coral-pale: rgba(var(--pio-coral-rgb), 0.20);
   --pio-amber-pale: rgba(var(--pio-amber-rgb), 0.20);
+  /* highlight — inverted brand blue for active tabs */
+  --pio-highlight: #C8E3EE;
+  --pio-highlight-text: #111610;
   /* accent — forest green instead of near-black */
   --pio-accent: #4a9e6e;
   --pio-accent-hover: #5ab87e;
@@ -93,7 +96,7 @@
 }
 
 [data-theme="dark"] .pio-shell {
-  background: var(--pio-bg-page);
+  background: linear-gradient(180deg, #111610 0%, rgba(26, 64, 106, 0.5) 100%);
 }
 
 [data-theme="dark"] .wb-sidebar-backdrop {
