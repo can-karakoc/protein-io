@@ -8,8 +8,8 @@
   --pio-sand: #f0eee7;
   --pio-ink: #14140f;
   --pio-graphite: #6b6f63;
-  --pio-line: rgba(20, 20, 15, 0.08);
-  --pio-line-strong: rgba(20, 20, 15, 0.14);
+  --pio-line: rgba(var(--pio-ink-rgb), 0.08);
+  --pio-line-strong: rgba(var(--pio-ink-rgb), 0.14);
   --pio-green: #8fbf8a;
   --pio-blue: #6fa3c9;
   --pio-lavender: #9c92d4;
@@ -36,6 +36,83 @@
   --pio-bg-page: #EDEAE2;
   --background: var(--pio-bg-page);
   --foreground: var(--pio-ink);
+  /* RGB triplets for rgba() usage in dark mode overrides */
+  --pio-ink-rgb: 20, 20, 15;
+  --pio-paper-rgb: 237, 234, 226;
+  --pio-green-rgb: 143, 191, 138;
+  --pio-blue-rgb: 111, 163, 201;
+  --pio-lavender-rgb: 156, 146, 212;
+  --pio-coral-rgb: 224, 130, 106;
+  --pio-amber-rgb: 217, 176, 92;
+  /* Accent — maps to ink in light, forest-green in dark */
+  --pio-accent: var(--pio-ink);
+  --pio-accent-hover: var(--pio-ink-hover);
+  --pio-accent-text: var(--pio-white);
+}
+
+/* ── Dark mode ──────────────────────────────────────────────
+   Warm near-black floor (not Spotify black). Same shapes,
+   same restraint — just inverted elevation. One accent
+   permitted on the primary button: brightened forest green.
+   Everything else re-derives from the token overrides.
+   ──────────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --pio-white: #1e1c16;
+  --pio-paper: #131210;
+  --pio-sage: #161e18;
+  --pio-sky: #141820;
+  --pio-sand: #1a1810;
+  --pio-ink: #eee8d8;
+  --pio-graphite: #9ea098;
+  --pio-ink-hover: #d4cfc0;
+  --pio-bg-page: #131210;
+  --pio-ink-rgb: 238, 232, 216;
+  --pio-paper-rgb: 19, 18, 16;
+  /* deep → mid-tone (readable on dark surfaces) */
+  --pio-green-deep: var(--pio-green);
+  --pio-blue-deep: var(--pio-blue);
+  --pio-lavender-deep: var(--pio-lavender);
+  --pio-coral-deep: var(--pio-coral);
+  --pio-amber-deep: var(--pio-amber);
+  /* pale badge bgs — low-opacity tints on dark */
+  --pio-green-pale: rgba(var(--pio-green-rgb), 0.18);
+  --pio-blue-pale: rgba(var(--pio-blue-rgb), 0.18);
+  --pio-lavender-pale: rgba(var(--pio-lavender-rgb), 0.20);
+  --pio-coral-pale: rgba(var(--pio-coral-rgb), 0.20);
+  --pio-amber-pale: rgba(var(--pio-amber-rgb), 0.20);
+  /* accent — forest green instead of near-black */
+  --pio-accent: #4a9e6e;
+  --pio-accent-hover: #5ab87e;
+  --pio-accent-text: #0d1a11;
+  /* deeper shadows on dark */
+  --pio-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --pio-shadow-md: 0 18px 40px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="dark"] .pio-shell {
+  background: var(--pio-bg-page);
+}
+
+[data-theme="dark"] .wb-sidebar-backdrop {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+/* Exempt the Mol* viewer from dark mode — keep it on a white/light surface */
+.pio-viewer-exempt {
+  --pio-white: #ffffff;
+  --pio-paper: #fbfbf8;
+  --pio-sage: #e0ebe5;
+  --pio-sky: #e3edf5;
+  --pio-sand: #f0eee7;
+  --pio-ink: #14140f;
+  --pio-graphite: #6b6f63;
+  --pio-ink-rgb: 20, 20, 15;
+  --pio-accent: #14140f;
+  --pio-accent-hover: #2a2a22;
+  --pio-accent-text: #ffffff;
+  --pio-shadow-sm: 0 1px 2px rgba(20, 20, 15, 0.05);
+  --pio-shadow-md: 0 18px 40px rgba(20, 20, 15, 0.08), 0 2px 8px rgba(20, 20, 15, 0.04);
+  color-scheme: light;
 }
 
 @theme inline {
@@ -52,6 +129,7 @@ body {
   font-size: 15.5px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 ::selection {
@@ -164,8 +242,8 @@ button:not(:disabled),
   gap: 8px;
   min-height: 40px;
   border-radius: var(--pio-radius-pill);
-  background: var(--pio-ink);
-  color: var(--pio-white);
+  background: var(--pio-accent);
+  color: var(--pio-accent-text);
   padding: 10px 18px;
   font-size: 14px;
   font-weight: 600;
@@ -174,7 +252,7 @@ button:not(:disabled),
 }
 
 .pio-button-primary:hover {
-  background: var(--pio-ink-hover);
+  background: var(--pio-accent-hover);
 }
 
 .pio-button-secondary {
@@ -195,7 +273,7 @@ button:not(:disabled),
 
 .pio-button-secondary:hover {
   border-color: color-mix(in srgb, var(--pio-ink) 30%, transparent);
-  background: #e5e0d6;
+  background: var(--pio-sand);
 }
 
 .pio-button-primary:disabled,

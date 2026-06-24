@@ -1,6 +1,7 @@
 "use client";
 
-import { Menu } from "lucide-react";
+import { Menu, Moon, Sun } from "lucide-react";
+import { useTheme } from "@/hooks/useTheme";
 
 export type WorkbenchMode = "explore" | "compare" | "report";
 
@@ -17,6 +18,7 @@ const MODES: Array<{ id: WorkbenchMode; label: string }> = [
 ];
 
 export function TopNav({ mode, onModeChange, onSidebarToggle }: TopNavProps) {
+  const { theme, toggle } = useTheme();
   return (
     <header className="pio-topnav sticky top-0 z-50">
       <div className="mx-auto flex h-[44px] w-full max-w-[1500px] items-center px-4 sm:px-8">
@@ -53,7 +55,7 @@ export function TopNav({ mode, onModeChange, onSidebarToggle }: TopNavProps) {
           })}
         </nav>
 
-        {/* Right links — visible at all sizes, smaller text on mobile */}
+        {/* Right links + theme toggle */}
         <div className="ml-auto flex items-center gap-3 sm:gap-6">
           <a
             href="https://github.com/can-karakoc/protein-io/tree/main/docs"
@@ -71,6 +73,14 @@ export function TopNav({ mode, onModeChange, onSidebarToggle }: TopNavProps) {
           >
             GitHub
           </a>
+          <button
+            type="button"
+            onClick={toggle}
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-[var(--pio-line-strong)] bg-[var(--pio-white)] text-[var(--pio-ink)] opacity-70 transition-colors hover:opacity-100 hover:bg-[var(--pio-sand)]"
+          >
+            {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+          </button>
         </div>
       </div>
     </header>
