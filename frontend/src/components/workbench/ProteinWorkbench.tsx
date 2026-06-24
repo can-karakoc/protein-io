@@ -3462,7 +3462,7 @@ function contactChipStyle(key: string): React.CSSProperties {
   return { background: "rgba(199,217,236,0.6)", color: "var(--pio-highlight)" };
 }
 
-const CONTACT_GRID = "130px 1fr 120px";
+const CONTACT_GRID = "120px 1fr 100px";
 
 function ContactTable({
   contacts,
@@ -3488,9 +3488,9 @@ function ContactTable({
 
   return (
     <div style={{ overflowX: "auto", marginTop: 16 }}>
-    <div style={{ minWidth: 420 }}>
+    <div style={{ minWidth: 360 }}>
       {/* Header */}
-      <div style={{ display: "grid", gridTemplateColumns: CONTACT_GRID, columnGap: 12, borderBottom: "1px solid var(--pio-line)", padding: "8px 12px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: CONTACT_GRID, columnGap: 8, borderBottom: "1px solid var(--pio-line)", padding: "8px 12px" }}>
         {["TYPE", "CATEGORIES", "RESIDUES"].map((col) => (
           <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)", textAlign: col === "RESIDUES" ? "right" : "left" }}>{col}</p>
         ))}
@@ -3510,7 +3510,7 @@ function ContactTable({
               style={{
                 display: "grid",
                 gridTemplateColumns: CONTACT_GRID,
-                columnGap: 12,
+                columnGap: 8,
                 alignItems: "start",
                 padding: "11px 12px",
                 borderRadius: 8,
