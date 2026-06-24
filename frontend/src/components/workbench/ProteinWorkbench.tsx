@@ -1208,11 +1208,11 @@ function LoadingOverlay({ statusLabel }: { statusLabel: string | null }) {
       : LOADING_LINES[lineIndex];
 
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--pio-bg-page)]">
-      <p className="text-[22px] font-semibold text-[var(--pio-ink)] tracking-tight">
+    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white">
+      <p className="text-[22px] font-semibold text-[#14140f] tracking-tight">
         {headline}
       </p>
-      <p className="mt-2 text-sm text-[var(--pio-graphite)]">This might take a minute.</p>
+      <p className="mt-2 text-sm text-[#6b6f63]">This might take a minute.</p>
     </div>
   );
 }
