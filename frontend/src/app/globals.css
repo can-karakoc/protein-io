@@ -51,6 +51,8 @@
   /* Highlight — the brand blue used for active tabs, icon buttons */
   --pio-highlight: #1A406A;
   --pio-highlight-text: #ffffff;
+  /* Row selection — tinted background for selected table rows */
+  --pio-row-selection-bg: rgba(199, 217, 236, 0.6);
 }
 
 /* ── Dark mode ──────────────────────────────────────────────
@@ -86,6 +88,8 @@
   /* highlight — inverted brand blue for active tabs */
   --pio-highlight: #C8E3EE;
   --pio-highlight-text: #111610;
+  /* row selection — navy tint so sky-blue pills stay visible on selected rows */
+  --pio-row-selection-bg: rgba(26, 64, 106, 0.45);
   /* accent — forest green instead of near-black */
   --pio-accent: #4a9e6e;
   --pio-accent-hover: #5ab87e;

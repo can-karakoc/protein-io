@@ -3001,7 +3001,8 @@ function ChainTable({
                       gridTemplateColumns: CHAIN_GRID,
                       alignItems: "center",
                       padding: "12px",
-                      background: selected ? "rgba(199,217,236,0.6)" : undefined,
+                      border: `2px solid ${selected ? "var(--pio-highlight)" : "transparent"}`,
+                      background: selected ? "var(--pio-row-selection-bg)" : undefined,
                     }}
                   >
                     <p className="text-[15px] font-semibold text-[var(--pio-ink)]">{chain.id}</p>
@@ -3418,7 +3419,7 @@ function LigandTable({
                       alignItems: "center",
                       padding: "10px 12px",
                       borderRadius: 8,
-                      background: selected ? "rgba(199,217,236,0.6)" : undefined,
+                      background: selected ? "var(--pio-row-selection-bg)" : undefined,
                       border: `2px solid ${selected ? "var(--pio-highlight)" : "transparent"}`,
                       cursor: "pointer",
                     }}
@@ -3514,7 +3515,7 @@ function ContactTable({
                 padding: "11px 12px",
                 borderRadius: 8,
                 border: `2px solid ${selected ? "var(--pio-highlight)" : "transparent"}`,
-                background: selected ? "rgba(199,217,236,0.6)" : undefined,
+                background: selected ? "var(--pio-row-selection-bg)" : undefined,
                 cursor: "pointer",
               }}
               className={selected ? "" : "hover:bg-[var(--pio-paper)]"}
