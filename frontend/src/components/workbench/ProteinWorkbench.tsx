@@ -1692,7 +1692,7 @@ function ReportContactSummary({ contacts }: { contacts: ContactRecord[] }) {
   const lowConfidenceContacts = contacts.filter((c) => c.confidence_warning).length;
   const closestContacts = [...contacts].sort((a, b) => a.distance_angstrom - b.distance_angstrom).slice(0, 10);
   const hasConfidence = contacts.some((c) => c.source_residue_confidence || c.target_residue_confidence);
-  const chipBase: React.CSSProperties = { borderRadius: 999, fontWeight: 500, display: "inline-block", fontSize: 11, padding: "3px 8px" };
+  const chipBase: React.CSSProperties = { borderRadius: 999, fontWeight: 500, display: "inline-block", fontSize: 11, padding: "3px 8px", whiteSpace: "nowrap" };
 
   return (
     <div>
@@ -3498,7 +3498,7 @@ function ContactTable({
       {/* Rows */}
       {contacts.map((contact, i) => {
         const selected = selection?.kind === "contact" && contactKey(selection.contact) === contactKey(contact);
-        const chipBase: React.CSSProperties = { borderRadius: 999, fontWeight: 500, display: "inline-block" };
+        const chipBase: React.CSSProperties = { borderRadius: 999, fontWeight: 500, display: "inline-block", whiteSpace: "nowrap" };
         return (
           <div key={contactKey(contact)}>
             <div
