@@ -73,15 +73,6 @@ type ExampleCard = {
 
 const EXAMPLE_GALLERY: ExampleCard[] = [
   {
-    id: "sample",
-    title: "Bundled ligand sample",
-    source: "Local sample.pdb",
-    description: "Small fast-loading structure for checking the full upload, viewer, contact, and ligand flow.",
-    tags: ["local", "ligand", "fast"],
-    hint: "Look at ligand ATP and the possible clash flags in Quality.",
-    actionLabel: "Load sample",
-  },
-  {
     id: "hemoglobin",
     title: "Hemoglobin",
     source: "RCSB 2HHB",
