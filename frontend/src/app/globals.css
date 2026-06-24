@@ -190,6 +190,10 @@
   color-scheme: light;
 }
 
+html {
+  zoom: 1.1;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
