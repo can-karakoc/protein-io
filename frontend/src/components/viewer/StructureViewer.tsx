@@ -99,6 +99,7 @@ export function StructureViewer({
         await applyColorTheme(viewer, colorModeRef.current, residueConfidencesRef.current);
         applySelection(viewer, selectionRef.current);
         viewer.handleResize();
+        styleViewportControls(containerRef.current);
         const modelRenderMs = elapsedMs(modelStarted);
         console.info("[protein.io timing] viewer render", {
           total_ms: elapsedMs(renderStarted),
@@ -338,6 +339,27 @@ function molstarFormat(structureFormat: StructureViewerProps["structureFormat"])
 
 function structureSignature(structureText: string, structureFormat: StructureViewerProps["structureFormat"]) {
   return `${structureFormat}:${structureText.length}:${structureText.slice(0, 80)}`;
+}
+
+function styleViewportControls(container: HTMLElement) {
+  // CSS cascade can't reliably override Mol*'s scoped rules, so apply inline styles directly.
+  const controls = container.querySelector(".msp-viewport-controls") as HTMLElement | null;
+  if (!controls) return;
+  controls.style.top = "auto";
+  controls.style.bottom = "64px";
+  controls.style.right = "12px";
+  controls.querySelectorAll<HTMLElement>(".msp-viewport-controls-buttons button").forEach((btn) => {
+    btn.style.background = "rgba(255,255,255,0.82)";
+    btn.style.backdropFilter = "blur(6px)";
+    btn.style.borderRadius = "8px";
+    btn.style.border = "1px solid rgba(20,20,15,0.10)";
+    btn.style.width = "28px";
+    btn.style.height = "28px";
+    btn.style.color = "#14140f";
+    btn.style.boxShadow = "0 1px 3px rgba(20,20,15,0.10)";
+    btn.addEventListener("mouseenter", () => { btn.style.background = "rgba(255,255,255,0.96)"; });
+    btn.addEventListener("mouseleave", () => { btn.style.background = "rgba(255,255,255,0.82)"; });
+  });
 }
 
 function isWebGlAvailable() {
