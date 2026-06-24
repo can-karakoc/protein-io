@@ -3461,7 +3461,7 @@ function contactChipStyle(key: string): React.CSSProperties {
   return { background: "rgba(199,217,236,0.6)", color: "var(--pio-highlight)" };
 }
 
-const CONTACT_GRID = "minmax(120px,1fr) minmax(150px,1.5fr) minmax(100px,1fr)";
+const CONTACT_GRID = "130px 1fr 120px";
 
 function ContactTable({
   contacts,
@@ -3489,7 +3489,7 @@ function ContactTable({
     <div style={{ overflowX: "auto", marginTop: 16 }}>
     <div style={{ minWidth: 420 }}>
       {/* Header */}
-      <div style={{ display: "grid", gridTemplateColumns: CONTACT_GRID, columnGap: 16, borderBottom: "1px solid var(--pio-line)", padding: "8px 0" }}>
+      <div style={{ display: "grid", gridTemplateColumns: CONTACT_GRID, columnGap: 12, borderBottom: "1px solid var(--pio-line)", padding: "8px 12px" }}>
         {["TYPE", "CATEGORIES", "RESIDUES"].map((col) => (
           <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)", textAlign: col === "RESIDUES" ? "right" : "left" }}>{col}</p>
         ))}
@@ -3499,7 +3499,7 @@ function ContactTable({
         const selected = selection?.kind === "contact" && contactKey(selection.contact) === contactKey(contact);
         const chipBase: React.CSSProperties = { borderRadius: 999, fontWeight: 500, display: "inline-block" };
         return (
-          <div key={contactKey(contact)} style={{ padding: "0 2px" }}>
+          <div key={contactKey(contact)}>
             <div
               role="button"
               tabIndex={0}
@@ -3509,9 +3509,9 @@ function ContactTable({
               style={{
                 display: "grid",
                 gridTemplateColumns: CONTACT_GRID,
-                columnGap: 16,
+                columnGap: 12,
                 alignItems: "start",
-                padding: "11px 0",
+                padding: "11px 12px",
                 borderRadius: 8,
                 border: `2px solid ${selected ? "var(--pio-highlight)" : "transparent"}`,
                 background: selected ? "rgba(199,217,236,0.6)" : undefined,
