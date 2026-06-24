@@ -1834,7 +1834,7 @@ function ExampleGallery({
         {EXAMPLE_GALLERY.map((example) => (
           <article
             key={example.id}
-            className="flex min-w-0 flex-col gap-3 rounded-[8px] border border-[var(--pio-line)] bg-[var(--pio-paper)] p-4"
+            className="flex min-w-0 flex-col gap-3 rounded-[8px] bg-[var(--pio-sand)] p-4"
           >
             <div className="min-w-0">
               <h4 className="text-[15.5px] font-bold leading-snug text-[var(--pio-ink)]">
@@ -1868,7 +1868,7 @@ function ExampleGallery({
             <button
               type="button"
               onClick={() => onLoadExample(example.id)}
-              className="flex w-full items-center justify-center rounded-[12px] bg-[var(--pio-accent)] py-[6px] text-[13px] font-semibold text-[var(--pio-accent-text)] transition-colors hover:bg-[var(--pio-accent-hover)]"
+              className="flex w-full items-center justify-center rounded-[12px] bg-[var(--pio-highlight)] py-[6px] text-[13px] font-semibold text-[var(--pio-highlight-text)] transition-colors hover:opacity-90"
             >
               Load
             </button>
