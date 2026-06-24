@@ -24,6 +24,22 @@ add another `<link>` for them.
 | `frontend/src/components/workbench/WorkbenchShell.tsx` | Layout shell |
 | `frontend/src/components/viewer/StructureViewer.tsx` | Mol* 3-D viewer wrapper |
 
+## UI gaps pass — 2026-06-24 (sixth session)
+
+**Branch:** `feat/ui-gaps` (local, not yet pushed/deployed)
+
+**Files touched:** `frontend/src/components/workbench/ProteinWorkbench.tsx`, `frontend/src/app/globals.css`
+
+**What changed:**
+- **Tab count badges** — Chains / Ligands / Contacts tabs now show item count inline (e.g. "Contacts 1,284"). Count is `undefined` until analysis loads so no badge shows on empty state. Active tab uses `opacity-70`, inactive uses `opacity-50`.
+- **Metadata row hover** — Each row in `MetadataPanel` gains `rounded-[6px] px-2 py-1.5 hover:bg-[var(--pio-sand)] transition-colors`.
+- **Mol* bottom-left artifact** — Added CSS in `globals.css` targeting `.msp-layout-bottom-controls`, `.msp-sequence-wrapper`, `.msp-layout-region.msp-layout-bottom` with `display:none !important`. `layoutShowSequence:false` already hides the panel; this catches the residual toggle button.
+- **Dark mode — formally deferred** — No `[data-theme="dark"]` CSS exists anywhere. Decision: do NOT attempt dark mode until light mode is fully finalised and a design pass is done. Remove any lingering `dark:` Tailwind utilities if found in a future sweep.
+- **Dead code removed** — Deleted `ViewerModeToggle` function (~40 lines) and `SelectionBar` + `selectionDetails` functions (~80 lines). Both were replaced by inline implementations in earlier sessions and were never called.
+- **Screenshot comparison** — Not yet done. To perform: open `protein-io-design-system-boltz.html` locally and compare Report tab, Ligand detail panel, Contacts table against the live app side-by-side.
+
+---
+
 ## Scroll fix + responsive layout polish — 2026-06-24 (fifth session)
 
 **Branch:** `feat/responsive-layout` — committed `53558a5`, deployed to production (protein-io.vercel.app)

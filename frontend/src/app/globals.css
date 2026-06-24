@@ -100,6 +100,16 @@ button:not(:disabled),
   }
 }
 
+/* ── Hide Mol* bottom-left sequence/controls artifact ────── */
+/* The sequence toggle bar appears at the bottom-left of the Mol* canvas
+   when a structure is loaded. layoutShowSequence:false hides the panel
+   itself, but the toggle button persists — hide it via CSS. */
+.msp-layout-bottom-controls,
+.msp-sequence-wrapper,
+[class^="msp-"] .msp-layout-region.msp-layout-bottom {
+  display: none !important;
+}
+
 /* ── Hide scrollbar while keeping scroll ──────────────────── */
 .scrollbar-hide {
   scrollbar-width: none;
