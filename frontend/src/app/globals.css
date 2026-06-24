@@ -76,6 +76,53 @@ button:not(:disabled),
   color: var(--pio-ink);
 }
 
+/* ── Responsive explore-mode grid ──────────────────────────── */
+.wb-explore-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  height: auto;
+  overflow: visible;
+}
+
+@media (min-width: 768px) {
+  .wb-explore-grid {
+    grid-template-columns: 1fr 320px;
+    height: 100%;
+    overflow: hidden;
+  }
+}
+
+@media (min-width: 1024px) {
+  .wb-explore-grid {
+    grid-template-columns: 280px 1fr 400px;
+  }
+}
+
+/* ── Sidebar drawer (mobile/tablet) ───────────────────────── */
+.wb-sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  z-index: 60;
+}
+
+.wb-sidebar-drawer {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 280px;
+  z-index: 61;
+  overflow-y: auto;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+  transform: translateX(-100%);
+  transition: transform 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.wb-sidebar-drawer.open {
+  transform: translateX(0);
+}
+
 .pio-wrap {
   margin: 0 auto;
   width: 100%;

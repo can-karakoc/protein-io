@@ -1,6 +1,6 @@
 "use client";
 
-import { Atom, Database, Download, FileUp, Search, X } from "lucide-react";
+import { Atom, Database, Download, FileUp, Menu, Search, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
@@ -155,6 +155,20 @@ export function ProteinWorkbench() {
   const [isRcsbLoading, setIsRcsbLoading] = useState(false);
   const [isAlphaFoldLoading, setIsAlphaFoldLoading] = useState(false);
   const [isComparisonLoading, setIsComparisonLoading] = useState(false);
+
+  // Responsive: track whether we're at lg+ breakpoint
+  const [isLg, setIsLg] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    setIsLg(mq.matches);
+    const handler = (e: MediaQueryListEvent) => {
+      setIsLg(e.matches);
+      if (e.matches) setSidebarOpen(false); // close drawer when going to desktop
+    };
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   const hasStructure = structureText.trim().length > 0;
   const contacts = useMemo(() => analysis?.contacts ?? [], [analysis]);
@@ -741,6 +755,7 @@ export function ProteinWorkbench() {
     <WorkbenchShell
       mode={mode}
       onModeChange={setMode}
+      onSidebarToggle={() => setSidebarOpen((o) => !o)}
     >
       <AnimatePresence mode="wait" initial={false}>
       {mode === "explore" ? (
@@ -750,9 +765,58 @@ export function ProteinWorkbench() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.18, ease: "easeOut" }}
-          className="grid h-full min-w-0 overflow-hidden rounded-[16px] border border-[rgba(20,20,15,0.09)] bg-transparent shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]"
-          style={{ gridTemplateColumns: "280px 1fr 400px" }}
+          className="wb-explore-grid min-w-0 rounded-[16px] border border-[rgba(20,20,15,0.09)] bg-transparent shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]"
         >
+          {/* Sidebar — visible in grid on lg+; drawer on smaller screens */}
+          {!isLg && sidebarOpen && (
+            <>
+              <div
+                className="wb-sidebar-backdrop"
+                onClick={() => setSidebarOpen(false)}
+              />
+              <div className="wb-sidebar-drawer open bg-white">
+                <div className="flex items-center justify-between border-b border-[rgba(20,20,15,0.08)] px-4 py-3">
+                  <span className="text-[13px] font-semibold text-[var(--pio-ink)]">Explore</span>
+                  <button
+                    type="button"
+                    onClick={() => setSidebarOpen(false)}
+                    className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-[rgba(20,20,15,0.06)] text-[var(--pio-graphite)]"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+                <ExploreSidebar
+                  fileName={fileName}
+                  paeFileName={paeFileName}
+                  structureFormat={structureFormat}
+                  analysis={analysis}
+                  metadata={analysis?.metadata ?? null}
+                  cutoff={cutoff}
+                  onCutoffChange={setCutoff}
+                  onStructureFile={(file) => { void handleFile(file); setSidebarOpen(false); }}
+                  onPaeFile={(file) => void handlePaeFile(file)}
+                  onAnalyze={analyzeStructure}
+                  onLoadSample={() => { void loadExample(); setSidebarOpen(false); }}
+                  onReset={reset}
+                  hasStructure={hasStructure}
+                  isLoading={isLoading}
+                  pdbId={pdbId}
+                  onPdbIdChange={setPdbId}
+                  onFetchRcsb={() => { fetchRcsbStructure(); setSidebarOpen(false); }}
+                  isRcsbLoading={isRcsbLoading}
+                  uniprotId={uniprotId}
+                  onUniprotIdChange={setUniprotId}
+                  onFetchAlphaFold={() => { fetchAlphaFoldStructure(); setSidebarOpen(false); }}
+                  isAlphaFoldLoading={isAlphaFoldLoading}
+                  error={error}
+                  warnings={analysis?.warnings ?? []}
+                />
+              </div>
+            </>
+          )}
+
+          {/* Sidebar in grid — desktop only */}
+          <div className="hidden lg:block">
           <ExploreSidebar
             fileName={fileName}
             paeFileName={paeFileName}
@@ -779,9 +843,10 @@ export function ProteinWorkbench() {
             error={error}
             warnings={analysis?.warnings ?? []}
           />
+          </div>{/* end hidden lg:block sidebar wrapper */}
 
           {/* Viewer column — white background, columns shadow over it */}
-          <div ref={viewerColumnRef} className="relative h-full min-h-0 bg-white">
+          <div ref={viewerColumnRef} className="relative min-h-[50svh] lg:h-full lg:min-h-0 bg-white">
             <StructureViewer
               structureText={structureText}
               structureFormat={structureFormat}
@@ -838,8 +903,8 @@ export function ProteinWorkbench() {
             )}
             </AnimatePresence>
 
-            {/* Floating ligand panel — rendered in viewer column for absolute positioning */}
-            {(() => {
+            {/* Floating ligand panel — desktop only (viewer too narrow on smaller screens) */}
+            {isLg && (() => {
               const selLigand = selection?.kind === "ligand"
                 ? (analysis?.ligands ?? []).find(l => l.name === selection.residueName && l.chain_id === selection.chainId && l.residue_number === selection.residueNumber) ?? null
                 : null;
@@ -866,7 +931,7 @@ export function ProteinWorkbench() {
           </div>
 
           {/* Results column */}
-          <section className="relative z-[1] flex h-full min-h-0 flex-col overflow-y-auto bg-white shadow-[-8px_0_24px_rgba(17,22,16,0.07)]">
+          <section className="relative z-[1] flex min-h-[40svh] flex-col overflow-y-auto bg-white lg:h-full lg:min-h-0 shadow-[-8px_0_24px_rgba(17,22,16,0.07)]">
             <ResultsPanel
               activeTab={resultsTab}
               onTabChange={setResultsTab}
