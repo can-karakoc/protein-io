@@ -130,6 +130,7 @@ interface StructureCache {
   analysis: AnalysisResponse;
   cutoff: number;
   savedAt: string;
+  resultsTab?: ResultsTab;
 }
 
 function saveStructureCache(entry: StructureCache) {
@@ -196,8 +197,16 @@ export function ProteinWorkbench() {
     setViewerColorMode(cached.analysis.confidence ? "plddt" : "structure");
     if (cached.pdbId) setInputSource("rcsb");
     else if (cached.uniprotId) setInputSource("alphafold");
+    if (cached.resultsTab) setResultsTab(cached.resultsTab);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Persist the active tab whenever it changes so reload restores it
+  useEffect(() => {
+    const existing = loadStructureCache();
+    if (!existing) return;
+    saveStructureCache({ ...existing, resultsTab });
+  }, [resultsTab]);
 
   // Responsive: track whether we're at lg+ breakpoint
   const [isLg, setIsLg] = useState(true);
