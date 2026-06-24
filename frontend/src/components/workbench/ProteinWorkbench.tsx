@@ -1,6 +1,7 @@
 "use client";
 
-import { Atom, Database, Download, FileUp, Search, X } from "lucide-react";
+import { Atom, Database, Download, FileUp, Menu, Search, X } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { StructureViewer } from "@/components/viewer/StructureViewer";
@@ -146,6 +147,7 @@ export function ProteinWorkbench() {
   const [viewerColorMode, setViewerColorMode] = useState<ViewerColorMode>("structure");
   const [contactFilter, setContactFilter] = useState<ContactFilter>("all");
   const [resultsTab, setResultsTab] = useState<ResultsTab>("overview");
+  const resultsColumnRef = useRef<HTMLElement | null>(null);
   const [inputSource, setInputSource] = useState<InputSource>("upload");
   const [analysisTimestamp, setAnalysisTimestamp] = useState<string | null>(null);
   const [error, setError] = useState<WorkbenchError>(null);
@@ -154,6 +156,24 @@ export function ProteinWorkbench() {
   const [isRcsbLoading, setIsRcsbLoading] = useState(false);
   const [isAlphaFoldLoading, setIsAlphaFoldLoading] = useState(false);
   const [isComparisonLoading, setIsComparisonLoading] = useState(false);
+
+  // Responsive: track whether we're at lg+ breakpoint
+  const [isLg, setIsLg] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    setIsLg(mq.matches);
+    const handler = (e: MediaQueryListEvent) => {
+      setIsLg(e.matches);
+      if (e.matches) setSidebarOpen(false); // close drawer when going to desktop
+    };
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  useEffect(() => {
+    if (resultsColumnRef.current) resultsColumnRef.current.scrollTop = 0;
+  }, [resultsTab]);
 
   const hasStructure = structureText.trim().length > 0;
   const contacts = useMemo(() => analysis?.contacts ?? [], [analysis]);
@@ -740,12 +760,20 @@ export function ProteinWorkbench() {
     <WorkbenchShell
       mode={mode}
       onModeChange={setMode}
+      onSidebarToggle={() => setSidebarOpen((o) => !o)}
     >
+      <AnimatePresence mode="wait" initial={false}>
       {mode === "explore" ? (
-        <div
-          className="grid h-full min-w-0 overflow-hidden rounded-[16px] border border-[rgba(20,20,15,0.09)] bg-transparent shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]"
-          style={{ gridTemplateColumns: "280px 1fr 400px" }}
+        <motion.div
+          key="explore"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
+          className="wb-explore-grid min-w-0 rounded-[16px] border border-[rgba(20,20,15,0.09)] bg-transparent shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]"
         >
+          {/* Sidebar in grid — desktop only */}
+          <div className="hidden lg:block">
           <ExploreSidebar
             fileName={fileName}
             paeFileName={paeFileName}
@@ -772,9 +800,10 @@ export function ProteinWorkbench() {
             error={error}
             warnings={analysis?.warnings ?? []}
           />
+          </div>{/* end hidden lg:block sidebar wrapper */}
 
           {/* Viewer column — white background, columns shadow over it */}
-          <div ref={viewerColumnRef} className="relative h-full min-h-0 bg-white">
+          <div ref={viewerColumnRef} className="relative min-h-0 bg-white">
             <StructureViewer
               structureText={structureText}
               structureFormat={structureFormat}
@@ -805,8 +834,16 @@ export function ProteinWorkbench() {
             )}
 
             {/* Selection indicator — only shown when something is selected */}
+            <AnimatePresence>
             {selection && (
-              <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between gap-4 bg-[rgba(26,64,106,0.75)] px-5 py-3 backdrop-blur-md">
+              <motion.div
+                key="selection-bar"
+                initial={{ y: "100%", opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: "100%", opacity: 0 }}
+                transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+                className="absolute bottom-0 left-0 right-0 flex items-center justify-between gap-4 bg-[rgba(26,64,106,0.75)] px-5 py-3 backdrop-blur-md"
+              >
                 <div className="min-w-0">
                   <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-white/50">Selected</p>
                   <p className="truncate text-[14px] font-bold text-white">{selection.label}</p>
@@ -819,26 +856,31 @@ export function ProteinWorkbench() {
                 >
                   <X size={13} />
                 </button>
-              </div>
+              </motion.div>
             )}
+            </AnimatePresence>
 
-            {/* Floating ligand panel — rendered in viewer column for absolute positioning */}
-            {(() => {
+            {/* Floating ligand panel — desktop only (viewer too narrow on smaller screens) */}
+            {isLg && (() => {
               const selLigand = selection?.kind === "ligand"
                 ? (analysis?.ligands ?? []).find(l => l.name === selection.residueName && l.chain_id === selection.chainId && l.residue_number === selection.residueNumber) ?? null
                 : null;
               const selInteraction = selection?.kind === "ligand"
                 ? (analysis?.ligand_interactions ?? []).find(l => l.name === selection.residueName && l.chain_id === selection.chainId && l.residue_number === selection.residueNumber) ?? null
                 : null;
-              return selLigand ? (
-                <FloatingLigandPanel
-                  ligand={selLigand}
-                  interaction={selInteraction}
-                  viewerRef={viewerColumnRef}
-                  onClose={() => setSelection(null)}
-                  onExport={(interaction) => exportSingleLigandCsv(interaction)}
-                />
-              ) : null;
+              return (
+                <AnimatePresence>
+                  {selLigand ? (
+                    <FloatingLigandPanel
+                      ligand={selLigand}
+                      interaction={selInteraction}
+                      viewerRef={viewerColumnRef}
+                      onClose={() => setSelection(null)}
+                      onExport={(interaction) => exportSingleLigandCsv(interaction)}
+                    />
+                  ) : null}
+                </AnimatePresence>
+              );
             })()}
 
             {/* Loading overlay */}
@@ -846,7 +888,7 @@ export function ProteinWorkbench() {
           </div>
 
           {/* Results column */}
-          <section className="relative z-[1] flex h-full min-h-0 flex-col overflow-y-auto bg-white shadow-[-8px_0_24px_rgba(17,22,16,0.07)]">
+          <section ref={resultsColumnRef} className="relative z-[1] min-h-0 overflow-y-auto bg-white border-t border-[rgba(20,20,15,0.09)] md:border-t-0 md:shadow-[-8px_0_24px_rgba(17,22,16,0.07)]">
             <ResultsPanel
               activeTab={resultsTab}
               onTabChange={setResultsTab}
@@ -898,9 +940,16 @@ export function ProteinWorkbench() {
               onFocusAlphaFold={() => document.getElementById("uniprot-id")?.focus()}
             />
           </section>
-        </div>
+        </motion.div>
       ) : mode === "report" ? (
-        <div className="h-full overflow-y-auto">
+        <motion.div
+          key="report"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
+          className="h-full overflow-y-auto"
+        >
           <ReportWorkspace
             analysis={analysis}
             provenance={provenance}
@@ -918,13 +967,86 @@ export function ProteinWorkbench() {
               window.requestAnimationFrame(() => document.getElementById("uniprot-id")?.focus());
             }}
           />
-        </div>
+        </motion.div>
       ) : (
-        <div className="flex h-full items-center justify-center p-8">
+        <motion.div
+          key="compare"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
+          className="flex h-full items-center justify-center p-8"
+        >
           <WorkbenchModePlaceholder />
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </WorkbenchShell>
+
+    {/* Sidebar drawer — rendered outside WorkbenchShell so position:fixed works
+        (Framer Motion transforms on the inner motion.div would otherwise contain it) */}
+    <AnimatePresence>
+      {!isLg && sidebarOpen && (
+        <motion.div
+          key="backdrop"
+          className="wb-sidebar-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18 }}
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+    </AnimatePresence>
+    <AnimatePresence>
+      {!isLg && sidebarOpen && (
+        <motion.div
+          key="drawer"
+          className="wb-sidebar-drawer bg-white"
+          initial={{ x: "-100%" }}
+          animate={{ x: 0 }}
+          exit={{ x: "-100%" }}
+          transition={{ type: "spring", damping: 28, stiffness: 280 }}
+        >
+          <div className="flex items-center justify-between border-b border-[rgba(20,20,15,0.08)] px-4 py-3">
+            <span className="text-[13px] font-semibold text-[var(--pio-ink)]">Load Structure</span>
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(false)}
+              className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-[rgba(20,20,15,0.06)] text-[var(--pio-graphite)]"
+            >
+              <X size={14} />
+            </button>
+          </div>
+          <ExploreSidebar
+            fileName={fileName}
+            paeFileName={paeFileName}
+            structureFormat={structureFormat}
+            analysis={analysis}
+            metadata={analysis?.metadata ?? null}
+            cutoff={cutoff}
+            onCutoffChange={setCutoff}
+            onStructureFile={(file) => { void handleFile(file); setSidebarOpen(false); }}
+            onPaeFile={(file) => void handlePaeFile(file)}
+            onAnalyze={analyzeStructure}
+            onLoadSample={() => { void loadExample(); setSidebarOpen(false); }}
+            onReset={reset}
+            hasStructure={hasStructure}
+            isLoading={isLoading}
+            pdbId={pdbId}
+            onPdbIdChange={setPdbId}
+            onFetchRcsb={() => { fetchRcsbStructure(); setSidebarOpen(false); }}
+            isRcsbLoading={isRcsbLoading}
+            uniprotId={uniprotId}
+            onUniprotIdChange={setUniprotId}
+            onFetchAlphaFold={() => { fetchAlphaFoldStructure(); setSidebarOpen(false); }}
+            isAlphaFoldLoading={isAlphaFoldLoading}
+            error={error}
+            warnings={analysis?.warnings ?? []}
+          />
+        </motion.div>
+      )}
+    </AnimatePresence>
 
     {/* ── Example gallery — hidden for now ── */}
     {false && <section className="mx-auto w-full max-w-[1500px] px-6 py-10">
@@ -989,17 +1111,20 @@ export function ProteinWorkbench() {
 
 function WorkbenchModePlaceholder() {
   return (
-    <section className="pio-panel mx-auto grid max-w-2xl justify-items-center gap-4 p-8 text-center">
-      <Atom className="h-10 w-10 text-[var(--pio-ink)]" />
-      <p className="text-xl font-bold text-[var(--pio-ink)]">Compare workspace is coming next</p>
-      <p className="max-w-xl text-sm leading-6 text-[var(--pio-graphite)]">
-        The comparison workflow is available in Explore for now. This mode is reserved for the upcoming dedicated
-        structure A/B comparison workspace.
+    <div className="w-full max-w-[480px] rounded-[16px] border border-[rgba(20,20,15,0.09)] bg-white p-10 text-center shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
+      <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(199,217,236,0.4)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+        <Atom size={22} color="#1A406A" />
+      </div>
+      <p className="text-[18px] font-bold text-[#111610]">Compare workspace is coming next</p>
+      <p className="mx-auto mt-2 max-w-[340px] text-[13.5px] leading-[1.6] text-[#636860]">
+        The comparison workflow is available in Explore for now. This mode is reserved for the upcoming dedicated structure A/B comparison workspace.
       </p>
-      <p className="pio-badge pio-badge-caution">
-        No structural alignment. No RMSD. No TM-score. No side-by-side 3D superposition yet.
-      </p>
-    </section>
+      <div className="mt-5 flex flex-wrap justify-center gap-2">
+        {["No structural alignment", "No RMSD", "No TM-score", "No side-by-side 3D"].map((label) => (
+          <span key={label} className="pio-badge pio-badge-caution">{label}</span>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -1168,10 +1293,6 @@ function ResultsPanel({
     );
   }
 
-  const ROW1_IDS: ResultsTab[] = ["overview", "chains", "ligands", "contacts"];
-  const row1 = visibleTabs.filter((t) => ROW1_IDS.includes(t.id));
-  const row2 = visibleTabs.filter((t) => !ROW1_IDS.includes(t.id));
-
   function TabButton({ tab }: { tab: { id: ResultsTab; label: string } }) {
     return (
       <button
@@ -1181,7 +1302,7 @@ function ResultsPanel({
         aria-selected={selectedTab === tab.id}
         onClick={() => preservePanelPosition(() => onTabChange(tab.id))}
         className={[
-          "rounded-[12px] px-3.5 py-[7px] text-[13px] font-semibold transition-colors",
+          "flex-1 min-w-max whitespace-nowrap text-center rounded-[12px] px-2 sm:px-3.5 py-[7px] text-[13px] font-semibold transition-colors",
           selectedTab === tab.id
             ? "bg-[#1A406A] text-white"
             : "text-[#1A406A] opacity-70 hover:opacity-100 hover:bg-[rgba(26,64,106,0.08)]",
@@ -1195,24 +1316,53 @@ function ResultsPanel({
   return (
     <section ref={panelRef} className="min-w-0">
       <div
-        className="sticky top-0 z-10 flex flex-col gap-3 bg-white px-5 pb-4 pt-4 shadow-[0_1px_0_rgba(17,22,16,0.07)]"
+        className="sticky top-0 z-10 bg-white px-3 sm:px-5 pb-4 pt-4 shadow-[0_1px_0_rgba(17,22,16,0.07)]"
         role="tablist"
         aria-label="Analysis results"
       >
-        <div className="flex gap-0.5">
-          {row1.map((tab) => <TabButton key={tab.id} tab={tab} />)}
-        </div>
-        {row2.length > 0 && (
-          <div className="flex gap-0.5">
-            {row2.map((tab) => <TabButton key={tab.id} tab={tab} />)}
+        {/* relative wrapper lets the fade gradient sit over the right edge */}
+        <div className="relative">
+          <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+            {visibleTabs.map((tab) => <TabButton key={tab.id} tab={tab} />)}
           </div>
-        )}
+          {/* right-edge fade — signals hidden tabs without a scrollbar */}
+          {visibleTabs.length > 4 && (
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white to-transparent" />
+          )}
+        </div>
       </div>
 
-      <div className="min-w-0 px-5 pb-6 pt-6">
+      <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={selectedTab}
+        initial={{ opacity: 0, y: 5 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -5 }}
+        transition={{ duration: 0.14, ease: "easeOut" }}
+        className="min-w-0 px-5 pb-6 pt-6"
+      >
         {selectedTab === "overview" ? (
           <div className="grid min-w-0 max-w-full gap-6 overflow-hidden">
             <>
+              {analysis.metadata && analysis.metadata.source !== "upload" && (() => {
+                const isAlphaFold = analysis.metadata.source === "alphafold";
+                const rawTitle = analysis.metadata.title ?? analysis.metadata.pdb_id ?? analysis.metadata.uniprot_id ?? "Structure";
+                const title = toTitleCase(rawTitle.replace(/\s+at\s+[\d.]+\s+angstroms?\s+resolution\s*$/i, "").trim());
+                const entryUrl = isAlphaFold ? analysis.metadata.alphafold_url : analysis.metadata.rcsb_url;
+                return (
+                  <div className="flex items-start gap-3">
+                    <h2 className="pio-section-title">{title}</h2>
+                    {entryUrl && (
+                      <a href={entryUrl} target="_blank" rel="noreferrer" aria-label={isAlphaFold ? "AlphaFold DB entry" : "RCSB entry"}
+                        style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: "50%", background: "#1A406A", color: "white", flexShrink: 0, textDecoration: "none" }}>
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                          <path d="M2.5 11.5L11.5 2.5M11.5 2.5H6M11.5 2.5V8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </a>
+                    )}
+                  </div>
+                );
+              })()}
               <MetadataPanel metadata={analysis.metadata ?? null} />
               <SummaryCards analysis={analysis} />
               <InteractionSummaryPanel summary={analysis.interaction_summary ?? null} />
@@ -1287,10 +1437,19 @@ function ResultsPanel({
         {selectedTab === "quality" ? <QualityPanel analysis={analysis} /> : null}
 
         {selectedTab === "methods" ? <ProvenancePanel provenance={provenance} /> : null}
-      </div>
+      </motion.div>
+      </AnimatePresence>
     </section>
   );
 }
+
+const REPORT_DIVIDER: React.CSSProperties = { paddingTop: 24, marginTop: 8 };
+const REPORT_H2: React.CSSProperties = { fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "#111610" };
+const REPORT_SUB: React.CSSProperties = { fontSize: 13.5, color: "#636860", lineHeight: 1.5, marginTop: 4 };
+const REPORT_TILE: React.CSSProperties = { background: "rgba(17,22,16,0.04)", borderRadius: 10, padding: "12px 14px" };
+const REPORT_LABEL: React.CSSProperties = { fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "#636860", textTransform: "uppercase" as const };
+const REPORT_MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)" };
+const REPORT_ICON_BTN: React.CSSProperties = { background: "#C8E3EE", border: "none", borderRadius: "50%", width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#1A406A", cursor: "pointer" };
 
 function ReportWorkspace({
   analysis,
@@ -1315,44 +1474,60 @@ function ReportWorkspace({
 }) {
   if (!analysis) {
     return (
-      <section className="pio-panel p-6">
-        <p className="pio-section-title">No reportable analysis yet</p>
-        <p className="pio-section-copy mt-2 max-w-2xl">
-          Load and analyze a structure first, then return here for a concise summary with methods and provenance.
-        </p>
-        <div className="mt-4 grid gap-2 sm:grid-cols-3">
-          <button type="button" onClick={onLoadSample} className="pio-button-secondary h-10">
-            Load sample
-          </button>
-          <button type="button" onClick={onFocusRcsb} className="pio-button-secondary h-10">
-            Fetch PDB ID
-          </button>
-          <button type="button" onClick={onFocusAlphaFold} className="pio-button-secondary h-10">
-            Fetch AlphaFold
-          </button>
+      <div className="flex min-h-full items-center justify-center p-8">
+        <div className="w-full max-w-[480px] rounded-[16px] border border-[rgba(20,20,15,0.09)] bg-white p-10 text-center shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
+          <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(199,217,236,0.4)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+            <Database size={22} color="#1A406A" />
+          </div>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: "#111610" }}>No analysis yet</h2>
+          <p style={{ fontSize: 13.5, color: "#636860", lineHeight: 1.6, marginTop: 8 }}>
+            Load and analyze a structure first, then return here for a concise summary with methods and provenance.
+          </p>
+          <div style={{ display: "flex", gap: 8, marginTop: 20, justifyContent: "center", flexWrap: "wrap" }}>
+            {([["Load sample", onLoadSample], ["Fetch PDB ID", onFocusRcsb], ["Fetch AlphaFold", onFocusAlphaFold]] as const).map(([label, fn]) => (
+              <button key={label} type="button" onClick={fn}
+                className="rounded-[12px] border border-[rgba(17,22,16,0.14)] bg-white px-4 py-2 text-[13px] font-semibold text-[#111610] hover:bg-[rgba(17,22,16,0.04)]">
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
-      </section>
+      </div>
     );
   }
 
   return (
-    <section className="grid min-w-0 gap-4">
-      <ReportHeader
-        analysis={analysis}
-        provenance={provenance}
-        onExportContacts={onExportContacts}
-        onExportLigands={onExportLigands}
-        onExportAnalysisJson={onExportAnalysisJson}
-      />
-      <MetadataPanel metadata={analysis.metadata ?? null} />
-      <SummaryCards analysis={analysis} />
-      <InteractionSummaryPanel summary={analysis.interaction_summary ?? null} />
-      <ReportContactSummary contacts={contacts} />
-      <LigandInteractionPanel ligandInteractions={analysis.ligand_interactions} onExport={onExportLigands} />
+    <div className="flex min-h-full items-start justify-center p-6">
+    <div className="w-full max-w-[960px] rounded-[16px] border border-[rgba(20,20,15,0.09)] bg-white shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
+    <div style={{ padding: "32px 36px 56px" }}>
+      <ReportHeader analysis={analysis} provenance={provenance} onExportContacts={onExportContacts} onExportLigands={onExportLigands} onExportAnalysisJson={onExportAnalysisJson} />
+      <div style={REPORT_DIVIDER}>
+        <MetadataPanel metadata={analysis.metadata ?? null} />
+      </div>
+      <div style={REPORT_DIVIDER}>
+        <SummaryCards analysis={analysis} />
+      </div>
+      <div style={REPORT_DIVIDER}>
+        <InteractionSummaryPanel summary={analysis.interaction_summary ?? null} />
+      </div>
+      <div style={REPORT_DIVIDER}>
+        <ReportContactSummary contacts={contacts} />
+      </div>
+      {analysis.ligand_interactions.length > 0 && (
+        <div style={REPORT_DIVIDER}>
+          <LigandInteractionPanel ligandInteractions={analysis.ligand_interactions} onExport={onExportLigands} />
+        </div>
+      )}
       <ReportConfidenceSummary confidence={analysis.confidence} pae={analysis.pae} />
-      <QualityPanel analysis={analysis} />
-      <ProvenancePanel provenance={provenance} showExport={false} />
-    </section>
+      <div style={REPORT_DIVIDER}>
+        <QualityPanel analysis={analysis} />
+      </div>
+      <div style={REPORT_DIVIDER}>
+        <ProvenancePanel provenance={provenance} showExport={false} />
+      </div>
+    </div>
+    </div>
+    </div>
   );
 }
 
@@ -1369,57 +1544,71 @@ function ReportHeader({
   onExportLigands: () => void;
   onExportAnalysisJson: () => void;
 }) {
-  const title =
-    analysis.metadata?.title ??
-    analysis.metadata?.pdb_id ??
-    analysis.metadata?.uniprot_id ??
+  const metadata = analysis.metadata;
+  const isAlphaFold = metadata?.source === "alphafold";
+  const rawTitle =
+    metadata?.title ??
+    metadata?.pdb_id ??
+    metadata?.uniprot_id ??
     provenance?.fileName ??
     "Current structure analysis";
+  const title = toTitleCase(rawTitle.replace(/\s+at\s+[\d.]+\s+angstroms?\s+resolution\s*$/i, "").trim());
+  const entryUrl = isAlphaFold ? metadata?.alphafold_url : metadata?.rcsb_url;
+
+  const facts: Array<[string, string]> = [
+    ["Source", String(provenance?.inputSource ?? analysis.metadata?.source ?? "upload")],
+    ["Source ID", String(provenance?.sourceId ?? "N/A")],
+    ["Structure type", String(provenance?.structureKind ?? "uploaded coordinates")],
+    ["Generated", provenance ? formatTimestamp(provenance.analysisTimestamp) : "N/A"],
+  ];
+
+  const exports: Array<[string, () => void, boolean]> = [
+    ["Contacts CSV", onExportContacts, false],
+    ["Ligands CSV", onExportLigands, !analysis.ligand_interactions.length],
+    ["Analysis JSON", onExportAnalysisJson, false],
+  ];
 
   return (
-    <div className="pio-panel p-4">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <p className="pio-badge pio-badge-metadata">Report</p>
-          <h2 className="mt-2 text-[20px] font-bold text-[var(--pio-ink)]">{title}</h2>
-          <p className="pio-section-copy mt-2 max-w-3xl">
-            Clean summary of the current structure metadata, interaction metrics, ligand analysis, confidence signals,
-            quality warnings, and methods/provenance.
+    <div>
+      {/* Title row */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.1em", color: "#1A406A", textTransform: "uppercase", marginBottom: 8 }}>Report</p>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.02em", color: "#111610", lineHeight: 1.2 }}>{title}</h1>
+            {entryUrl ? (
+              <a href={entryUrl} target="_blank" rel="noreferrer" aria-label={isAlphaFold ? "AlphaFold DB entry" : "RCSB entry"}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: "50%", background: "#1A406A", color: "white", flexShrink: 0, textDecoration: "none" }}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                  <path d="M2.5 11.5L11.5 2.5M11.5 2.5H6M11.5 2.5V8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </a>
+            ) : null}
+          </div>
+          <p style={{ ...REPORT_SUB, maxWidth: 560, marginTop: 8 }}>
+            Structure metadata, interaction metrics, ligand analysis, confidence signals, quality warnings, and provenance.
           </p>
         </div>
-        <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[520px]">
-          <button
-            type="button"
-            onClick={onExportContacts}
-            className="pio-button-secondary h-10 px-3"
-          >
-            <Download className="h-4 w-4" />
-            Contacts CSV
-          </button>
-          <button
-            type="button"
-            onClick={onExportLigands}
-            disabled={!analysis.ligand_interactions.length}
-            className="pio-button-secondary h-10 px-3"
-          >
-            <Download className="h-4 w-4" />
-            Ligands CSV
-          </button>
-          <button
-            type="button"
-            onClick={onExportAnalysisJson}
-            className="pio-button-secondary h-10 px-3"
-          >
-            <Download className="h-4 w-4" />
-            Analysis JSON
-          </button>
+        {/* Export buttons */}
+        <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "center", paddingTop: 4 }}>
+          {exports.map(([label, fn, disabled]) => (
+            <button key={label} type="button" onClick={fn} disabled={disabled}
+              style={{ borderRadius: 12, border: "1px solid rgba(17,22,16,0.14)", background: "white", color: disabled ? "#aaa" : "#111610", padding: "8px 14px", fontSize: 12.5, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 6, opacity: disabled ? 0.45 : 1 }}>
+              <Download size={13} color={disabled ? "#aaa" : "#1A406A"} />
+              {label}
+            </button>
+          ))}
         </div>
       </div>
-      <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        <ReportFact label="Source" value={provenance?.inputSource ?? analysis.metadata?.source ?? "upload"} />
-        <ReportFact label="Source ID" value={provenance?.sourceId ?? "N/A"} />
-        <ReportFact label="Structure type" value={provenance?.structureKind ?? "uploaded coordinates"} />
-        <ReportFact label="Generated" value={provenance ? formatTimestamp(provenance.analysisTimestamp) : "N/A"} />
+
+      {/* Provenance fact tiles */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginTop: 20 }}>
+        {facts.map(([label, value]) => (
+          <div key={label} style={REPORT_TILE}>
+            <p style={REPORT_LABEL}>{label}</p>
+            <p style={{ ...REPORT_MONO, fontSize: 13, fontWeight: 600, color: "#111610", marginTop: 4 }}>{value}</p>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -1427,83 +1616,78 @@ function ReportHeader({
 
 function ReportFact({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="pio-kv-card">
-      <p className="pio-label">{label}</p>
-      <p className="pio-value mt-1 break-words text-sm">{value}</p>
+    <div style={REPORT_TILE}>
+      <p style={REPORT_LABEL}>{label}</p>
+      <p style={{ ...REPORT_MONO, fontSize: 13, fontWeight: 600, color: "#111610", marginTop: 4 }}>{value}</p>
     </div>
   );
 }
 
-function ReportContactSummary({ contacts }: { contacts: ContactRecord[] }) {
-  if (!contacts.length) {
-    return null;
-  }
+const REPORT_CONTACT_GRID = "minmax(200px,2fr) minmax(120px,1fr) minmax(160px,1.5fr) minmax(80px,0.7fr) minmax(80px,0.7fr)";
 
-  const lowConfidenceContacts = contacts.filter((contact) => contact.confidence_warning).length;
-  const closestContacts = [...contacts]
-    .sort((a, b) => a.distance_angstrom - b.distance_angstrom)
-    .slice(0, 8);
+function ReportContactSummary({ contacts }: { contacts: ContactRecord[] }) {
+  if (!contacts.length) return null;
+
+  const lowConfidenceContacts = contacts.filter((c) => c.confidence_warning).length;
+  const closestContacts = [...contacts].sort((a, b) => a.distance_angstrom - b.distance_angstrom).slice(0, 10);
+  const hasConfidence = contacts.some((c) => c.source_residue_confidence || c.target_residue_confidence);
+  const chipBase: React.CSSProperties = { borderRadius: 999, fontWeight: 500, display: "inline-block", fontSize: 11, padding: "3px 8px" };
 
   return (
-    <div className="rounded-[var(--pio-radius-lg)] border border-[var(--pio-line-strong)] bg-white p-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
-          <h2 className="text-sm font-semibold text-[var(--pio-ink)]">Contact report</h2>
-          <p className="mt-1 text-xs leading-5 text-[var(--pio-graphite)]">
-            Closest contacts and confidence-aware review count for the current cutoff.
-          </p>
+          <h2 style={REPORT_H2}>Contact Report</h2>
+          <p style={REPORT_SUB}>Closest 10 contacts by distance for the current cutoff.</p>
         </div>
-        {contacts.some((contact) => contact.source_residue_confidence || contact.target_residue_confidence) ? (
-          <span className="inline-flex border border-[var(--pio-amber)] bg-[var(--pio-amber-pale)] px-3 py-2 text-xs font-medium text-[var(--pio-amber-deep)]">
-            {lowConfidenceContacts} low-confidence contacts
+        {hasConfidence && (
+          <span style={{ background: "rgba(194,160,64,0.12)", border: "1px solid rgba(194,160,64,0.3)", borderRadius: 8, padding: "5px 12px", fontSize: 12, fontWeight: 600, color: "#5C4A00", flexShrink: 0 }}>
+            {lowConfidenceContacts} low-confidence
           </span>
-        ) : null}
+        )}
       </div>
-      <div className="mt-3 overflow-x-auto">
-        <table className="w-full min-w-[760px] text-left text-sm">
-          <thead className="bg-[var(--pio-sand)] text-xs uppercase tracking-wide text-[var(--pio-graphite)]">
-            <tr>
-              <th className="px-3 py-2 font-medium">Contact</th>
-              <th className="px-3 py-2 font-medium">Type</th>
-              <th className="px-3 py-2 font-medium">Categories</th>
-              <th className="px-3 py-2 font-medium">Distance</th>
-              <th className="px-3 py-2 font-medium">Confidence</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--pio-line)]">
-            {closestContacts.map((contact) => (
-              <tr key={contactKey(contact)}>
-                <td className="px-3 py-2 font-mono text-[var(--pio-ink)]">
-                  {contact.chain_a}:{contact.residue_name_a}
-                  {contact.residue_a}.{contact.atom_a} - {contact.chain_b}:{contact.residue_name_b}
-                  {contact.residue_b}.{contact.atom_b}
-                </td>
-                <td className="px-3 py-2 text-[var(--pio-graphite)]">{contact.contact_type}</td>
-                <td className="px-3 py-2 text-[var(--pio-graphite)]">{contact.contact_categories.join(", ")}</td>
-                <td className="px-3 py-2 font-mono text-[var(--pio-graphite)]">{contact.distance_angstrom.toFixed(3)} A</td>
-                <td className="px-3 py-2">
+
+      <div style={{ overflowX: "auto", marginTop: 16 }}>
+        <div style={{ minWidth: 600 }}>
+          {/* Header */}
+          <div style={{ display: "grid", gridTemplateColumns: REPORT_CONTACT_GRID, columnGap: 12, borderBottom: "1px solid rgba(17,22,16,0.08)", padding: "8px 0" }}>
+            {(hasConfidence ? ["ATOMS", "TYPE", "CATEGORIES", "DISTANCE", "CONFIDENCE"] : ["ATOMS", "TYPE", "CATEGORIES", "DISTANCE", ""]).map((col) => (
+              <p key={col} style={{ ...REPORT_LABEL }}>{col}</p>
+            ))}
+          </div>
+          {/* Rows */}
+          {closestContacts.map((contact, i) => (
+            <div key={contactKey(contact)}>
+              <div style={{ display: "grid", gridTemplateColumns: REPORT_CONTACT_GRID, columnGap: 12, padding: "10px 0", alignItems: "start" }}>
+                <p style={{ ...REPORT_MONO, fontSize: 12, color: "#111610" }}>
+                  {contact.chain_a}:{contact.residue_name_a}{contact.residue_a}.{contact.atom_a} – {contact.chain_b}:{contact.residue_name_b}{contact.residue_b}.{contact.atom_b}
+                </p>
+                <div><span style={{ ...chipBase, ...contactChipStyle(contact.contact_type) }}>{contact.contact_type}</span></div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+                  {contact.contact_categories.length ? contact.contact_categories.map((cat) => (
+                    <span key={cat} style={{ ...chipBase, ...contactChipStyle(cat) }}>{cat}</span>
+                  )) : <span style={{ fontSize: 12, color: "#636860" }}>—</span>}
+                </div>
+                <p style={{ ...REPORT_MONO, fontSize: 12.5, fontWeight: 600, color: "#111610" }}>{contact.distance_angstrom.toFixed(3)} Å</p>
+                <div>
                   {contact.source_residue_confidence || contact.target_residue_confidence ? (
                     <ContactConfidenceBadge contact={contact} />
-                  ) : (
-                    <span className="text-xs text-[var(--pio-graphite)]">N/A</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  ) : null}
+                </div>
+              </div>
+              {i < closestContacts.length - 1 && <div style={{ height: 1, background: "rgba(17,22,16,0.06)" }} />}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
 function ReportConfidenceSummary({ confidence, pae }: { confidence: ConfidenceSummary | null; pae: PaeSummary | null }) {
-  if (!confidence && !pae) {
-    return null;
-  }
-
+  if (!confidence && !pae) return null;
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div style={{ paddingTop: 24, marginTop: 8, display: "grid", gap: 24, gridTemplateColumns: confidence && pae ? "1fr 1fr" : "1fr" }}>
       {confidence ? <ConfidenceReportCard confidence={confidence} /> : null}
       {pae ? <PaePanel pae={pae} /> : null}
     </div>
@@ -1511,28 +1695,32 @@ function ReportConfidenceSummary({ confidence, pae }: { confidence: ConfidenceSu
 }
 
 function ConfidenceReportCard({ confidence }: { confidence: ConfidenceSummary }) {
-  const categories = [
-    ["Very high", confidence.very_high_count],
-    ["Confident", confidence.confident_count],
-    ["Low", confidence.low_count],
-    ["Very low", confidence.very_low_count],
-  ] as const;
+  const categories: Array<[string, number, string]> = [
+    ["Very high", confidence.very_high_count, "rgba(74,140,100,0.15)"],
+    ["Confident", confidence.confident_count, "rgba(74,140,100,0.08)"],
+    ["Low", confidence.low_count, "rgba(194,160,64,0.12)"],
+    ["Very low", confidence.very_low_count, "rgba(255,100,80,0.1)"],
+  ];
 
   return (
-    <div className="rounded-[var(--pio-radius-lg)] border border-[var(--pio-line-strong)] bg-white p-4">
-      <h2 className="text-sm font-semibold text-[var(--pio-ink)]">Confidence summary</h2>
-      <p className="mt-1 text-xs leading-5 text-[var(--pio-graphite)]">
-        pLDDT distribution for predicted-structure interpretation.
-      </p>
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        <ReportFact label="Average pLDDT" value={confidence.average_plddt.toFixed(2)} />
-        <ReportFact label="Low-confidence residues" value={confidence.low_confidence_count} />
+    <div>
+      <h2 style={REPORT_H2}>Confidence Summary</h2>
+      <p style={REPORT_SUB}>pLDDT distribution for predicted-structure interpretation.</p>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 14 }}>
+        <div style={REPORT_TILE}>
+          <p style={REPORT_LABEL}>Average pLDDT</p>
+          <p style={{ ...REPORT_MONO, fontSize: 26, fontWeight: 700, color: "#111610", marginTop: 4, lineHeight: 1 }}>{confidence.average_plddt.toFixed(2)}</p>
+        </div>
+        <div style={REPORT_TILE}>
+          <p style={REPORT_LABEL}>Low-confidence residues</p>
+          <p style={{ ...REPORT_MONO, fontSize: 26, fontWeight: 700, color: "#111610", marginTop: 4, lineHeight: 1 }}>{confidence.low_confidence_count.toLocaleString()}</p>
+        </div>
       </div>
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        {categories.map(([label, value]) => (
-          <div key={label} className="flex items-center justify-between rounded-[var(--pio-radius-sm)] border border-[var(--pio-line-strong)] px-3 py-2">
-            <span className="text-sm text-[var(--pio-graphite)]">{label}</span>
-            <span className="font-mono text-sm text-[var(--pio-ink)]">{value}</span>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 8 }}>
+        {categories.map(([label, value, bg]) => (
+          <div key={label} style={{ ...REPORT_TILE, background: bg, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <p style={{ ...REPORT_LABEL, color: "#111610" }}>{label}</p>
+            <p style={{ ...REPORT_MONO, fontSize: 18, fontWeight: 700, color: "#111610" }}>{value.toLocaleString()}</p>
           </div>
         ))}
       </div>
@@ -1803,7 +1991,7 @@ function QualityPanel({ analysis }: { analysis: AnalysisResponse | null }) {
         ))}
       </div>
 
-      <div style={{ marginTop: 20, borderTop: "1px solid rgba(17,22,16,0.08)", paddingTop: 16 }}>
+      <div style={{ marginTop: 20, paddingTop: 16 }}>
         <h3 style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.01em", color: "#111610" }}>
           Close-Contact Examples
         </h3>
@@ -2112,7 +2300,7 @@ function SummaryCards({ analysis }: { analysis: AnalysisResponse | null }) {
   ];
 
   return (
-    <div className="border-t border-[rgba(17,22,16,0.08)] pt-4">
+    <div>
       <div className="flex flex-col gap-2">
         {items.map(([label, value, description]) => (
           <div
@@ -2181,32 +2369,8 @@ function MetadataPanel({ metadata }: { metadata: StructureMetadata | null }) {
 
   return (
     <div>
-      {/* Title row */}
-      <div className="flex items-start justify-between gap-3">
-        <h2
-          className="flex-1 min-w-0 text-[22px] font-bold leading-[1.25] tracking-[-0.015em] text-[#111610]"
-          style={{ overflowWrap: "break-word", wordBreak: "break-word" }}
-        >
-          {displayTitle}
-        </h2>
-        {entryUrl ? (
-          <a
-            href={entryUrl}
-            target="_blank"
-            rel="noreferrer"
-            aria-label={isAlphaFold ? "AlphaFold DB entry" : "RCSB entry"}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1A406A] text-white transition-colors hover:bg-[#163558]"
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-              <path d="M2.5 11.5L11.5 2.5M11.5 2.5H6M11.5 2.5V8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </a>
-        ) : null}
-      </div>
-
       {/* Metadata grid */}
       <div
-        className="mt-3 border-t border-[rgba(17,22,16,0.08)] pt-3"
         style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 24px" }}
       >
         {rows.map((row) => (
@@ -2478,7 +2642,7 @@ function LigandInteractionPanel({
   const MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)" };
 
   return (
-    <div style={{ borderTop: "1px solid rgba(17,22,16,0.08)", paddingTop: 16 }}>
+    <div>
       {/* Heading row */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h3 style={{ fontSize: 15, fontWeight: 700, color: "#111610" }}>Ligand Interaction Summary</h3>
@@ -2496,17 +2660,17 @@ function LigandInteractionPanel({
       </p>
 
       {/* Scrollable table */}
-      <div style={{ overflowX: "auto", marginTop: 12, maskImage: "linear-gradient(to right, black 85%, transparent 100%)" }}>
-        <div style={{ minWidth: 700 }}>
+      <div style={{ overflowX: "auto", marginTop: 12 }}>
+        <div style={{ minWidth: 1050 }}>
           {/* Header */}
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 2fr 3fr 2fr", columnGap: 12, borderBottom: "1px solid rgba(17,22,16,0.08)", padding: "8px 0" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "140px 80px 80px 70px 80px 130px 220px 150px", columnGap: 12, borderBottom: "1px solid rgba(17,22,16,0.08)", padding: "8px 0" }}>
             {["LIGAND","CONTACTS","PROTEIN","WATER","CLASHES","CLOSEST","TOP RESIDUES","BUCKETS"].map((col) => (
               <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "#636860" }}>{col}</p>
             ))}
           </div>
           {ligandInteractions.map((ligand, i) => (
             <div key={`${ligand.name}-${ligand.chain_id}-${ligand.residue_number}`}>
-              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 2fr 3fr 2fr", columnGap: 12, padding: "10px 0", alignItems: "start" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "140px 80px 80px 70px 80px 130px 220px 150px", columnGap: 12, padding: "10px 0", alignItems: "start" }}>
                 <p style={{ ...MONO, fontSize: 12, color: "#111610" }}>{ligand.name} {ligand.chain_id}:{ligand.residue_number}</p>
                 <p style={{ ...MONO, fontSize: 13, fontWeight: 500, color: "#111610" }}>{ligand.contact_count}</p>
                 <p style={{ ...MONO, fontSize: 13, fontWeight: 500, color: "#111610" }}>{ligand.protein_contact_count}</p>
@@ -2936,11 +3100,26 @@ function FloatingLigandPanel({
 }) {
   const [minimized, setMinimized] = useState(false);
   const [pos, setPos] = useState<{ x: number; y: number }>({ x: 16, y: 16 });
+  const [containerW, setContainerW] = useState(400);
   const dragging = useRef(false);
   const dragOffset = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
   const panelRef = useRef<HTMLDivElement | null>(null);
 
-  const PANEL_W = 327;
+  const MAX_PANEL_W = 327;
+  const SELECTION_BAR_H = 60;
+  const SIDE_PAD = 6;
+  // Panel width adapts to viewer column so it never overflows at narrow desktop sizes
+  const PANEL_W = Math.min(MAX_PANEL_W, containerW - 2 * SIDE_PAD);
+
+  useEffect(() => {
+    const container = viewerRef.current;
+    if (!container) return;
+    setContainerW(container.offsetWidth);
+    const ro = new ResizeObserver((entries) => setContainerW(entries[0].contentRect.width));
+    ro.observe(container);
+    return () => ro.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function clamp(value: number, min: number, max: number) {
     return Math.max(min, Math.min(max, value));
@@ -2960,8 +3139,9 @@ function FloatingLigandPanel({
     if (!container) return;
     const rect = container.getBoundingClientRect();
     const panelH = panelRef.current?.offsetHeight ?? 44;
-    const newX = clamp(e.clientX - dragOffset.current.dx, 0, rect.width - PANEL_W);
-    const newY = clamp(e.clientY - dragOffset.current.dy, 0, rect.height - panelH);
+    const pw = Math.min(MAX_PANEL_W, rect.width - 2 * SIDE_PAD);
+    const newX = clamp(e.clientX - dragOffset.current.dx, SIDE_PAD, rect.width - pw - SIDE_PAD);
+    const newY = clamp(e.clientY - dragOffset.current.dy, SIDE_PAD, rect.height - panelH - SELECTION_BAR_H - SIDE_PAD);
     setPos({ x: newX, y: newY });
   }
 
@@ -2979,6 +3159,28 @@ function FloatingLigandPanel({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // When expanding, re-clamp pos every frame while the height animates so the
+  // panel slides up to stay within bounds instead of overflowing into borders.
+  useEffect(() => {
+    if (minimized) return;
+    const container = viewerRef.current;
+    if (!container) return;
+    let raf: number;
+    const loop = () => {
+      const panelH = panelRef.current?.offsetHeight ?? 44;
+      setPos((p) => ({
+        x: clamp(p.x, SIDE_PAD, container.offsetWidth - PANEL_W - SIDE_PAD),
+        y: clamp(p.y, SIDE_PAD, container.offsetHeight - panelH - SELECTION_BAR_H - SIDE_PAD),
+      }));
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    // Stop after the expand animation finishes (250ms covers the 220ms transition)
+    const stop = setTimeout(() => cancelAnimationFrame(raf), 260);
+    return () => { cancelAnimationFrame(raf); clearTimeout(stop); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [minimized]);
+
   const buckets = interaction?.distance_distribution ?? {
     under_2_angstrom: 0,
     two_to_3_angstrom: 0,
@@ -2990,8 +3192,12 @@ function FloatingLigandPanel({
   const MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)", color: "#1A406A" };
 
   return (
-    <div
+    <motion.div
       ref={panelRef}
+      initial={{ opacity: 0, scale: 0.94, y: 8 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.94, y: 8 }}
+      transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
       style={{
         position: "absolute",
         left: pos.x,
@@ -3037,8 +3243,8 @@ function FloatingLigandPanel({
                   if (container) {
                     const panelH = 509;
                     setPos((p) => ({
-                      x: clamp(p.x, 0, container.offsetWidth - PANEL_W),
-                      y: clamp(p.y, 0, container.offsetHeight - panelH),
+                      x: clamp(p.x, SIDE_PAD, container.offsetWidth - PANEL_W - SIDE_PAD),
+                      y: clamp(p.y, SIDE_PAD, container.offsetHeight - panelH - SELECTION_BAR_H - SIDE_PAD),
                     }));
                   }
                 }
@@ -3068,7 +3274,16 @@ function FloatingLigandPanel({
       </div>
 
       {/* Body */}
+      <AnimatePresence initial={false}>
       {!minimized && (
+        <motion.div
+          key="panel-body"
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: "auto", opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+          style={{ overflow: "hidden" }}
+        >
         <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 12 }}>
           {/* Ligand name heading */}
           <div style={{ borderBottom: "1px solid rgba(26,64,106,0.12)", paddingBottom: 10 }}>
@@ -3207,8 +3422,10 @@ function FloatingLigandPanel({
             </button>
           )}
         </div>
+        </motion.div>
       )}
-    </div>
+      </AnimatePresence>
+    </motion.div>
   );
 }
 

@@ -24,6 +24,62 @@ add another `<link>` for them.
 | `frontend/src/components/workbench/WorkbenchShell.tsx` | Layout shell |
 | `frontend/src/components/viewer/StructureViewer.tsx` | Mol* 3-D viewer wrapper |
 
+## Scroll fix + responsive layout polish — 2026-06-24 (fifth session)
+
+**Branch:** `feat/responsive-layout` — committed `53558a5`, deployed to production (protein-io.vercel.app)
+
+**Files touched:** `frontend/src/app/globals.css`, `frontend/src/components/workbench/ProteinWorkbench.tsx`, `frontend/src/components/workbench/ExploreSidebar.tsx`, `frontend/src/components/workbench/TopNav.tsx`, `frontend/src/components/workbench/WorkbenchShell.tsx`
+
+**Root cause fixed — results panel scroll:**
+- `grid-template-rows: 1fr` in `.wb-explore-grid` was letting the row track expand to content size (811px) instead of being capped at the container height (575px). The grid visually clipped the section at 575px via `overflow: hidden`, but the section's scroll container was still 811px — making the bottom 236px of scroll area permanently unreachable.
+- Fix: `1fr` → `minmax(0, 1fr)` on all breakpoints. The `minmax(0, ...)` cap prevents the track from exceeding available space.
+
+**Overview tab — structure title restored:**
+- Title (`h2.pio-section-title`) + circular navy arrow button (same style as Report header) shown above `MetadataPanel` for fetched structures (RCSB / AlphaFold). Hidden for uploads. Title uses `toTitleCase` + strips resolution suffix. Button uses `items-start` so it aligns to the top of multi-line titles.
+
+**Sidebar — Confidence-aware Warnings toggle:**
+- Changed from `justify-between w-full` (caused label to wrap to two lines) to `gap-3` + `whitespace-nowrap` on the label. Now renders as a single left-aligned row.
+
+**Known state:**
+- `feat/responsive-layout` and `feat/report-redesign` are both unmerged to `main`. The fifth-session work was committed on `feat/responsive-layout`.
+- Scroll is confirmed working: section height = 573px (= grid track), scroll range = 687px for 1260px of content.
+- No regressions observed on Report, Compare, or other tabs.
+
+---
+
+## Report redesign pass — 2026-06-23/24 (fourth session)
+
+**Branch:** `feat/report-redesign` (NOT merged to main yet)
+
+**Files touched:** `frontend/src/components/workbench/ProteinWorkbench.tsx`
+
+**What changed:**
+- `FloatingLigandPanel` — draggable frosted-glass panel over 3D viewer; drag clamped to viewer bounds using `panelRef.current?.offsetHeight` (dynamic, not hardcoded)
+- Loading overlay → white background
+- Minimize button → `#4A724C` when minimized
+- All pill borders → `rounded-[12px]` everywhere (nav, tabs, filter pills, buttons)
+- Tab nav + top nav: `font-semibold` on both active/inactive states; identical `h-[34px] px-5` on all nav items (prevents layout shift)
+- Tab strip: `sticky top-0 z-10`
+- Row selection highlight: `rgba(199,217,236,0.6)` bg + `2px solid #1A406A` inset border
+- Row border clipping fix: `padding: "0 2px"` wrapper around each row
+- Selection bar at bottom of viewer: dark navy frosted glass (`rgba(26,64,106,0.75)` + `backdrop-blur-md`)
+- Contact filter pills → rectangular card style (not oval), selected = `rgba(199,217,236,0.5)`
+- All download icon buttons → `#C8E3EE` circle fill + `#1A406A` icon color, 30×30px
+- `InteractionSummaryPanel` + `TopContactList` redesigned (3-col metrics, 2-col contact list)
+- `LigandInteractionPanel` — fixed-px column widths (`140px 80px ...`), `minWidth: 1050` to force horizontal scroll (fr-units expand to fill so no scroll appeared)
+- `ContactTable` — `overflowX: "auto"` + `minWidth: 420`; `padding: "0 2px"` prevents border clipping
+- **Report tab** — white card wrapper (only for loaded content, NOT empty state); `REPORT_DIVIDER` = spacing only, no border; title deduped (MetadataPanel heading removed, external link moved to h1 row); `SummaryCards` and `LigandInteractionPanel` internal `borderTop` removed (doubled REPORT_DIVIDER)
+- **Compare placeholder** — matches Report empty state card: white card, icon circle, split caution pills
+- **`DESIGN_SYSTEM.md`** created at repo root — copy-paste ready patterns for all components
+
+**Design constants to reuse (see DESIGN_SYSTEM.md for full reference):**
+- Card shadow: `shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]`
+- Card border: `border border-[rgba(20,20,15,0.09)]`
+- Primary blue: `#1A406A`
+- Selection bg: `rgba(199,217,236,0.6)`
+- Icon circle bg: `rgba(199,217,236,0.4)`
+- Download circle fill: `#C8E3EE`
+
 ## Explore workspace polish pass — 2026-06-22 (third session)
 
 **Files touched:**
