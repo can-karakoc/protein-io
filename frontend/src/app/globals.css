@@ -57,17 +57,17 @@
    Everything else re-derives from the token overrides.
    ──────────────────────────────────────────────────────── */
 [data-theme="dark"] {
-  --pio-white: #1e1c16;
-  --pio-paper: #131210;
-  --pio-sage: #161e18;
+  --pio-white: #1c1c22;
+  --pio-paper: #131316;
+  --pio-sage: #151d17;
   --pio-sky: #141820;
-  --pio-sand: #1a1810;
-  --pio-ink: #eee8d8;
-  --pio-graphite: #9ea098;
-  --pio-ink-hover: #d4cfc0;
-  --pio-bg-page: #131210;
-  --pio-ink-rgb: 238, 232, 216;
-  --pio-paper-rgb: 19, 18, 16;
+  --pio-sand: #18181e;
+  --pio-ink: #e6e6ea;
+  --pio-graphite: #96969e;
+  --pio-ink-hover: #c8c8cc;
+  --pio-bg-page: #0f0f14;
+  --pio-ink-rgb: 230, 230, 234;
+  --pio-paper-rgb: 19, 19, 22;
   /* deep → mid-tone (readable on dark surfaces) */
   --pio-green-deep: var(--pio-green);
   --pio-blue-deep: var(--pio-blue);

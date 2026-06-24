@@ -274,7 +274,7 @@ export function ExploreSidebar({
             type="button"
             onClick={onAnalyze}
             disabled={!hasStructure || isLoading}
-            className="flex flex-1 items-center justify-center gap-2 rounded-[12px] bg-[#1A406A] py-[10px] text-[13px] font-semibold text-white transition-colors hover:bg-[#163558] disabled:cursor-not-allowed disabled:opacity-45"
+            className="flex flex-1 items-center justify-center gap-2 rounded-[12px] bg-[var(--pio-accent)] py-[10px] text-[13px] font-semibold text-[var(--pio-accent-text)] transition-colors hover:bg-[var(--pio-accent-hover)] disabled:cursor-not-allowed disabled:opacity-45"
           >
             {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
             Analyze
