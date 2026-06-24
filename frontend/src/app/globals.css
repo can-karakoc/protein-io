@@ -239,15 +239,15 @@ button:not(:disabled),
 }
 
 /* ── Mol* viewport controls — bottom-right, just above selection bar ── */
-/* Anchored 64px from the bottom (clears the ~56px selection bar + 8px gap).
-   Frosted glass buttons to match the backdrop-blur selection bar aesthetic. */
-.msp-viewport-controls {
+/* Mol* compiles to .msp-plugin .msp-viewport-controls (0,2,0 specificity),
+   so we match that prefix to win the cascade without relying on !important. */
+.msp-plugin .msp-viewport-controls {
   top: auto !important;
   bottom: 64px !important;
   right: 12px !important;
 }
 
-.msp-viewport-controls-buttons button {
+.msp-plugin .msp-viewport-controls-buttons button {
   background: rgba(255, 255, 255, 0.82) !important;
   backdrop-filter: blur(6px) !important;
   -webkit-backdrop-filter: blur(6px) !important;
@@ -260,7 +260,7 @@ button:not(:disabled),
   box-shadow: 0 1px 3px rgba(20, 20, 15, 0.10) !important;
 }
 
-.msp-viewport-controls-buttons button:hover {
+.msp-plugin .msp-viewport-controls-buttons button:hover {
   background: rgba(255, 255, 255, 0.96) !important;
 }
 
