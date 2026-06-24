@@ -98,14 +98,14 @@
   --pio-highlight-text: #111610;
   /* row selection — navy tint so sky-blue pills stay visible on selected rows */
   --pio-row-selection-bg: rgba(26, 64, 106, 0.45);
-  /* Quality card tones — warm amber / sage green readable on near-black backgrounds */
-  --pio-quality-amber-bg: rgba(217, 176, 92, 0.16);
-  --pio-quality-amber-border: rgba(217, 176, 92, 0.38);
-  --pio-quality-amber-fg: #e8c068;
-  --pio-quality-amber-fg-soft: rgba(232, 192, 104, 0.68);
-  --pio-quality-green-bg: rgba(143, 191, 138, 0.13);
-  --pio-quality-green-fg: #8fbf8a;
-  --pio-quality-green-fg-soft: rgba(143, 191, 138, 0.62);
+  /* Quality card tones — high-contrast on near-black */
+  --pio-quality-amber-bg: rgba(217, 176, 92, 0.18);
+  --pio-quality-amber-border: rgba(217, 176, 92, 0.40);
+  --pio-quality-amber-fg: #ffd166;
+  --pio-quality-amber-fg-soft: rgba(253, 253, 253, 0.58);
+  --pio-quality-green-bg: rgba(143, 191, 138, 0.16);
+  --pio-quality-green-fg: #b5e0af;
+  --pio-quality-green-fg-soft: rgba(253, 253, 253, 0.58);
   /* accent — forest green instead of near-black */
   --pio-accent: #4a9e6e;
   --pio-accent-hover: #5ab87e;
