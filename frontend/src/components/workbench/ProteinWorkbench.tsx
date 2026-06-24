@@ -825,7 +825,7 @@ export function ProteinWorkbench() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.18, ease: "easeOut" }}
-          className="wb-explore-grid min-w-0 rounded-[16px] border border-[rgba(20,20,15,0.09)] bg-transparent shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]"
+          className="wb-explore-grid min-w-0 rounded-[16px] border border-[var(--pio-line)] bg-transparent shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]"
         >
           {/* Sidebar in grid — desktop only */}
           <div className="hidden lg:block">
@@ -943,7 +943,7 @@ export function ProteinWorkbench() {
           </div>
 
           {/* Results column */}
-          <section ref={resultsColumnRef} className="relative z-[1] min-h-0 overflow-y-auto bg-white border-t border-[rgba(20,20,15,0.09)] md:border-t-0 md:shadow-[-8px_0_24px_rgba(17,22,16,0.07)]">
+          <section ref={resultsColumnRef} className="relative z-[1] min-h-0 overflow-y-auto bg-[var(--pio-white)] border-t border-[var(--pio-line)] md:border-t-0 md:shadow-[-8px_0_24px_rgba(17,22,16,0.07)]">
             <ResultsPanel
               activeTab={resultsTab}
               onTabChange={setResultsTab}
@@ -1057,7 +1057,7 @@ export function ProteinWorkbench() {
       {!isLg && sidebarOpen && (
         <motion.div
           key="drawer"
-          className="wb-sidebar-drawer bg-white"
+          className="wb-sidebar-drawer bg-[var(--pio-white)]"
           initial={{ x: "-100%" }}
           animate={{ x: 0 }}
           exit={{ x: "-100%" }}
@@ -1166,12 +1166,12 @@ export function ProteinWorkbench() {
 
 function WorkbenchModePlaceholder() {
   return (
-    <div className="w-full max-w-[480px] rounded-[16px] border border-[rgba(20,20,15,0.09)] bg-white p-10 text-center shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
+    <div className="w-full max-w-[480px] rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] p-10 text-center shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
       <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(199,217,236,0.4)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
         <Atom size={22} color="#1A406A" />
       </div>
-      <p className="text-[18px] font-bold text-[#111610]">Compare workspace is coming next</p>
-      <p className="mx-auto mt-2 max-w-[340px] text-[13.5px] leading-[1.6] text-[#636860]">
+      <p className="text-[18px] font-bold text-[var(--pio-ink)]">Compare workspace is coming next</p>
+      <p className="mx-auto mt-2 max-w-[340px] text-[13.5px] leading-[1.6] text-[var(--pio-graphite)]">
         The comparison workflow is available in Explore for now. This mode is reserved for the upcoming dedicated structure A/B comparison workspace.
       </p>
       <div className="mt-5 flex flex-wrap justify-center gap-2">
@@ -1208,7 +1208,7 @@ function LoadingOverlay({ statusLabel }: { statusLabel: string | null }) {
       : LOADING_LINES[lineIndex];
 
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white">
+    <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--pio-white)]">
       <p className="text-[22px] font-semibold text-[var(--pio-ink)] tracking-tight">
         {headline}
       </p>
@@ -1377,7 +1377,7 @@ function ResultsPanel({
   return (
     <section ref={panelRef} className="min-w-0">
       <div
-        className="sticky top-0 z-10 bg-white px-3 sm:px-5 pb-4 pt-4 shadow-[0_1px_0_rgba(17,22,16,0.07)]"
+        className="sticky top-0 z-10 bg-[var(--pio-white)] px-3 sm:px-5 pb-4 pt-4 shadow-[0_1px_0_rgba(17,22,16,0.07)]"
         role="tablist"
         aria-label="Analysis results"
       >
@@ -1388,7 +1388,7 @@ function ResultsPanel({
           </div>
           {/* right-edge fade — signals hidden tabs without a scrollbar */}
           {visibleTabs.length > 4 && (
-            <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white to-transparent" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-[var(--pio-white)] to-transparent" />
           )}
         </div>
       </div>
@@ -1536,18 +1536,18 @@ function ReportWorkspace({
   if (!analysis) {
     return (
       <div className="flex min-h-full items-center justify-center p-8">
-        <div className="w-full max-w-[480px] rounded-[16px] border border-[rgba(20,20,15,0.09)] bg-white p-10 text-center shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
+        <div className="w-full max-w-[480px] rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] p-10 text-center shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
           <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(199,217,236,0.4)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <Database size={22} color="#1A406A" />
           </div>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: "#111610" }}>No analysis yet</h2>
-          <p style={{ fontSize: 13.5, color: "#636860", lineHeight: 1.6, marginTop: 8 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--pio-ink)" }}>No analysis yet</h2>
+          <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.6, marginTop: 8 }}>
             Load and analyze a structure first, then return here for a concise summary with methods and provenance.
           </p>
           <div style={{ display: "flex", gap: 8, marginTop: 20, justifyContent: "center", flexWrap: "wrap" }}>
             {([["Load sample", onLoadSample], ["Fetch PDB ID", onFocusRcsb], ["Fetch AlphaFold", onFocusAlphaFold]] as const).map(([label, fn]) => (
               <button key={label} type="button" onClick={fn}
-                className="rounded-[12px] border border-[rgba(17,22,16,0.14)] bg-white px-4 py-2 text-[13px] font-semibold text-[#111610] hover:bg-[rgba(17,22,16,0.04)]">
+                className="rounded-[12px] border border-[var(--pio-line-strong)] bg-[var(--pio-white)] px-4 py-2 text-[13px] font-semibold text-[var(--pio-ink)] hover:bg-[var(--pio-sand)]">
                 {label}
               </button>
             ))}
@@ -1559,7 +1559,7 @@ function ReportWorkspace({
 
   return (
     <div className="flex min-h-full items-start justify-center p-6">
-    <div className="w-full max-w-[960px] rounded-[16px] border border-[rgba(20,20,15,0.09)] bg-white shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
+    <div className="w-full max-w-[960px] rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
     <div style={{ padding: "32px 36px 56px" }}>
       <ReportHeader analysis={analysis} provenance={provenance} onExportContacts={onExportContacts} onExportLigands={onExportLigands} onExportAnalysisJson={onExportAnalysisJson} />
       <div style={REPORT_DIVIDER}>
@@ -2784,7 +2784,7 @@ function LigandDetailPanel({
 
       <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {metrics.map(([label, value]) => (
-          <div key={label} className="border border-[var(--pio-blue)] bg-white/80 px-3 py-2">
+          <div key={label} className="border border-[var(--pio-blue)] bg-[var(--pio-white)]/80 px-3 py-2">
             <p className="text-xs font-medium uppercase tracking-wide text-[var(--pio-blue-deep)]">{label}</p>
             <p className="mt-1 font-mono text-sm text-[var(--pio-ink)]">{value}</p>
           </div>
@@ -2792,7 +2792,7 @@ function LigandDetailPanel({
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <div className="border border-[var(--pio-blue)] bg-white/80 p-3">
+        <div className="border border-[var(--pio-blue)] bg-[var(--pio-white)]/80 p-3">
           <p className="text-xs font-medium uppercase tracking-wide text-[var(--pio-blue-deep)]">Closest contact</p>
           {closestContact && interaction?.closest_distance_angstrom !== null ? (
             <div className="mt-2 text-sm text-[var(--pio-ink)]">
@@ -2809,7 +2809,7 @@ function LigandDetailPanel({
           )}
         </div>
 
-        <div className="border border-[var(--pio-blue)] bg-white/80 p-3">
+        <div className="border border-[var(--pio-blue)] bg-[var(--pio-white)]/80 p-3">
           <p className="text-xs font-medium uppercase tracking-wide text-[var(--pio-blue-deep)]">Distance buckets</p>
           <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
             <DistanceBucket label="<2 A" value={buckets.under_2_angstrom} />
@@ -2820,14 +2820,14 @@ function LigandDetailPanel({
         </div>
       </div>
 
-      <div className="mt-4 border border-[var(--pio-blue)] bg-white/80 p-3">
+      <div className="mt-4 border border-[var(--pio-blue)] bg-[var(--pio-white)]/80 p-3">
         <p className="text-xs font-medium uppercase tracking-wide text-[var(--pio-blue-deep)]">Contacting residues</p>
         {interaction?.contacting_residues.length ? (
           <div className="mt-2 flex flex-wrap gap-2">
             {interaction.contacting_residues.map((residue) => (
               <span
                 key={`${residue.chain_id}-${residue.residue_name}-${residue.residue_number}`}
-                className="inline-flex rounded-[var(--pio-radius-sm)] border border-[var(--pio-line-strong)] bg-white px-2 py-1 font-mono text-xs text-[var(--pio-ink)]"
+                className="inline-flex rounded-[var(--pio-radius-sm)] border border-[var(--pio-line-strong)] bg-[var(--pio-white)] px-2 py-1 font-mono text-xs text-[var(--pio-ink)]"
               >
                 {residue.chain_id}:{residue.residue_name}
                 {residue.residue_number} ({residue.contact_count})
@@ -2844,7 +2844,7 @@ function LigandDetailPanel({
 
 function DistanceBucket({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex items-center justify-between rounded-[var(--pio-radius-sm)] border border-[var(--pio-line-strong)] bg-white px-2 py-1">
+    <div className="flex items-center justify-between rounded-[var(--pio-radius-sm)] border border-[var(--pio-line-strong)] bg-[var(--pio-white)] px-2 py-1">
       <span className="font-mono text-xs text-[var(--pio-graphite)]">{label}</span>
       <span className="font-mono text-xs text-[var(--pio-ink)]">{value}</span>
     </div>

@@ -71,13 +71,13 @@ export function ExploreSidebar({
   ];
 
   return (
-    <aside className="relative z-[1] flex h-full flex-col overflow-y-auto bg-white p-6 shadow-[8px_0_24px_rgba(17,22,16,0.07)]">
+    <aside className="relative z-[1] flex h-full flex-col overflow-y-auto bg-[var(--pio-white)] p-6 shadow-[8px_0_24px_rgba(17,22,16,0.07)]">
       {/* ── Load Structure ── */}
       <div>
-        <p className="mb-3 text-[20px] font-bold text-[#111610]">Load Structure</p>
+        <p className="mb-3 text-[20px] font-bold text-[var(--pio-ink)]">Load Structure</p>
 
         {/* Source tab switcher */}
-        <div className="flex gap-1 rounded-[12px] border border-[rgba(17,22,16,0.05)] bg-[#F5F5F5] p-1">
+        <div className="flex gap-1 rounded-[12px] border border-[var(--pio-line)] bg-[var(--pio-paper)] p-1">
           {tabs.map((t) => (
             <button
               key={t.id}
@@ -87,7 +87,7 @@ export function ExploreSidebar({
                 "flex-1 rounded-[8px] py-[5px] text-[12.5px] font-semibold transition-colors",
                 tab === t.id
                   ? "bg-[#1A406A] text-white"
-                  : "text-[#1A406A] opacity-60 hover:opacity-100",
+                  : "text-[var(--pio-blue-deep)] opacity-60 hover:opacity-100",
               ].join(" ")}
             >
               {t.label}
@@ -98,7 +98,7 @@ export function ExploreSidebar({
         {/* File tab */}
         {tab === "file" && (
           <div className="mt-3 flex flex-col gap-2">
-            <label className="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-[12px] border border-dashed border-[rgba(17,22,16,0.2)] bg-[#F5F5F5] px-3 text-center transition-colors hover:bg-[rgba(17,22,16,0.05)]">
+            <label className="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-[12px] border border-dashed border-[var(--pio-line-strong)] bg-[var(--pio-paper)] px-3 text-center transition-colors hover:bg-[var(--pio-sand)]">
               <FileUp className="mb-1.5 h-4 w-4 text-[var(--pio-graphite)]" />
               <span className="text-xs font-semibold text-[var(--pio-ink)]">
                 {fileName || "Drop .pdb / .cif / .mmcif"}
@@ -127,7 +127,7 @@ export function ExploreSidebar({
             <button
               type="button"
               onClick={() => setPaeOpen((o) => !o)}
-              className="mt-1 flex items-center justify-between rounded-[12px] border border-[rgba(17,22,16,0.08)] bg-[#F5F5F5] px-3 py-2 text-[11px] text-[var(--pio-graphite)] transition-colors hover:bg-[rgba(17,22,16,0.05)]"
+              className="mt-1 flex items-center justify-between rounded-[12px] border border-[var(--pio-line)] bg-[var(--pio-paper)] px-3 py-2 text-[11px] text-[var(--pio-graphite)] transition-colors hover:bg-[var(--pio-sand)]"
             >
               <span>
                 Add PAE JSON <span className="opacity-60">(optional)</span>
@@ -136,7 +136,7 @@ export function ExploreSidebar({
             </button>
 
             {paeOpen && (
-              <label className="flex cursor-pointer flex-col rounded-[12px] border border-dashed border-[rgba(17,22,16,0.2)] bg-[#F5F5F5] px-3 py-2.5 transition-colors hover:bg-[rgba(17,22,16,0.05)]">
+              <label className="flex cursor-pointer flex-col rounded-[12px] border border-dashed border-[var(--pio-line-strong)] bg-[var(--pio-paper)] px-3 py-2.5 transition-colors hover:bg-[var(--pio-sand)]">
                 <span className="text-xs font-semibold text-[var(--pio-ink)]">
                   {paeFileName || "Choose PAE JSON"}
                 </span>
@@ -171,19 +171,19 @@ export function ExploreSidebar({
                 maxLength={4}
                 onChange={(e) => onPdbIdChange(e.target.value.toUpperCase())}
                 placeholder="e.g. 2HHB"
-                className="pio-input h-9 min-w-0 flex-1 bg-[#F5F5F5] px-3 font-mono text-sm uppercase"
+                className="pio-input h-9 min-w-0 flex-1 bg-[var(--pio-paper)] px-3 font-mono text-sm uppercase"
               />
               <button
                 type="button"
                 onClick={onFetchRcsb}
                 disabled={isRcsbLoading || !pdbId.trim()}
-                className="flex items-center gap-1.5 rounded-full bg-[rgba(17,22,16,0.08)] px-[18px] py-2 text-[13px] font-semibold text-[#111610] transition-colors hover:bg-[rgba(17,22,16,0.14)] disabled:cursor-not-allowed disabled:opacity-45"
+                className="flex items-center gap-1.5 rounded-full bg-[var(--pio-line)] px-[18px] py-2 text-[13px] font-semibold text-[var(--pio-ink)] transition-colors hover:bg-[var(--pio-line-strong)] disabled:cursor-not-allowed disabled:opacity-45"
               >
                 {isRcsbLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
                 Fetch
               </button>
             </div>
-            <p className="mt-1 text-[12px] text-[#636860]">Fetches mmCIF from RCSB.</p>
+            <p className="mt-1 text-[12px] text-[var(--pio-graphite)]">Fetches mmCIF from RCSB.</p>
           </div>
         )}
 
@@ -201,13 +201,13 @@ export function ExploreSidebar({
                 maxLength={10}
                 onChange={(e) => onUniprotIdChange(e.target.value.toUpperCase())}
                 placeholder="e.g. P69905"
-                className="pio-input h-9 min-w-0 flex-1 bg-[#F5F5F5] px-3 font-mono text-sm uppercase"
+                className="pio-input h-9 min-w-0 flex-1 bg-[var(--pio-paper)] px-3 font-mono text-sm uppercase"
               />
               <button
                 type="button"
                 onClick={onFetchAlphaFold}
                 disabled={isAlphaFoldLoading || !uniprotId.trim()}
-                className="flex items-center gap-1.5 rounded-full bg-[rgba(17,22,16,0.08)] px-[18px] py-2 text-[13px] font-semibold text-[#111610] transition-colors hover:bg-[rgba(17,22,16,0.14)] disabled:cursor-not-allowed disabled:opacity-45"
+                className="flex items-center gap-1.5 rounded-full bg-[var(--pio-line)] px-[18px] py-2 text-[13px] font-semibold text-[var(--pio-ink)] transition-colors hover:bg-[var(--pio-line-strong)] disabled:cursor-not-allowed disabled:opacity-45"
               >
                 {isAlphaFoldLoading ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -217,13 +217,13 @@ export function ExploreSidebar({
                 Fetch
               </button>
             </div>
-            <p className="mt-1 text-[12px] text-[#636860]">Fetches predicted model from AlphaFold DB.</p>
+            <p className="mt-1 text-[12px] text-[var(--pio-graphite)]">Fetches predicted model from AlphaFold DB.</p>
           </div>
         )}
 
         {/* Analysis Controls section */}
         <div className="mt-4 border-t border-[var(--pio-line)] pt-4">
-          <p className="mb-3 text-[20px] font-bold text-[#111610]">Analysis Controls</p>
+          <p className="mb-3 text-[20px] font-bold text-[var(--pio-ink)]">Analysis Controls</p>
 
           {/* Distance cutoff */}
           <div className="flex flex-col gap-1.5">
@@ -241,7 +241,7 @@ export function ExploreSidebar({
               step="0.1"
               value={cutoff}
               onChange={(e) => onCutoffChange(Number(e.target.value))}
-              className="pio-input h-9 w-full bg-[#F5F5F5] px-3 font-mono text-sm"
+              className="pio-input h-9 w-full bg-[var(--pio-paper)] px-3 font-mono text-sm"
             />
           </div>
 
@@ -256,7 +256,7 @@ export function ExploreSidebar({
               role="switch"
               aria-checked={confidenceWarningsOn}
               className={`relative inline-flex h-[22px] w-[40px] shrink-0 cursor-pointer rounded-full transition-colors duration-200 ${
-                confidenceWarningsOn ? "bg-[#4CAF50]" : "bg-[rgba(17,22,16,0.2)]"
+                confidenceWarningsOn ? "bg-[#4CAF50]" : "bg-[var(--pio-line-strong)]"
               }`}
             >
               <span
@@ -283,7 +283,7 @@ export function ExploreSidebar({
             <button
               type="button"
               onClick={onReset}
-              className="flex flex-1 items-center justify-center gap-2 rounded-[12px] border border-[rgba(17,22,16,0.14)] bg-white py-[10px] text-[13px] font-semibold text-[#111610] transition-colors hover:bg-[rgba(17,22,16,0.04)]"
+              className="flex flex-1 items-center justify-center gap-2 rounded-[12px] border border-[var(--pio-line-strong)] bg-[var(--pio-white)] py-[10px] text-[13px] font-semibold text-[var(--pio-ink)] transition-colors hover:bg-[var(--pio-sand)]"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               Reset
@@ -294,7 +294,7 @@ export function ExploreSidebar({
 
       {/* ── Metadata — appears after analysis ── */}
       {(fileName || metadata || analysis) && (
-        <div className="mt-4 border-t border-[rgba(17,22,16,0.08)] pt-4">
+        <div className="mt-4 border-t border-[var(--pio-line)] pt-4">
           <CompactMetadataSummary
             fileName={fileName}
             structureFormat={structureFormat}
@@ -379,9 +379,9 @@ function CompactMetadataSummary({
   return (
     <div>
       <div className="mb-3 flex items-center justify-between gap-2">
-        <p className="text-[20px] font-bold text-[#111610]">Metadata</p>
+        <p className="text-[20px] font-bold text-[var(--pio-ink)]">Metadata</p>
         {badgeLabel && (
-          <span className="rounded-full bg-[#C8D9EC] px-[9px] py-[3px] font-mono text-[11px] font-medium text-[#1A406A]">
+          <span className="rounded-full bg-[var(--pio-blue-pale)] px-[9px] py-[3px] font-mono text-[11px] font-medium text-[var(--pio-blue-deep)]">
             {badgeLabel}
           </span>
         )}
@@ -392,13 +392,13 @@ function CompactMetadataSummary({
             key={row.label}
             className="flex items-baseline justify-between py-[5px]"
           >
-            <span className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-[#636860]">{row.label}</span>
+            <span className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">{row.label}</span>
             {row.mono ? (
-              <span className={`font-mono text-[12px] font-medium ${row.dimmed ? "text-[#636860]" : "text-[#111610]"}`}>
+              <span className={`font-mono text-[12px] font-medium ${row.dimmed ? "text-[var(--pio-graphite)]" : "text-[var(--pio-ink)]"}`}>
                 {row.value}
               </span>
             ) : (
-              <span className="text-[13px] font-medium text-[#111610]">{row.value}</span>
+              <span className="text-[13px] font-medium text-[var(--pio-ink)]">{row.value}</span>
             )}
           </div>
         ))}

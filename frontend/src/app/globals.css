@@ -122,6 +122,15 @@
   --font-mono: var(--font-pio-mono), ui-monospace, monospace;
 }
 
+/* Prevent browser from applying its own dark styling to native form controls.
+   Without this, <input type="number"> spin buttons change size/appearance in
+   dark mode, creating the visual "structural change" the user notices. */
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  color-scheme: light;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
