@@ -131,6 +131,7 @@ interface StructureCache {
   cutoff: number;
   savedAt: string;
   resultsTab?: ResultsTab;
+  tabStripScrollLeft?: number;
 }
 
 function saveStructureCache(entry: StructureCache) {
@@ -173,6 +174,7 @@ export function ProteinWorkbench() {
   const [contactFilter, setContactFilter] = useState<ContactFilter>("all");
   const [resultsTab, setResultsTab] = useState<ResultsTab>("overview");
   const resultsColumnRef = useRef<HTMLElement | null>(null);
+  const initialTabStripScrollRef = useRef<number>(0);
   const [inputSource, setInputSource] = useState<InputSource>("upload");
   const [analysisTimestamp, setAnalysisTimestamp] = useState<string | null>(null);
   const [error, setError] = useState<WorkbenchError>(null);
@@ -198,6 +200,7 @@ export function ProteinWorkbench() {
     if (cached.pdbId) setInputSource("rcsb");
     else if (cached.uniprotId) setInputSource("alphafold");
     if (cached.resultsTab) setResultsTab(cached.resultsTab);
+    initialTabStripScrollRef.current = cached.tabStripScrollLeft ?? 0;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -947,6 +950,11 @@ export function ProteinWorkbench() {
             <ResultsPanel
               activeTab={resultsTab}
               onTabChange={setResultsTab}
+              initialTabStripScrollLeft={initialTabStripScrollRef.current}
+              onTabStripScroll={(x) => {
+                const existing = loadStructureCache();
+                if (existing) saveStructureCache({ ...existing, tabStripScrollLeft: x });
+              }}
               analysis={analysis}
               comparison={comparison}
               chains={analysis?.chains ?? []}
@@ -1258,6 +1266,8 @@ function ResultsPanel({
   onLoadExample,
   onFocusRcsb,
   onFocusAlphaFold,
+  initialTabStripScrollLeft,
+  onTabStripScroll,
 }: {
   activeTab: ResultsTab;
   onTabChange: (tab: ResultsTab) => void;
@@ -1287,8 +1297,18 @@ function ResultsPanel({
   onLoadExample: (exampleId: ExampleId) => void;
   onFocusRcsb: () => void;
   onFocusAlphaFold: () => void;
+  initialTabStripScrollLeft?: number;
+  onTabStripScroll?: (x: number) => void;
 }) {
   const panelRef = useRef<HTMLElement | null>(null);
+  const tabStripRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (tabStripRef.current && initialTabStripScrollLeft) {
+      tabStripRef.current.scrollLeft = initialTabStripScrollLeft;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const tabs: Array<{ id: ResultsTab; label: string; visible: boolean; count?: number }> = [
     { id: "overview", label: "Overview", visible: true },
     { id: "chains", label: "Chains", visible: true, count: analysis ? chains.length : undefined },
@@ -1383,7 +1403,11 @@ function ResultsPanel({
       >
         {/* relative wrapper lets the fade gradient sit over the right edge */}
         <div className="relative">
-          <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+          <div
+            ref={tabStripRef}
+            className="flex gap-1 overflow-x-auto scrollbar-hide"
+            onScroll={() => onTabStripScroll?.(tabStripRef.current?.scrollLeft ?? 0)}
+          >
             {visibleTabs.map((tab) => <TabButton key={tab.id} tab={tab} />)}
           </div>
           {/* right-edge fade — signals hidden tabs without a scrollbar */}
