@@ -128,6 +128,39 @@ const EXAMPLE_GALLERY: ExampleCard[] = [
   },
 ];
 
+const CACHE_KEY = "pio_cache_v1";
+
+interface StructureCache {
+  structureText: string;
+  structureFormat: StructureFileFormat;
+  fileName: string;
+  pdbId: string;
+  uniprotId: string;
+  analysis: AnalysisResponse;
+  cutoff: number;
+  savedAt: string;
+}
+
+function saveStructureCache(entry: StructureCache) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(entry));
+  } catch {
+    // QuotaExceededError for very large structures — silently skip
+  }
+}
+
+function loadStructureCache(): StructureCache | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StructureCache;
+    if (!parsed.structureText || !parsed.analysis) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 export function ProteinWorkbench() {
   const [mode, setMode] = useState<WorkbenchMode>("explore");
   const [fileName, setFileName] = useState<string>("");
@@ -156,6 +189,24 @@ export function ProteinWorkbench() {
   const [isRcsbLoading, setIsRcsbLoading] = useState(false);
   const [isAlphaFoldLoading, setIsAlphaFoldLoading] = useState(false);
   const [isComparisonLoading, setIsComparisonLoading] = useState(false);
+
+  // Restore last session from cache on first mount
+  useEffect(() => {
+    const cached = loadStructureCache();
+    if (!cached) return;
+    setFileName(cached.fileName);
+    setStructureText(cached.structureText);
+    setStructureFormat(cached.structureFormat);
+    setPdbId(cached.pdbId);
+    setUniprotId(cached.uniprotId);
+    setCutoff(cached.cutoff);
+    setAnalysis(cached.analysis);
+    setAnalysisTimestamp(cached.savedAt);
+    setViewerColorMode(cached.analysis.confidence ? "plddt" : "structure");
+    if (cached.pdbId) setInputSource("rcsb");
+    else if (cached.uniprotId) setInputSource("alphafold");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Responsive: track whether we're at lg+ breakpoint
   const [isLg, setIsLg] = useState(true);
@@ -394,6 +445,7 @@ export function ProteinWorkbench() {
       setViewerColorMode(nextAnalysis.confidence ? "plddt" : "structure");
       setContactFilter("all");
       setResultsTab("overview");
+      saveStructureCache({ structureText, structureFormat, fileName, pdbId, uniprotId, analysis: nextAnalysis, cutoff, savedAt: new Date().toISOString() });
       logTiming("analysis request", timingStarted, {
         form_ms,
         request_ms,
@@ -464,6 +516,7 @@ export function ProteinWorkbench() {
       setViewerColorMode(payload.analysis.confidence ? "plddt" : "structure");
       setContactFilter("all");
       setResultsTab("overview");
+      saveStructureCache({ structureText: payload.structure_text, structureFormat: payload.structure_format, fileName: payload.filename, pdbId: normalizedPdbId.toUpperCase(), uniprotId: "", analysis: payload.analysis, cutoff, savedAt: new Date().toISOString() });
       logTiming("rcsb fetch analysis", timingStarted, {
         request_ms,
         response_json_ms,
@@ -536,6 +589,7 @@ export function ProteinWorkbench() {
       setViewerColorMode(payload.analysis.confidence ? "plddt" : "structure");
       setContactFilter("all");
       setResultsTab("overview");
+      saveStructureCache({ structureText: payload.structure_text, structureFormat: payload.structure_format, fileName: payload.filename, pdbId: "", uniprotId: normalizedUniprotId.toUpperCase(), analysis: payload.analysis, cutoff, savedAt: new Date().toISOString() });
       logTiming("alphafold fetch analysis", timingStarted, {
         request_ms,
         response_json_ms,
@@ -661,6 +715,7 @@ export function ProteinWorkbench() {
   }
 
   function reset() {
+    localStorage.removeItem(CACHE_KEY);
     setFileName("");
     setStructureText("");
     setStructureFormat("pdb");
@@ -1234,11 +1289,11 @@ function ResultsPanel({
   onFocusAlphaFold: () => void;
 }) {
   const panelRef = useRef<HTMLElement | null>(null);
-  const tabs: Array<{ id: ResultsTab; label: string; visible: boolean }> = [
+  const tabs: Array<{ id: ResultsTab; label: string; visible: boolean; count?: number }> = [
     { id: "overview", label: "Overview", visible: true },
-    { id: "chains", label: "Chains", visible: true },
-    { id: "ligands", label: "Ligands", visible: true },
-    { id: "contacts", label: "Contacts", visible: true },
+    { id: "chains", label: "Chains", visible: true, count: analysis ? chains.length : undefined },
+    { id: "ligands", label: "Ligands", visible: true, count: analysis ? ligands.length : undefined },
+    { id: "contacts", label: "Contacts", visible: true, count: analysis ? allContactCount : undefined },
     { id: "confidence", label: "Confidence", visible: Boolean(analysis?.confidence) },
     { id: "pae", label: "PAE", visible: Boolean(analysis?.pae) },
     { id: "quality", label: "Quality", visible: Boolean(analysis) },
@@ -1293,22 +1348,28 @@ function ResultsPanel({
     );
   }
 
-  function TabButton({ tab }: { tab: { id: ResultsTab; label: string } }) {
+  function TabButton({ tab }: { tab: { id: ResultsTab; label: string; count?: number } }) {
+    const isActive = selectedTab === tab.id;
     return (
       <button
         key={tab.id}
         type="button"
         role="tab"
-        aria-selected={selectedTab === tab.id}
+        aria-selected={isActive}
         onClick={() => preservePanelPosition(() => onTabChange(tab.id))}
         className={[
           "flex-1 min-w-max whitespace-nowrap text-center rounded-[12px] px-2 sm:px-3.5 py-[7px] text-[13px] font-semibold transition-colors",
-          selectedTab === tab.id
+          isActive
             ? "bg-[#1A406A] text-white"
             : "text-[#1A406A] opacity-70 hover:opacity-100 hover:bg-[rgba(26,64,106,0.08)]",
         ].join(" ")}
       >
         {tab.label}
+        {tab.count != null && (
+          <span className={["ml-1.5 text-[10px] font-semibold", isActive ? "opacity-70" : "opacity-50"].join(" ")}>
+            {tab.count.toLocaleString()}
+          </span>
+        )}
       </button>
     );
   }
@@ -1722,46 +1783,6 @@ function ConfidenceReportCard({ confidence }: { confidence: ConfidenceSummary })
             <p style={{ ...REPORT_LABEL, color: "#111610" }}>{label}</p>
             <p style={{ ...REPORT_MONO, fontSize: 18, fontWeight: 700, color: "#111610" }}>{value.toLocaleString()}</p>
           </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ViewerModeToggle({
-  colorMode,
-  hasConfidence,
-  onColorModeChange,
-}: {
-  colorMode: ViewerColorMode;
-  hasConfidence: boolean;
-  onColorModeChange: (mode: ViewerColorMode) => void;
-}) {
-  if (!hasConfidence) {
-    return null;
-  }
-
-  return (
-    <div className="pio-panel flex items-center justify-between gap-3 p-3">
-      <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-[var(--pio-graphite)]">Viewer color mode</p>
-        <p className="mt-1 text-xs text-[var(--pio-graphite)]">Mol* native controls remain available inside the viewer.</p>
-      </div>
-      <div className="inline-flex rounded-full border border-[var(--pio-line-strong)] bg-[var(--pio-white)] p-1">
-        {(["structure", "plddt"] as const).map((mode) => (
-          <button
-            key={mode}
-            type="button"
-            onClick={() => onColorModeChange(mode)}
-            className={[
-              "h-8 rounded-full px-3 text-xs font-semibold transition-colors",
-              colorMode === mode
-                ? "bg-[var(--pio-ink)] text-[var(--pio-white)]"
-                : "text-[var(--pio-graphite)] hover:text-[var(--pio-ink)]",
-            ].join(" ")}
-          >
-            {mode === "plddt" ? "pLDDT" : "Structure"}
-          </button>
         ))}
       </div>
     </div>
@@ -2374,7 +2395,7 @@ function MetadataPanel({ metadata }: { metadata: StructureMetadata | null }) {
         style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 24px" }}
       >
         {rows.map((row) => (
-          <div key={row.label}>
+          <div key={row.label} className="cursor-pointer rounded-[6px] px-2 py-1.5 transition-colors hover:bg-[var(--pio-sky)]">
             <p className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-[#636860]">{row.label}</p>
             {row.mono ? (
               <p className="mt-0.5 font-mono text-[12px] font-medium text-[#111610]">{row.value}</p>
@@ -2845,84 +2866,6 @@ function TopContactList({ title, rows }: { title: string; rows: Array<[string, n
       )}
     </div>
   );
-}
-
-function SelectionBar({ selection, onClear }: { selection: ViewerSelection | null; onClear: () => void }) {
-  if (!selection) {
-    return (
-      <div className="pio-panel min-h-[108px] px-4 py-3 text-sm text-[var(--pio-graphite)]">
-        <p className="text-xs font-medium uppercase tracking-wide text-[var(--pio-graphite)]">Selection inspector</p>
-        <p className="mt-2 text-sm leading-6">Select a chain, ligand, or contact row to focus it in Mol*.</p>
-      </div>
-    );
-  }
-
-  const details = selectionDetails(selection);
-
-  return (
-    <div className="pio-panel p-4 text-sm text-[var(--pio-ink)]">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="pio-badge pio-badge-active">Selected in table and Mol*</p>
-          <p className="mt-1 font-mono text-sm font-semibold">{selection.label}</p>
-          <p className="mt-2 text-xs leading-5 text-[var(--pio-graphite)]">
-            Mol* focuses the selected chain, ligand, or contact partners automatically.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={onClear}
-          className="pio-button-secondary h-9 shrink-0 px-3"
-        >
-          <X className="h-4 w-4" />
-          Clear selection
-        </button>
-      </div>
-      <div className="mt-3 grid gap-2 sm:grid-cols-3">
-        {details.map(([label, value]) => (
-          <div key={label} className="rounded-[var(--pio-radius-sm)] bg-[var(--pio-paper)] px-3 py-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-[var(--pio-graphite)]">{label}</p>
-            <p className="mt-1 break-words font-mono text-sm text-[var(--pio-ink)]">{value}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function selectionDetails(selection: ViewerSelection): Array<[string, string]> {
-  if (selection.kind === "chain") {
-    return [
-      ["Type", "Chain"],
-      ["Chain", selection.chainId],
-    ];
-  }
-
-  if (selection.kind === "ligand") {
-    return [
-      ["Type", "Ligand"],
-      ["Chain", selection.chainId],
-      ["Residue", `${selection.residueName} ${selection.residueNumber}`],
-    ];
-  }
-
-  const contact = selection.contact;
-  const details: Array<[string, string]> = [
-    ["Type", contact.contact_type],
-    ["Partner A", `${contact.chain_a}:${contact.residue_name_a}${contact.residue_a}.${contact.atom_a}`],
-    ["Partner B", `${contact.chain_b}:${contact.residue_name_b}${contact.residue_b}.${contact.atom_b}`],
-    ["Distance", `${contact.distance_angstrom.toFixed(3)} A`],
-    ["Categories", contact.contact_categories.join(", ")],
-  ];
-  if (contact.source_residue_confidence || contact.target_residue_confidence) {
-    details.push([
-      "Confidence",
-      contact.confidence_warning
-        ? "Low-confidence endpoint"
-        : "Endpoints are not low-confidence",
-    ]);
-  }
-  return details;
 }
 
 function ContactCategoryFilter({

@@ -8,125 +8,79 @@ add another `<link>` for them.
 **Token rules (non-negotiable):**
 - No Tailwind color utilities (`slate-`, `gray-`, `cyan-`, `zinc-`, etc.) — use CSS custom properties via `bg-[var(--pio-*)]` arbitrary values or the shared class names in `globals.css`.
 - Color semantics: green = healthy/selected, blue = metadata/structure, lavender = predicted/AI, coral = warning/clash, amber = caution. Only use a color for its meaning.
-- Every primary button must use `pio-button-primary` (ink in light, bright green in dark). No flat gray buttons.
+- Every primary button must use `pio-button-primary` (ink in light). No flat gray buttons.
 - Badges: `pio-badge pio-badge-{active|metadata|predicted|warning|caution|neutral}`.
-- Panel cards: `pio-panel` (28px radius, box-shadow). Inner panels: `pio-panel-nested` (18px radius).
-- **Section headings** (Chains, Quality, Contacts, etc.) use `.pio-section-title` — `font-size: 20px`, `font-weight: 700`. Left sidebar headings (Load Structure, Analysis Controls, Metadata) use `text-[20px] font-bold text-[#111610]`.
-- **Primary colour** for interactive elements (active tabs, primary buttons, links): `#1A406A`. Right panel width: `400px`. Left sidebar: `280px`.
+- Panel cards: `pio-panel` (24px radius, box-shadow). Inner panels: `pio-panel-nested` (18px radius).
+- **Section headings** use `.pio-section-title` — `font-size: 20px`, `font-weight: 700`.
+- **Primary colour** for interactive elements: `#1A406A`. Right panel: `400px`. Left sidebar: `280px`.
+
+**Key design constants:**
+- Card shadow: `shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]`
+- Card border: `border border-[rgba(20,20,15,0.09)]`
+- Selection bg: `rgba(199,217,236,0.6)` + `2px solid #1A406A` inset border
+- Icon circle bg: `rgba(199,217,236,0.4)` — Download circle fill: `#C8E3EE`
+- All pill/tab/button border-radius: `rounded-[12px]`
+
+See `DESIGN_SYSTEM.md` at repo root for copy-paste patterns.
 
 ## Component map
 | File | Purpose |
 |---|---|
 | `frontend/src/app/page.tsx` | Root — renders `<ProteinWorkbench>` |
-| `frontend/src/components/workbench/ProteinWorkbench.tsx` | Main workbench (2 900 lines — all tabs, sidebar, report, compare, ligand detail) |
+| `frontend/src/components/workbench/ProteinWorkbench.tsx` | Main workbench (~2 800 lines — all tabs, sidebar, report, compare, ligand detail) |
 | `frontend/src/components/workbench/ExploreSidebar.tsx` | Left sidebar (input forms, fetch, gallery) |
 | `frontend/src/components/workbench/TopNav.tsx` | Sticky top nav |
-| `frontend/src/components/workbench/WorkbenchShell.tsx` | Layout shell |
+| `frontend/src/components/workbench/WorkbenchShell.tsx` | Layout shell — `h-[calc(100svh-92px)]` outer container |
 | `frontend/src/components/viewer/StructureViewer.tsx` | Mol* 3-D viewer wrapper |
+| `frontend/src/app/globals.css` | All design tokens + `.wb-explore-grid` layout |
 
-## Scroll fix + responsive layout polish — 2026-06-24 (fifth session)
+## Current state (as of 2026-06-24)
 
-**Branch:** `feat/responsive-layout` — committed `53558a5`, deployed to production (protein-io.vercel.app)
+**Branch `feat/ui-gaps`** is the latest (not yet merged to main). All prior work is on `main`.
 
-**Files touched:** `frontend/src/app/globals.css`, `frontend/src/components/workbench/ProteinWorkbench.tsx`, `frontend/src/components/workbench/ExploreSidebar.tsx`, `frontend/src/components/workbench/TopNav.tsx`, `frontend/src/components/workbench/WorkbenchShell.tsx`
+### What is fully built and live
+- Three-mode shell: `Explore | Compare | Report` with Framer Motion transitions.
+- Responsive layout: mobile drawer sidebar, 2-col tablet, 3-col desktop. `minmax(0, 1fr)` row tracks — critical for results panel scroll.
+- Results panel: `overflow-y-auto` section correctly sized to grid track; sticky tab strip; scroll resets on tab change.
+- All eight result tabs: Overview, Chains, Ligands, Contacts, Confidence, PAE, Quality, Methods.
+- Tab count badges on Chains / Ligands / Contacts (hidden until analysis loads).
+- Overview tab: structure title + circular navy arrow button linking to RCSB / AlphaFold DB.
+- Floating `FloatingLigandPanel`: draggable, clamped to viewer bounds, minimize/expand animation.
+- Inline viewer controls: pLDDT/Structure color toggle pill (top-right), frosted-glass selection bar (bottom).
+- Metadata row hover: light blue (`--pio-sky`) tint + `cursor-pointer`.
+- Confidence-aware warnings toggle (sidebar) — single-line, left-aligned.
+- Report tab: white card, deduped title + arrow button, section dividers, download buttons.
+- Compare tab: placeholder card (pending implementation — see Next milestone).
+- `localStorage` structure cache (`pio_cache_v1`): saves structure text + analysis after every successful load; restores on mount; cleared on Reset.
+- CSS hiding residual Mol* bottom-left sequence toggle artifact.
+- Dead code removed: `ViewerModeToggle`, `SelectionBar`, `selectionDetails`.
 
-**Root cause fixed — results panel scroll:**
-- `grid-template-rows: 1fr` in `.wb-explore-grid` was letting the row track expand to content size (811px) instead of being capped at the container height (575px). The grid visually clipped the section at 575px via `overflow: hidden`, but the section's scroll container was still 811px — making the bottom 236px of scroll area permanently unreachable.
-- Fix: `1fr` → `minmax(0, 1fr)` on all breakpoints. The `minmax(0, ...)` cap prevents the track from exceeding available space.
+### Next milestone — Compare mode
+Compare is the only tab that is still a placeholder. Priority order:
+1. Two-structure upload/fetch UI in the Compare sidebar.
+2. Diff table: shared / gained / lost contacts.
+3. Chain alignment summary.
+4. Mol* dual-viewer or overlay highlighting.
+5. Export comparison report.
 
-**Overview tab — structure title restored:**
-- Title (`h2.pio-section-title`) + circular navy arrow button (same style as Report header) shown above `MetadataPanel` for fetched structures (RCSB / AlphaFold). Hidden for uploads. Title uses `toTitleCase` + strips resolution suffix. Button uses `items-start` so it aligns to the top of multi-line titles.
+### Formally deferred
+- **Dark mode** — no `[data-theme="dark"]` CSS exists. Do not attempt until light mode is finalised and a design pass is planned.
+- **Screenshot comparison vs. reference design** — still outstanding. Compare `protein-io-design-system-boltz.html` against the live Report tab, Ligand panel, and Contacts table.
+- **Mol* bottom-left artifact** — CSS suppression is in `globals.css`. If it resurfaces, check `.msp-layout-bottom-controls` / `.msp-sequence-wrapper` / `.msp-layout-region.msp-layout-bottom`.
 
-**Sidebar — Confidence-aware Warnings toggle:**
-- Changed from `justify-between w-full` (caused label to wrap to two lines) to `gap-3` + `whitespace-nowrap` on the label. Now renders as a single left-aligned row.
+## Key technical decisions / gotchas
 
-**Known state:**
-- `feat/responsive-layout` and `feat/report-redesign` are both unmerged to `main`. The fifth-session work was committed on `feat/responsive-layout`.
-- Scroll is confirmed working: section height = 573px (= grid track), scroll range = 687px for 1260px of content.
-- No regressions observed on Report, Compare, or other tabs.
+### Grid row sizing
+`.wb-explore-grid` uses `grid-template-rows: minmax(0, 1fr)` on all breakpoints. **Do not change this back to `1fr`.** Plain `1fr` lets the row track expand to content height (811px on a 575px grid), causing the results section to overflow the grid and making the bottom of the scroll area permanently unreachable.
 
----
+### Mol* wheel events
+Mol* registers a non-passive `wheel` listener on its `<canvas>`. This only fires for events that originate on the canvas, so it does not block scrolling in the results panel. The results panel scroll issue was purely the grid track height bug above.
 
-## Report redesign pass — 2026-06-23/24 (fourth session)
+### Structure cache
+`CACHE_KEY = "pio_cache_v1"` in `ProteinWorkbench.tsx`. Cache stores: `structureText`, `structureFormat`, `fileName`, `pdbId`, `uniprotId`, `analysis`, `cutoff`, `savedAt`. File uploads are intentionally not cached (quota risk). `saveStructureCache` silently no-ops on `QuotaExceededError`.
 
-**Branch:** `feat/report-redesign` (NOT merged to main yet)
+### Sticky tab strip
+The tab strip uses `sticky top-0 z-10` inside the `overflow-y-auto` results section. This is valid — sticky positions relative to the nearest scroll ancestor (the section itself).
 
-**Files touched:** `frontend/src/components/workbench/ProteinWorkbench.tsx`
-
-**What changed:**
-- `FloatingLigandPanel` — draggable frosted-glass panel over 3D viewer; drag clamped to viewer bounds using `panelRef.current?.offsetHeight` (dynamic, not hardcoded)
-- Loading overlay → white background
-- Minimize button → `#4A724C` when minimized
-- All pill borders → `rounded-[12px]` everywhere (nav, tabs, filter pills, buttons)
-- Tab nav + top nav: `font-semibold` on both active/inactive states; identical `h-[34px] px-5` on all nav items (prevents layout shift)
-- Tab strip: `sticky top-0 z-10`
-- Row selection highlight: `rgba(199,217,236,0.6)` bg + `2px solid #1A406A` inset border
-- Row border clipping fix: `padding: "0 2px"` wrapper around each row
-- Selection bar at bottom of viewer: dark navy frosted glass (`rgba(26,64,106,0.75)` + `backdrop-blur-md`)
-- Contact filter pills → rectangular card style (not oval), selected = `rgba(199,217,236,0.5)`
-- All download icon buttons → `#C8E3EE` circle fill + `#1A406A` icon color, 30×30px
-- `InteractionSummaryPanel` + `TopContactList` redesigned (3-col metrics, 2-col contact list)
-- `LigandInteractionPanel` — fixed-px column widths (`140px 80px ...`), `minWidth: 1050` to force horizontal scroll (fr-units expand to fill so no scroll appeared)
-- `ContactTable` — `overflowX: "auto"` + `minWidth: 420`; `padding: "0 2px"` prevents border clipping
-- **Report tab** — white card wrapper (only for loaded content, NOT empty state); `REPORT_DIVIDER` = spacing only, no border; title deduped (MetadataPanel heading removed, external link moved to h1 row); `SummaryCards` and `LigandInteractionPanel` internal `borderTop` removed (doubled REPORT_DIVIDER)
-- **Compare placeholder** — matches Report empty state card: white card, icon circle, split caution pills
-- **`DESIGN_SYSTEM.md`** created at repo root — copy-paste ready patterns for all components
-
-**Design constants to reuse (see DESIGN_SYSTEM.md for full reference):**
-- Card shadow: `shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]`
-- Card border: `border border-[rgba(20,20,15,0.09)]`
-- Primary blue: `#1A406A`
-- Selection bg: `rgba(199,217,236,0.6)`
-- Icon circle bg: `rgba(199,217,236,0.4)`
-- Download circle fill: `#C8E3EE`
-
-## Explore workspace polish pass — 2026-06-22 (third session)
-
-**Files touched:**
-- `frontend/src/app/layout.tsx` — font swapped from Plus Jakarta Sans to DM Sans (`DM_Sans` from `next/font/google`).
-- `frontend/src/app/globals.css` — `--pio-radius-lg` 28px → 24px; `--pio-bg-page: #EDEAE2` added; `.pio-shell` background → `var(--pio-bg-page)`; `--background` → `var(--pio-bg-page)`.
-- `frontend/src/components/workbench/ExploreSidebar.tsx` — removed `border-r` divider; sidebar bg changed to `#F5F2EA`.
-- `frontend/src/components/workbench/ProteinWorkbench.tsx` — removed `border-l` on results column; results bg → `#F5F2EA`; outer 3-col wrapper gains 3-layer shadow; loading overlay extracted to `LoadingOverlay` component with cycling `LOADING_LINES` text; gallery grid changed to `grid-cols-2 sm:grid-cols-3` with semantic tag colors via `tagBackground`/`tagColor` helpers.
-
-**Deliberately NOT touched:**
-- Mol* internals, dark mode, Compare mode, Report tab.
-- `--pio-paper`, `--pio-green`, `--pio-green-deep` token values — only the page bg (`--pio-bg-page`) is new.
-
-## UI polish & bug-fix pass — 2026-06-22 (second session)
-
-**Files touched:**
-- `frontend/src/components/workbench/WorkbenchShell.tsx` — removed `overflow:hidden` on container wrapper, added `px-4 pb-4 pt-3` so the 3-col grid's 16px corners are visible against the page background.
-- `frontend/src/components/workbench/ProteinWorkbench.tsx` — 3-col grid: added unified `rounded-[16px] border overflow-hidden shadow` wrapper; viewer column now edge-to-edge sage bg (no `p-3` card-inside-column); `ViewerModeToggle` replaced by inline absolute top-right pill; `SelectionBar` replaced by inline absolute bottom bar; results column gets `bg-[var(--pio-paper)] border-l`; results tab strip changed to `flex-nowrap overflow-x-auto` with underline-style active; `EmptyWorkbenchState` action buttons stacked vertically as full-width pill links; `ExampleGallery` cards in right panel get `overflow:hidden line-clamp-3` treatment.
-- `frontend/src/components/workbench/ExploreSidebar.tsx` — sidebar gets `bg-[var(--pio-paper)] border-r border-[rgba(20,20,15,0.08)]`; "or load bundled sample →" link changed to `--pio-green-deep` with hover underline.
-- `frontend/src/components/viewer/StructureViewer.tsx` — removed `rounded-[var(--pio-radius-lg)]` and `shadow` from both empty-state and loaded-state root divs (parent wrapper + `overflow:hidden` clips corners now).
-
-**Deliberately NOT touched:**
-- Mol* internals — no changes to Mol* canvas behaviour, only the outer wrapper div.
-- `ViewerModeToggle` / `SelectionBar` functions still exist at bottom of `ProteinWorkbench.tsx` as dead code (safe to delete in a future pass).
-- Report, Compare, Confidence, PAE, Quality, Methods tab content — out of scope for this pass.
-- Dark mode — unchanged.
-
-**Known remaining gaps:**
-- Compare mode sidebar still placeholder.
-- The bottom-left Mol* mini-map bar (visible when structure is loaded) overlaps the sidebar/viewer seam — it's a Mol* artifact, not custom code; requires hiding via Mol* PluginUISpec if desired.
-- Tab count badges (e.g. "Contacts 1,284") not yet implemented.
-- Metadata KV row hover tints not added.
-
-## Visual alignment pass — 2026-06-22
-**What changed:** Replaced all `slate-*`, `cyan-*`, and `amber-*` Tailwind color utilities in
-`ProteinWorkbench.tsx` with the design-system tokens (`--pio-ink`, `--pio-graphite`,
-`--pio-line`, `--pio-line-strong`, `--pio-sand`, `--pio-blue-pale`, `--pio-blue-deep`,
-`--pio-blue`, `--pio-amber-pale`, `--pio-amber-deep`, `--pio-amber`). Also added
-`rounded-[var(--pio-radius-lg/md/sm)]` to panel and KV-row containers that had no
-border-radius. Export buttons switched to `.pio-button-secondary`.
-
-**What was NOT touched this pass:**
-- Mol* 3-D viewer internals (`StructureViewer.tsx`) — Mol* ships its own CSS; don't override it.
-- Dark mode — light is the primary theme; dark mode wasn't verified on the live app and was left for a dedicated session.
-- `ExploreSidebar.tsx`, `TopNav.tsx`, `WorkbenchShell.tsx` — already clean (no off-token color utilities found).
-- Gallery cards, empty states, tab panels — content layer was confirmed correct by the brief; not touched.
-
-**Open questions for next session:**
-- Compare mode is still a placeholder per Section 5 of the redesign brief — content, not style.
-- A side-by-side screenshot comparison against the reference HTML (per the alignment brief's Definition of Done) was not done in this session — run the dev server and compare the Report tab, Ligand detail panel, and Contacts table against the reference file.
-- Dark mode: if it ships, verify `[data-theme="dark"]` on `<html>` and that `--pio-accent` resolves to `#3DCB76` on primary buttons.
+### Percentage heights in the grid
+`height: 100%` on a grid item resolves against the **grid container**, not the row track, due to a Chrome quirk. Use `align-self: stretch` (default) + `min-h-0` rather than `h-full` on scrollable grid items.

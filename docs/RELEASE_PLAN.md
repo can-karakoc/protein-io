@@ -1,41 +1,60 @@
 # Release Plan
 
-## v0.1 MVP Launch
+## ✅ v0.1 — MVP Launch (shipped)
 
 - Upload PDB and mmCIF files.
 - Parse chains, residues, atoms, and ligands.
 - Calculate residue-residue and protein-ligand contacts.
-- Visualize uploaded structures in the browser.
+- Visualise uploaded structures in the browser with Mol*.
 - Export contacts as CSV.
-- Deploy frontend to Vercel.
-- Deploy backend to Render.
+- Deploy frontend to Vercel, backend to Render.
 
-## v0.2 Public Demo Polish
+## ✅ v0.2 — Public Demo Polish (shipped)
 
-- Add sample-file loader.
-- Improve empty, loading, and error states.
-- Add screenshots and public demo documentation.
-- Add basic UI polish for scientific SaaS credibility.
-- Improve warning messages for unsupported or unusual structures.
+- Sample-file loader and example gallery (6 curated structures).
+- Improved empty, loading, and error states.
+- Public docs, screenshots, and QA checklist.
+- Basic UI polish for scientific SaaS credibility.
+- Warning messages for unsupported or unusual structures.
 
-## v0.3 Scientific Credibility
+## ✅ v0.3 — Scientific Credibility (shipped)
 
-- Add clearer biology explanations in the UI.
-- Add richer contact categories where appropriate.
-- Add ligand highlighting and chain coloring.
-- Improve validation against known structures.
-- Add more representative fixtures and backend tests.
+- Contact categories: protein-protein, protein-ligand, protein-water, ligand-water, inter-chain, clashes.
+- AlphaFold pLDDT confidence summaries and residue-level confidence annotations.
+- Confidence-aware contact warnings and filtering toggle.
+- Ligand interaction summaries, floating ligand detail panel.
+- Structure comparison endpoint (shared / gained / lost contacts).
+- PAE sidecar support, Methods and Provenance panel, Quality tab.
+- RCSB and AlphaFold DB fetch by ID / UniProt accession.
 
-## v0.4 Database-Connected Version
+## ✅ v0.4 — Workbench Redesign (shipped 2026-06)
 
-- Add saved analysis reports.
-- Add shareable report URLs.
-- Add report history.
-- Add persistence only after the MVP workflow is proven.
+- Three-mode shell: `Explore | Compare | Report`.
+- Responsive layout: mobile drawer, tablet 2-col, desktop 3-col grid.
+- Full design system: DM Sans, `#1A406A` primary, token set in `globals.css`.
+- Report tab: white card, deduped title, download buttons, section dividers.
+- Floating ligand panel, selection bar, Framer Motion animations.
+- Tab count badges, metadata row hover, Mol* artifact suppression.
+- `localStorage` structure cache — last structure survives refresh and back/forward.
+- Dead code cleanup, TypeScript clean throughout.
 
-## v0.5 AI-Structure Support
+## ▶️ v0.5 — Compare Mode (next)
 
-- Add AlphaFold, ColabFold, Boltz, and OpenFold-style output support.
-- Add confidence and metadata panels.
-- Add structure comparison workflows.
-- Prepare for plugin-style analysis modules once repeated module patterns are clear.
+- Working two-structure comparison workflow in the Compare tab (currently placeholder).
+- Side-by-side upload or fetch for structures A and B.
+- Shared / gained / lost contact diff table with export.
+- Chain and residue alignment summary.
+- Mol* dual-viewer or overlay highlighting.
+
+## v0.6 — Persistence & Sharing (future)
+
+- Shareable report URLs.
+- Saved analysis history.
+- Add persistence only after the core comparison workflow is proven.
+
+## v0.7 — Advanced Structural Analysis (future)
+
+- Structural alignment and RMSD.
+- TM-score and Foldseek integration.
+- Viewer-side alignment highlighting.
+- Plugin-style analysis modules once repeated patterns are clear.
