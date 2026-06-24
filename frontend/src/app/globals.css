@@ -48,6 +48,9 @@
   --pio-accent: var(--pio-ink);
   --pio-accent-hover: var(--pio-ink-hover);
   --pio-accent-text: var(--pio-white);
+  /* Highlight — the brand blue used for active tabs, icon buttons */
+  --pio-highlight: #1A406A;
+  --pio-highlight-text: #ffffff;
 }
 
 /* ── Dark mode ──────────────────────────────────────────────
