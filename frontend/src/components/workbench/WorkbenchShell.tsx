@@ -16,7 +16,7 @@ export function WorkbenchShell({ mode, onModeChange, onSidebarToggle, children }
     <main className="pio-shell pt-6">
       <TopNav mode={mode} onModeChange={onModeChange} onSidebarToggle={onSidebarToggle} />
       {/* px-4 pb-4 pt-6 gives the 3-col grid space so its 16px rounded corners are visible */}
-      <div className="mx-auto w-full max-w-[1500px] px-4 pb-4 pt-6 lg:h-[calc(100svh-92px)]">
+      <div className="mx-auto w-full max-w-[1500px] px-4 pb-4 pt-6 md:h-[calc(100svh-92px)]">
         {children}
       </div>
     </main>

@@ -798,7 +798,7 @@ export function ProteinWorkbench() {
           </div>{/* end hidden lg:block sidebar wrapper */}
 
           {/* Viewer column — white background, columns shadow over it */}
-          <div ref={viewerColumnRef} className="relative min-h-[50svh] lg:h-full lg:min-h-0 bg-white">
+          <div ref={viewerColumnRef} className="relative min-h-[50svh] md:h-full md:min-h-0 bg-white">
             <StructureViewer
               structureText={structureText}
               structureFormat={structureFormat}
@@ -883,7 +883,7 @@ export function ProteinWorkbench() {
           </div>
 
           {/* Results column */}
-          <section className="relative z-[1] flex min-h-[40svh] flex-col overflow-y-auto bg-white lg:h-full lg:min-h-0 shadow-[-8px_0_24px_rgba(17,22,16,0.07)]">
+          <section className="relative z-[1] flex min-h-[40svh] flex-col overflow-y-auto bg-white md:h-full md:min-h-0 shadow-[-8px_0_24px_rgba(17,22,16,0.07)]">
             <ResultsPanel
               activeTab={resultsTab}
               onTabChange={setResultsTab}
