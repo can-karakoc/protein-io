@@ -122,6 +122,33 @@
   --font-mono: var(--font-pio-mono), ui-monospace, monospace;
 }
 
+/* ── Theme-switch transition ────────────────────────────────
+   Applied for 350ms around every toggle so ALL colour properties
+   animate smoothly. Not applied permanently to avoid fighting
+   hover/focus/Framer Motion transitions.
+   ────────────────────────────────────────────────────────── */
+.theme-transitioning *,
+.theme-transitioning *::before,
+.theme-transitioning *::after {
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    fill 0.3s ease,
+    stroke 0.3s ease !important;
+}
+
+/* Icon spin-in when the sun↔moon swaps */
+@keyframes themeIconSpin {
+  from { transform: rotate(-45deg) scale(0.6); opacity: 0; }
+  to   { transform: rotate(0deg)   scale(1);   opacity: 1; }
+}
+.theme-toggle-icon {
+  display: contents;
+  animation: themeIconSpin 0.25s ease forwards;
+}
+
 /* Prevent browser from applying its own dark styling to native form controls.
    Without this, <input type="number"> spin buttons change size/appearance in
    dark mode, creating the visual "structural change" the user notices. */

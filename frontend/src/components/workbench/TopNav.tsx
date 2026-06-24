@@ -79,7 +79,9 @@ export function TopNav({ mode, onModeChange, onSidebarToggle }: TopNavProps) {
             aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
             className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-[var(--pio-line-strong)] bg-[var(--pio-white)] text-[var(--pio-ink)] opacity-70 transition-colors hover:opacity-100 hover:bg-[var(--pio-sand)]"
           >
-            {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+            <span key={theme} className="theme-toggle-icon">
+              {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+            </span>
           </button>
         </div>
       </div>

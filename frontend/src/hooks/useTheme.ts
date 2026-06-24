@@ -22,12 +22,15 @@ export function useTheme() {
   }, []);
 
   const toggle = () => {
+    const html = document.documentElement;
+    html.classList.add("theme-transitioning");
     setTheme((prev) => {
       const next = prev === "light" ? "dark" : "light";
-      document.documentElement.dataset.theme = next;
+      html.dataset.theme = next;
       localStorage.setItem(STORAGE_KEY, next);
       return next;
     });
+    setTimeout(() => html.classList.remove("theme-transitioning"), 350);
   };
 
   return { theme, toggle };
