@@ -57,11 +57,11 @@
   --pio-quality-amber-bg: rgba(194, 160, 64, 0.12);
   --pio-quality-amber-border: rgba(194, 160, 64, 0.30);
   --pio-quality-amber-fg: #5C4A00;
-  --pio-quality-amber-fg-soft: rgba(92, 74, 0, 0.70);
+  --pio-quality-amber-fg-soft: rgba(92, 74, 0, 0.50);
   --pio-quality-green-bg: rgba(74, 140, 100, 0.10);
   --pio-quality-green-border: rgba(74, 140, 100, 0.22);
   --pio-quality-green-fg: #1B3D28;
-  --pio-quality-green-fg-soft: rgba(27, 61, 40, 0.70);
+  --pio-quality-green-fg-soft: rgba(27, 61, 40, 0.50);
 }
 
 /* ── Dark mode ──────────────────────────────────────────────
@@ -103,11 +103,11 @@
   --pio-quality-amber-bg: rgba(217, 176, 92, 0.18);
   --pio-quality-amber-border: rgba(217, 176, 92, 0.40);
   --pio-quality-amber-fg: #ffd166;
-  --pio-quality-amber-fg-soft: rgba(253, 253, 253, 0.58);
+  --pio-quality-amber-fg-soft: rgba(255, 209, 102, 0.50);
   --pio-quality-green-bg: rgba(143, 191, 138, 0.16);
   --pio-quality-green-border: rgba(143, 191, 138, 0.35);
   --pio-quality-green-fg: #b5e0af;
-  --pio-quality-green-fg-soft: rgba(253, 253, 253, 0.58);
+  --pio-quality-green-fg-soft: rgba(181, 224, 175, 0.50);
   /* accent — forest green instead of near-black */
   --pio-accent: #4a9e6e;
   --pio-accent-hover: #5ab87e;
