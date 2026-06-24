@@ -103,6 +103,10 @@
   background: rgba(0, 0, 0, 0.55);
 }
 
+[data-theme="dark"] .pio-gallery-card {
+  background: var(--pio-sand);
+}
+
 /* Exempt the Mol* viewer from dark mode — keep it on a white/light surface */
 .pio-viewer-exempt {
   --pio-white: #ffffff;

@@ -274,7 +274,7 @@ export function ExploreSidebar({
             type="button"
             onClick={onAnalyze}
             disabled={!hasStructure || isLoading}
-            className="flex flex-1 items-center justify-center gap-2 rounded-[12px] bg-[var(--pio-accent)] py-[10px] text-[13px] font-semibold text-[var(--pio-accent-text)] transition-colors hover:bg-[var(--pio-accent-hover)] disabled:cursor-not-allowed disabled:opacity-45"
+            className="flex flex-1 items-center justify-center gap-2 rounded-[12px] bg-[var(--pio-highlight)] py-[10px] text-[13px] font-semibold text-[var(--pio-highlight-text)] transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45"
           >
             {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
             Analyze
@@ -283,7 +283,7 @@ export function ExploreSidebar({
             <button
               type="button"
               onClick={onReset}
-              className="flex flex-1 items-center justify-center gap-2 rounded-[12px] border border-[var(--pio-line-strong)] bg-[var(--pio-white)] py-[10px] text-[13px] font-semibold text-[var(--pio-ink)] transition-colors hover:bg-[var(--pio-sand)]"
+              className="flex flex-1 items-center justify-center gap-2 rounded-[12px] border border-[var(--pio-highlight)] bg-[var(--pio-white)] py-[10px] text-[13px] font-semibold text-[var(--pio-ink)] transition-colors hover:bg-[var(--pio-sand)]"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               Reset

@@ -1834,7 +1834,7 @@ function ExampleGallery({
         {EXAMPLE_GALLERY.map((example) => (
           <article
             key={example.id}
-            className="flex min-w-0 flex-col gap-3 rounded-[8px] bg-[var(--pio-sand)] p-4"
+            className="pio-gallery-card flex min-w-0 flex-col gap-3 rounded-[8px] bg-[#F5F5F5] p-4"
           >
             <div className="min-w-0">
               <h4 className="text-[15.5px] font-bold leading-snug text-[var(--pio-ink)]">
