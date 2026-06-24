@@ -174,7 +174,7 @@ export function ProteinWorkbench() {
   const [contactFilter, setContactFilter] = useState<ContactFilter>("all");
   const [resultsTab, setResultsTab] = useState<ResultsTab>("overview");
   const resultsColumnRef = useRef<HTMLElement | null>(null);
-  const initialTabStripScrollRef = useRef<number>(0);
+  const [initialTabStripScrollLeft] = useState(() => loadStructureCache()?.tabStripScrollLeft ?? 0);
   const [inputSource, setInputSource] = useState<InputSource>("upload");
   const [analysisTimestamp, setAnalysisTimestamp] = useState<string | null>(null);
   const [error, setError] = useState<WorkbenchError>(null);
@@ -200,7 +200,6 @@ export function ProteinWorkbench() {
     if (cached.pdbId) setInputSource("rcsb");
     else if (cached.uniprotId) setInputSource("alphafold");
     if (cached.resultsTab) setResultsTab(cached.resultsTab);
-    initialTabStripScrollRef.current = cached.tabStripScrollLeft ?? 0;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -950,7 +949,7 @@ export function ProteinWorkbench() {
             <ResultsPanel
               activeTab={resultsTab}
               onTabChange={setResultsTab}
-              initialTabStripScrollLeft={initialTabStripScrollRef.current}
+              initialTabStripScrollLeft={initialTabStripScrollLeft}
               onTabStripScroll={(x) => {
                 const existing = loadStructureCache();
                 if (existing) saveStructureCache({ ...existing, tabStripScrollLeft: x });
