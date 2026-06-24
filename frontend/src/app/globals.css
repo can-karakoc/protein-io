@@ -191,14 +191,14 @@
 }
 
 html {
-  zoom: 1.1;
+  font-size: 110%;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-pio-sans), system-ui, -apple-system, sans-serif;
-  font-size: 15.5px;
+  font-size: 0.969rem;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.25s ease, color 0.25s ease;
