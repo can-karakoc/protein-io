@@ -3331,7 +3331,7 @@ function FloatingLigandPanel({
                       fontFamily: "var(--font-pio-mono)",
                       fontSize: 11,
                       fontWeight: 500,
-                      color: "var(--pio-highlight)",
+                      color: "#1A406A",
                     }}
                   >
                     {r.chain_id}:{r.residue_name}{r.residue_number} ({r.contact_count})
