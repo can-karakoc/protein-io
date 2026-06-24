@@ -3132,8 +3132,8 @@ function FloatingLigandPanel({
     over_4_angstrom: 0,
   };
 
-  const TEXT: React.CSSProperties = { color: "var(--pio-highlight)" };
-  const MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)", color: "var(--pio-highlight)" };
+  const TEXT: React.CSSProperties = { color: "#1A406A" };
+  const MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)", color: "#1A406A" };
 
   return (
     <motion.div
