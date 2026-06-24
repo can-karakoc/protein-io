@@ -2178,22 +2178,22 @@ function ProvenancePanel({ provenance, showExport = true }: { provenance: Proven
 
       <div style={{
         marginTop: 16,
-        background: hasWarnings ? "rgba(194,160,64,0.1)" : "rgba(74,140,100,0.08)",
-        border: `1px solid ${hasWarnings ? "rgba(194,160,64,0.3)" : "rgba(74,140,100,0.2)"}`,
+        background: hasWarnings ? "var(--pio-quality-amber-bg)" : "var(--pio-quality-green-bg)",
+        border: `1px solid ${hasWarnings ? "var(--pio-quality-amber-border)" : "var(--pio-quality-green-border)"}`,
         borderRadius: 10,
         padding: "12px 14px",
       }}>
-        <p style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: hasWarnings ? "#5C4A00" : "#1B3D28" }}>
+        <p style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: hasWarnings ? "var(--pio-quality-amber-fg)" : "var(--pio-quality-green-fg)" }}>
           RECORDED WARNINGS
         </p>
         {hasWarnings ? (
           <ul style={{ marginTop: 6, paddingLeft: 16 }}>
             {provenance.warnings.map((warning) => (
-              <li key={warning} style={{ fontSize: 12.5, color: "rgba(92,74,0,0.85)", lineHeight: 1.5 }}>{warning}</li>
+              <li key={warning} style={{ fontSize: 12.5, color: "var(--pio-quality-amber-fg-soft)", lineHeight: 1.5 }}>{warning}</li>
             ))}
           </ul>
         ) : (
-          <p style={{ fontSize: 12.5, color: "rgba(27,61,40,0.8)", lineHeight: 1.5, marginTop: 6 }}>
+          <p style={{ fontSize: 12.5, color: "var(--pio-quality-green-fg-soft)", lineHeight: 1.5, marginTop: 6 }}>
             No parser, contact, confidence, or PAE warnings were recorded for this analysis.
           </p>
         )}
