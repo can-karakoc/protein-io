@@ -1208,7 +1208,7 @@ function LoadingOverlay({ statusLabel }: { statusLabel: string | null }) {
       : LOADING_LINES[lineIndex];
 
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--pio-white)]">
+    <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--pio-bg-page)]">
       <p className="text-[22px] font-semibold text-[var(--pio-ink)] tracking-tight">
         {headline}
       </p>
