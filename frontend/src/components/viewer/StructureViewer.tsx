@@ -35,6 +35,15 @@ export function StructureViewer({
   const [viewerError, setViewerError] = useState<string | null>(null);
   const [isRendering, setIsRendering] = useState(false);
 
+  // Inject a runtime <style> tag so it always lands after <link> CSS — guaranteed to win
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.id = "pio-molstar-controls-hide";
+    style.textContent = ".msp-viewport-controls { display: none !important; }";
+    document.head.appendChild(style);
+    return () => style.remove();
+  }, []);
+
   useEffect(() => {
     selectionRef.current = selection;
   }, [selection]);
