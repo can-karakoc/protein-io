@@ -235,7 +235,7 @@ button:not(:disabled),
 .msp-layout-bottom-controls,
 .msp-sequence-wrapper,
 [class^="msp-"] .msp-layout-region.msp-layout-bottom,
-.msp-plugin .msp-viewport-controls {
+.msp-viewport-controls {
   display: none !important;
 }
 

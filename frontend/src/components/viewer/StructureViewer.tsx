@@ -85,12 +85,24 @@ export function StructureViewer({
           viewportShowSelectionMode: false,
           viewportShowSettings: false,
           viewportShowToggleFullscreen: false,
+          viewportShowScreenshotControls: false,
+          viewportShowAnimation: false,
+          viewportShowTrajectoryControls: false,
           viewportBackgroundColor: "white",
           volumeStreamingDisabled: true,
         });
         const viewerCreateMs = elapsedMs(viewerCreateStarted);
 
         const viewer = viewerRef.current;
+        // Disable ShowIllumination — no viewportShow* constructor equivalent exists for it
+        try {
+          const { PluginConfig } = await import("molstar/lib/mol-plugin/config");
+          viewer.plugin.config.set(PluginConfig.Viewport.ShowIllumination, false);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (viewer.plugin.layout.events.updated as any).next(void 0);
+        } catch {
+          // non-critical: illumination button may remain visible
+        }
         const modelStarted = performance.now();
         await viewer.loadStructureFromData(structureText, molstarFormat(structureFormat), {
           dataLabel: structureFormat === "cif" ? "Uploaded mmCIF" : "Uploaded PDB",
