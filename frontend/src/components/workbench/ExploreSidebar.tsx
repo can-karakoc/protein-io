@@ -249,9 +249,9 @@ export function ExploreSidebar({
           <button
             type="button"
             onClick={() => setConfidenceWarningsOn((v) => !v)}
-            className="mt-3 flex w-full items-center justify-between"
+            className="mt-3 flex items-center gap-3"
           >
-            <span className="pio-label">Confidence-aware Warnings</span>
+            <span className="pio-label whitespace-nowrap">Confidence-aware Warnings</span>
             <span
               role="switch"
               aria-checked={confidenceWarningsOn}

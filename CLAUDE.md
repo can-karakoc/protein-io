@@ -24,6 +24,29 @@ add another `<link>` for them.
 | `frontend/src/components/workbench/WorkbenchShell.tsx` | Layout shell |
 | `frontend/src/components/viewer/StructureViewer.tsx` | Mol* 3-D viewer wrapper |
 
+## Scroll fix + responsive layout polish — 2026-06-24 (fifth session)
+
+**Branch:** `feat/responsive-layout` — committed `53558a5`, deployed to production (protein-io.vercel.app)
+
+**Files touched:** `frontend/src/app/globals.css`, `frontend/src/components/workbench/ProteinWorkbench.tsx`, `frontend/src/components/workbench/ExploreSidebar.tsx`, `frontend/src/components/workbench/TopNav.tsx`, `frontend/src/components/workbench/WorkbenchShell.tsx`
+
+**Root cause fixed — results panel scroll:**
+- `grid-template-rows: 1fr` in `.wb-explore-grid` was letting the row track expand to content size (811px) instead of being capped at the container height (575px). The grid visually clipped the section at 575px via `overflow: hidden`, but the section's scroll container was still 811px — making the bottom 236px of scroll area permanently unreachable.
+- Fix: `1fr` → `minmax(0, 1fr)` on all breakpoints. The `minmax(0, ...)` cap prevents the track from exceeding available space.
+
+**Overview tab — structure title restored:**
+- Title (`h2.pio-section-title`) + circular navy arrow button (same style as Report header) shown above `MetadataPanel` for fetched structures (RCSB / AlphaFold). Hidden for uploads. Title uses `toTitleCase` + strips resolution suffix. Button uses `items-start` so it aligns to the top of multi-line titles.
+
+**Sidebar — Confidence-aware Warnings toggle:**
+- Changed from `justify-between w-full` (caused label to wrap to two lines) to `gap-3` + `whitespace-nowrap` on the label. Now renders as a single left-aligned row.
+
+**Known state:**
+- `feat/responsive-layout` and `feat/report-redesign` are both unmerged to `main`. The fifth-session work was committed on `feat/responsive-layout`.
+- Scroll is confirmed working: section height = 573px (= grid track), scroll range = 687px for 1260px of content.
+- No regressions observed on Report, Compare, or other tabs.
+
+---
+
 ## Report redesign pass — 2026-06-23/24 (fourth session)
 
 **Branch:** `feat/report-redesign` (NOT merged to main yet)
