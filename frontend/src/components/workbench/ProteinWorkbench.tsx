@@ -767,54 +767,6 @@ export function ProteinWorkbench() {
           transition={{ duration: 0.18, ease: "easeOut" }}
           className="wb-explore-grid min-w-0 rounded-[16px] border border-[rgba(20,20,15,0.09)] bg-transparent shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]"
         >
-          {/* Sidebar — visible in grid on lg+; drawer on smaller screens */}
-          {!isLg && sidebarOpen && (
-            <>
-              <div
-                className="wb-sidebar-backdrop"
-                onClick={() => setSidebarOpen(false)}
-              />
-              <div className="wb-sidebar-drawer open bg-white">
-                <div className="flex items-center justify-between border-b border-[rgba(20,20,15,0.08)] px-4 py-3">
-                  <span className="text-[13px] font-semibold text-[var(--pio-ink)]">Explore</span>
-                  <button
-                    type="button"
-                    onClick={() => setSidebarOpen(false)}
-                    className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-[rgba(20,20,15,0.06)] text-[var(--pio-graphite)]"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-                <ExploreSidebar
-                  fileName={fileName}
-                  paeFileName={paeFileName}
-                  structureFormat={structureFormat}
-                  analysis={analysis}
-                  metadata={analysis?.metadata ?? null}
-                  cutoff={cutoff}
-                  onCutoffChange={setCutoff}
-                  onStructureFile={(file) => { void handleFile(file); setSidebarOpen(false); }}
-                  onPaeFile={(file) => void handlePaeFile(file)}
-                  onAnalyze={analyzeStructure}
-                  onLoadSample={() => { void loadExample(); setSidebarOpen(false); }}
-                  onReset={reset}
-                  hasStructure={hasStructure}
-                  isLoading={isLoading}
-                  pdbId={pdbId}
-                  onPdbIdChange={setPdbId}
-                  onFetchRcsb={() => { fetchRcsbStructure(); setSidebarOpen(false); }}
-                  isRcsbLoading={isRcsbLoading}
-                  uniprotId={uniprotId}
-                  onUniprotIdChange={setUniprotId}
-                  onFetchAlphaFold={() => { fetchAlphaFoldStructure(); setSidebarOpen(false); }}
-                  isAlphaFoldLoading={isAlphaFoldLoading}
-                  error={error}
-                  warnings={analysis?.warnings ?? []}
-                />
-              </div>
-            </>
-          )}
-
           {/* Sidebar in grid — desktop only */}
           <div className="hidden lg:block">
           <ExploreSidebar
@@ -1025,6 +977,55 @@ export function ProteinWorkbench() {
       )}
       </AnimatePresence>
     </WorkbenchShell>
+
+    {/* Sidebar drawer — rendered outside WorkbenchShell so position:fixed works
+        (Framer Motion transforms on the inner motion.div would otherwise contain it) */}
+    {!isLg && sidebarOpen && (
+      <>
+        <div
+          className="wb-sidebar-backdrop"
+          onClick={() => setSidebarOpen(false)}
+        />
+        <div className="wb-sidebar-drawer open bg-white">
+          <div className="flex items-center justify-between border-b border-[rgba(20,20,15,0.08)] px-4 py-3">
+            <span className="text-[13px] font-semibold text-[var(--pio-ink)]">Load Structure</span>
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(false)}
+              className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-[rgba(20,20,15,0.06)] text-[var(--pio-graphite)]"
+            >
+              <X size={14} />
+            </button>
+          </div>
+          <ExploreSidebar
+            fileName={fileName}
+            paeFileName={paeFileName}
+            structureFormat={structureFormat}
+            analysis={analysis}
+            metadata={analysis?.metadata ?? null}
+            cutoff={cutoff}
+            onCutoffChange={setCutoff}
+            onStructureFile={(file) => { void handleFile(file); setSidebarOpen(false); }}
+            onPaeFile={(file) => void handlePaeFile(file)}
+            onAnalyze={analyzeStructure}
+            onLoadSample={() => { void loadExample(); setSidebarOpen(false); }}
+            onReset={reset}
+            hasStructure={hasStructure}
+            isLoading={isLoading}
+            pdbId={pdbId}
+            onPdbIdChange={setPdbId}
+            onFetchRcsb={() => { fetchRcsbStructure(); setSidebarOpen(false); }}
+            isRcsbLoading={isRcsbLoading}
+            uniprotId={uniprotId}
+            onUniprotIdChange={setUniprotId}
+            onFetchAlphaFold={() => { fetchAlphaFoldStructure(); setSidebarOpen(false); }}
+            isAlphaFoldLoading={isAlphaFoldLoading}
+            error={error}
+            warnings={analysis?.warnings ?? []}
+          />
+        </div>
+      </>
+    )}
 
     {/* ── Example gallery — hidden for now ── */}
     {false && <section className="mx-auto w-full max-w-[1500px] px-6 py-10">
