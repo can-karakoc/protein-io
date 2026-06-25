@@ -3097,7 +3097,7 @@ function FloatingLigandPanel({
   const panelRef = useRef<HTMLDivElement | null>(null);
 
   const MAX_PANEL_W = 327;
-  const SELECTION_BAR_H = 60;
+  const SELECTION_BAR_H = 0;
   const SIDE_PAD = 6;
   // Panel width adapts to viewer column so it never overflows at narrow desktop sizes
   const PANEL_W = Math.min(MAX_PANEL_W, containerW - 2 * SIDE_PAD);
