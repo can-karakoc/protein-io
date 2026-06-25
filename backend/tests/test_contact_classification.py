@@ -7,7 +7,9 @@ def test_very_close_contact_threshold_is_strictly_below_two_angstrom():
     ligand = make_atom("B", "101", "ATP", "ligand")
 
     assert "very-close-contact" in contact_categories(protein, ligand, "protein-ligand", 1.999)
+    assert "possible-clash" in contact_categories(protein, ligand, "protein-ligand", 1.999)
     assert "very-close-contact" not in contact_categories(protein, ligand, "protein-ligand", 2.0)
+    assert "possible-clash" not in contact_categories(protein, ligand, "protein-ligand", 2.0)
 
 
 def test_summarize_interactions_counts_categories_and_top_items():
