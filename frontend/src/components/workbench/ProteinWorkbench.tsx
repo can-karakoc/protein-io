@@ -1394,7 +1394,9 @@ function ResultsPanel({
               </button>
             </div>
             <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>Closest atom pair per categorized contact.</p>
-            <p style={{ fontSize: 11, color: "var(--pio-graphite)", opacity: 0.65, marginTop: 4 }}>Trust labels are review heuristics based on pLDDT confidence, not validated scientific metrics.</p>
+            {hasContactConfidence && (
+              <p style={{ fontSize: 11, color: "var(--pio-graphite)", opacity: 0.65, marginTop: 4 }}>Trust labels are review heuristics based on pLDDT confidence, not validated scientific metrics.</p>
+            )}
             <ContactCategoryFilter
               value={contactFilter}
               onChange={onContactFilterChange}
@@ -3089,7 +3091,8 @@ function contactChipStyle(key: string): React.CSSProperties {
   return { background: "rgba(199,217,236,0.6)", color: "var(--pio-highlight)" };
 }
 
-const CONTACT_GRID = "120px 1fr 100px 90px";
+const CONTACT_GRID_3 = "120px 1fr 100px";
+const CONTACT_GRID_4 = "120px 1fr 100px 90px";
 
 function ContactTable({
   contacts,
@@ -3111,12 +3114,16 @@ function ContactTable({
     );
   }
 
+  const showConfidence = contacts.some((c) => c.trust_label != null || c.source_residue_confidence != null);
+  const grid = showConfidence ? CONTACT_GRID_4 : CONTACT_GRID_3;
+  const headers = showConfidence ? ["TYPE", "CATEGORIES", "RESIDUES", "CONFIDENCE"] : ["TYPE", "CATEGORIES", "RESIDUES"];
+
   return (
     <div style={{ overflowX: "auto", marginTop: 16 }}>
-    <div style={{ minWidth: 360 }}>
+    <div style={{ minWidth: showConfidence ? 440 : 360 }}>
       {/* Header */}
-      <div style={{ display: "grid", gridTemplateColumns: CONTACT_GRID, columnGap: 8, borderBottom: "1px solid var(--pio-line)", padding: "8px 12px" }}>
-        {["TYPE", "CATEGORIES", "RESIDUES", "CONFIDENCE"].map((col) => (
+      <div style={{ display: "grid", gridTemplateColumns: grid, columnGap: 8, borderBottom: "1px solid var(--pio-line)", padding: "8px 12px" }}>
+        {headers.map((col) => (
           <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)", textAlign: col === "RESIDUES" ? "right" : "left" }}>{col}</p>
         ))}
       </div>
@@ -3134,7 +3141,7 @@ function ContactTable({
               onKeyDown={(e) => handleSelectableRowKeyDown(e, () => onSelect(contact))}
               style={{
                 display: "grid",
-                gridTemplateColumns: CONTACT_GRID,
+                gridTemplateColumns: grid,
                 columnGap: 8,
                 alignItems: "start",
                 padding: "11px 12px",
@@ -3166,10 +3173,12 @@ function ContactTable({
                   {contact.chain_b}:{contact.residue_name_b}{contact.residue_b}
                 </span>
               </div>
-              {/* CONFIDENCE */}
-              <div>
-                <ContactConfidenceBadge contact={contact} />
-              </div>
+              {/* CONFIDENCE — only rendered when column is active */}
+              {showConfidence && (
+                <div>
+                  <ContactConfidenceBadge contact={contact} />
+                </div>
+              )}
             </div>
             {i < contacts.length - 1 && <div style={{ height: 1, background: "var(--pio-line)" }} />}
           </div>
