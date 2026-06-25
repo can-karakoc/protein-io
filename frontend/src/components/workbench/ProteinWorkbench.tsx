@@ -1394,6 +1394,7 @@ function ResultsPanel({
               </button>
             </div>
             <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>Closest atom pair per categorized contact.</p>
+            <p style={{ fontSize: 11, color: "var(--pio-graphite)", opacity: 0.65, marginTop: 4 }}>Trust labels are review heuristics based on pLDDT confidence, not validated scientific metrics.</p>
             <ContactCategoryFilter
               value={contactFilter}
               onChange={onContactFilterChange}
@@ -3184,22 +3185,40 @@ function ContactTable({
   );
 }
 
+const TRUST_BADGE_CLASS: Record<string, string> = {
+  "high-confidence": "pio-badge-active",
+  "inspect-manually": "pio-badge-caution",
+  "low-confidence": "pio-badge-warning",
+  "possible-clash": "pio-badge-warning",
+  "no-confidence-data": "pio-badge-neutral",
+};
+
 function ContactConfidenceBadge({ contact }: { contact: ContactRecord }) {
   const confidences = [contact.source_residue_confidence, contact.target_residue_confidence].filter(
     (confidence): confidence is ResidueConfidence => Boolean(confidence),
   );
+
+  const plddt_tooltip = confidences.length
+    ? confidences.map((c) => `${c.chain_id}:${c.residue_name}${c.residue_number} ${c.plddt.toFixed(1)}`).join(" / ")
+    : undefined;
+
+  if (contact.trust_label) {
+    const badgeClass = TRUST_BADGE_CLASS[contact.trust_label] ?? "pio-badge-neutral";
+    return (
+      <span title={plddt_tooltip} className={`pio-badge ${badgeClass}`}>
+        {contact.trust_label.replace(/-/g, " ")}
+      </span>
+    );
+  }
+
   if (!confidences.length) {
     return <span className="text-xs text-[var(--pio-graphite)]">N/A</span>;
   }
 
-  const label = confidences
-    .map((confidence) => `${confidence.chain_id}:${confidence.residue_name}${confidence.residue_number} ${confidence.plddt.toFixed(1)}`)
-    .join(" / ");
-
   if (contact.confidence_warning) {
-    return <span title={label} className="pio-badge pio-badge-warning">Review pLDDT</span>;
+    return <span title={plddt_tooltip} className="pio-badge pio-badge-warning">Review pLDDT</span>;
   }
-  return <span title={label} className="pio-badge pio-badge-active">pLDDT OK</span>;
+  return <span title={plddt_tooltip} className="pio-badge pio-badge-active">pLDDT OK</span>;
 }
 
 function handleSelectableRowKeyDown(event: React.KeyboardEvent<HTMLElement>, onSelect: () => void) {
