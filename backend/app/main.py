@@ -8,7 +8,7 @@ from app.routes import router
 
 def get_allowed_origins() -> list[str]:
     configured_origins = os.getenv("FRONTEND_ORIGIN", "")
-    origins = ["http://localhost:3000"]
+    origins = ["http://localhost:3000", "http://localhost:3001"]
     origins.extend(origin.strip() for origin in configured_origins.split(",") if origin.strip())
     return list(dict.fromkeys(origins))
 
