@@ -37,6 +37,7 @@ export type ContactRecord = {
   source_residue_confidence?: ResidueConfidence | null;
   target_residue_confidence?: ResidueConfidence | null;
   confidence_warning?: boolean;
+  trust_label?: "high-confidence" | "inspect-manually" | "low-confidence" | "possible-clash" | "no-confidence-data" | null;
 };
 
 export type ViewerSelection =

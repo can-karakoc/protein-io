@@ -14,9 +14,11 @@ ContactCategory = Literal[
     "intra-chain",
     "inter-chain",
     "very-close-contact",
+    "possible-clash",
 ]
 ConfidenceCategory = Literal["very_high", "confident", "low", "very_low"]
 ResidueKind = Literal["protein", "ligand", "water", "other"]
+TrustLabel = Literal["high-confidence", "inspect-manually", "low-confidence", "possible-clash", "no-confidence-data"]
 
 
 class AtomRecord(BaseModel):
@@ -71,6 +73,7 @@ class ContactRecord(BaseModel):
     source_residue_confidence: ResidueConfidence | None = None
     target_residue_confidence: ResidueConfidence | None = None
     confidence_warning: bool = False
+    trust_label: TrustLabel | None = None
 
 
 class TopContactResidue(BaseModel):

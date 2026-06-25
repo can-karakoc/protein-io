@@ -9,6 +9,7 @@ from app.integrations.alphafold import AlphaFoldStructure, fetch_alphafold_struc
 from app.integrations.rcsb import fetch_rcsb_structure
 from app.integrations.rcsb import RcsbStructure
 from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, ContactRecord, PaeSummary, RcsbAnalysisResponse, ResidueConfidence, StructureComparisonResponse, StructureMetadata
+from app.trust_score import assign_trust_label
 from app.parser import detect_structure_format_from_filename, parse_pdb_content
 
 
@@ -76,13 +77,12 @@ def annotate_contacts_with_confidence(
             (src is not None and src.category in LOW_CATEGORIES) or
             (tgt is not None and tgt.category in LOW_CATEGORIES)
         )
-        annotated.append(
-            contact.model_copy(update={
-                "source_residue_confidence": src,
-                "target_residue_confidence": tgt,
-                "confidence_warning": warning,
-            })
-        )
+        annotated_contact = contact.model_copy(update={
+            "source_residue_confidence": src,
+            "target_residue_confidence": tgt,
+            "confidence_warning": warning,
+        })
+        annotated.append(annotated_contact.model_copy(update={"trust_label": assign_trust_label(annotated_contact)}))
     return annotated
 
 
