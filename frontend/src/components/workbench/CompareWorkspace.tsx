@@ -271,7 +271,7 @@ export function CompareWorkspace() {
           />
         </div>
 
-        <div className="mt-5 flex flex-col gap-3 rounded-[12px] bg-[var(--pio-paper)] p-4 sm:flex-row sm:items-end">
+        <div className="mt-5 flex flex-col gap-3 rounded-[12px] bg-[#F5F5F5] p-4 sm:flex-row sm:items-end">
           <label className="w-full sm:max-w-[220px]">
             <div className="flex items-center justify-between">
               <span className="pio-label">Contact cutoff</span>
