@@ -15,10 +15,12 @@ import { contactsToCsv, ligandInteractionsToCsv } from "@/lib/csv";
 import type {
   AlphaFoldAnalysisResponse,
   AnalysisResponse,
+  ChainPairSummary,
   ChainSummary,
   ContactCategory,
   ContactRecord,
   ConfidenceSummary,
+  InterfaceAnalysis,
   InteractionSummary,
   LigandInteractionSummary,
   LigandSummary,
@@ -36,7 +38,7 @@ const EMPTY_RESIDUE_CONFIDENCES: ResidueConfidence[] = [];
 type StructureFileFormat = "pdb" | "cif";
 type ViewerColorMode = "structure" | "plddt";
 type ContactFilter = "all" | ContactCategory | "low-confidence";
-type ResultsTab = "overview" | "chains" | "ligands" | "contacts" | "confidence" | "pae" | "quality" | "methods";
+type ResultsTab = "overview" | "chains" | "ligands" | "contacts" | "confidence" | "pae" | "quality" | "methods" | "interfaces";
 type InputSource = "upload" | "sample" | "rcsb" | "alphafold";
 type WorkbenchError = {
   title: string;
@@ -1248,6 +1250,7 @@ function ResultsPanel({
     { id: "pae", label: "PAE", visible: Boolean(analysis?.pae) },
     { id: "quality", label: "Quality", visible: Boolean(analysis) },
     { id: "methods", label: "Methods", visible: Boolean(analysis) },
+    { id: "interfaces", label: "Interfaces", visible: !!(analysis?.interface_analysis?.chain_pairs?.length), count: analysis?.interface_analysis?.chain_pairs?.length ?? undefined },
   ];
   const visibleTabs = tabs.filter((tab) => tab.visible);
   const selectedTab = visibleTabs.some((tab) => tab.id === activeTab) ? activeTab : "overview";
@@ -1431,9 +1434,74 @@ function ResultsPanel({
         {selectedTab === "quality" ? <QualityPanel analysis={analysis} /> : null}
 
         {selectedTab === "methods" ? <ProvenancePanel provenance={provenance} /> : null}
+
+        {selectedTab === "interfaces" && analysis?.interface_analysis ? (
+          <InterfacesTab interfaceAnalysis={analysis.interface_analysis} />
+        ) : null}
       </motion.div>
       </AnimatePresence>
     </section>
+  );
+}
+
+function PldDTCell({ value }: { value: number | null }) {
+  if (value == null) return <span style={{ fontSize: 12, color: "var(--pio-graphite)", opacity: 0.5 }}>—</span>;
+  const color = value >= 90 ? "var(--pio-green-deep)" : value >= 70 ? "var(--pio-ink)" : "var(--pio-coral)";
+  return <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 600, color }}>{value.toFixed(1)}</span>;
+}
+
+function InterfacesTab({ interfaceAnalysis }: { interfaceAnalysis: InterfaceAnalysis }) {
+  return (
+    <div className="min-w-0">
+      <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)" }}>Interfaces</h2>
+      <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>
+        Inter-chain contact summary. Chain pairs sorted by contact count.
+      </p>
+
+      {/* Summary tiles */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
+        <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
+          <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>Inter-chain contacts</p>
+          <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 22, fontWeight: 700, marginTop: 4, color: "var(--pio-ink)" }}>
+            {interfaceAnalysis.inter_chain_contact_count.toLocaleString()}
+          </p>
+        </div>
+        <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
+          <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>Chain pairs</p>
+          <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 22, fontWeight: 700, marginTop: 4, color: "var(--pio-ink)" }}>
+            {interfaceAnalysis.chain_pairs.length}
+          </p>
+        </div>
+      </div>
+
+      {/* Chain pairs table */}
+      <div style={{ overflowX: "auto", marginTop: 20 }}>
+        <div style={{ minWidth: 480 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "60px 60px 1fr 80px 80px 90px 90px", columnGap: 8, borderBottom: "1px solid var(--pio-line)", padding: "8px 12px" }}>
+            {["CHAIN A", "CHAIN B", "CONTACTS", "RES A", "RES B", "MEAN pLDDT A", "MEAN pLDDT B"].map((col) => (
+              <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)" }}>{col}</p>
+            ))}
+          </div>
+          {interfaceAnalysis.chain_pairs.map((pair: ChainPairSummary, i: number) => (
+            <div key={`${pair.chain_a}-${pair.chain_b}`}>
+              <div style={{ display: "grid", gridTemplateColumns: "60px 60px 1fr 80px 80px 90px 90px", columnGap: 8, padding: "10px 12px", alignItems: "center" }}
+                   className="hover:bg-[var(--pio-paper)]">
+                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 13, fontWeight: 600, color: "var(--pio-ink)" }}>{pair.chain_a}</span>
+                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 13, fontWeight: 600, color: "var(--pio-ink)" }}>{pair.chain_b}</span>
+                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, color: "var(--pio-ink)" }}>{pair.contact_count.toLocaleString()}</span>
+                <span style={{ fontSize: 12, color: "var(--pio-graphite)" }}>{pair.interface_residue_count_a}</span>
+                <span style={{ fontSize: 12, color: "var(--pio-graphite)" }}>{pair.interface_residue_count_b}</span>
+                <PldDTCell value={pair.mean_plddt_a} />
+                <PldDTCell value={pair.mean_plddt_b} />
+              </div>
+              {i < interfaceAnalysis.chain_pairs.length - 1 && (
+                <div style={{ height: 1, background: "var(--pio-line)" }} />
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -163,6 +163,22 @@ export type InteractionSummary = {
   possible_clashes: ContactRecord[];
 };
 
+export type ChainPairSummary = {
+  chain_a: string;
+  chain_b: string;
+  contact_count: number;
+  mean_plddt_a: number | null;
+  mean_plddt_b: number | null;
+  interface_residue_count_a: number;
+  interface_residue_count_b: number;
+};
+
+export type InterfaceAnalysis = {
+  chain_pairs: ChainPairSummary[];
+  inter_chain_contact_count: number;
+  intra_chain_contact_count: number;
+};
+
 export type AnalysisResponse = {
   version: string;
   summary: StructureSummary;
@@ -176,6 +192,7 @@ export type AnalysisResponse = {
   ligands: LigandSummary[];
   contacts: ContactRecord[];
   warnings: string[];
+  interface_analysis?: InterfaceAnalysis | null;
 };
 
 export type StructureComparisonDelta = {
