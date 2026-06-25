@@ -1024,7 +1024,7 @@ export function ProteinWorkbench() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.18, ease: "easeOut" }}
-          className="h-full overflow-y-auto"
+          className="h-full"
         >
           <ReportWorkspace
             analysis={analysis}
@@ -1595,9 +1595,9 @@ function ReportWorkspace({
   }
 
   return (
-    <div className="flex min-h-full items-start justify-center p-6">
-    <div className="w-full max-w-[960px] rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
-    <div style={{ padding: "32px 36px 56px" }}>
+    <div className="h-full flex flex-col">
+    <div className="mx-auto w-full max-w-[960px] flex-1 min-h-0 flex flex-col rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)] overflow-hidden">
+    <div className="overflow-y-auto flex-1" style={{ padding: "32px 36px 56px" }}>
       <ReportHeader analysis={analysis} provenance={provenance} onExportContacts={onExportContacts} onExportLigands={onExportLigands} onExportAnalysisJson={onExportAnalysisJson} />
       <div style={REPORT_DIVIDER}>
         <MetadataPanel metadata={analysis.metadata ?? null} />
@@ -1668,35 +1668,36 @@ function ReportHeader({
 
   return (
     <div>
-      {/* Title row */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.1em", color: "var(--pio-highlight)", textTransform: "uppercase", marginBottom: 8 }}>Report</p>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.02em", color: "var(--pio-ink)", lineHeight: 1.2 }}>{title}</h1>
-            {entryUrl ? (
-              <a href={entryUrl} target="_blank" rel="noreferrer" aria-label={isAlphaFold ? "AlphaFold DB entry" : "RCSB entry"}
-                style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: "50%", background: "var(--pio-highlight)", color: "var(--pio-highlight-text)", flexShrink: 0, textDecoration: "none" }}>
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                  <path d="M2.5 11.5L11.5 2.5M11.5 2.5H6M11.5 2.5V8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </a>
-            ) : null}
-          </div>
-          <p style={{ ...REPORT_SUB, maxWidth: 560, marginTop: 8 }}>
-            Structure metadata, interaction metrics, ligand analysis, confidence signals, quality warnings, and provenance.
-          </p>
-        </div>
-        {/* Export buttons */}
-        <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "center", paddingTop: 4 }}>
-          {exports.map(([label, fn, disabled]) => (
-            <button key={label} type="button" onClick={fn} disabled={disabled}
-              style={{ borderRadius: 12, border: "1px solid var(--pio-line-strong)", background: "var(--pio-white)", color: "var(--pio-ink)", padding: "8px 14px", fontSize: 12.5, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 6, opacity: disabled ? 0.45 : 1 }}>
-              <Download size={13} color={disabled ? "var(--pio-graphite)" : "var(--pio-highlight)"} />
-              {label}
-            </button>
-          ))}
-        </div>
+      {/* Label */}
+      <p style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.1em", color: "var(--pio-highlight)", textTransform: "uppercase", marginBottom: 10 }}>Report</p>
+
+      {/* Title + external link */}
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+        <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.02em", color: "var(--pio-ink)", lineHeight: 1.2, flex: 1, minWidth: 0 }}>{title}</h1>
+        {entryUrl ? (
+          <a href={entryUrl} target="_blank" rel="noreferrer" aria-label={isAlphaFold ? "AlphaFold DB entry" : "RCSB entry"}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: "50%", background: "var(--pio-highlight)", color: "var(--pio-highlight-text)", flexShrink: 0, textDecoration: "none", marginTop: 4 }}>
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M2.5 11.5L11.5 2.5M11.5 2.5H6M11.5 2.5V8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </a>
+        ) : null}
+      </div>
+
+      {/* Subtitle */}
+      <p style={{ ...REPORT_SUB, maxWidth: 560, marginTop: 8 }}>
+        Structure metadata, interaction metrics, ligand analysis, confidence signals, quality warnings, and provenance.
+      </p>
+
+      {/* Export buttons */}
+      <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
+        {exports.map(([label, fn, disabled]) => (
+          <button key={label} type="button" onClick={fn} disabled={disabled}
+            style={{ borderRadius: 12, border: "1px solid var(--pio-line-strong)", background: "var(--pio-white)", color: "var(--pio-ink)", padding: "7px 13px", fontSize: 12, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 6, opacity: disabled ? 0.45 : 1 }}>
+            <Download size={12} color={disabled ? "var(--pio-graphite)" : "var(--pio-highlight)"} />
+            {label}
+          </button>
+        ))}
       </div>
 
       {/* Provenance fact tiles */}
