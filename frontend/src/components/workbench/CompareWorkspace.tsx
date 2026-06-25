@@ -340,8 +340,7 @@ export function CompareWorkspace() {
               type="button"
               onClick={() => void compareStructures()}
               disabled={!inputA.file || !inputB.file || isLoading || inputA.isFetching || inputB.isFetching}
-              className="pio-button-primary ml-auto min-w-[160px]"
-              style={{ borderRadius: 12 }}
+              className="ml-auto flex min-w-[160px] items-center justify-center gap-2 rounded-[12px] bg-[var(--pio-highlight)] py-[10px] text-[13px] font-semibold text-[var(--pio-highlight-text)] transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45"
             >
               {isLoading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
               {isLoading ? "Analyzing…" : "Analyze"}
