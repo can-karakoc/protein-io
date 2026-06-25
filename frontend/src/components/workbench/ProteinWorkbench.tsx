@@ -3088,7 +3088,7 @@ function contactChipStyle(key: string): React.CSSProperties {
   return { background: "rgba(199,217,236,0.6)", color: "var(--pio-highlight)" };
 }
 
-const CONTACT_GRID = "120px 1fr 100px";
+const CONTACT_GRID = "120px 1fr 100px 90px";
 
 function ContactTable({
   contacts,
@@ -3115,7 +3115,7 @@ function ContactTable({
     <div style={{ minWidth: 360 }}>
       {/* Header */}
       <div style={{ display: "grid", gridTemplateColumns: CONTACT_GRID, columnGap: 8, borderBottom: "1px solid var(--pio-line)", padding: "8px 12px" }}>
-        {["TYPE", "CATEGORIES", "RESIDUES"].map((col) => (
+        {["TYPE", "CATEGORIES", "RESIDUES", "CONFIDENCE"].map((col) => (
           <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)", textAlign: col === "RESIDUES" ? "right" : "left" }}>{col}</p>
         ))}
       </div>
@@ -3164,6 +3164,10 @@ function ContactTable({
                 <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 500, color: "var(--pio-ink)" }}>
                   {contact.chain_b}:{contact.residue_name_b}{contact.residue_b}
                 </span>
+              </div>
+              {/* CONFIDENCE */}
+              <div>
+                <ContactConfidenceBadge contact={contact} />
               </div>
             </div>
             {i < contacts.length - 1 && <div style={{ height: 1, background: "var(--pio-line)" }} />}
