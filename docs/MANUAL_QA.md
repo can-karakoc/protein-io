@@ -81,10 +81,16 @@ Use this checklist before public demo updates and after meaningful frontend or b
 - `[ ]` Switch between `Structure` and `pLDDT` coloring modes and confirm the Mol* viewer updates its confidence coloring.
 - `[ ]` Upload a normal experimental-style file and confirm no confidence panel appears.
 
-## Structure Comparison Status
+## Structure Comparison Flow
 
-- `[ ]` Confirm the Compare tab clearly says the dedicated user interface is not available yet.
-- `[ ]` Confirm the app does not claim that comparison is currently available in Explore.
+- `[ ]` Open Compare and confirm the structure A/B file inputs render.
+- `[ ]` Confirm Compare remains disabled until both supported files are selected.
+- `[ ]` Compare `examples/sample.pdb` with `examples/sample.cif`.
+- `[ ]` Confirm A/B summary metrics and B-minus-A deltas appear.
+- `[ ]` Switch between Shared, Gained in B, and Lost from A.
+- `[ ]` Confirm the limitations state that no alignment, RMSD, TM-score, or 3D superposition is performed.
+- `[ ]` Export the representative examples CSV and confirm it includes difference category, contact identity, categories, and A/B distances.
+- `[ ]` Select an unsupported file or invalid cutoff and confirm a useful error appears.
 
 ## RCSB Fetch Flow
 

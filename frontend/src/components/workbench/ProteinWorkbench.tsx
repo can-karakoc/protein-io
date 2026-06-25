@@ -1,10 +1,11 @@
 "use client";
 
-import { Atom, Database, Download, X } from "lucide-react";
+import { Database, Download, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import { StructureViewer } from "@/components/viewer/StructureViewer";
+import { CompareWorkspace } from "@/components/workbench/CompareWorkspace";
 import { ExploreSidebar } from "@/components/workbench/ExploreSidebar";
 import { WorkbenchShell } from "@/components/workbench/WorkbenchShell";
 import type { WorkbenchMode } from "@/components/workbench/TopNav";
@@ -197,7 +198,7 @@ function getPublicCacheSnapshot() {
 }
 
 function getPreferencesSnapshot() {
-  return localStorage.getItem(WORKBENCH_PREFERENCES_KEY);
+  return localStorage.getItem(WORKBENCH_PREFERENCES_KEY) ?? "null";
 }
 
 function getServerSnapshot() {
@@ -222,6 +223,7 @@ export function ProteinWorkbench() {
       key={`${initialCache?.savedAt ?? "empty"}:${preferencesSnapshot ?? "defaults"}`}
       initialCache={initialCache}
       initialPreferences={initialPreferences}
+      preferencesHydrated={preferencesSnapshot !== null}
     />
   );
 }
@@ -229,9 +231,11 @@ export function ProteinWorkbench() {
 function ProteinWorkbenchState({
   initialCache,
   initialPreferences,
+  preferencesHydrated,
 }: {
   initialCache: PublicStructureCache | null;
   initialPreferences: WorkbenchPreferences;
+  preferencesHydrated: boolean;
 }) {
   const [mode, setMode] = useState<WorkbenchMode>(initialPreferences.workbenchMode);
   const [fileName, setFileName] = useState<string>(initialCache?.fileName ?? "");
@@ -267,12 +271,13 @@ function ProteinWorkbenchState({
 
   // Persist the active results tab whenever it changes so reload restores it
   useEffect(() => {
+    if (!preferencesHydrated) return;
     saveWorkbenchPreferences({
       resultsTab,
       workbenchMode: mode,
       tabStripScrollLeft: tabStripScrollLeftRef.current,
     });
-  }, [mode, resultsTab]);
+  }, [mode, preferencesHydrated, resultsTab]);
 
   // Persist the active workbench mode (Explore / Report / Compare)
   const isLg = useMediaQuery("(min-width: 1024px)");
@@ -1049,9 +1054,9 @@ function ProteinWorkbenchState({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.18, ease: "easeOut" }}
-          className="flex h-full items-center justify-center p-8"
+          className="h-full"
         >
-          <WorkbenchModePlaceholder />
+          <CompareWorkspace />
         </motion.div>
       )}
       </AnimatePresence>
@@ -1123,25 +1128,6 @@ function ProteinWorkbenchState({
     </AnimatePresence>
 
     </>
-  );
-}
-
-function WorkbenchModePlaceholder() {
-  return (
-    <div className="w-full max-w-[480px] rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] p-10 text-center shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
-      <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(199,217,236,0.4)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-        <Atom size={22} color="var(--pio-highlight)" />
-      </div>
-      <p className="text-[18px] font-bold text-[var(--pio-ink)]">Compare workspace is coming next</p>
-      <p className="mx-auto mt-2 max-w-[340px] text-[13.5px] leading-[1.6] text-[var(--pio-graphite)]">
-        The backend can compare contact summaries, but the scientist-facing comparison workspace is not available yet.
-      </p>
-      <div className="mt-5 flex flex-wrap justify-center gap-2">
-        {["No structural alignment", "No RMSD", "No TM-score", "No side-by-side 3D"].map((label) => (
-          <span key={label} className="pio-badge pio-badge-caution">{label}</span>
-        ))}
-      </div>
-    </div>
   );
 }
 

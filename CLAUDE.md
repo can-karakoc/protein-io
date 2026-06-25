@@ -50,20 +50,19 @@ See `DESIGN_SYSTEM.md` at repo root for copy-paste patterns.
 - Metadata row hover: light blue (`--pio-sky`) tint + `cursor-pointer`.
 - Confidence-aware contact annotations and low-confidence filtering.
 - Report tab: white card, deduped title + arrow button, section dividers, download buttons.
-- Compare tab: placeholder card (pending implementation — see Next milestone).
+- Compare tab: local PDB/mmCIF A/B inputs, summary deltas, shared/gained/lost contact-identity tabs, and representative-example CSV export.
 - `localStorage` public structure cache (`pio_public_structure_cache_v2`): restores only RCSB/AlphaFold analyses. Local uploads and PAE sidecars are not persisted.
 - Workbench preferences (`pio_workbench_preferences_v1`) persist mode, active results tab, and tab-strip position.
 - Light/dark theme support with persisted preference.
 - CSS hiding residual Mol* bottom-left sequence toggle artifact.
 - Dead code removed: `ViewerModeToggle`, `SelectionBar`, `selectionDetails`.
 
-### Next milestone — Compare mode
-Compare is the only tab that is still a placeholder. Priority order:
-1. Two-structure upload/fetch UI in the Compare sidebar.
-2. Diff table: shared / gained / lost contacts.
-3. Chain alignment summary.
+### Next comparison iteration
+The comparison foundation is implemented for local files. Possible follow-ups:
+1. RCSB/AlphaFold inputs for structures A and B.
+2. Richer downloadable comparison report.
+3. Chain/residue alignment summary.
 4. Mol* dual-viewer or overlay highlighting.
-5. Export comparison report.
 
 ### Formally deferred
 - **Screenshot comparison vs. reference design** — still outstanding. Compare `protein-io-design-system-boltz.html` against the live Report tab, Ligand panel, and Contacts table.

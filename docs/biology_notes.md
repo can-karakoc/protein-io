@@ -70,4 +70,4 @@ PAE is an AlphaFold 2 output that estimates the expected error (in angstroms) fo
 
 - Only the first model is analysed when a file contains multiple models.
 - Contact detection is distance-based only; the app does not classify hydrogen bonds, salt bridges, hydrophobic contacts, aromatic stacking, or metal coordination.
-- Structural alignment (RMSD, TM-score) is not yet implemented. A residue-identity contact-difference endpoint exists, but the dedicated Compare user interface is not available yet.
+- Structural alignment (RMSD, TM-score) is not implemented. Compare mode reports residue-contact identities using chain ID, residue name, residue number, and contact type, so numbering differences can produce apparent gains or losses without implying a fold change.

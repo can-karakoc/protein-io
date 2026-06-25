@@ -45,15 +45,15 @@ All items that were listed as "Next Product Priorities" are now shipped:
 
 ---
 
-## ▶️ Next Milestone — Compare Mode
+## ✅ Completed — Compare Mode Foundation
 
-Compare is currently a placeholder card. The explicit next milestone is a working two-structure comparison workflow:
+- Local PDB/mmCIF inputs for structures A and B.
+- A/B structure summaries and B-minus-A count deltas.
+- Shared / gained / lost residue-contact identity tabs.
+- Transparent limitation copy for numbering sensitivity and lack of structural alignment.
+- CSV export for the representative comparison examples returned by the API.
 
-- Side-by-side upload or fetch for structures A and B.
-- Shared / gained / lost contact diff table.
-- Chain and residue alignment summary.
-- Mol* dual-viewer or overlay highlighting.
-- Export comparison report as CSV or PDF.
+This is the functional foundation, not the final frontend treatment. The next comparison iteration should combine feature depth with UI polish: public-database inputs, clearer result hierarchy, richer reporting, stronger empty/error/loading states, and responsive table refinement. Chain/residue alignment and viewer overlays remain future work.
 
 **Future comparison scope (do not implement until base workflow is clean):** structural alignment, RMSD, TM-score, Foldseek integration, viewer-side alignment highlighting.
 

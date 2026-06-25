@@ -39,13 +39,15 @@
 - `localStorage` public-structure cache — the last RCSB or AlphaFold analysis survives refresh; local uploads are not persisted.
 - Dead code cleanup, TypeScript clean throughout.
 
-## ▶️ v0.5 — Compare Mode (next)
+## ✅ v0.5 — Compare Mode Foundation
 
-- Working two-structure comparison workflow in the Compare tab (currently placeholder).
-- Side-by-side upload or fetch for structures A and B.
-- Shared / gained / lost contact diff table with export.
-- Chain and residue alignment summary.
-- Mol* dual-viewer or overlay highlighting.
+- Working local-file comparison workflow in the Compare tab.
+- Structure A/B summaries and B-minus-A count deltas.
+- Shared / gained / lost residue-contact identity tabs.
+- Representative comparison-example CSV export.
+- Explicit limitations: no alignment, RMSD, TM-score, or 3D superposition.
+
+Public-database comparison inputs, alignment summaries, and viewer overlays remain future iterations.
 
 ## v0.6 — Persistence & Sharing (future)
 

@@ -234,8 +234,9 @@ Goal: make the product feel reliable and professional.
 
 ### Priority 10: Compare Workflow Polish
 
-- `[ ]` Improve Compare mode with structure A/B inputs, summary cards, shared/gained/lost tabs, and transparent limitation copy.
-- `[ ]` Add comparison CSV export if easy.
+- `[x]` Improve Compare mode with local structure A/B inputs, summary cards, shared/gained/lost tabs, and transparent limitation copy.
+- `[x]` Add CSV export for the representative comparison examples returned by the API.
+- `[ ]` Continue comparison feature work alongside focused frontend polish: public-database inputs, stronger result hierarchy, responsive tables, and refined empty/loading/error states.
 - `[ ]` Do not add alignment, RMSD, TM-score, Foldseek, or superposition until explicitly requested.
 
 ## Step Completion Rule
