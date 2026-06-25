@@ -1,14 +1,5 @@
 from __future__ import annotations
-from typing import Literal
-from app.models import ContactRecord
-
-TrustLabel = Literal[
-    "high-confidence",
-    "inspect-manually",
-    "low-confidence",
-    "possible-clash",
-    "no-confidence-data",
-]
+from app.models import ContactRecord, TrustLabel
 
 _LOW_PLDDT_CATEGORIES = frozenset({"low", "very_low"})
 

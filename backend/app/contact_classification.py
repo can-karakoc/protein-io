@@ -46,6 +46,7 @@ def contact_categories(atom_a: AtomRecord, atom_b: AtomRecord, contact_type: Con
 
     if distance < VERY_CLOSE_CONTACT_DISTANCE:
         categories.append("very-close-contact")
+        categories.append("possible-clash")
 
     return categories
 
