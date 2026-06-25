@@ -50,7 +50,7 @@ See `DESIGN_SYSTEM.md` at repo root for copy-paste patterns.
 - Metadata row hover: light blue (`--pio-sky`) tint + `cursor-pointer`.
 - Confidence-aware contact annotations and low-confidence filtering.
 - Report tab: white card, deduped title + arrow button, section dividers, download buttons.
-- Compare tab: local PDB/mmCIF A/B inputs, summary deltas, shared/gained/lost contact-identity tabs, and representative-example CSV export.
+- Compare tab: independent local-file, RCSB, or AlphaFold A/B inputs, summary deltas, shared/gained/lost contact-identity tabs, and representative-example CSV export.
 - `localStorage` public structure cache (`pio_public_structure_cache_v2`): restores only RCSB/AlphaFold analyses. Local uploads and PAE sidecars are not persisted.
 - Workbench preferences (`pio_workbench_preferences_v1`) persist mode, active results tab, and tab-strip position.
 - Light/dark theme support with persisted preference.
@@ -58,9 +58,9 @@ See `DESIGN_SYSTEM.md` at repo root for copy-paste patterns.
 - Dead code removed: `ViewerModeToggle`, `SelectionBar`, `selectionDetails`.
 
 ### Next comparison iteration
-The comparison foundation is implemented for local files. Possible follow-ups:
-1. RCSB/AlphaFold inputs for structures A and B.
-2. Richer downloadable comparison report.
+The comparison foundation supports local files and public RCSB/AlphaFold inputs. Possible follow-ups:
+1. Richer downloadable comparison report.
+2. Stronger responsive result hierarchy and table treatment.
 3. Chain/residue alignment summary.
 4. Mol* dual-viewer or overlay highlighting.
 

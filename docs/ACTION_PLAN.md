@@ -236,7 +236,9 @@ Goal: make the product feel reliable and professional.
 
 - `[x]` Improve Compare mode with local structure A/B inputs, summary cards, shared/gained/lost tabs, and transparent limitation copy.
 - `[x]` Add CSV export for the representative comparison examples returned by the API.
-- `[ ]` Continue comparison feature work alongside focused frontend polish: public-database inputs, stronger result hierarchy, responsive tables, and refined empty/loading/error states.
+- `[x]` Add independent local-file, RCSB PDB ID, and AlphaFold UniProt inputs for structures A and B.
+- `[x]` Add per-side validation, loading, ready, and fetch-error states.
+- `[ ]` Continue comparison frontend polish: stronger result hierarchy, responsive tables, and refined result-level empty/loading/error states.
 - `[ ]` Do not add alignment, RMSD, TM-score, Foldseek, or superposition until explicitly requested.
 
 ## Step Completion Rule

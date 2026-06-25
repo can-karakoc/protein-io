@@ -1,28 +1,52 @@
 "use client";
 
-import { ArrowLeftRight, Download, FileUp, LoaderCircle, X } from "lucide-react";
+import { ArrowLeftRight, Database, Download, FileUp, LoaderCircle, Sparkles, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { buildApiUrl } from "@/lib/api";
 import { comparisonContactsToCsv } from "@/lib/csv";
 import type {
+  AlphaFoldAnalysisResponse,
   ContactDifference,
+  RcsbAnalysisResponse,
   StructureComparisonResponse,
   StructureSummary,
 } from "@/lib/types";
 
 type ComparisonTab = "shared" | "gained" | "lost";
+type ComparisonInputMode = "local" | "rcsb" | "alphafold";
+type ComparisonSide = "a" | "b";
 
 type CompareError = {
   title: string;
   message: string;
 } | null;
 
+type ComparisonInputState = {
+  mode: ComparisonInputMode;
+  file: File | null;
+  pdbId: string;
+  uniprotId: string;
+  isFetching: boolean;
+  error: string | null;
+};
+
 const SUPPORTED_STRUCTURE_FILE = /\.(pdb|cif|mmcif)$/i;
 
+function emptyComparisonInput(): ComparisonInputState {
+  return {
+    mode: "local",
+    file: null,
+    pdbId: "",
+    uniprotId: "",
+    isFetching: false,
+    error: null,
+  };
+}
+
 export function CompareWorkspace() {
-  const [fileA, setFileA] = useState<File | null>(null);
-  const [fileB, setFileB] = useState<File | null>(null);
+  const [inputA, setInputA] = useState<ComparisonInputState>(emptyComparisonInput);
+  const [inputB, setInputB] = useState<ComparisonInputState>(emptyComparisonInput);
   const [cutoff, setCutoff] = useState(4);
   const [comparison, setComparison] = useState<StructureComparisonResponse | null>(null);
   const [activeTab, setActiveTab] = useState<ComparisonTab>("shared");
@@ -36,22 +60,100 @@ export function CompareWorkspace() {
     return comparison.contacts.shared_contacts;
   }, [activeTab, comparison]);
 
-  function chooseFile(side: "a" | "b", file: File | null) {
+  function updateInput(
+    side: ComparisonSide,
+    update: (current: ComparisonInputState) => ComparisonInputState,
+  ) {
+    if (side === "a") setInputA(update);
+    else setInputB(update);
+  }
+
+  function setInputMode(side: ComparisonSide, mode: ComparisonInputMode) {
+    setComparison(null);
+    setError(null);
+    updateInput(side, (current) => ({
+      ...current,
+      mode,
+      file: null,
+      isFetching: false,
+      error: null,
+    }));
+  }
+
+  function chooseFile(side: ComparisonSide, file: File | null) {
     setError(null);
     setComparison(null);
     if (file && !SUPPORTED_STRUCTURE_FILE.test(file.name)) {
-      setError({
-        title: "Unsupported structure file",
-        message: "Comparison accepts .pdb, .cif, and .mmcif coordinate files.",
-      });
+      updateInput(side, (current) => ({
+        ...current,
+        file: null,
+        error: "Comparison accepts .pdb, .cif, and .mmcif coordinate files.",
+      }));
       return;
     }
-    if (side === "a") setFileA(file);
-    else setFileB(file);
+    updateInput(side, (current) => ({ ...current, file, error: null }));
+  }
+
+  function setPublicId(side: ComparisonSide, value: string) {
+    updateInput(side, (current) =>
+      current.mode === "rcsb"
+        ? { ...current, pdbId: value, error: null }
+        : { ...current, uniprotId: value, error: null },
+    );
+  }
+
+  async function fetchPublicStructure(side: ComparisonSide) {
+    const input = side === "a" ? inputA : inputB;
+    const isRcsb = input.mode === "rcsb";
+    const rawId = isRcsb ? input.pdbId : input.uniprotId;
+    const normalizedId = rawId.trim().toUpperCase();
+    const valid = isRcsb
+      ? /^[A-Z0-9]{4}$/.test(normalizedId)
+      : /^[A-Z0-9]{6,10}$/.test(normalizedId);
+
+    if (!valid) {
+      updateInput(side, (current) => ({
+        ...current,
+        error: isRcsb
+          ? "PDB IDs must be exactly 4 letters or numbers."
+          : "UniProt accessions must be 6 to 10 letters or numbers.",
+      }));
+      return;
+    }
+
+    setComparison(null);
+    setError(null);
+    updateInput(side, (current) => ({ ...current, isFetching: true, error: null, file: null }));
+    try {
+      const endpoint = isRcsb
+        ? `/api/rcsb/${encodeURIComponent(normalizedId)}/analyze`
+        : `/api/alphafold/${encodeURIComponent(normalizedId)}/analyze`;
+      const response = await fetch(buildApiUrl(`${endpoint}?cutoff_angstrom=${cutoff}`));
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as { detail?: string } | null;
+        throw new Error(body?.detail ?? `Fetch failed with status ${response.status}.`);
+      }
+      const payload = (await response.json()) as RcsbAnalysisResponse | AlphaFoldAnalysisResponse;
+      const file = new File([payload.structure_text], payload.filename, { type: "chemical/x-mmcif" });
+      updateInput(side, (current) => ({
+        ...current,
+        file,
+        pdbId: isRcsb ? normalizedId : current.pdbId,
+        uniprotId: isRcsb ? current.uniprotId : normalizedId,
+        isFetching: false,
+        error: null,
+      }));
+    } catch (caught) {
+      updateInput(side, (current) => ({
+        ...current,
+        isFetching: false,
+        error: caught instanceof Error ? caught.message : "The public structure could not be fetched.",
+      }));
+    }
   }
 
   async function compareStructures() {
-    if (!fileA || !fileB) {
+    if (!inputA.file || !inputB.file) {
       setError({
         title: "Two structures are required",
         message: "Choose both structure A and structure B before running the comparison.",
@@ -71,8 +173,8 @@ export function CompareWorkspace() {
     setComparison(null);
     try {
       const formData = new FormData();
-      formData.append("file_a", fileA);
-      formData.append("file_b", fileB);
+      formData.append("file_a", inputA.file);
+      formData.append("file_b", inputB.file);
       formData.append("cutoff_angstrom", String(cutoff));
       const response = await fetch(buildApiUrl("/api/compare"), {
         method: "POST",
@@ -95,16 +197,16 @@ export function CompareWorkspace() {
   }
 
   function swapStructures() {
-    setFileA(fileB);
-    setFileB(fileA);
+    setInputA(inputB);
+    setInputB(inputA);
     setComparison(null);
     setError(null);
   }
 
   function exportComparisonExamples() {
-    if (!comparison || !fileA || !fileB) return;
+    if (!comparison || !inputA.file || !inputB.file) return;
     const csv = comparisonContactsToCsv(comparison);
-    downloadCsv(csv, `${baseName(fileA.name)}-vs-${baseName(fileB.name)}-contact-difference-examples.csv`);
+    downloadCsv(csv, `${baseName(inputA.file.name)}-vs-${baseName(inputB.file.name)}-contact-difference-examples.csv`);
   }
 
   return (
@@ -134,18 +236,32 @@ export function CompareWorkspace() {
         </div>
 
         <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_auto_1fr] lg:items-center">
-          <ComparisonFileInput side="A" file={fileA} onChange={(file) => chooseFile("a", file)} />
+          <ComparisonStructureInput
+            side="A"
+            input={inputA}
+            onModeChange={(mode) => setInputMode("a", mode)}
+            onFileChange={(file) => chooseFile("a", file)}
+            onPublicIdChange={(value) => setPublicId("a", value)}
+            onFetch={() => void fetchPublicStructure("a")}
+          />
           <button
             type="button"
             onClick={swapStructures}
-            disabled={!fileA && !fileB}
+            disabled={!inputA.file && !inputB.file}
             className="pio-button-secondary mx-auto h-10 w-10 rounded-full p-0"
             aria-label="Swap structure A and structure B"
             title="Swap structures"
           >
             <ArrowLeftRight size={16} />
           </button>
-          <ComparisonFileInput side="B" file={fileB} onChange={(file) => chooseFile("b", file)} />
+          <ComparisonStructureInput
+            side="B"
+            input={inputB}
+            onModeChange={(mode) => setInputMode("b", mode)}
+            onFileChange={(file) => chooseFile("b", file)}
+            onPublicIdChange={(value) => setPublicId("b", value)}
+            onFetch={() => void fetchPublicStructure("b")}
+          />
         </div>
 
         <div className="mt-5 flex flex-col gap-3 rounded-[12px] bg-[var(--pio-paper)] p-4 sm:flex-row sm:items-end">
@@ -166,7 +282,7 @@ export function CompareWorkspace() {
           <button
             type="button"
             onClick={() => void compareStructures()}
-            disabled={!fileA || !fileB || isLoading}
+            disabled={!inputA.file || !inputB.file || isLoading || inputA.isFetching || inputB.isFetching}
             className="pio-button-primary sm:ml-auto sm:min-w-[190px]"
           >
             {isLoading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <ArrowLeftRight className="h-4 w-4" />}
@@ -181,11 +297,11 @@ export function CompareWorkspace() {
           </div>
         ) : null}
 
-        {comparison && fileA && fileB ? (
+        {comparison && inputA.file && inputB.file ? (
           <ComparisonResults
             comparison={comparison}
-            fileAName={fileA.name}
-            fileBName={fileB.name}
+            fileAName={inputA.file.name}
+            fileBName={inputB.file.name}
             activeTab={activeTab}
             activeRows={activeRows}
             onTabChange={setActiveTab}
@@ -205,15 +321,30 @@ export function CompareWorkspace() {
   );
 }
 
-function ComparisonFileInput({
+function ComparisonStructureInput({
   side,
-  file,
-  onChange,
+  input,
+  onModeChange,
+  onFileChange,
+  onPublicIdChange,
+  onFetch,
 }: {
   side: "A" | "B";
-  file: File | null;
-  onChange: (file: File | null) => void;
+  input: ComparisonInputState;
+  onModeChange: (mode: ComparisonInputMode) => void;
+  onFileChange: (file: File | null) => void;
+  onPublicIdChange: (value: string) => void;
+  onFetch: () => void;
 }) {
+  const modes: Array<{ id: ComparisonInputMode; label: string; icon: typeof FileUp }> = [
+    { id: "local", label: "File", icon: FileUp },
+    { id: "rcsb", label: "PDB ID", icon: Database },
+    { id: "alphafold", label: "AlphaFold", icon: Sparkles },
+  ];
+  const publicValue = input.mode === "rcsb" ? input.pdbId : input.uniprotId;
+  const publicLabel = input.mode === "rcsb" ? "PDB ID" : "UniProt accession";
+  const publicPlaceholder = input.mode === "rcsb" ? "e.g. 4HHB" : "e.g. P69905";
+
   return (
     <div className="rounded-[12px] border border-[var(--pio-line)] bg-[var(--pio-paper)] p-4">
       <div className="flex items-center justify-between gap-3">
@@ -223,10 +354,10 @@ function ComparisonFileInput({
             {side === "A" ? "Reference structure" : "Comparison structure"}
           </p>
         </div>
-        {file ? (
+        {input.file ? (
           <button
             type="button"
-            onClick={() => onChange(null)}
+            onClick={() => onFileChange(null)}
             className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--pio-graphite)] hover:bg-[var(--pio-line)]"
             aria-label={`Clear structure ${side}`}
           >
@@ -234,22 +365,94 @@ function ComparisonFileInput({
           </button>
         ) : null}
       </div>
-      <label className="mt-4 flex min-h-[104px] cursor-pointer flex-col items-center justify-center rounded-[10px] border border-dashed border-[var(--pio-line-strong)] bg-[var(--pio-white)] px-4 text-center transition-colors hover:bg-[var(--pio-sand)]">
-        <FileUp className="h-5 w-5 text-[var(--pio-highlight)]" />
-        <span className="mt-2 max-w-full truncate text-[13px] font-semibold text-[var(--pio-ink)]">
-          {file?.name ?? "Choose PDB or mmCIF"}
-        </span>
-        <span className="mt-1 text-[11px] text-[var(--pio-graphite)]">
-          {file ? formatBytes(file.size) : ".pdb, .cif, or .mmcif"}
-        </span>
-        <input
-          key={file?.name ?? "empty"}
-          type="file"
-          accept=".pdb,.cif,.mmcif"
-          className="sr-only"
-          onChange={(event) => onChange(event.target.files?.[0] ?? null)}
-        />
-      </label>
+
+      <div className="mt-4 grid grid-cols-3 gap-1 rounded-[10px] border border-[var(--pio-line)] bg-[var(--pio-white)] p-1">
+        {modes.map((mode) => {
+          const Icon = mode.icon;
+          const selected = input.mode === mode.id;
+          return (
+            <button
+              key={mode.id}
+              type="button"
+              onClick={() => onModeChange(mode.id)}
+              aria-pressed={selected}
+              className={[
+                "flex min-w-0 items-center justify-center gap-1.5 rounded-[7px] px-2 py-2 text-[11px] font-semibold transition-colors",
+                selected
+                  ? "bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)]"
+                  : "text-[var(--pio-graphite)] hover:bg-[var(--pio-paper)]",
+              ].join(" ")}
+            >
+              <Icon className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">{mode.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {input.mode === "local" ? (
+        <label className="mt-3 flex min-h-[104px] cursor-pointer flex-col items-center justify-center rounded-[10px] border border-dashed border-[var(--pio-line-strong)] bg-[var(--pio-white)] px-4 text-center transition-colors hover:bg-[var(--pio-sand)]">
+          <FileUp className="h-5 w-5 text-[var(--pio-highlight)]" />
+          <span className="mt-2 max-w-full truncate text-[13px] font-semibold text-[var(--pio-ink)]">
+            {input.file?.name ?? "Choose PDB or mmCIF"}
+          </span>
+          <span className="mt-1 text-[11px] text-[var(--pio-graphite)]">
+            {input.file ? formatBytes(input.file.size) : ".pdb, .cif, or .mmcif"}
+          </span>
+          <input
+            key={input.file?.name ?? "empty"}
+            type="file"
+            accept=".pdb,.cif,.mmcif"
+            className="sr-only"
+            onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
+          />
+        </label>
+      ) : (
+        <div className="mt-3 rounded-[10px] bg-[var(--pio-white)] p-3">
+          <label>
+            <span className="pio-label">{publicLabel}</span>
+            <input
+              value={publicValue}
+              onChange={(event) => onPublicIdChange(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") onFetch();
+              }}
+              placeholder={publicPlaceholder}
+              className="pio-input mt-2"
+              autoCapitalize="characters"
+              spellCheck={false}
+            />
+          </label>
+          <button
+            type="button"
+            onClick={onFetch}
+            disabled={!publicValue.trim() || input.isFetching}
+            className="pio-button-secondary mt-3 w-full"
+          >
+            {input.isFetching ? (
+              <LoaderCircle className="h-4 w-4 animate-spin" />
+            ) : input.mode === "rcsb" ? (
+              <Database className="h-4 w-4" />
+            ) : (
+              <Sparkles className="h-4 w-4" />
+            )}
+            {input.isFetching ? "Fetching…" : `Fetch ${input.mode === "rcsb" ? "RCSB" : "AlphaFold"}`}
+          </button>
+          {input.file ? (
+            <div className="mt-3 rounded-[8px] bg-[var(--pio-green-pale)] px-3 py-2">
+              <p className="truncate font-mono text-[11px] font-semibold text-[var(--pio-green-deep)]" title={input.file.name}>
+                Ready: {input.file.name}
+              </p>
+            </div>
+          ) : null}
+        </div>
+      )}
+
+      {input.error ? (
+        <p className="mt-3 text-[12px] leading-5 text-[var(--pio-coral-deep)]" role="alert">
+          {input.error}
+        </p>
+      ) : null}
     </div>
   );
 }

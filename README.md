@@ -29,7 +29,7 @@ The project is intentionally simple for the public MVP: no authentication, no da
 - Render structures with Mol*.
 - Show RCSB/AlphaFold metadata, confidence summaries, PAE summaries, interaction summaries, ligand interaction summaries, summary cards, chain table, ligand table, and contact table.
 - Filter the contact table by contact category.
-- Compare two local PDB/mmCIF structures using residue-level shared, gained, and lost contact identities.
+- Compare local, RCSB, or AlphaFold structures using residue-level shared, gained, and lost contact identities.
 - Export contacts and ligand interaction summaries as CSV.
 - Export representative comparison examples as CSV.
 - Prepare frontend API calls through `NEXT_PUBLIC_API_URL`.

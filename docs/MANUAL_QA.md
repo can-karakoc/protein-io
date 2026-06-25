@@ -84,6 +84,10 @@ Use this checklist before public demo updates and after meaningful frontend or b
 ## Structure Comparison Flow
 
 - `[ ]` Open Compare and confirm the structure A/B file inputs render.
+- `[ ]` Confirm each side can switch independently between File, PDB ID, and AlphaFold.
+- `[ ]` Fetch an RCSB entry such as `4HHB` on one side and confirm the fetched mmCIF becomes ready.
+- `[ ]` Fetch an AlphaFold entry such as `P69905` on one side and confirm the fetched mmCIF becomes ready.
+- `[ ]` Confirm invalid IDs and failed public fetches stay scoped to the relevant side.
 - `[ ]` Confirm Compare remains disabled until both supported files are selected.
 - `[ ]` Compare `examples/sample.pdb` with `examples/sample.cif`.
 - `[ ]` Confirm A/B summary metrics and B-minus-A deltas appear.

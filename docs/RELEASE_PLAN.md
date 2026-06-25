@@ -41,7 +41,7 @@
 
 ## ✅ v0.5 — Compare Mode Foundation
 
-- Working local-file comparison workflow in the Compare tab.
+- Working local-file, RCSB, and AlphaFold comparison inputs in the Compare tab.
 - Structure A/B summaries and B-minus-A count deltas.
 - Shared / gained / lost residue-contact identity tabs.
 - Representative comparison-example CSV export.
