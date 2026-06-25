@@ -203,6 +203,13 @@ export function CompareWorkspace() {
     setError(null);
   }
 
+  function resetComparison() {
+    setInputA(emptyComparisonInput());
+    setInputB(emptyComparisonInput());
+    setComparison(null);
+    setError(null);
+  }
+
   function exportComparisonExamples() {
     if (!comparison || !inputA.file || !inputB.file) return;
     const csv = comparisonContactsToCsv(comparison);
@@ -279,6 +286,16 @@ export function CompareWorkspace() {
               <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 font-mono text-xs text-[var(--pio-graphite)]">Å</span>
             </div>
           </label>
+          {(inputA.file || inputB.file || comparison || error) ? (
+            <button
+              type="button"
+              onClick={resetComparison}
+              className="pio-button-secondary shrink-0"
+            >
+              <X className="h-4 w-4" />
+              Reset
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={() => void compareStructures()}
@@ -346,7 +363,7 @@ function ComparisonStructureInput({
   const publicPlaceholder = input.mode === "rcsb" ? "e.g. 4HHB" : "e.g. P69905";
 
   return (
-    <div className="rounded-[12px] border border-[var(--pio-line)] bg-[var(--pio-paper)] p-4">
+    <div className="rounded-[12px] border border-[var(--pio-line)] bg-[#FBFBF8] p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="pio-label">Structure {side}</p>
@@ -366,7 +383,7 @@ function ComparisonStructureInput({
         ) : null}
       </div>
 
-      <div className="mt-4 grid grid-cols-3 gap-1 rounded-[10px] border border-[var(--pio-line)] bg-[var(--pio-white)] p-1">
+      <div className="mt-4 grid grid-cols-3 gap-1 rounded-[12px] border border-[var(--pio-line)] bg-[var(--pio-white)] p-1">
         {modes.map((mode) => {
           const Icon = mode.icon;
           const selected = input.mode === mode.id;
@@ -391,7 +408,7 @@ function ComparisonStructureInput({
       </div>
 
       {input.mode === "local" ? (
-        <label className="mt-3 flex min-h-[104px] cursor-pointer flex-col items-center justify-center rounded-[10px] border border-dashed border-[var(--pio-line-strong)] bg-[var(--pio-white)] px-4 text-center transition-colors hover:bg-[var(--pio-sand)]">
+        <label className="mt-3 flex h-[140px] cursor-pointer flex-col items-center justify-center rounded-[12px] border border-dashed border-[var(--pio-line-strong)] bg-[var(--pio-white)] px-4 text-center transition-colors hover:bg-[var(--pio-sand)]">
           <FileUp className="h-5 w-5 text-[var(--pio-highlight)]" />
           <span className="mt-2 max-w-full truncate text-[13px] font-semibold text-[var(--pio-ink)]">
             {input.file?.name ?? "Choose PDB or mmCIF"}
@@ -407,8 +424,18 @@ function ComparisonStructureInput({
             onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
           />
         </label>
+      ) : input.file ? (
+        <div className="mt-3 flex h-[140px] items-center justify-center rounded-[12px] bg-[var(--pio-green-pale)] p-4">
+          <div className="text-center">
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--pio-green-deep)] opacity-60">Ready</p>
+            <p className="mt-1.5 max-w-[200px] truncate font-mono text-[13px] font-semibold text-[var(--pio-green-deep)]" title={input.file.name}>
+              {input.file.name}
+            </p>
+            <p className="mt-0.5 font-mono text-[11px] text-[var(--pio-green-deep)] opacity-60">{formatBytes(input.file.size)}</p>
+          </div>
+        </div>
       ) : (
-        <div className="mt-3 rounded-[10px] bg-[var(--pio-white)] p-3">
+        <div className="mt-3 flex h-[140px] flex-col justify-between rounded-[12px] bg-[var(--pio-white)] p-3">
           <label>
             <span className="pio-label">{publicLabel}</span>
             <input
@@ -418,7 +445,7 @@ function ComparisonStructureInput({
                 if (event.key === "Enter") onFetch();
               }}
               placeholder={publicPlaceholder}
-              className="pio-input mt-2"
+              className="pio-input mt-2 w-full"
               autoCapitalize="characters"
               spellCheck={false}
             />
@@ -427,7 +454,7 @@ function ComparisonStructureInput({
             type="button"
             onClick={onFetch}
             disabled={!publicValue.trim() || input.isFetching}
-            className="pio-button-secondary mt-3 w-full"
+            className="pio-button-secondary w-full"
           >
             {input.isFetching ? (
               <LoaderCircle className="h-4 w-4 animate-spin" />
@@ -438,13 +465,6 @@ function ComparisonStructureInput({
             )}
             {input.isFetching ? "Fetching…" : `Fetch ${input.mode === "rcsb" ? "RCSB" : "AlphaFold"}`}
           </button>
-          {input.file ? (
-            <div className="mt-3 rounded-[8px] bg-[var(--pio-green-pale)] px-3 py-2">
-              <p className="truncate font-mono text-[11px] font-semibold text-[var(--pio-green-deep)]" title={input.file.name}>
-                Ready: {input.file.name}
-              </p>
-            </div>
-          ) : null}
         </div>
       )}
 
