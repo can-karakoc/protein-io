@@ -13,7 +13,7 @@ from app.models import (
 def compare_analyses(
     analysis_a: AnalysisResponse,
     analysis_b: AnalysisResponse,
-    max_examples: int = 10,
+    max_examples: int = 500,
 ) -> StructureComparisonResponse:
     contacts_a = {contact_identity(contact): contact for contact in analysis_a.contacts}
     contacts_b = {contact_identity(contact): contact for contact in analysis_b.contacts}

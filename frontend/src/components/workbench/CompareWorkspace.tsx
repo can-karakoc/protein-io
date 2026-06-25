@@ -561,7 +561,7 @@ function ComparisonResults({
         <div>
           <h2 className="text-[20px] font-bold text-[var(--pio-ink)]">Contact differences</h2>
           <p className="mt-1 text-[13px] text-[var(--pio-graphite)]">
-            Counts include all identities; the endpoint returns up to 10 representative rows per category.
+            Counts include all identities; up to 500 representative rows are shown per category.
           </p>
         </div>
         <button type="button" onClick={onExport} className="pio-button-secondary shrink-0">
