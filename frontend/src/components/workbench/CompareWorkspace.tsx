@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowLeftRight, Database, Download, FileUp, LoaderCircle, Play, RotateCcw, Search, Sparkles, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { buildApiUrl } from "@/lib/api";
 import { comparisonContactsToCsv } from "@/lib/csv";
@@ -25,23 +25,44 @@ type CompareError = {
 type ComparisonInputState = {
   mode: ComparisonInputMode;
   file: File | null;
+  fileText: string | null; // raw text for rcsb/alphafold fetched files — enables persistence
   pdbId: string;
   uniprotId: string;
   isFetching: boolean;
   error: string | null;
 };
 
+type CompareCacheEntry = {
+  savedAt: number;
+  cutoff: number;
+  inputA: { mode: ComparisonInputMode; pdbId: string; uniprotId: string; fileName: string | null; fileText: string | null };
+  inputB: { mode: ComparisonInputMode; pdbId: string; uniprotId: string; fileName: string | null; fileText: string | null };
+  comparison: StructureComparisonResponse | null;
+};
+
+const COMPARE_CACHE_KEY = "pio_compare_v1";
 const SUPPORTED_STRUCTURE_FILE = /\.(pdb|cif|mmcif)$/i;
 
+function saveCompareCache(entry: CompareCacheEntry) {
+  try { localStorage.setItem(COMPARE_CACHE_KEY, JSON.stringify(entry)); } catch { /* quota */ }
+}
+
+function loadCompareCache(): CompareCacheEntry | null {
+  try {
+    const raw = localStorage.getItem(COMPARE_CACHE_KEY);
+    return raw ? (JSON.parse(raw) as CompareCacheEntry) : null;
+  } catch { return null; }
+}
+
+function restoreInput(cached: CompareCacheEntry["inputA"]): ComparisonInputState {
+  const file = cached.fileText && cached.fileName
+    ? new File([cached.fileText], cached.fileName, { type: "chemical/x-mmcif" })
+    : null;
+  return { mode: cached.mode, file, fileText: cached.fileText, pdbId: cached.pdbId, uniprotId: cached.uniprotId, isFetching: false, error: null };
+}
+
 function emptyComparisonInput(): ComparisonInputState {
-  return {
-    mode: "local",
-    file: null,
-    pdbId: "",
-    uniprotId: "",
-    isFetching: false,
-    error: null,
-  };
+  return { mode: "local", file: null, fileText: null, pdbId: "", uniprotId: "", isFetching: false, error: null };
 }
 
 export function CompareWorkspace() {
@@ -52,6 +73,27 @@ export function CompareWorkspace() {
   const [activeTab, setActiveTab] = useState<ComparisonTab>("shared");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<CompareError>(null);
+
+  // Restore from cache on mount
+  useEffect(() => {
+    const cached = loadCompareCache();
+    if (!cached) return;
+    setInputA(restoreInput(cached.inputA));
+    setInputB(restoreInput(cached.inputB));
+    setCutoff(cached.cutoff);
+    setComparison(cached.comparison);
+  }, []);
+
+  // Persist whenever inputs, cutoff, or comparison changes
+  useEffect(() => {
+    saveCompareCache({
+      savedAt: Date.now(),
+      cutoff,
+      inputA: { mode: inputA.mode, pdbId: inputA.pdbId, uniprotId: inputA.uniprotId, fileName: inputA.file?.name ?? null, fileText: inputA.fileText },
+      inputB: { mode: inputB.mode, pdbId: inputB.pdbId, uniprotId: inputB.uniprotId, fileName: inputB.file?.name ?? null, fileText: inputB.fileText },
+      comparison,
+    });
+  }, [inputA, inputB, cutoff, comparison]);
 
   const activeRows = useMemo(() => {
     if (!comparison) return [];
@@ -75,6 +117,7 @@ export function CompareWorkspace() {
       ...current,
       mode,
       file: null,
+      fileText: null,
       isFetching: false,
       error: null,
     }));
@@ -138,6 +181,7 @@ export function CompareWorkspace() {
       updateInput(side, (current) => ({
         ...current,
         file,
+        fileText: payload.structure_text,
         pdbId: isRcsb ? normalizedId : current.pdbId,
         uniprotId: isRcsb ? current.uniprotId : normalizedId,
         isFetching: false,
@@ -208,6 +252,7 @@ export function CompareWorkspace() {
     setInputB(emptyComparisonInput());
     setComparison(null);
     setError(null);
+    try { localStorage.removeItem(COMPARE_CACHE_KEY); } catch { /* ignore */ }
   }
 
   function exportComparisonExamples() {
