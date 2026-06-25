@@ -286,8 +286,12 @@ button:not(:disabled),
 }
 .scrollbar-thin-report::-webkit-scrollbar-track {
   background: transparent;
-  margin-top: 40px;
-  margin-bottom: 40px;
+}
+/* Transparent buttons act as spacers to keep the thumb away from card edges */
+.scrollbar-thin-report::-webkit-scrollbar-button {
+  display: block;
+  height: 40px;
+  background: transparent;
 }
 .scrollbar-thin-report::-webkit-scrollbar-thumb {
   background: transparent;
