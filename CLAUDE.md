@@ -7,6 +7,7 @@ add another `<link>` for them.
 
 **Token rules (non-negotiable):**
 - No Tailwind color utilities (`slate-`, `gray-`, `cyan-`, `zinc-`, etc.) — use CSS custom properties via `bg-[var(--pio-*)]` arbitrary values or the shared class names in `globals.css`.
+- **No hardcoded hex colors in component code** (e.g. `bg-[#F5F5F5]`, `color: "#1A406A"`). Hardcoded values do NOT adapt to `[data-theme="dark"]`. Always use a `var(--pio-*)` token.
 - Color semantics: green = healthy/selected, blue = metadata/structure, lavender = predicted/AI, coral = warning/clash, amber = caution. Only use a color for its meaning.
 - Every primary button must use `pio-button-primary` (ink in light). No flat gray buttons.
 - Badges: `pio-badge pio-badge-{active|metadata|predicted|warning|caution|neutral}`.

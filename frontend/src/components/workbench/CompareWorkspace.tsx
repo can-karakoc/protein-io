@@ -311,7 +311,7 @@ export function CompareWorkspace() {
           />
         </div>
 
-        <div className="mt-5 rounded-[12px] bg-[#F5F5F5] p-4">
+        <div className="mt-5 rounded-[12px] bg-[var(--pio-paper)] p-4">
           <div className="flex items-center justify-between">
             <span className="pio-label">Contact cutoff</span>
             <span className="font-mono text-[13px] text-[var(--pio-graphite)]">{cutoff.toFixed(1)} Å</span>
@@ -405,7 +405,7 @@ function ComparisonStructureInput({
   const publicPlaceholder = input.mode === "rcsb" ? "E.G. 4HHB" : "E.G. P69905";
 
   return (
-    <div className="rounded-[12px] border border-[var(--pio-line)] bg-[#F5F5F5] p-4">
+    <div className="rounded-[12px] border border-[var(--pio-line)] bg-[var(--pio-paper)] p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="pio-label">Structure {side}</p>
