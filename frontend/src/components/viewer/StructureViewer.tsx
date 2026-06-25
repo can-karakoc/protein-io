@@ -35,15 +35,6 @@ export function StructureViewer({
   const [viewerError, setViewerError] = useState<string | null>(null);
   const [isRendering, setIsRendering] = useState(false);
 
-  // Inject a runtime <style> tag so it always lands after <link> CSS — guaranteed to win
-  useEffect(() => {
-    const style = document.createElement("style");
-    style.id = "pio-molstar-controls-hide";
-    style.textContent = ".msp-viewport-controls { display: none !important; }";
-    document.head.appendChild(style);
-    return () => style.remove();
-  }, []);
-
   useEffect(() => {
     selectionRef.current = selection;
   }, [selection]);
@@ -88,30 +79,21 @@ export function StructureViewer({
           layoutShowLog: false,
           layoutShowLeftPanel: false,
           collapseRightPanel: true,
-          viewportShowControls: false,
+          viewportShowControls: true,
           viewportShowExpand: false,
-          viewportShowReset: false,
-          viewportShowSelectionMode: false,
-          viewportShowSettings: false,
+          viewportShowReset: true,
+          viewportShowSelectionMode: true,
+          viewportShowSettings: true,
           viewportShowToggleFullscreen: false,
-          viewportShowScreenshotControls: false,
-          viewportShowAnimation: false,
-          viewportShowTrajectoryControls: false,
+          viewportShowScreenshotControls: true,
+          viewportShowAnimation: true,
+          viewportShowTrajectoryControls: true,
           viewportBackgroundColor: "white",
           volumeStreamingDisabled: true,
         });
         const viewerCreateMs = elapsedMs(viewerCreateStarted);
 
         const viewer = viewerRef.current;
-        // Disable ShowIllumination — no viewportShow* constructor equivalent exists for it
-        try {
-          const { PluginConfig } = await import("molstar/lib/mol-plugin/config");
-          viewer.plugin.config.set(PluginConfig.Viewport.ShowIllumination, false);
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (viewer.plugin.layout.events.updated as any).next(void 0);
-        } catch {
-          // non-critical: illumination button may remain visible
-        }
         const modelStarted = performance.now();
         await viewer.loadStructureFromData(structureText, molstarFormat(structureFormat), {
           dataLabel: structureFormat === "cif" ? "Uploaded mmCIF" : "Uploaded PDB",

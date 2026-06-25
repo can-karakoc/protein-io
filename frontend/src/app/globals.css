@@ -256,10 +256,11 @@ button:not(:disabled),
    itself, but the toggle button persists — hide it via CSS. */
 .msp-layout-bottom-controls,
 .msp-sequence-wrapper,
-[class^="msp-"] .msp-layout-region.msp-layout-bottom,
-.msp-viewport-controls {
+[class^="msp-"] .msp-layout-region.msp-layout-bottom {
   display: none !important;
 }
+
+
 
 
 /* ── Hide scrollbar while keeping scroll ──────────────────── */

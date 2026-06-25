@@ -890,31 +890,45 @@ export function ProteinWorkbench() {
               </div>
             )}
 
-            {/* Selection indicator — only shown when something is selected */}
+            {/* Selection pill — centered, only visible when something is selected */}
             <AnimatePresence>
-            {selection && (
-              <motion.div
-                key="selection-bar"
-                initial={{ y: "100%", opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: "100%", opacity: 0 }}
-                transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
-                className="absolute bottom-0 left-0 right-0 flex items-center justify-between gap-4 bg-[rgba(26,64,106,0.75)] px-5 py-3 backdrop-blur-md"
-              >
-                <div className="min-w-0">
-                  <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-white/50">Selected</p>
-                  <p className="truncate text-[14px] font-bold text-white">{selection.label}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSelection(null)}
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
-                  title="Clear selection"
+              {selection && (
+                <motion.div
+                  key="selection-pill"
+                  initial={{ y: 12, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 12, opacity: 0 }}
+                  transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
+                  className="absolute right-3 pointer-events-none"
+                  style={{ top: residueConfidences.length > 0 ? 52 : 12 }}
                 >
-                  <X size={13} />
-                </button>
-              </motion.div>
-            )}
+                  <div
+                    className="pointer-events-auto inline-flex items-center gap-2"
+                    style={{
+                      background: "rgba(12,22,36,0.72)",
+                      backdropFilter: "blur(14px)",
+                      WebkitBackdropFilter: "blur(14px)",
+                      borderRadius: 20,
+                      padding: "7px 8px 7px 14px",
+                    }}
+                  >
+                    <div>
+                      <p style={{ fontSize: 8, fontWeight: 700, color: "rgba(255,255,255,0.45)", letterSpacing: "0.12em", textTransform: "uppercase", lineHeight: 1, marginBottom: 3, whiteSpace: "nowrap" }}>Selected</p>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: "#fff", lineHeight: 1, whiteSpace: "nowrap", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis" }}>{selection.label}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelection(null)}
+                      style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, flexShrink: 0, background: "rgba(255,255,255,0.12)", borderRadius: "50%", color: "rgba(255,255,255,0.70)", transition: "background 0.15s" }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.22)"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.12)"; }}
+                      title="Clear selection"
+                    >
+                      <X size={10} />
+                    </button>
+                  </div>
+                </motion.div>
+              )}
             </AnimatePresence>
 
             {/* Floating ligand panel — desktop only (viewer too narrow on smaller screens) */}

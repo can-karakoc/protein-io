@@ -16,7 +16,7 @@ const pioMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Protein Interaction Explorer",
+  title: "Protein Viewer",
   description: "Upload, visualize, and analyze protein structure contacts.",
 };
 
