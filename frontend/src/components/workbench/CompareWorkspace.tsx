@@ -271,42 +271,42 @@ export function CompareWorkspace() {
           />
         </div>
 
-        <div className="mt-5 flex flex-col gap-3 rounded-[12px] bg-[#F5F5F5] p-4 sm:flex-row sm:items-end">
-          <label className="w-full sm:max-w-[220px]">
-            <div className="flex items-center justify-between">
-              <span className="pio-label">Contact cutoff</span>
-              <span className="font-mono text-[13px] text-[var(--pio-graphite)]">{cutoff.toFixed(1)} Å</span>
-            </div>
+        <div className="mt-5 rounded-[12px] bg-[#F5F5F5] p-4">
+          <div className="flex items-center justify-between">
+            <span className="pio-label">Contact cutoff</span>
+            <span className="font-mono text-[13px] text-[var(--pio-graphite)]">{cutoff.toFixed(1)} Å</span>
+          </div>
+          <div className="mt-2 flex items-center gap-3">
             <input
               type="number"
               min="0.1"
               step="0.1"
               value={cutoff}
               onChange={(event) => setCutoff(Number(event.target.value))}
-              className="pio-input mt-2 w-full px-3 py-2"
+              className="pio-input w-[200px] px-3 py-2"
             />
-          </label>
-          {(inputA.file || inputB.file || comparison || error) ? (
+            {(inputA.file || inputB.file || comparison || error) ? (
+              <button
+                type="button"
+                onClick={resetComparison}
+                className="pio-button-secondary shrink-0"
+                style={{ borderRadius: 12 }}
+              >
+                <RotateCcw className="h-4 w-4" />
+                Reset
+              </button>
+            ) : null}
             <button
               type="button"
-              onClick={resetComparison}
-              className="pio-button-secondary shrink-0"
+              onClick={() => void compareStructures()}
+              disabled={!inputA.file || !inputB.file || isLoading || inputA.isFetching || inputB.isFetching}
+              className="pio-button-primary ml-auto min-w-[160px]"
               style={{ borderRadius: 12 }}
             >
-              <RotateCcw className="h-4 w-4" />
-              Reset
+              {isLoading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+              {isLoading ? "Analyzing…" : "Analyze"}
             </button>
-          ) : null}
-          <button
-            type="button"
-            onClick={() => void compareStructures()}
-            disabled={!inputA.file || !inputB.file || isLoading || inputA.isFetching || inputB.isFetching}
-            className="pio-button-primary sm:ml-auto sm:min-w-[160px]"
-            style={{ borderRadius: 12 }}
-          >
-            {isLoading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-            {isLoading ? "Analyzing…" : "Analyze"}
-          </button>
+          </div>
         </div>
 
         {error ? (
