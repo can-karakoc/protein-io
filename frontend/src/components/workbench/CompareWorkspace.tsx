@@ -273,18 +273,18 @@ export function CompareWorkspace() {
 
         <div className="mt-5 flex flex-col gap-3 rounded-[12px] bg-[var(--pio-paper)] p-4 sm:flex-row sm:items-end">
           <label className="w-full sm:max-w-[220px]">
-            <span className="pio-label">Contact cutoff</span>
-            <div className="relative mt-2">
-              <input
-                type="number"
-                min="0.1"
-                step="0.1"
-                value={cutoff}
-                onChange={(event) => setCutoff(Number(event.target.value))}
-                className="pio-input pr-9"
-              />
-              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 font-mono text-xs text-[var(--pio-graphite)]">Å</span>
+            <div className="flex items-center justify-between">
+              <span className="pio-label">Contact cutoff</span>
+              <span className="font-mono text-[13px] text-[var(--pio-graphite)]">{cutoff.toFixed(1)} Å</span>
             </div>
+            <input
+              type="number"
+              min="0.1"
+              step="0.1"
+              value={cutoff}
+              onChange={(event) => setCutoff(Number(event.target.value))}
+              className="pio-input mt-2 w-full px-3 py-2"
+            />
           </label>
           {(inputA.file || inputB.file || comparison || error) ? (
             <button
