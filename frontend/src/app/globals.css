@@ -286,8 +286,8 @@ button:not(:disabled),
 }
 .scrollbar-thin-report::-webkit-scrollbar-track {
   background: transparent;
-  margin-top: 16px;
-  margin-bottom: 16px;
+  margin-top: 40px;
+  margin-bottom: 40px;
 }
 .scrollbar-thin-report::-webkit-scrollbar-thumb {
   background: transparent;

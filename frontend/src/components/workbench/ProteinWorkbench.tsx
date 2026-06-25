@@ -1605,8 +1605,8 @@ function ReportWorkspace({
 
   return (
     <div className="h-full flex flex-col">
-    <div className="mx-auto w-full max-w-[960px] flex-1 min-h-0 flex flex-col rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)] overflow-clip pr-[6px]">
-    <div className="overflow-y-auto flex-1 scrollbar-thin-report" style={{ padding: "32px 30px 56px 36px" }}>
+    <div className="mx-auto w-full max-w-[960px] flex-1 min-h-0 flex flex-col rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)] overflow-clip pr-[3px]">
+    <div className="overflow-y-auto flex-1 scrollbar-thin-report" style={{ padding: "32px 33px 56px 36px" }}>
       <ReportHeader analysis={analysis} provenance={provenance} onExportContacts={onExportContacts} onExportLigands={onExportLigands} onExportAnalysisJson={onExportAnalysisJson} />
       <div style={REPORT_DIVIDER}>
         <MetadataPanel metadata={analysis.metadata ?? null} />
