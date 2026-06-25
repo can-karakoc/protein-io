@@ -335,7 +335,7 @@ function CompactMetadataSummary({
 
   const sourceLabel = isAlphaFold ? "AlphaFold" : "PDB";
   const idValue = metadata?.pdb_id ?? metadata?.uniprot_id ?? null;
-  const rawMethod = metadata?.method ?? (isAlphaFold ? "Predicted model" : null);
+  const rawMethod = isAlphaFold ? "Predicted model" : (metadata?.method ?? null);
   const method = rawMethod ? toTitleCaseSidebar(rawMethod) : null;
   const resolution =
     metadata?.resolution_angstrom != null
