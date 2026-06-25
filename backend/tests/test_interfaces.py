@@ -74,3 +74,14 @@ def test_interface_residue_counts():
     pair = result.chain_pairs[0]
     assert pair.interface_residue_count_a == 2
     assert pair.interface_residue_count_b == 1  # residue 10 seen twice but counted once
+
+
+def test_residue_attribution_with_reversed_chain_order():
+    """Contact stored as B→A should still attribute residues to the correct chain."""
+    contacts = [make_inter_chain_contact("B", "20", "A", "10")]
+    result = analyze_interfaces(contacts, [])
+    pair = result.chain_pairs[0]
+    assert pair.chain_a == "A"
+    assert pair.chain_b == "B"
+    assert pair.interface_residue_count_a == 1
+    assert pair.interface_residue_count_b == 1

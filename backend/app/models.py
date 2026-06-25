@@ -203,7 +203,6 @@ class ChainPairSummary(BaseModel):
     chain_a: str
     chain_b: str
     contact_count: int
-    inter_chain_contact_count: int
     mean_plddt_a: float | None = None
     mean_plddt_b: float | None = None
     interface_residue_count_a: int = 0

@@ -41,7 +41,6 @@ def analyze_interfaces(
             chain_a=ca,
             chain_b=cb,
             contact_count=len(pair),
-            inter_chain_contact_count=len(pair),
             mean_plddt_a=round(sum(plddt_a) / len(plddt_a), 2) if plddt_a else None,
             mean_plddt_b=round(sum(plddt_b) / len(plddt_b), 2) if plddt_b else None,
             interface_residue_count_a=len(interface_residues_a),
