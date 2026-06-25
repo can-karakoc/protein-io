@@ -273,9 +273,10 @@ button:not(:disabled),
 
 
 /* ── Thin styled scrollbar (report panel) ─────────────────── */
+/* Uses --pio-ink-rgb so it adapts to both light and dark theme */
 .scrollbar-thin-report {
   scrollbar-width: thin;
-  scrollbar-color: rgba(20,20,15,0.15) transparent;
+  scrollbar-color: rgba(var(--pio-ink-rgb), 0.18) transparent;
 }
 .scrollbar-thin-report::-webkit-scrollbar {
   width: 5px;
@@ -284,11 +285,11 @@ button:not(:disabled),
   background: transparent;
 }
 .scrollbar-thin-report::-webkit-scrollbar-thumb {
-  background: rgba(20,20,15,0.15);
+  background: rgba(var(--pio-ink-rgb), 0.18);
   border-radius: 99px;
 }
 .scrollbar-thin-report::-webkit-scrollbar-thumb:hover {
-  background: rgba(20,20,15,0.28);
+  background: rgba(var(--pio-ink-rgb), 0.32);
 }
 
 /* ── Hide scrollbar while keeping scroll ──────────────────── */
