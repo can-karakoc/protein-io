@@ -5,10 +5,13 @@ from app.contacts import calculate_contacts
 from app.contact_classification import summarize_interactions, summarize_ligand_interactions
 from app.comparison import compare_analyses
 from app.confidence import analyze_plddt_confidence
+from app.interfaces import analyze_interfaces
 from app.integrations.alphafold import AlphaFoldStructure, fetch_alphafold_structure
 from app.integrations.rcsb import fetch_rcsb_structure
 from app.integrations.rcsb import RcsbStructure
-from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, PaeSummary, RcsbAnalysisResponse, StructureComparisonResponse, StructureMetadata
+from app.integrations.uniprot import fetch_uniprot_annotations
+from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, ContactRecord, PaeSummary, RcsbAnalysisResponse, ResidueConfidence, StructureComparisonResponse, StructureMetadata
+from app.trust_score import assign_trust_label
 from app.parser import detect_structure_format_from_filename, parse_pdb_content
 
 
@@ -53,6 +56,36 @@ class TimedRcsbAnalysis:
 class TimedAlphaFoldAnalysis:
     response: AlphaFoldAnalysisResponse
     timing: AnalysisTiming
+
+
+def build_confidence_lookup(
+    residue_confidences: list[ResidueConfidence],
+) -> dict[tuple[str, str], ResidueConfidence]:
+    """Map (chain_id, residue_number) → ResidueConfidence for O(1) lookups."""
+    return {(rc.chain_id, rc.residue_number): rc for rc in residue_confidences}
+
+
+def annotate_contacts_with_confidence(
+    contacts: list[ContactRecord],
+    confidence_lookup: dict[tuple[str, str], ResidueConfidence],
+) -> list[ContactRecord]:
+    """Return a new list of ContactRecords with pLDDT confidence fields filled in."""
+    LOW_CATEGORIES = {"low", "very_low"}
+    annotated = []
+    for contact in contacts:
+        src = confidence_lookup.get((contact.chain_a, contact.residue_a))
+        tgt = confidence_lookup.get((contact.chain_b, contact.residue_b))
+        warning = bool(
+            (src is not None and src.category in LOW_CATEGORIES) or
+            (tgt is not None and tgt.category in LOW_CATEGORIES)
+        )
+        annotated_contact = contact.model_copy(update={
+            "source_residue_confidence": src,
+            "target_residue_confidence": tgt,
+            "confidence_warning": warning,
+        })
+        annotated.append(annotated_contact.model_copy(update={"trust_label": assign_trust_label(annotated_contact)}))
+    return annotated
 
 
 def analyze_pdb_content(
@@ -108,8 +141,14 @@ def analyze_pdb_content_with_timing(
     contacts_ms = elapsed_ms(contacts_started)
 
     response_started = perf_counter()
-    confidence, residue_confidences, confidence_warnings = analyze_plddt_confidence(structure)
+    is_predicted = metadata is not None and metadata.source in {"alphafold"}
+    confidence, residue_confidences, confidence_warnings = analyze_plddt_confidence(
+        structure, force_predicted=is_predicted
+    )
+    confidence_lookup = build_confidence_lookup(residue_confidences)
+    contacts = annotate_contacts_with_confidence(contacts, confidence_lookup)
     summary = structure.summary.model_copy(update={"contact_count": len(contacts)})
+    interface_analysis = analyze_interfaces(contacts, residue_confidences)
     response = AnalysisResponse(
         summary=summary,
         metadata=metadata,
@@ -121,6 +160,7 @@ def analyze_pdb_content_with_timing(
         chains=structure.chains,
         ligands=structure.ligands,
         contacts=contacts,
+        interface_analysis=interface_analysis,
         warnings=[*structure.warnings, *contact_warnings, *confidence_warnings, *(pae_warnings or [])],
     )
     response_ms = elapsed_ms(response_started)
@@ -163,8 +203,10 @@ def analyze_alphafold_id_with_timing(
         cutoff_angstrom=cutoff_angstrom,
         metadata=alphafold_structure.metadata,
     )
+    uniprot_annotations = fetch_uniprot_annotations(uniprot_id)
+    enriched = analysis.response.model_copy(update={"uniprot_annotations": uniprot_annotations})
     return TimedAlphaFoldAnalysis(
-        response=alphafold_response_from_structure(alphafold_structure, analysis.response),
+        response=alphafold_response_from_structure(alphafold_structure, enriched),
         timing=analysis.timing,
     )
 

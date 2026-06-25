@@ -37,7 +37,9 @@ Each contact is classified into one or more of the following categories:
 | `protein-water` | One partner is a protein residue, the other a water molecule |
 | `ligand-water` | One partner is a ligand, the other a water molecule |
 | `inter-chain` | Partners are on different chains |
-| `clash` | Distance is unusually short (potential steric clash) |
+| `very-close-contact` | Heavy-atom distance is below 2.0 Å and should be reviewed |
+
+Very-close-contact flags are not proof of a steric clash. They may include covalently connected or otherwise expected atom pairs because the current analysis does not perform bond perception or full stereochemical validation.
 
 ## Distance Cutoff
 
@@ -68,4 +70,4 @@ PAE is an AlphaFold 2 output that estimates the expected error (in angstroms) fo
 
 - Only the first model is analysed when a file contains multiple models.
 - Contact detection is distance-based only; the app does not classify hydrogen bonds, salt bridges, hydrophobic contacts, aromatic stacking, or metal coordination.
-- Structural alignment (RMSD, TM-score) is not yet implemented; the Compare tab uses contact-diff analysis only.
+- Structural alignment (RMSD, TM-score) is not implemented. Compare mode reports residue-contact identities using chain ID, residue name, residue number, and contact type, so numbering differences can produce apparent gains or losses without implying a fold change.

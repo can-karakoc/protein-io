@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -11,10 +13,12 @@ ContactCategory = Literal[
     "ligand-water",
     "intra-chain",
     "inter-chain",
+    "very-close-contact",
     "possible-clash",
 ]
 ConfidenceCategory = Literal["very_high", "confident", "low", "very_low"]
 ResidueKind = Literal["protein", "ligand", "water", "other"]
+TrustLabel = Literal["high-confidence", "inspect-manually", "low-confidence", "possible-clash", "no-confidence-data"]
 
 
 class AtomRecord(BaseModel):
@@ -66,6 +70,10 @@ class ContactRecord(BaseModel):
     distance_angstrom: float
     contact_type: ContactType
     contact_categories: list[ContactCategory] = Field(default_factory=list)
+    source_residue_confidence: ResidueConfidence | None = None
+    target_residue_confidence: ResidueConfidence | None = None
+    confidence_warning: bool = False
+    trust_label: TrustLabel | None = None
 
 
 class TopContactResidue(BaseModel):
@@ -191,6 +199,22 @@ class StructureData(BaseModel):
         )
 
 
+class ChainPairSummary(BaseModel):
+    chain_a: str
+    chain_b: str
+    contact_count: int
+    mean_plddt_a: float | None = None
+    mean_plddt_b: float | None = None
+    interface_residue_count_a: int = 0
+    interface_residue_count_b: int = 0
+
+
+class InterfaceAnalysis(BaseModel):
+    chain_pairs: list[ChainPairSummary] = Field(default_factory=list)
+    inter_chain_contact_count: int = 0
+    intra_chain_contact_count: int = 0
+
+
 class AnalysisResponse(BaseModel):
     version: str = "0.1.0"
     summary: StructureSummary
@@ -203,7 +227,24 @@ class AnalysisResponse(BaseModel):
     chains: list[ChainSummary]
     ligands: list[LigandSummary]
     contacts: list[ContactRecord]
+    interface_analysis: InterfaceAnalysis | None = None
+    uniprot_annotations: UniProtAnnotations | None = None
     warnings: list[str] = Field(default_factory=list)
+
+
+class UniProtFeature(BaseModel):
+    description: str | None = None
+    start: int | None = None
+    end: int | None = None
+
+
+class UniProtAnnotations(BaseModel):
+    protein_name: str | None = None
+    gene_names: list[str] = Field(default_factory=list)
+    function: str | None = None
+    domains: list[UniProtFeature] = Field(default_factory=list)
+    active_sites: list[UniProtFeature] = Field(default_factory=list)
+    binding_sites: list[UniProtFeature] = Field(default_factory=list)
 
 
 class StructureComparisonDelta(BaseModel):

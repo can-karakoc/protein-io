@@ -19,9 +19,9 @@
 
 ## ✅ v0.3 — Scientific Credibility (shipped)
 
-- Contact categories: protein-protein, protein-ligand, protein-water, ligand-water, inter-chain, clashes.
+- Contact categories: protein-protein, protein-ligand, protein-water, ligand-water, inter-chain, and very close contacts.
 - AlphaFold pLDDT confidence summaries and residue-level confidence annotations.
-- Confidence-aware contact warnings and filtering toggle.
+- Confidence-aware contact warnings and low-confidence filtering.
 - Ligand interaction summaries, floating ligand detail panel.
 - Structure comparison endpoint (shared / gained / lost contacts).
 - PAE sidecar support, Methods and Provenance panel, Quality tab.
@@ -35,16 +35,19 @@
 - Report tab: white card, deduped title, download buttons, section dividers.
 - Floating ligand panel, selection bar, Framer Motion animations.
 - Tab count badges, metadata row hover, Mol* artifact suppression.
-- `localStorage` structure cache — last structure survives refresh and back/forward.
+- Dark theme with persisted user preference.
+- `localStorage` public-structure cache — the last RCSB or AlphaFold analysis survives refresh; local uploads are not persisted.
 - Dead code cleanup, TypeScript clean throughout.
 
-## ▶️ v0.5 — Compare Mode (next)
+## ✅ v0.5 — Compare Mode Foundation
 
-- Working two-structure comparison workflow in the Compare tab (currently placeholder).
-- Side-by-side upload or fetch for structures A and B.
-- Shared / gained / lost contact diff table with export.
-- Chain and residue alignment summary.
-- Mol* dual-viewer or overlay highlighting.
+- Working local-file, RCSB, and AlphaFold comparison inputs in the Compare tab.
+- Structure A/B summaries and B-minus-A count deltas.
+- Shared / gained / lost residue-contact identity tabs.
+- Representative comparison-example CSV export.
+- Explicit limitations: no alignment, RMSD, TM-score, or 3D superposition.
+
+Public-database comparison inputs, alignment summaries, and viewer overlays remain future iterations.
 
 ## v0.6 — Persistence & Sharing (future)
 

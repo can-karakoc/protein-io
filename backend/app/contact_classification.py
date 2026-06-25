@@ -15,7 +15,7 @@ from app.models import (
 )
 
 
-POSSIBLE_CLASH_DISTANCE = 2.0
+VERY_CLOSE_CONTACT_DISTANCE = 2.0
 
 
 def classify_contact_type(atom_a: AtomRecord, atom_b: AtomRecord) -> ContactType | None:
@@ -44,7 +44,8 @@ def contact_categories(atom_a: AtomRecord, atom_b: AtomRecord, contact_type: Con
     elif contact_type == "ligand-water":
         categories.append("ligand-water")
 
-    if distance < POSSIBLE_CLASH_DISTANCE:
+    if distance < VERY_CLOSE_CONTACT_DISTANCE:
+        categories.append("very-close-contact")
         categories.append("possible-clash")
 
     return categories
@@ -125,7 +126,9 @@ def summarize_ligand_interactions(contacts: list[ContactRecord], max_residues: i
                 contact_count=len(ligand_contact_rows),
                 protein_contact_count=sum(1 for contact in ligand_contact_rows if "protein-ligand" in contact.contact_categories),
                 water_contact_count=sum(1 for contact in ligand_contact_rows if "ligand-water" in contact.contact_categories),
-                possible_clash_count=sum(1 for contact in ligand_contact_rows if "possible-clash" in contact.contact_categories),
+                possible_clash_count=sum(
+                    1 for contact in ligand_contact_rows if "possible-clash" in contact.contact_categories
+                ),
                 closest_distance_angstrom=closest_contact.distance_angstrom,
                 closest_contact=closest_contact,
                 contacting_residues=[

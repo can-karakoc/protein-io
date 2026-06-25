@@ -104,8 +104,8 @@ Do not add AlphaFold DB fetching, PAE, or model inference in this priority.
 Branch: `feature/contact-categories`
 
 - `[x]` Keep raw distance search separate from classification.
-- `[x]` Add simple categories: protein-protein, protein-ligand, ligand-water, protein-water, intra-chain, inter-chain, and possible clash.
-- `[x]` Add summary outputs: top contacting residues, top contacting ligands, inter-chain contact count, protein-ligand contact count, closest contacts, and possible clashes.
+- `[x]` Add simple categories: protein-protein, protein-ligand, ligand-water, protein-water, intra-chain, inter-chain, and very close contact.
+- `[x]` Add summary outputs: top contacting residues, top contacting ligands, inter-chain contact count, protein-ligand contact count, closest contacts, and very-close-contact review flags.
 - `[x]` Add frontend category filter and summary cards.
 - `[x]` Add tests for category assignment and summary counts.
 - `[x]` Run final browser verification and merge `feature/contact-categories` into `main` after review.
@@ -205,7 +205,7 @@ Goal: make the product feel reliable and professional.
 ### Priority 5: Quality / Validation Panel
 
 - `[x]` Add a Quality tab after analysis.
-- `[x]` Surface possible clashes, very close contacts, empty ligand states, low-confidence residues, PAE warnings, and missing PAE notices for predicted structures.
+- `[x]` Surface very close contacts, empty ligand states, low-confidence residues, PAE warnings, and missing PAE notices for predicted structures.
 - `[x]` Use non-alarmist language and avoid overclaiming biological certainty.
 
 ### Priority 6: Contact Confidence Warnings
@@ -223,7 +223,7 @@ Goal: make the product feel reliable and professional.
 ### Priority 8: Example Gallery
 
 - `[x]` Add multiple guided examples with title, source, tags, load action, and "what to look at" hint.
-- `[x]` Include examples for hemoglobin, ligand-bound protein, large structure, AlphaFold predicted model, and comparison if available.
+- `[x]` Include examples for hemoglobin, ligand-bound protein, a large structure, and an AlphaFold predicted model.
 
 ### Priority 9: Richer Report / Export Experience
 
@@ -234,8 +234,11 @@ Goal: make the product feel reliable and professional.
 
 ### Priority 10: Compare Workflow Polish
 
-- `[ ]` Improve Compare mode with structure A/B inputs, summary cards, shared/gained/lost tabs, and transparent limitation copy.
-- `[ ]` Add comparison CSV export if easy.
+- `[x]` Improve Compare mode with local structure A/B inputs, summary cards, shared/gained/lost tabs, and transparent limitation copy.
+- `[x]` Add CSV export for the representative comparison examples returned by the API.
+- `[x]` Add independent local-file, RCSB PDB ID, and AlphaFold UniProt inputs for structures A and B.
+- `[x]` Add per-side validation, loading, ready, and fetch-error states.
+- `[ ]` Continue comparison frontend polish: stronger result hierarchy, responsive tables, and refined result-level empty/loading/error states.
 - `[ ]` Do not add alignment, RMSD, TM-score, Foldseek, or superposition until explicitly requested.
 
 ## Step Completion Rule

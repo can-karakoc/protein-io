@@ -1,4 +1,9 @@
-import type { ContactRecord, LigandInteractionSummary } from "@/lib/types";
+import type {
+  ContactDifference,
+  ContactRecord,
+  LigandInteractionSummary,
+  StructureComparisonResponse,
+} from "@/lib/types";
 
 const CONTACT_COLUMNS: Array<keyof ContactRecord> = [
   "chain_a",
@@ -65,6 +70,37 @@ export function ligandInteractionsToCsv(ligands: LigandInteractionSummary[]) {
       .join(","),
   );
   return [header, ...rows].join("\n");
+}
+
+export function comparisonContactsToCsv(comparison: StructureComparisonResponse) {
+  const header = [
+    "difference",
+    "contact_identity",
+    "contact_type",
+    "contact_categories",
+    "distance_a_angstrom",
+    "distance_b_angstrom",
+  ].join(",");
+  const rows: Array<[string, ContactDifference]> = [
+    ...comparison.contacts.shared_contacts.map((contact): [string, ContactDifference] => ["shared", contact]),
+    ...comparison.contacts.gained_contacts.map((contact): [string, ContactDifference] => ["gained_in_b", contact]),
+    ...comparison.contacts.lost_contacts.map((contact): [string, ContactDifference] => ["lost_from_a", contact]),
+  ];
+  return [
+    header,
+    ...rows.map(([difference, contact]) =>
+      [
+        difference,
+        contact.label,
+        contact.contact_type,
+        contact.contact_categories,
+        contact.distance_a_angstrom ?? "",
+        contact.distance_b_angstrom ?? "",
+      ]
+        .map(escapeCsvValue)
+        .join(","),
+    ),
+  ].join("\n");
 }
 
 function escapeCsvValue(value: ContactRecord[keyof ContactRecord] | string | number | string[]) {

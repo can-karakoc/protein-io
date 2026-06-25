@@ -1,30 +1,34 @@
 "use client";
 
-import { Atom, Database, Download, FileUp, Menu, Search, X } from "lucide-react";
+import { Database, Download, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import { StructureViewer } from "@/components/viewer/StructureViewer";
+import { CompareWorkspace } from "@/components/workbench/CompareWorkspace";
 import { ExploreSidebar } from "@/components/workbench/ExploreSidebar";
 import { WorkbenchShell } from "@/components/workbench/WorkbenchShell";
 import type { WorkbenchMode } from "@/components/workbench/TopNav";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { buildApiUrl } from "@/lib/api";
 import { contactsToCsv, ligandInteractionsToCsv } from "@/lib/csv";
 import type {
   AlphaFoldAnalysisResponse,
   AnalysisResponse,
+  ChainPairSummary,
   ChainSummary,
   ContactCategory,
   ContactRecord,
   ConfidenceSummary,
+  InterfaceAnalysis,
   InteractionSummary,
   LigandInteractionSummary,
   LigandSummary,
   PaeSummary,
   ResidueConfidence,
   RcsbAnalysisResponse,
-  StructureComparisonResponse,
   StructureMetadata,
+  UniProtAnnotations,
   ViewerSelection,
 } from "@/lib/types";
 
@@ -35,7 +39,7 @@ const EMPTY_RESIDUE_CONFIDENCES: ResidueConfidence[] = [];
 type StructureFileFormat = "pdb" | "cif";
 type ViewerColorMode = "structure" | "plddt";
 type ContactFilter = "all" | ContactCategory | "low-confidence";
-type ResultsTab = "overview" | "chains" | "ligands" | "contacts" | "confidence" | "pae" | "quality" | "methods";
+type ResultsTab = "overview" | "chains" | "ligands" | "contacts" | "confidence" | "pae" | "quality" | "methods" | "interfaces";
 type InputSource = "upload" | "sample" | "rcsb" | "alphafold";
 type WorkbenchError = {
   title: string;
@@ -60,7 +64,7 @@ type ProvenanceRecord = {
   paeProvided: boolean;
   structureKind: "experimental" | "predicted" | "uploaded coordinates";
 };
-type ExampleId = "sample" | "hemoglobin" | "ligand-bound" | "large-structure" | "alphafold" | "comparison";
+type ExampleId = "sample" | "hemoglobin" | "ligand-bound" | "large-structure" | "alphafold";
 type ExampleCard = {
   id: ExampleId;
   title: string;
@@ -108,20 +112,15 @@ const EXAMPLE_GALLERY: ExampleCard[] = [
     hint: "Use Confidence, Quality, and low-confidence contact filters after analysis.",
     actionLabel: "Load P69905",
   },
-  {
-    id: "comparison",
-    title: "Comparison starter",
-    source: "Bundled sample pair",
-    description: "Preloads two local sample files into the comparison inputs so the compare endpoint is ready to run.",
-    tags: ["compare", "local", "starter"],
-    hint: "Run Compare structures, then review shared/gained/lost contact examples.",
-    actionLabel: "Prepare compare",
-  },
 ];
 
-const CACHE_KEY = "pio_cache_v1";
+const PUBLIC_STRUCTURE_CACHE_KEY = "pio_public_structure_cache_v3";
+const WORKBENCH_PREFERENCES_KEY = "pio_workbench_preferences_v1";
+const LEGACY_CACHE_KEY = "pio_cache_v1";
 
-interface StructureCache {
+interface PublicStructureCache {
+  version: 2;
+  source: "rcsb" | "alphafold";
   structureText: string;
   structureFormat: StructureFileFormat;
   fileName: string;
@@ -130,108 +129,169 @@ interface StructureCache {
   analysis: AnalysisResponse;
   cutoff: number;
   savedAt: string;
-  resultsTab?: ResultsTab;
-  tabStripScrollLeft?: number;
-  workbenchMode?: WorkbenchMode;
 }
 
-function saveStructureCache(entry: StructureCache) {
+interface WorkbenchPreferences {
+  resultsTab: ResultsTab;
+  tabStripScrollLeft?: number;
+  workbenchMode: WorkbenchMode;
+}
+
+function savePublicStructureCache(entry: PublicStructureCache) {
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(entry));
+    localStorage.setItem(PUBLIC_STRUCTURE_CACHE_KEY, JSON.stringify(entry));
   } catch {
     // QuotaExceededError for very large structures — silently skip
   }
 }
 
-function loadStructureCache(): StructureCache | null {
+function parsePublicStructureCache(raw: string | null): PublicStructureCache | null {
+  if (!raw) return null;
   try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as StructureCache;
-    if (!parsed.structureText || !parsed.analysis) return null;
+    const parsed = JSON.parse(raw) as PublicStructureCache;
+    if (
+      parsed.version !== 2 ||
+      (parsed.source !== "rcsb" && parsed.source !== "alphafold") ||
+      !parsed.structureText ||
+      !parsed.analysis
+    ) {
+      return null;
+    }
     return parsed;
   } catch {
     return null;
   }
 }
 
+function parseWorkbenchPreferences(raw: string | null): WorkbenchPreferences {
+  const defaults: WorkbenchPreferences = {
+    resultsTab: "overview",
+    workbenchMode: "explore",
+    tabStripScrollLeft: 0,
+  };
+  if (!raw) return defaults;
+  try {
+    const parsed = JSON.parse(raw) as Partial<WorkbenchPreferences>;
+    return {
+      resultsTab: parsed.resultsTab ?? defaults.resultsTab,
+      workbenchMode: parsed.workbenchMode ?? defaults.workbenchMode,
+      tabStripScrollLeft: parsed.tabStripScrollLeft ?? defaults.tabStripScrollLeft,
+    };
+  } catch {
+    return defaults;
+  }
+}
+
+function saveWorkbenchPreferences(entry: WorkbenchPreferences) {
+  try {
+    localStorage.setItem(WORKBENCH_PREFERENCES_KEY, JSON.stringify(entry));
+  } catch {
+    // Preference persistence is optional.
+  }
+}
+
+function subscribeToLocalStorageSnapshot() {
+  // Storage is read once after hydration. Same-tab writes already update local state,
+  // and cross-tab preference changes should not remount an active local upload.
+  return () => undefined;
+}
+
+function getPublicCacheSnapshot() {
+  return localStorage.getItem(PUBLIC_STRUCTURE_CACHE_KEY);
+}
+
+function getPreferencesSnapshot() {
+  return localStorage.getItem(WORKBENCH_PREFERENCES_KEY) ?? "null";
+}
+
+function getServerSnapshot() {
+  return null;
+}
+
 export function ProteinWorkbench() {
-  const [mode, setMode] = useState<WorkbenchMode>("explore");
-  const [fileName, setFileName] = useState<string>("");
-  const [structureText, setStructureText] = useState("");
-  const [structureFormat, setStructureFormat] = useState<StructureFileFormat>("pdb");
+  const cacheSnapshot = useSyncExternalStore(subscribeToLocalStorageSnapshot, getPublicCacheSnapshot, getServerSnapshot);
+  const preferencesSnapshot = useSyncExternalStore(subscribeToLocalStorageSnapshot, getPreferencesSnapshot, getServerSnapshot);
+  const initialCache = useMemo(() => parsePublicStructureCache(cacheSnapshot), [cacheSnapshot]);
+  const initialPreferences = useMemo(
+    () => parseWorkbenchPreferences(preferencesSnapshot),
+    [preferencesSnapshot],
+  );
+
+  useEffect(() => {
+    localStorage.removeItem(LEGACY_CACHE_KEY);
+  }, []);
+
+  return (
+    <ProteinWorkbenchState
+      key={`${initialCache?.savedAt ?? "empty"}:${preferencesSnapshot ?? "defaults"}`}
+      initialCache={initialCache}
+      initialPreferences={initialPreferences}
+      preferencesHydrated={preferencesSnapshot !== null}
+    />
+  );
+}
+
+function ProteinWorkbenchState({
+  initialCache,
+  initialPreferences,
+  preferencesHydrated,
+}: {
+  initialCache: PublicStructureCache | null;
+  initialPreferences: WorkbenchPreferences;
+  preferencesHydrated: boolean;
+}) {
+  const [mode, setMode] = useState<WorkbenchMode>(initialPreferences.workbenchMode);
+  const [fileName, setFileName] = useState<string>(initialCache?.fileName ?? "");
+  const [structureText, setStructureText] = useState(initialCache?.structureText ?? "");
+  const [structureFormat, setStructureFormat] = useState<StructureFileFormat>(
+    initialCache?.structureFormat ?? "pdb",
+  );
   const [paeFileName, setPaeFileName] = useState("");
   const [paeText, setPaeText] = useState("");
-  const [pdbId, setPdbId] = useState("");
-  const [uniprotId, setUniprotId] = useState("");
-  const [cutoff, setCutoff] = useState(4.0);
-  const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
-  const [comparisonFileA, setComparisonFileA] = useState<File | null>(null);
-  const [comparisonFileB, setComparisonFileB] = useState<File | null>(null);
-  const [comparison, setComparison] = useState<StructureComparisonResponse | null>(null);
+  const [pdbId, setPdbId] = useState(initialCache?.pdbId ?? "");
+  const [uniprotId, setUniprotId] = useState(initialCache?.uniprotId ?? "");
+  const [cutoff, setCutoff] = useState(initialCache?.cutoff ?? 4.0);
+  const [analysis, setAnalysis] = useState<AnalysisResponse | null>(initialCache?.analysis ?? null);
   const [selection, setSelection] = useState<ViewerSelection | null>(null);
   const viewerColumnRef = useRef<HTMLDivElement | null>(null);
-  const [viewerColorMode, setViewerColorMode] = useState<ViewerColorMode>("structure");
+  const [viewerColorMode, setViewerColorMode] = useState<ViewerColorMode>(
+    initialCache?.analysis.confidence ? "plddt" : "structure",
+  );
   const [contactFilter, setContactFilter] = useState<ContactFilter>("all");
-  const [resultsTab, setResultsTab] = useState<ResultsTab>("overview");
+  const [resultsTab, setResultsTab] = useState<ResultsTab>(initialPreferences.resultsTab);
   const resultsColumnRef = useRef<HTMLElement | null>(null);
-  const [initialTabStripScrollLeft] = useState(() => loadStructureCache()?.tabStripScrollLeft ?? 0);
-  const [inputSource, setInputSource] = useState<InputSource>("upload");
-  const [analysisTimestamp, setAnalysisTimestamp] = useState<string | null>(null);
+  const [initialTabStripScrollLeft] = useState(initialPreferences.tabStripScrollLeft ?? 0);
+  const tabStripScrollLeftRef = useRef(initialTabStripScrollLeft);
+  const [inputSource, setInputSource] = useState<InputSource>(initialCache?.source ?? "upload");
+  const [analysisTimestamp, setAnalysisTimestamp] = useState<string | null>(
+    initialCache?.savedAt ?? null,
+  );
   const [error, setError] = useState<WorkbenchError>(null);
-  const [status, setStatus] = useState<WorkbenchStatus>(null);
+  const [, setStatus] = useState<WorkbenchStatus>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isRcsbLoading, setIsRcsbLoading] = useState(false);
   const [isAlphaFoldLoading, setIsAlphaFoldLoading] = useState(false);
-  const [isComparisonLoading, setIsComparisonLoading] = useState(false);
-
-  // Restore last session from cache on first mount
-  useEffect(() => {
-    const cached = loadStructureCache();
-    if (!cached) return;
-    setFileName(cached.fileName);
-    setStructureText(cached.structureText);
-    setStructureFormat(cached.structureFormat);
-    setPdbId(cached.pdbId);
-    setUniprotId(cached.uniprotId);
-    setCutoff(cached.cutoff);
-    setAnalysis(cached.analysis);
-    setAnalysisTimestamp(cached.savedAt);
-    setViewerColorMode(cached.analysis.confidence ? "plddt" : "structure");
-    if (cached.pdbId) setInputSource("rcsb");
-    else if (cached.uniprotId) setInputSource("alphafold");
-    if (cached.resultsTab) setResultsTab(cached.resultsTab);
-    if (cached.workbenchMode) setMode(cached.workbenchMode);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Persist the active results tab whenever it changes so reload restores it
   useEffect(() => {
-    const existing = loadStructureCache();
-    if (!existing) return;
-    saveStructureCache({ ...existing, resultsTab });
-  }, [resultsTab]);
+    if (!preferencesHydrated) return;
+    saveWorkbenchPreferences({
+      resultsTab,
+      workbenchMode: mode,
+      tabStripScrollLeft: tabStripScrollLeftRef.current,
+    });
+  }, [mode, preferencesHydrated, resultsTab]);
 
   // Persist the active workbench mode (Explore / Report / Compare)
-  useEffect(() => {
-    const existing = loadStructureCache();
-    if (!existing) return;
-    saveStructureCache({ ...existing, workbenchMode: mode });
-  }, [mode]);
-
-  // Responsive: track whether we're at lg+ breakpoint
-  const [isLg, setIsLg] = useState(true);
+  const isLg = useMediaQuery("(min-width: 1024px)");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
   useEffect(() => {
-    const mq = window.matchMedia("(min-width: 1024px)");
-    setIsLg(mq.matches);
-    const handler = (e: MediaQueryListEvent) => {
-      setIsLg(e.matches);
-      if (e.matches) setSidebarOpen(false); // close drawer when going to desktop
-    };
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
+    if (isLg) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSidebarOpen(false);
+    }
+  }, [isLg]);
 
   useEffect(() => {
     if (resultsColumnRef.current) resultsColumnRef.current.scrollTop = 0;
@@ -456,7 +516,6 @@ export function ProteinWorkbench() {
       setViewerColorMode(nextAnalysis.confidence ? "plddt" : "structure");
       setContactFilter("all");
       setResultsTab("overview");
-      saveStructureCache({ structureText, structureFormat, fileName, pdbId, uniprotId, analysis: nextAnalysis, cutoff, savedAt: new Date().toISOString() });
       logTiming("analysis request", timingStarted, {
         form_ms,
         request_ms,
@@ -527,7 +586,18 @@ export function ProteinWorkbench() {
       setViewerColorMode(payload.analysis.confidence ? "plddt" : "structure");
       setContactFilter("all");
       setResultsTab("overview");
-      saveStructureCache({ structureText: payload.structure_text, structureFormat: payload.structure_format, fileName: payload.filename, pdbId: normalizedPdbId.toUpperCase(), uniprotId: "", analysis: payload.analysis, cutoff, savedAt: new Date().toISOString() });
+      savePublicStructureCache({
+        version: 2,
+        source: "rcsb",
+        structureText: payload.structure_text,
+        structureFormat: payload.structure_format,
+        fileName: payload.filename,
+        pdbId: normalizedPdbId.toUpperCase(),
+        uniprotId: "",
+        analysis: payload.analysis,
+        cutoff,
+        savedAt: new Date().toISOString(),
+      });
       logTiming("rcsb fetch analysis", timingStarted, {
         request_ms,
         response_json_ms,
@@ -600,7 +670,18 @@ export function ProteinWorkbench() {
       setViewerColorMode(payload.analysis.confidence ? "plddt" : "structure");
       setContactFilter("all");
       setResultsTab("overview");
-      saveStructureCache({ structureText: payload.structure_text, structureFormat: payload.structure_format, fileName: payload.filename, pdbId: "", uniprotId: normalizedUniprotId.toUpperCase(), analysis: payload.analysis, cutoff, savedAt: new Date().toISOString() });
+      savePublicStructureCache({
+        version: 2,
+        source: "alphafold",
+        structureText: payload.structure_text,
+        structureFormat: payload.structure_format,
+        fileName: payload.filename,
+        pdbId: "",
+        uniprotId: normalizedUniprotId.toUpperCase(),
+        analysis: payload.analysis,
+        cutoff,
+        savedAt: new Date().toISOString(),
+      });
       logTiming("alphafold fetch analysis", timingStarted, {
         request_ms,
         response_json_ms,
@@ -617,35 +698,6 @@ export function ProteinWorkbench() {
       });
     } finally {
       setIsAlphaFoldLoading(false);
-      setStatus(null);
-    }
-  }
-
-  async function prepareComparisonExample() {
-    const timingStarted = performance.now();
-    setError(null);
-    setStatus({ label: "Preparing comparison example", detail: "Loading bundled sample structures into A/B inputs." });
-    setComparison(null);
-
-    try {
-      const response = await fetch(EXAMPLE_FILE);
-      if (!response.ok) {
-        throw new Error(`Sample returned status ${response.status}.`);
-      }
-      const text = await response.text();
-      setComparisonFileA(new File([text], "sample-a.pdb", { type: "chemical/x-pdb" }));
-      setComparisonFileB(new File([text], "sample-b.pdb", { type: "chemical/x-pdb" }));
-      setMode("explore");
-      logTiming("comparison example load", timingStarted, {
-        bytes: text.length,
-      });
-    } catch (caught) {
-      setError({
-        title: "Could not prepare comparison example",
-        message: caught instanceof Error ? caught.message : "The bundled comparison sample could not be loaded.",
-        nextStep: "Try choosing two local PDB/mmCIF files in the Structure comparison section.",
-      });
-    } finally {
       setStatus(null);
     }
   }
@@ -669,64 +721,13 @@ export function ProteinWorkbench() {
     }
     if (exampleId === "alphafold") {
       void fetchAlphaFoldStructure("P69905");
-      return;
-    }
-    void prepareComparisonExample();
-  }
-
-  async function compareStructures() {
-    if (!comparisonFileA || !comparisonFileB) {
-      setError({
-        title: "Comparison needs two files",
-        message: "Both structure A and structure B are required.",
-        nextStep: "Choose two .pdb, .cif, or .mmcif files before comparing.",
-      });
-      return;
-    }
-    if (!isStructureFile(comparisonFileA.name) || !isStructureFile(comparisonFileB.name)) {
-      setError({
-        title: "Unsupported comparison file",
-        message: "Comparison currently accepts PDB and mmCIF coordinate files.",
-        nextStep: "Choose two .pdb, .cif, or .mmcif files.",
-      });
-      return;
-    }
-
-    setIsComparisonLoading(true);
-    setComparison(null);
-    setError(null);
-    setStatus({ label: "Comparing structures", detail: "Analyzing both files and calculating shared/gained/lost contacts." });
-
-    try {
-      const formData = new FormData();
-      formData.append("file_a", comparisonFileA);
-      formData.append("file_b", comparisonFileB);
-      formData.append("cutoff_angstrom", String(cutoff));
-      const response = await fetch(buildApiUrl("/api/compare"), {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as { detail?: string } | null;
-        throw new Error(body?.detail ?? `Comparison failed with status ${response.status}.`);
-      }
-
-      setComparison((await response.json()) as StructureComparisonResponse);
-    } catch (caught) {
-      setError({
-        title: "Comparison failed",
-        message: caught instanceof Error ? caught.message : "The backend could not compare these structures.",
-        nextStep: "Confirm both files are valid PDB/mmCIF coordinate files and try again.",
-      });
-    } finally {
-      setIsComparisonLoading(false);
-      setStatus(null);
     }
   }
 
   function reset() {
-    localStorage.removeItem(CACHE_KEY);
+    localStorage.removeItem(PUBLIC_STRUCTURE_CACHE_KEY);
+    localStorage.removeItem(WORKBENCH_PREFERENCES_KEY);
+    localStorage.removeItem(LEGACY_CACHE_KEY);
     setFileName("");
     setStructureText("");
     setStructureFormat("pdb");
@@ -736,9 +737,6 @@ export function ProteinWorkbench() {
     setPaeText("");
     setAnalysis(null);
     setAnalysisTimestamp(null);
-    setComparison(null);
-    setComparisonFileA(null);
-    setComparisonFileB(null);
     setSelection(null);
     setViewerColorMode("structure");
     setContactFilter("all");
@@ -974,11 +972,14 @@ export function ProteinWorkbench() {
               onTabChange={setResultsTab}
               initialTabStripScrollLeft={initialTabStripScrollLeft}
               onTabStripScroll={(x) => {
-                const existing = loadStructureCache();
-                if (existing) saveStructureCache({ ...existing, tabStripScrollLeft: x });
+                tabStripScrollLeftRef.current = x;
+                saveWorkbenchPreferences({
+                  resultsTab,
+                  workbenchMode: mode,
+                  tabStripScrollLeft: x,
+                });
               }}
               analysis={analysis}
-              comparison={comparison}
               chains={analysis?.chains ?? []}
               ligands={analysis?.ligands ?? []}
               contacts={filteredContactPreview}
@@ -1018,11 +1019,7 @@ export function ProteinWorkbench() {
               onViewerColorModeChange={setViewerColorMode}
               onExportContacts={exportCsv}
               onExportLigands={exportLigandCsv}
-              onExportSingleLigand={exportSingleLigandCsv}
-              onLoadSample={loadExample}
               onLoadExample={loadGalleryExample}
-              onFocusRcsb={() => document.getElementById("pdb-id")?.focus()}
-              onFocusAlphaFold={() => document.getElementById("uniprot-id")?.focus()}
             />
           </section>
         </motion.div>
@@ -1060,9 +1057,9 @@ export function ProteinWorkbench() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.18, ease: "easeOut" }}
-          className="flex h-full items-center justify-center p-8"
+          className="h-full"
         >
-          <WorkbenchModePlaceholder />
+          <CompareWorkspace />
         </motion.div>
       )}
       </AnimatePresence>
@@ -1133,83 +1130,7 @@ export function ProteinWorkbench() {
       )}
     </AnimatePresence>
 
-    {/* ── Example gallery — hidden for now ── */}
-    {false && <section className="mx-auto w-full max-w-[1500px] px-6 py-10">
-      <p className="pio-label mb-1">Example gallery</p>
-      <p className="pio-section-copy mb-6">Guided structures for quickly testing common workflows.</p>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        {EXAMPLE_GALLERY.map((card) => (
-          <div
-            key={card.id}
-            className="flex flex-col overflow-hidden rounded-[var(--pio-radius-lg)] bg-[var(--pio-sand)] p-3"
-          >
-            {/* Fixed-height thumbnail */}
-            <div className="mb-3 flex h-20 shrink-0 items-center justify-center rounded-[var(--pio-radius-md)] bg-[var(--pio-sage)]">
-              <svg
-                viewBox="0 0 100 100"
-                className="pio-loading-pulse h-10 w-10 text-[var(--pio-green-deep)]"
-                aria-hidden="true"
-              >
-                <g filter="url(#goo)">
-                  <circle cx="42" cy="45" r="17" fill="currentColor" opacity="0.7" />
-                  <circle cx="66" cy="30" r="10" fill="currentColor" opacity="0.7" />
-                  <circle cx="64" cy="56" r="9" fill="currentColor" opacity="0.7" />
-                  <circle cx="28" cy="68" r="12" fill="currentColor" opacity="0.7" />
-                </g>
-              </svg>
-            </div>
-            {/* Fixed-height title */}
-            <p className="line-clamp-1 text-sm font-bold leading-tight text-[var(--pio-ink)]">{card.title}</p>
-            {/* Fixed-height source */}
-            <p className="pio-value mt-0.5 line-clamp-1 text-[11px]">{card.source}</p>
-            {/* Fixed-height description — 3 lines */}
-            <p className="pio-section-copy mt-1.5 line-clamp-3 text-[11px] leading-snug">{card.description}</p>
-            {/* Fixed-height tags row — 1 line */}
-            <div className="mt-2 flex h-[22px] shrink-0 flex-wrap gap-1 overflow-hidden">
-              {card.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
-                  style={{ background: tagBackground(tag), color: tagColor(tag) }}
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-            {/* Fixed-height hint — 2 lines */}
-            <p className="mt-2 line-clamp-2 text-[11px] italic text-[var(--pio-graphite)]">{card.hint}</p>
-            {/* Button always at bottom */}
-            <button
-              type="button"
-              onClick={() => loadGalleryExample(card.id)}
-              className="pio-button-secondary mt-auto h-8 w-full shrink-0 text-xs"
-            >
-              {card.actionLabel}
-            </button>
-          </div>
-        ))}
-      </div>
-    </section>}
     </>
-  );
-}
-
-function WorkbenchModePlaceholder() {
-  return (
-    <div className="w-full max-w-[480px] rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] p-10 text-center shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
-      <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(199,217,236,0.4)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-        <Atom size={22} color="var(--pio-highlight)" />
-      </div>
-      <p className="text-[18px] font-bold text-[var(--pio-ink)]">Compare workspace is coming next</p>
-      <p className="mx-auto mt-2 max-w-[340px] text-[13.5px] leading-[1.6] text-[var(--pio-graphite)]">
-        The comparison workflow is available in Explore for now. This mode is reserved for the upcoming dedicated structure A/B comparison workspace.
-      </p>
-      <div className="mt-5 flex flex-wrap justify-center gap-2">
-        {["No structural alignment", "No RMSD", "No TM-score", "No side-by-side 3D"].map((label) => (
-          <span key={label} className="pio-badge pio-badge-caution">{label}</span>
-        ))}
-      </div>
-    </div>
   );
 }
 
@@ -1263,7 +1184,6 @@ function ResultsPanel({
   activeTab,
   onTabChange,
   analysis,
-  comparison,
   chains,
   ligands,
   contacts,
@@ -1283,18 +1203,13 @@ function ResultsPanel({
   onViewerColorModeChange,
   onExportContacts,
   onExportLigands,
-  onExportSingleLigand,
-  onLoadSample,
   onLoadExample,
-  onFocusRcsb,
-  onFocusAlphaFold,
   initialTabStripScrollLeft,
   onTabStripScroll,
 }: {
   activeTab: ResultsTab;
   onTabChange: (tab: ResultsTab) => void;
   analysis: AnalysisResponse | null;
-  comparison: StructureComparisonResponse | null;
   chains: ChainSummary[];
   ligands: LigandSummary[];
   contacts: ContactRecord[];
@@ -1314,11 +1229,7 @@ function ResultsPanel({
   onViewerColorModeChange: (mode: ViewerColorMode) => void;
   onExportContacts: () => void;
   onExportLigands: () => void;
-  onExportSingleLigand: (ligandInteraction: LigandInteractionSummary) => void;
-  onLoadSample: () => void;
   onLoadExample: (exampleId: ExampleId) => void;
-  onFocusRcsb: () => void;
-  onFocusAlphaFold: () => void;
   initialTabStripScrollLeft?: number;
   onTabStripScroll?: (x: number) => void;
 }) {
@@ -1340,28 +1251,10 @@ function ResultsPanel({
     { id: "pae", label: "PAE", visible: Boolean(analysis?.pae) },
     { id: "quality", label: "Quality", visible: Boolean(analysis) },
     { id: "methods", label: "Methods", visible: Boolean(analysis) },
+    { id: "interfaces", label: "Interfaces", visible: !!(analysis?.interface_analysis?.chain_pairs?.length), count: analysis?.interface_analysis?.chain_pairs?.length ?? undefined },
   ];
   const visibleTabs = tabs.filter((tab) => tab.visible);
   const selectedTab = visibleTabs.some((tab) => tab.id === activeTab) ? activeTab : "overview";
-  const selectedLigand =
-    selection?.kind === "ligand"
-      ? ligands.find(
-          (ligand) =>
-            ligand.name === selection.residueName &&
-            ligand.chain_id === selection.chainId &&
-            ligand.residue_number === selection.residueNumber,
-        ) ?? null
-      : null;
-  const selectedLigandInteraction =
-    selection?.kind === "ligand"
-      ? analysis?.ligand_interactions.find(
-          (ligand) =>
-            ligand.name === selection.residueName &&
-            ligand.chain_id === selection.chainId &&
-            ligand.residue_number === selection.residueNumber,
-        ) ?? null
-      : null;
-
   function preservePanelPosition(update: () => void) {
     const previousTop = panelRef.current?.getBoundingClientRect().top ?? null;
     update();
@@ -1381,10 +1274,7 @@ function ResultsPanel({
     return (
       <section ref={panelRef} className="min-w-0">
         <EmptyWorkbenchState
-          onLoadSample={onLoadSample}
           onLoadExample={onLoadExample}
-          onFocusRcsb={onFocusRcsb}
-          onFocusAlphaFold={onFocusAlphaFold}
         />
       </section>
     );
@@ -1470,10 +1360,12 @@ function ResultsPanel({
                   </div>
                 );
               })()}
+              {analysis.uniprot_annotations && (
+                <UniProtPanel annotations={analysis.uniprot_annotations} />
+              )}
               <MetadataPanel metadata={analysis.metadata ?? null} />
               <SummaryCards analysis={analysis} />
               <InteractionSummaryPanel summary={analysis.interaction_summary ?? null} />
-              <StructureComparisonPanel comparison={comparison} />
             </>
           </div>
         ) : null}
@@ -1508,7 +1400,9 @@ function ResultsPanel({
                 <Download size={14} />
               </button>
             </div>
-            <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>Closest atom pair per categorized contact.</p>
+            <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>
+              Closest atom pair per categorized contact.{hasContactConfidence && <span style={{ fontSize: 11, opacity: 0.55 }}> Trust labels are pLDDT-based review heuristics, not validated metrics.</span>}
+            </p>
             <ContactCategoryFilter
               value={contactFilter}
               onChange={onContactFilterChange}
@@ -1525,7 +1419,6 @@ function ResultsPanel({
               totalCount={totalContactCount}
               selection={selection}
               onSelect={onContactSelect}
-              showConfidence={hasContactConfidence}
             />
           </div>
         ) : null}
@@ -1544,9 +1437,163 @@ function ResultsPanel({
         {selectedTab === "quality" ? <QualityPanel analysis={analysis} /> : null}
 
         {selectedTab === "methods" ? <ProvenancePanel provenance={provenance} /> : null}
+
+        {selectedTab === "interfaces" && (analysis?.interface_analysis?.chain_pairs?.length ?? 0) > 0 ? (
+          <InterfacesTab interfaceAnalysis={analysis.interface_analysis!} />
+        ) : null}
       </motion.div>
       </AnimatePresence>
     </section>
+  );
+}
+
+function UniProtPanel({ annotations }: { annotations: UniProtAnnotations }) {
+  const hasContent =
+    annotations.function ||
+    annotations.domains.length > 0 ||
+    annotations.active_sites.length > 0 ||
+    annotations.binding_sites.length > 0;
+  if (!hasContent) return null;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {annotations.function && (
+        <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
+          <p style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: "var(--pio-graphite)" }}>
+            Function
+          </p>
+          <p style={{ fontSize: 13, lineHeight: 1.6, marginTop: 6, color: "var(--pio-ink)" }}>
+            {annotations.function}
+          </p>
+        </div>
+      )}
+      {(annotations.domains.length > 0 || annotations.active_sites.length > 0 || annotations.binding_sites.length > 0) && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
+          {annotations.domains.length > 0 && (
+            <UniProtFeatureSection
+              label="Domains"
+              items={annotations.domains}
+            />
+          )}
+          {annotations.active_sites.length > 0 && (
+            <UniProtFeatureSection
+              label="Active sites"
+              items={annotations.active_sites}
+            />
+          )}
+          {annotations.binding_sites.length > 0 && (
+            <UniProtFeatureSection
+              label="Binding sites"
+              items={annotations.binding_sites}
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function UniProtFeatureSection({
+  label,
+  items,
+}: {
+  label: string;
+  items: Array<{ description: string | null; start: number | null; end: number | null }>;
+}) {
+  return (
+    <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
+      <p style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: "var(--pio-graphite)" }}>
+        {label} <span style={{ fontFamily: "var(--font-pio-mono)", opacity: 0.6 }}>{items.length}</span>
+      </p>
+      <ul style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+        {items.map((item, i) => {
+          const pos = item.start != null
+            ? item.start === item.end
+              ? `pos. ${item.start}`
+              : `${item.start}–${item.end}`
+            : null;
+          return (
+            <li key={i} style={{ fontSize: 12, color: "var(--pio-ink)", lineHeight: 1.45 }}>
+              {item.description && (
+                <span style={{ fontWeight: 600 }}>{item.description}</span>
+              )}
+              {pos && (
+                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 11, color: "var(--pio-graphite)", marginLeft: item.description ? 6 : 0 }}>
+                  {pos}
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function PldDTCell({ value }: { value: number | null }) {
+  if (value == null) return <span style={{ fontSize: 12, color: "var(--pio-graphite)", opacity: 0.5 }}>—</span>;
+  const color = value >= 90 ? "var(--pio-green-deep)" : value >= 70 ? "var(--pio-ink)" : "var(--pio-coral)";
+  return <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 600, color }}>{value.toFixed(1)}</span>;
+}
+
+function InterfacesTab({ interfaceAnalysis }: { interfaceAnalysis: InterfaceAnalysis }) {
+  return (
+    <div className="min-w-0">
+      <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)" }}>Interfaces</h2>
+      <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>
+        Inter-chain contact summary
+      </p>
+
+      {/* Summary tiles */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginTop: 16 }}>
+        <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
+          <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>Inter-chain contacts</p>
+          <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 22, fontWeight: 700, marginTop: 4, color: "var(--pio-ink)" }}>
+            {interfaceAnalysis.inter_chain_contact_count.toLocaleString()}
+          </p>
+        </div>
+        <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
+          <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>Chain pairs</p>
+          <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 22, fontWeight: 700, marginTop: 4, color: "var(--pio-ink)" }}>
+            {interfaceAnalysis.chain_pairs.length}
+          </p>
+        </div>
+        <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
+          <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>Intra-chain contacts</p>
+          <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 22, fontWeight: 700, marginTop: 4, color: "var(--pio-ink)" }}>
+            {interfaceAnalysis.intra_chain_contact_count.toLocaleString()}
+          </p>
+        </div>
+      </div>
+
+      {/* Chain pairs table */}
+      <div style={{ overflowX: "auto", marginTop: 20 }}>
+        <div style={{ minWidth: 480 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "60px 60px 1fr 80px 80px 90px 90px", columnGap: 8, borderBottom: "1px solid var(--pio-line)", padding: "8px 12px" }}>
+            {["CHAIN A", "CHAIN B", "CONTACTS", "RES A", "RES B", "MEAN pLDDT A", "MEAN pLDDT B"].map((col) => (
+              <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)" }}>{col}</p>
+            ))}
+          </div>
+          {interfaceAnalysis.chain_pairs.map((pair: ChainPairSummary, i: number) => (
+            <div key={`${pair.chain_a}-${pair.chain_b}`}>
+              <div style={{ display: "grid", gridTemplateColumns: "60px 60px 1fr 80px 80px 90px 90px", columnGap: 8, padding: "10px 12px", alignItems: "center" }}
+                   className="hover:bg-[var(--pio-paper)]">
+                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 13, fontWeight: 600, color: "var(--pio-ink)" }}>{pair.chain_a}</span>
+                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 13, fontWeight: 600, color: "var(--pio-ink)" }}>{pair.chain_b}</span>
+                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, color: "var(--pio-ink)" }}>{pair.contact_count.toLocaleString()}</span>
+                <span style={{ fontSize: 12, color: "var(--pio-graphite)" }}>{pair.interface_residue_count_a}</span>
+                <span style={{ fontSize: 12, color: "var(--pio-graphite)" }}>{pair.interface_residue_count_b}</span>
+                <PldDTCell value={pair.mean_plddt_a} />
+                <PldDTCell value={pair.mean_plddt_b} />
+              </div>
+              {i < interfaceAnalysis.chain_pairs.length - 1 && (
+                <div style={{ height: 1, background: "var(--pio-line)" }} />
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1556,7 +1603,33 @@ const REPORT_SUB: React.CSSProperties = { fontSize: 13.5, color: "var(--pio-grap
 const REPORT_TILE: React.CSSProperties = { background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" };
 const REPORT_LABEL: React.CSSProperties = { fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" as const };
 const REPORT_MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)" };
-const REPORT_ICON_BTN: React.CSSProperties = { background: "var(--pio-sky)", border: "none", borderRadius: "50%", width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "var(--pio-highlight)", cursor: "pointer" };
+
+function ReportLimitations({ hasConfidence }: { hasConfidence: boolean }) {
+  const items = [
+    "Contacts are the closest atom-pair distance between two residues — not centroid-to-centroid or any smoothed measure.",
+    `Distance cutoff applies uniformly; contacts just above the cutoff are not shown even if functionally relevant.`,
+    hasConfidence
+      ? "pLDDT scores reflect AlphaFold prediction confidence, not experimental accuracy. Trust labels are heuristic review flags, not validated quality metrics."
+      : null,
+    "Water molecules and small ions are included in protein-water and ligand-water contact counts but excluded from residue-residue totals.",
+    "No sequence alignment or structural superposition is performed. Chain IDs and residue numbers are taken directly from the coordinate file.",
+  ].filter(Boolean) as string[];
+
+  return (
+    <div>
+      <h2 style={REPORT_H2}>Limitations</h2>
+      <p style={REPORT_SUB}>Key assumptions and caveats to consider when interpreting these results.</p>
+      <ul style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+        {items.map((item, i) => (
+          <li key={i} style={{ display: "flex", gap: 10, fontSize: 13, lineHeight: 1.6, color: "var(--pio-graphite)" }}>
+            <span style={{ flexShrink: 0, marginTop: 2, width: 14, height: 14, borderRadius: "50%", background: "var(--pio-line-strong)", display: "inline-block" }} />
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 function ReportWorkspace({
   analysis,
@@ -1608,6 +1681,11 @@ function ReportWorkspace({
     <div className="mx-auto w-full max-w-[960px] flex-1 min-h-0 flex flex-col rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)] overflow-clip pr-[3px] pt-[20px] pb-[20px]">
     <div className="overflow-y-auto flex-1 scrollbar-thin-report" style={{ padding: "12px 33px 36px 36px" }}>
       <ReportHeader analysis={analysis} provenance={provenance} onExportContacts={onExportContacts} onExportLigands={onExportLigands} onExportAnalysisJson={onExportAnalysisJson} />
+      {analysis.uniprot_annotations && (
+        <div style={REPORT_DIVIDER}>
+          <UniProtPanel annotations={analysis.uniprot_annotations} />
+        </div>
+      )}
       <div style={REPORT_DIVIDER}>
         <MetadataPanel metadata={analysis.metadata ?? null} />
       </div>
@@ -1631,6 +1709,9 @@ function ReportWorkspace({
       </div>
       <div style={REPORT_DIVIDER}>
         <ProvenancePanel provenance={provenance} showExport={false} />
+      </div>
+      <div style={REPORT_DIVIDER}>
+        <ReportLimitations hasConfidence={analysis.confidence != null} />
       </div>
     </div>
     </div>
@@ -1718,15 +1799,6 @@ function ReportHeader({
           </div>
         ))}
       </div>
-    </div>
-  );
-}
-
-function ReportFact({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div style={REPORT_TILE}>
-      <p style={REPORT_LABEL}>{label}</p>
-      <p style={{ ...REPORT_MONO, fontSize: 13, fontWeight: 600, color: "var(--pio-ink)", marginTop: 4 }}>{value}</p>
     </div>
   );
 }
@@ -1837,15 +1909,9 @@ function ConfidenceReportCard({ confidence }: { confidence: ConfidenceSummary })
 }
 
 function EmptyWorkbenchState({
-  onLoadSample,
   onLoadExample,
-  onFocusRcsb,
-  onFocusAlphaFold,
 }: {
-  onLoadSample: () => void;
   onLoadExample: (exampleId: ExampleId) => void;
-  onFocusRcsb: () => void;
-  onFocusAlphaFold: () => void;
 }) {
   return (
     <div className="p-6">
@@ -1857,7 +1923,7 @@ function EmptyWorkbenchState({
         structure file, PDB ID, AlphaFold accession, or sample structure.
       </p>
       <div className="mt-5 border-t border-[var(--pio-line)] pt-5">
-        <ExampleGallery onLoadExample={onLoadExample} onLoadSample={onLoadSample} onFocusRcsb={onFocusRcsb} onFocusAlphaFold={onFocusAlphaFold} />
+        <ExampleGallery onLoadExample={onLoadExample} />
       </div>
     </div>
   );
@@ -1865,14 +1931,8 @@ function EmptyWorkbenchState({
 
 function ExampleGallery({
   onLoadExample,
-  onLoadSample: _onLoadSample,
-  onFocusRcsb: _onFocusRcsb,
-  onFocusAlphaFold: _onFocusAlphaFold,
 }: {
   onLoadExample: (exampleId: ExampleId) => void;
-  onLoadSample: () => void;
-  onFocusRcsb: () => void;
-  onFocusAlphaFold: () => void;
 }) {
   return (
     <div>
@@ -1931,56 +1991,10 @@ function QualityPanel({ analysis }: { analysis: AnalysisResponse | null }) {
     return null;
   }
 
-  const possibleClashes = analysis.interaction_summary?.possible_clash_count ?? 0;
-  const veryCloseContacts = analysis.contacts.filter((contact) => contact.distance_angstrom < 2).length;
+  const veryCloseContacts = analysis.interaction_summary?.possible_clash_count ?? 0;
   const lowConfidence = analysis.confidence?.low_confidence_count ?? 0;
-  const isPredicted = analysis.metadata?.source === "alphafold" || Boolean(analysis.confidence);
   const paeProvided = Boolean(analysis.pae);
   const hasLigands = analysis.summary.ligand_count > 0;
-  const qualityItems = [
-    {
-      label: "Possible steric clashes",
-      value: possibleClashes,
-      status: possibleClashes > 0 ? "review" : "ok",
-      detail:
-        possibleClashes > 0
-          ? "These are distance-based flags, not a full stereochemical validation."
-          : "No possible clash contacts were flagged by the current distance cutoff.",
-    },
-    {
-      label: "Very close contacts",
-      value: veryCloseContacts,
-      status: veryCloseContacts > 0 ? "review" : "ok",
-      detail: "Atom pairs under 2 A are worth checking before interpreting contacts.",
-    },
-    {
-      label: "Ligand state",
-      value: hasLigands ? analysis.summary.ligand_count : "None",
-      status: hasLigands ? "ok" : "info",
-      detail: hasLigands
-        ? "Ligands are available for interaction review."
-        : "No non-water ligands were detected in this structure.",
-    },
-    {
-      label: "Low-confidence residues",
-      value: analysis.confidence ? lowConfidence : "N/A",
-      status: lowConfidence > 0 ? "review" : "ok",
-      detail: analysis.confidence
-        ? "Low or very low pLDDT regions should not be over-interpreted."
-        : "No pLDDT confidence data was detected for this structure.",
-    },
-    {
-      label: "PAE sidecar",
-      value: paeProvided ? "Provided" : "Not provided",
-      status: isPredicted && !paeProvided ? "review" : "info",
-      detail:
-        isPredicted && !paeProvided
-          ? "Predicted structures are easier to interpret with PAE when domain placement matters."
-          : paeProvided
-            ? "PAE summary is available in the PAE tab."
-            : "PAE is usually relevant for AlphaFold-style predicted structures.",
-    },
-  ] as const;
   const cards: Array<{
     label: string;
     value: string | number;
@@ -1989,15 +2003,9 @@ function QualityPanel({ analysis }: { analysis: AnalysisResponse | null }) {
     fullWidth?: boolean;
   }> = [
     {
-      label: "POSSIBLE STERIC CLASHES",
-      value: possibleClashes,
-      description: "These are distance-based flags, not a full stereochemical validation.",
-      tone: "amber",
-    },
-    {
       label: "VERY CLOSE CONTACTS",
       value: veryCloseContacts,
-      description: "Atom pairs under 2 Å are worth checking before interpreting contacts.",
+      description: "Atom pairs under 2 Å are review flags. They may include expected covalent geometry and are not proof of a steric clash.",
       tone: "amber",
     },
     {
@@ -2064,7 +2072,7 @@ function QualityPanel({ analysis }: { analysis: AnalysisResponse | null }) {
           Close-Contact Examples
         </h3>
         <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", marginTop: 4 }}>
-          Representative contacts flagged as possible clashes or under 2 Å.
+          Representative atom pairs under 2 Å. Review them in context before drawing a chemical conclusion.
         </p>
 
         {closeContactExamples.length ? (
@@ -2282,17 +2290,6 @@ function isStructureFile(fileName: string) {
   return /\.(pdb|cif|mmcif)$/i.test(fileName);
 }
 
-function formatSignedNumber(value: number) {
-  if (value > 0) {
-    return `+${value}`;
-  }
-  return String(value);
-}
-
-function formatOptionalDistance(value: number | null) {
-  return value === null ? "-" : `${value.toFixed(3)} A`;
-}
-
 function formatFromFileName(fileName: string): StructureFileFormat {
   return /\.(cif|mmcif)$/i.test(fileName) ? "cif" : "pdb";
 }
@@ -2403,11 +2400,6 @@ function MetadataPanel({ metadata }: { metadata: StructureMetadata | null }) {
   }
 
   const isAlphaFold = metadata.source === "alphafold";
-  const entryUrl = isAlphaFold ? metadata.alphafold_url : metadata.rcsb_url;
-  const rawTitle = metadata.title ?? (isAlphaFold ? "AlphaFold DB model" : "RCSB structure");
-  const strippedTitle = rawTitle.replace(/\s+at\s+[\d.]+\s+angstroms?\s+resolution\s*$/i, "").trim();
-  const displayTitle = toTitleCase(strippedTitle);
-
   type MetaRow = { label: string; value: string | number | null; mono?: boolean };
 
   const rcsbRows: MetaRow[] = [
@@ -2426,7 +2418,7 @@ function MetadataPanel({ metadata }: { metadata: StructureMetadata | null }) {
 
   const alphaFoldRows: MetaRow[] = [
     { label: "UNIPROT", value: metadata.uniprot_id, mono: true },
-    { label: "METHOD", value: metadata.method ? toTitleCase(metadata.method) : null },
+    { label: "METHOD", value: "Predicted model" },
     { label: "ORGANISM", value: metadata.organism ? toTitleCase(metadata.organism) : null },
     { label: "MODEL VERSION", value: metadata.model_version, mono: true },
     { label: "MODEL DATE", value: formatDepositedDate(metadata.deposition_date), mono: true },
@@ -2566,105 +2558,18 @@ function PaePanel({ pae }: { pae: PaeSummary | null }) {
   );
 }
 
-function StructureComparisonPanel({ comparison }: { comparison: StructureComparisonResponse | null }) {
-  if (!comparison) {
-    return null;
-  }
-
-  const deltaItems = [
-    ["Atoms", comparison.delta.atom_count_delta],
-    ["Protein residues", comparison.delta.residue_count_delta],
-    ["Chains", comparison.delta.chain_count_delta],
-    ["Ligands", comparison.delta.ligand_count_delta],
-    ["Contacts", comparison.delta.contact_count_delta],
-  ];
-
-  return (
-    <div className="pio-panel p-4">
-      <h2 className="pio-section-title">Structure comparison</h2>
-      <p className="pio-section-copy mt-1">
-        Deltas are calculated as second structure minus first structure. Contact comparison uses residue-level contact identities.
-      </p>
-      <p className="mt-3 rounded-[var(--pio-radius-md)] bg-[var(--pio-amber-pale)] px-3 py-2 text-xs font-semibold text-[var(--pio-amber-deep)]">
-        No structural alignment. No RMSD. No TM-score. No side-by-side 3D superposition yet.
-      </p>
-      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-        {deltaItems.map(([label, value]) => (
-          <div key={label} className="pio-kv-card">
-            <p className="pio-label">{label}</p>
-            <p className={`mt-1 font-mono text-sm ${Number(value) === 0 ? "text-[var(--pio-ink)]" : Number(value) > 0 ? "text-[var(--pio-green-deep)]" : "text-[var(--pio-coral-deep)]"}`}>
-              {formatSignedNumber(Number(value))}
-            </p>
-          </div>
-        ))}
-      </div>
-      <div className="mt-4 grid gap-2 sm:grid-cols-3">
-        <ComparisonCount label="Shared contacts" value={comparison.contacts.shared_contact_count} />
-        <ComparisonCount label="Gained contacts" value={comparison.contacts.gained_contact_count} />
-        <ComparisonCount label="Lost contacts" value={comparison.contacts.lost_contact_count} />
-      </div>
-      <div className="mt-4 grid gap-4 xl:grid-cols-3">
-        <ContactDifferenceList title="Gained contacts" rows={comparison.contacts.gained_contacts} />
-        <ContactDifferenceList title="Lost contacts" rows={comparison.contacts.lost_contacts} />
-        <ContactDifferenceList title="Shared examples" rows={comparison.contacts.shared_contacts} />
-      </div>
-      {comparison.warnings.length ? (
-        <ul className="mt-4 list-inside list-disc text-xs leading-5 text-amber-800">
-          {comparison.warnings.map((warning) => (
-            <li key={warning}>{warning}</li>
-          ))}
-        </ul>
-      ) : null}
-    </div>
-  );
-}
-
-function ComparisonCount({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="flex items-center justify-between rounded-[var(--pio-radius-sm)] border border-[var(--pio-line-strong)] px-3 py-2">
-      <span className="text-sm text-[var(--pio-graphite)]">{label}</span>
-      <span className="font-mono text-sm text-[var(--pio-ink)]">{value}</span>
-    </div>
-  );
-}
-
-function ContactDifferenceList({ title, rows }: { title: string; rows: StructureComparisonResponse["contacts"]["gained_contacts"] }) {
-  return (
-    <div>
-      <p className="text-xs font-medium uppercase tracking-wide text-[var(--pio-graphite)]">{title}</p>
-      {rows.length ? (
-        <div className="mt-2 divide-y divide-[var(--pio-line)] border border-[var(--pio-line-strong)]">
-          {rows.map((row) => (
-            <div key={`${row.label}-${row.contact_type}-${row.distance_a_angstrom ?? ""}-${row.distance_b_angstrom ?? ""}`} className="px-3 py-2">
-              <p className="font-mono text-xs text-[var(--pio-ink)]">{row.label}</p>
-              <p className="mt-1 text-xs text-[var(--pio-graphite)]">
-                {row.contact_type} · {row.contact_categories.join(", ")}
-              </p>
-              <p className="mt-1 font-mono text-xs text-[var(--pio-graphite)]">
-                A: {formatOptionalDistance(row.distance_a_angstrom)} / B: {formatOptionalDistance(row.distance_b_angstrom)}
-              </p>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="mt-2 text-sm text-[var(--pio-graphite)]">No rows.</p>
-      )}
-    </div>
-  );
-}
-
 function InteractionSummaryPanel({ summary }: { summary: InteractionSummary | null }) {
   if (!summary) return null;
 
   const MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)" };
 
   const metrics: Array<[string, number]> = [
-    ["Protein-Protein", summary.protein_protein_count],
-    ["Protein-Ligand", summary.protein_ligand_count],
-    ["Protein-Water", summary.protein_water_count],
-    ["Ligand-Water", summary.ligand_water_count],
-    ["Inter-Chain", summary.inter_chain_count],
-    ["Possible Clashes", summary.possible_clash_count],
+    ["Protein-Protein", summary.protein_protein_count ?? 0],
+    ["Protein-Ligand", summary.protein_ligand_count ?? 0],
+    ["Protein-Water", summary.protein_water_count ?? 0],
+    ["Ligand-Water", summary.ligand_water_count ?? 0],
+    ["Inter-Chain", summary.inter_chain_count ?? 0],
+    ["Very Close", summary.possible_clash_count ?? 0],
   ];
 
   return (
@@ -2732,7 +2637,7 @@ function LigandInteractionPanel({
         <div style={{ minWidth: 1050 }}>
           {/* Header */}
           <div style={{ display: "grid", gridTemplateColumns: "140px 80px 80px 70px 80px 130px 220px 150px", columnGap: 12, borderBottom: "1px solid var(--pio-line)", padding: "8px 0" }}>
-            {["LIGAND","CONTACTS","PROTEIN","WATER","CLASHES","CLOSEST","TOP RESIDUES","BUCKETS"].map((col) => (
+            {["LIGAND","CONTACTS","PROTEIN","WATER","VERY CLOSE","CLOSEST","TOP RESIDUES","BUCKETS"].map((col) => (
               <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)" }}>{col}</p>
             ))}
           </div>
@@ -2770,134 +2675,6 @@ function LigandInteractionPanel({
   );
 }
 
-function LigandDetailPanel({
-  ligand,
-  interaction,
-  onExport,
-}: {
-  ligand: LigandSummary | null;
-  interaction: LigandInteractionSummary | null;
-  onExport: (ligandInteraction: LigandInteractionSummary) => void;
-}) {
-  if (!ligand) {
-    return (
-      <div className="min-w-0 rounded-[var(--pio-radius-md)] border border-dashed border-[var(--pio-line-strong)] bg-[var(--pio-sand)] p-4">
-        <h2 className="text-sm font-semibold text-[var(--pio-ink)]">Ligand detail</h2>
-        <p className="mt-1 text-sm leading-6 text-[var(--pio-graphite)]">
-          Select a ligand row to inspect its contacts, closest atom pair, distance buckets, and contacting residues.
-        </p>
-      </div>
-    );
-  }
-
-  const closestContact = interaction?.closest_contact ?? null;
-  const buckets = interaction?.distance_distribution ?? {
-    under_2_angstrom: 0,
-    two_to_3_angstrom: 0,
-    three_to_4_angstrom: 0,
-    over_4_angstrom: 0,
-  };
-  const metrics: Array<[string, string | number]> = [
-    ["Chain", ligand.chain_id],
-    ["Residue", ligand.residue_number],
-    ["Atoms", ligand.atom_count],
-    ["Protein contacts", interaction?.protein_contact_count ?? 0],
-    ["Water contacts", interaction?.water_contact_count ?? 0],
-    ["Possible clashes", interaction?.possible_clash_count ?? 0],
-  ];
-
-  return (
-    <div className="min-w-0 overflow-hidden rounded-[var(--pio-radius-lg)] border border-[var(--pio-blue)] bg-[var(--pio-blue-pale)] p-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-[var(--pio-blue-deep)]">Ligand detail</p>
-          <h2 className="mt-1 font-mono text-lg font-semibold text-[var(--pio-ink)]">
-            {ligand.name} {ligand.chain_id}:{ligand.residue_number}
-          </h2>
-          <p className="mt-1 text-xs leading-5 text-[var(--pio-blue-deep)]">
-            Selecting this ligand highlights it in Mol* and keeps the detailed interaction summary in view.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => interaction && onExport(interaction)}
-          disabled={!interaction}
-          className="pio-button-secondary shrink-0 px-4 text-sm disabled:cursor-not-allowed disabled:opacity-45"
-        >
-          <Download className="h-4 w-4" />
-          Export this ligand
-        </button>
-      </div>
-
-      <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {metrics.map(([label, value]) => (
-          <div key={label} className="border border-[var(--pio-blue)] bg-[var(--pio-white)]/80 px-3 py-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-[var(--pio-blue-deep)]">{label}</p>
-            <p className="mt-1 font-mono text-sm text-[var(--pio-ink)]">{value}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <div className="border border-[var(--pio-blue)] bg-[var(--pio-white)]/80 p-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-[var(--pio-blue-deep)]">Closest contact</p>
-          {closestContact && interaction?.closest_distance_angstrom !== null ? (
-            <div className="mt-2 text-sm text-[var(--pio-ink)]">
-              <p className="font-mono text-[var(--pio-ink)]">{interaction?.closest_distance_angstrom.toFixed(3)} A</p>
-              <p className="mt-1 font-mono text-xs">
-                {closestContact.chain_a}:{closestContact.residue_name_a}
-                {closestContact.residue_a}.{closestContact.atom_a} - {closestContact.chain_b}:
-                {closestContact.residue_name_b}
-                {closestContact.residue_b}.{closestContact.atom_b}
-              </p>
-            </div>
-          ) : (
-            <p className="mt-2 text-sm text-[var(--pio-graphite)]">No contacts detected for this ligand.</p>
-          )}
-        </div>
-
-        <div className="border border-[var(--pio-blue)] bg-[var(--pio-white)]/80 p-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-[var(--pio-blue-deep)]">Distance buckets</p>
-          <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-            <DistanceBucket label="<2 A" value={buckets.under_2_angstrom} />
-            <DistanceBucket label="2-3 A" value={buckets.two_to_3_angstrom} />
-            <DistanceBucket label="3-4 A" value={buckets.three_to_4_angstrom} />
-            <DistanceBucket label=">4 A" value={buckets.over_4_angstrom} />
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-4 border border-[var(--pio-blue)] bg-[var(--pio-white)]/80 p-3">
-        <p className="text-xs font-medium uppercase tracking-wide text-[var(--pio-blue-deep)]">Contacting residues</p>
-        {interaction?.contacting_residues.length ? (
-          <div className="mt-2 flex flex-wrap gap-2">
-            {interaction.contacting_residues.map((residue) => (
-              <span
-                key={`${residue.chain_id}-${residue.residue_name}-${residue.residue_number}`}
-                className="inline-flex rounded-[var(--pio-radius-sm)] border border-[var(--pio-line-strong)] bg-[var(--pio-white)] px-2 py-1 font-mono text-xs text-[var(--pio-ink)]"
-              >
-                {residue.chain_id}:{residue.residue_name}
-                {residue.residue_number} ({residue.contact_count})
-              </span>
-            ))}
-          </div>
-        ) : (
-          <p className="mt-2 text-sm text-[var(--pio-graphite)]">No protein residues are within the current cutoff for this ligand.</p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function DistanceBucket({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="flex items-center justify-between rounded-[var(--pio-radius-sm)] border border-[var(--pio-line-strong)] bg-[var(--pio-white)] px-2 py-1">
-      <span className="font-mono text-xs text-[var(--pio-graphite)]">{label}</span>
-      <span className="font-mono text-xs text-[var(--pio-ink)]">{value}</span>
-    </div>
-  );
-}
-
 function TopContactList({ title, rows }: { title: string; rows: Array<[string, number]> }) {
   const MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)" };
   return (
@@ -2931,7 +2708,7 @@ function ContactCategoryFilter({
     ["protein-water", "Protein-water"],
     ["ligand-water", "Ligand-water"],
     ["inter-chain", "Inter-chain"],
-    ["possible-clash", "Clashes"],
+    ["very-close-contact", "Very close"],
   ];
   if (showLowConfidence) {
     options.push(["low-confidence", "Low-confidence"]);
@@ -2973,18 +2750,10 @@ function ContactConfidenceSummary({
   const percent = totalContactCount > 0 ? Math.round((lowConfidenceContactCount / totalContactCount) * 100) : 0;
 
   return (
-    <div className="grid gap-3 border-b border-[var(--pio-line)] bg-[var(--pio-amber-pale)] p-4 md:grid-cols-[220px_1fr]">
-      <div>
-        <p className="pio-label text-[var(--pio-amber-deep)]">Low-confidence contacts</p>
-        <p className="mt-1 font-mono text-2xl font-semibold text-[var(--pio-amber-deep)]">
-          {lowConfidenceContactCount}
-          <span className="ml-2 text-sm font-normal">of {totalContactCount}</span>
-        </p>
-      </div>
-      <p className="text-sm leading-6 text-[var(--pio-ink)]">
-        Contacts are flagged when either residue endpoint has low or very low pLDDT. Treat these as review targets,
-        especially for predicted structures where local geometry may be uncertain. Current share: {percent}%.
-      </p>
+    <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: "6px 10px", background: "var(--pio-amber-pale)", borderRadius: 10, padding: "10px 14px", marginTop: 12 }}>
+      <span style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "var(--pio-amber-deep)", flexShrink: 0 }}>Low-confidence</span>
+      <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 18, fontWeight: 700, color: "var(--pio-amber-deep)", flexShrink: 0 }}>{lowConfidenceContactCount}</span>
+      <span style={{ fontSize: 12, color: "var(--pio-amber-deep)", opacity: 0.5 }}>of {totalContactCount} contacts ({percent}%) — either residue has low or very-low pLDDT. Treat as review targets.</span>
     </div>
   );
 }
@@ -3310,7 +3079,7 @@ function FloatingLigandPanel({
               {[
                 ["PROTEIN", String(interaction?.protein_contact_count ?? 0)],
                 ["WATER", String(interaction?.water_contact_count ?? 0)],
-                ["CLASHES", String(interaction?.possible_clash_count ?? 0)],
+                ["VERY CLOSE", String(interaction?.possible_clash_count ?? 0)],
               ].map(([label, value]) => (
                 <div
                   key={label}
@@ -3504,25 +3273,24 @@ function contactChipStyle(key: string): React.CSSProperties {
     return { background: "rgba(199,217,236,0.6)", color: "var(--pio-highlight)" };
   if (key === "inter-chain" || key === "intra-chain")
     return { background: "rgba(230,220,255,0.6)", color: "#3D1A6A" };
-  if (key === "possible-clash")
+  if (key === "very-close-contact")
     return { background: "rgba(255,220,210,0.65)", color: "#6A1A1A" };
   return { background: "rgba(199,217,236,0.6)", color: "var(--pio-highlight)" };
 }
 
-const CONTACT_GRID = "120px 1fr 100px";
+const CONTACT_GRID_3 = "120px 1fr 100px";
+const CONTACT_GRID_4 = "120px 1fr 100px 90px";
 
 function ContactTable({
   contacts,
   totalCount,
   selection,
   onSelect,
-  showConfidence,
 }: {
   contacts: ContactRecord[];
   totalCount: number;
   selection: ViewerSelection | null;
   onSelect: (contact: ContactRecord) => void;
-  showConfidence: boolean;
 }) {
   if (!contacts.length) {
     return (
@@ -3533,13 +3301,17 @@ function ContactTable({
     );
   }
 
+  const showConfidence = contacts.some((c) => c.trust_label != null || c.source_residue_confidence != null);
+  const grid = showConfidence ? CONTACT_GRID_4 : CONTACT_GRID_3;
+  const headers = showConfidence ? ["TYPE", "CATEGORIES", "RESIDUES", "CONFIDENCE"] : ["TYPE", "CATEGORIES", "RESIDUES"];
+
   return (
     <div style={{ overflowX: "auto", marginTop: 16 }}>
-    <div style={{ minWidth: 360 }}>
+    <div style={{ minWidth: showConfidence ? 440 : 360 }}>
       {/* Header */}
-      <div style={{ display: "grid", gridTemplateColumns: CONTACT_GRID, columnGap: 8, borderBottom: "1px solid var(--pio-line)", padding: "8px 12px" }}>
-        {["TYPE", "CATEGORIES", "RESIDUES"].map((col) => (
-          <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)", textAlign: col === "RESIDUES" ? "right" : "left" }}>{col}</p>
+      <div style={{ display: "grid", gridTemplateColumns: grid, columnGap: 8, borderBottom: "1px solid var(--pio-line)", padding: "8px 12px" }}>
+        {headers.map((col) => (
+          <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)", textAlign: col === "RESIDUES" ? "right" : "left", paddingLeft: col === "CONFIDENCE" ? 16 : 0 }}>{col}</p>
         ))}
       </div>
       {/* Rows */}
@@ -3556,7 +3328,7 @@ function ContactTable({
               onKeyDown={(e) => handleSelectableRowKeyDown(e, () => onSelect(contact))}
               style={{
                 display: "grid",
-                gridTemplateColumns: CONTACT_GRID,
+                gridTemplateColumns: grid,
                 columnGap: 8,
                 alignItems: "start",
                 padding: "11px 12px",
@@ -3588,6 +3360,12 @@ function ContactTable({
                   {contact.chain_b}:{contact.residue_name_b}{contact.residue_b}
                 </span>
               </div>
+              {/* CONFIDENCE — only rendered when column is active */}
+              {showConfidence && (
+                <div style={{ paddingLeft: 16 }}>
+                  <ContactConfidenceBadge contact={contact} />
+                </div>
+              )}
             </div>
             {i < contacts.length - 1 && <div style={{ height: 1, background: "var(--pio-line)" }} />}
           </div>
@@ -3603,50 +3381,50 @@ function ContactTable({
   );
 }
 
+const TRUST_BADGE_CLASS: Record<string, string> = {
+  "high-confidence": "pio-badge-active",
+  "inspect-manually": "pio-badge-caution",
+  "low-confidence": "pio-badge-warning",
+  "possible-clash": "pio-badge-warning",
+  "no-confidence-data": "pio-badge-neutral",
+};
+
+const TRUST_LABEL_SHORT: Record<string, string> = {
+  "high-confidence": "high conf",
+  "inspect-manually": "inspect",
+  "low-confidence": "low conf",
+  "possible-clash": "clash",
+  "no-confidence-data": "no data",
+};
+
+const COMPACT_BADGE: React.CSSProperties = { padding: "2px 8px", fontSize: 10, whiteSpace: "nowrap" };
+
 function ContactConfidenceBadge({ contact }: { contact: ContactRecord }) {
   const confidences = [contact.source_residue_confidence, contact.target_residue_confidence].filter(
     (confidence): confidence is ResidueConfidence => Boolean(confidence),
   );
-  if (!confidences.length) {
-    return <span className="text-xs text-[var(--pio-graphite)]">N/A</span>;
+
+  const plddt_tooltip = confidences.length
+    ? confidences.map((c) => `${c.chain_id}:${c.residue_name}${c.residue_number} ${c.plddt.toFixed(1)}`).join(" / ")
+    : undefined;
+
+  if (contact.trust_label) {
+    const badgeClass = TRUST_BADGE_CLASS[contact.trust_label] ?? "pio-badge-neutral";
+    return (
+      <span title={plddt_tooltip} className={`pio-badge ${badgeClass}`} style={COMPACT_BADGE}>
+        {TRUST_LABEL_SHORT[contact.trust_label] ?? contact.trust_label}
+      </span>
+    );
   }
 
-  const label = confidences
-    .map((confidence) => `${confidence.chain_id}:${confidence.residue_name}${confidence.residue_number} ${confidence.plddt.toFixed(1)}`)
-    .join(" / ");
+  if (!confidences.length) {
+    return null;
+  }
 
   if (contact.confidence_warning) {
-    return <span title={label} className="pio-badge pio-badge-warning">Review pLDDT</span>;
+    return <span title={plddt_tooltip} className="pio-badge pio-badge-warning" style={COMPACT_BADGE}>review</span>;
   }
-  return <span title={label} className="pio-badge pio-badge-active">pLDDT OK</span>;
-}
-
-function selectableRowClass(selected: boolean) {
-  return [
-    "cursor-pointer text-[var(--pio-ink)] outline-none hover:bg-[var(--pio-paper)] focus:bg-[var(--pio-paper)]",
-    selected ? "bg-[var(--pio-green-pale)] ring-2 ring-inset ring-[var(--pio-green)] hover:bg-[var(--pio-green-pale)] focus:bg-[var(--pio-green-pale)]" : "",
-  ].join(" ");
-}
-
-function SelectionButton({ selected, label, onClick }: { selected: boolean; label: string; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={(event) => {
-        event.stopPropagation();
-        onClick();
-      }}
-      aria-label={label}
-      className={[
-        "inline-flex h-8 w-8 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-[var(--pio-green)]",
-        selected
-          ? "bg-[var(--pio-green-pale)] text-[var(--pio-green-deep)]"
-          : "bg-[var(--pio-white)] text-[var(--pio-ink)] hover:bg-[var(--pio-sand)]",
-      ].join(" ")}
-    >
-      <Atom className="h-4 w-4" />
-    </button>
-  );
+  return <span title={plddt_tooltip} className="pio-badge pio-badge-active" style={COMPACT_BADGE}>ok</span>;
 }
 
 function handleSelectableRowKeyDown(event: React.KeyboardEvent<HTMLElement>, onSelect: () => void) {

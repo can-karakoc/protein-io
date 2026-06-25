@@ -14,8 +14,8 @@ The project is intentionally simple for the public MVP: no authentication, no da
 - Summarize chain counts, residue counts, ligand records, and atom counts.
 - Calculate residue-residue contacts.
 - Calculate protein-ligand contacts when ligands are present.
-- Categorize contacts as protein-protein, protein-ligand, protein-water, ligand-water, intra-chain, inter-chain, or possible clash.
-- Summarize top contacting residues, top contacting ligands, closest contacts, ligand interaction details, structure comparisons, and category counts.
+- Categorize contacts as protein-protein, protein-ligand, protein-water, ligand-water, intra-chain, inter-chain, or very close.
+- Summarize top contacting residues, top contacting ligands, closest contacts, ligand interaction details, and category counts.
 - Detect AlphaFold-style pLDDT confidence values from predicted structures.
 - Color predicted structures by pLDDT confidence in Mol*.
 - Summarize PAE sidecars with residue count, mean PAE, max PAE, and high-error pair count.
@@ -29,8 +29,14 @@ The project is intentionally simple for the public MVP: no authentication, no da
 - Render structures with Mol*.
 - Show RCSB/AlphaFold metadata, confidence summaries, PAE summaries, interaction summaries, ligand interaction summaries, summary cards, chain table, ligand table, and contact table.
 - Filter the contact table by contact category.
+- Compare local, RCSB, or AlphaFold structures using residue-level shared, gained, and lost contact identities.
 - Export contacts and ligand interaction summaries as CSV.
+- Export representative comparison examples as CSV.
 - Prepare frontend API calls through `NEXT_PUBLIC_API_URL`.
+
+Very-close-contact flags identify heavy-atom pairs under 2.0 Å for review. They are not proof of a steric clash and may include expected covalent geometry.
+
+Public RCSB and AlphaFold analyses may be retained in browser local storage so they survive a refresh. Uploaded local coordinates and PAE sidecars are not persisted.
 
 ## Tech Stack
 

@@ -33,7 +33,7 @@ Use this checklist before public demo updates and after meaningful frontend or b
 ## Contact Category Flow
 
 - `[ ]` Analyze a structure with contacts.
-- `[ ]` Switch the contact filter between `All`, `Protein-protein`, `Protein-ligand`, `Protein-water`, `Ligand-water`, `Inter-chain`, and `Clashes`.
+- `[ ]` Switch the contact filter between `All`, `Protein-protein`, `Protein-ligand`, `Protein-water`, `Ligand-water`, `Inter-chain`, and `Very close`.
 - `[ ]` Confirm the contact table count and visible rows update for each available category.
 - `[ ]` Confirm selecting a filtered contact still highlights the matching residues in the viewer.
 - `[ ]` Confirm exported CSV includes the `contact_categories` column.
@@ -42,7 +42,7 @@ Use this checklist before public demo updates and after meaningful frontend or b
 
 - `[ ]` Analyze a structure with at least one ligand.
 - `[ ]` Confirm the ligand interaction summary appears.
-- `[ ]` Confirm each ligand row shows total, protein, water, clash, closest contact, top residues, and distance buckets.
+- `[ ]` Confirm each ligand row shows total, protein, water, very-close, closest contact, top residues, and distance buckets.
 - `[ ]` Click `Export ligand CSV` and confirm the downloaded CSV includes one row per ligand.
 
 ## Upload Flow
@@ -83,10 +83,18 @@ Use this checklist before public demo updates and after meaningful frontend or b
 
 ## Structure Comparison Flow
 
-- `[ ]` Choose two local `.pdb`, `.cif`, or `.mmcif` files in the comparison panel.
-- `[ ]` Click `Compare structures`.
-- `[ ]` Confirm structure deltas, shared contacts, gained contacts, and lost contacts appear.
-- `[ ]` Confirm the comparison warning says residue-level contact identities are used without structural alignment.
+- `[ ]` Open Compare and confirm the structure A/B file inputs render.
+- `[ ]` Confirm each side can switch independently between File, PDB ID, and AlphaFold.
+- `[ ]` Fetch an RCSB entry such as `4HHB` on one side and confirm the fetched mmCIF becomes ready.
+- `[ ]` Fetch an AlphaFold entry such as `P69905` on one side and confirm the fetched mmCIF becomes ready.
+- `[ ]` Confirm invalid IDs and failed public fetches stay scoped to the relevant side.
+- `[ ]` Confirm Compare remains disabled until both supported files are selected.
+- `[ ]` Compare `examples/sample.pdb` with `examples/sample.cif`.
+- `[ ]` Confirm A/B summary metrics and B-minus-A deltas appear.
+- `[ ]` Switch between Shared, Gained in B, and Lost from A.
+- `[ ]` Confirm the limitations state that no alignment, RMSD, TM-score, or 3D superposition is performed.
+- `[ ]` Export the representative examples CSV and confirm it includes difference category, contact identity, categories, and A/B distances.
+- `[ ]` Select an unsupported file or invalid cutoff and confirm a useful error appears.
 
 ## RCSB Fetch Flow
 
@@ -122,3 +130,10 @@ Use this checklist before public demo updates and after meaningful frontend or b
 - `[ ]` Check mobile-width layout.
 - `[ ]` Confirm the Mol* canvas and controls stay inside the viewer panel.
 - `[ ]` Confirm text does not overlap controls or tables.
+
+## Browser Cache
+
+- `[ ]` Analyze a local uploaded structure, reload, and confirm the upload is not restored.
+- `[ ]` Fetch an RCSB or AlphaFold structure, reload, and confirm the public structure is restored.
+- `[ ]` Confirm the selected mode, results tab, and tab-strip position survive reload.
+- `[ ]` Click `Reset`, reload, and confirm the restored public structure is cleared.

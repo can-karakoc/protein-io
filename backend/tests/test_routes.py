@@ -256,7 +256,7 @@ def test_allowed_origins_default_to_local_frontend(monkeypatch):
     monkeypatch.delenv("FRONTEND_ORIGIN", raising=False)
     reload(main_module)
 
-    assert main_module.get_allowed_origins() == ["http://localhost:3000"]
+    assert main_module.get_allowed_origins() == ["http://localhost:3000", "http://localhost:3001"]
 
 
 def test_allowed_origins_support_comma_separated_values(monkeypatch):
@@ -265,6 +265,7 @@ def test_allowed_origins_support_comma_separated_values(monkeypatch):
 
     assert main_module.get_allowed_origins() == [
         "http://localhost:3000",
+        "http://localhost:3001",
         "https://app.vercel.app",
         "https://preview.vercel.app",
     ]
@@ -274,4 +275,4 @@ def test_allowed_origins_always_include_local_frontend(monkeypatch):
     monkeypatch.setenv("FRONTEND_ORIGIN", "https://app.vercel.app")
     reload(main_module)
 
-    assert main_module.get_allowed_origins() == ["http://localhost:3000", "https://app.vercel.app"]
+    assert main_module.get_allowed_origins() == ["http://localhost:3000", "http://localhost:3001", "https://app.vercel.app"]

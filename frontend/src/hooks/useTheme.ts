@@ -17,6 +17,8 @@ export function useTheme() {
 
   useEffect(() => {
     const initial = resolveInitialTheme();
+    // Preserve the post-hydration theme resolution used by the current dark-mode implementation.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTheme(initial);
     document.documentElement.dataset.theme = initial;
   }, []);

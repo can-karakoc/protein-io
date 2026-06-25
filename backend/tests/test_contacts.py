@@ -82,7 +82,7 @@ def test_neighbor_search_finds_contacts_at_cutoff_boundary():
     assert contacts[0].residue_b == "2"
 
 
-def test_contact_finder_returns_water_contact_categories_and_possible_clashes():
+def test_contact_finder_returns_water_categories_and_very_close_contacts():
     structure = StructureData(
         structure_id="water-category-test",
         atoms=[
@@ -105,7 +105,7 @@ def test_contact_finder_returns_water_contact_categories_and_possible_clashes():
     assert {contact.contact_type for contact in contacts} == {"protein-ligand", "protein-water", "ligand-water"}
     assert any("protein-water" in contact.contact_categories for contact in contacts)
     assert any("ligand-water" in contact.contact_categories for contact in contacts)
-    assert any("possible-clash" in contact.contact_categories for contact in contacts)
+    assert any("very-close-contact" in contact.contact_categories for contact in contacts)
 
 
 def make_atom(

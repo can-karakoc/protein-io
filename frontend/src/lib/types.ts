@@ -6,7 +6,7 @@ export type ContactCategory =
   | "ligand-water"
   | "intra-chain"
   | "inter-chain"
-  | "possible-clash";
+  | "very-close-contact";
 export type ConfidenceCategory = "very_high" | "confident" | "low" | "very_low";
 
 export type ChainSummary = {
@@ -37,6 +37,7 @@ export type ContactRecord = {
   source_residue_confidence?: ResidueConfidence | null;
   target_residue_confidence?: ResidueConfidence | null;
   confidence_warning?: boolean;
+  trust_label?: "high-confidence" | "inspect-manually" | "low-confidence" | "possible-clash" | "no-confidence-data" | null;
 };
 
 export type ViewerSelection =
@@ -162,6 +163,37 @@ export type InteractionSummary = {
   possible_clashes: ContactRecord[];
 };
 
+export type ChainPairSummary = {
+  chain_a: string;
+  chain_b: string;
+  contact_count: number;
+  mean_plddt_a: number | null;
+  mean_plddt_b: number | null;
+  interface_residue_count_a: number;
+  interface_residue_count_b: number;
+};
+
+export type InterfaceAnalysis = {
+  chain_pairs: ChainPairSummary[];
+  inter_chain_contact_count: number;
+  intra_chain_contact_count: number;
+};
+
+export type UniProtFeature = {
+  description: string | null;
+  start: number | null;
+  end: number | null;
+};
+
+export type UniProtAnnotations = {
+  protein_name: string | null;
+  gene_names: string[];
+  function: string | null;
+  domains: UniProtFeature[];
+  active_sites: UniProtFeature[];
+  binding_sites: UniProtFeature[];
+};
+
 export type AnalysisResponse = {
   version: string;
   summary: StructureSummary;
@@ -175,6 +207,8 @@ export type AnalysisResponse = {
   ligands: LigandSummary[];
   contacts: ContactRecord[];
   warnings: string[];
+  interface_analysis?: InterfaceAnalysis | null;
+  uniprot_annotations?: UniProtAnnotations | null;
 };
 
 export type StructureComparisonDelta = {
