@@ -2631,7 +2631,7 @@ function ContactConfidenceSummary({
     <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: "6px 10px", background: "var(--pio-amber-pale)", borderRadius: 10, padding: "10px 14px", marginTop: 12 }}>
       <span style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "var(--pio-amber-deep)", flexShrink: 0 }}>Low-confidence</span>
       <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 18, fontWeight: 700, color: "var(--pio-amber-deep)", flexShrink: 0 }}>{lowConfidenceContactCount}</span>
-      <span style={{ fontSize: 12, color: "var(--pio-graphite)" }}>of {totalContactCount} contacts ({percent}%) — either residue has low or very-low pLDDT. Treat as review targets.</span>
+      <span style={{ fontSize: 12, color: "var(--pio-amber-deep)", opacity: 0.5 }}>of {totalContactCount} contacts ({percent}%) — either residue has low or very-low pLDDT. Treat as review targets.</span>
     </div>
   );
 }
@@ -3189,7 +3189,7 @@ function ContactTable({
       {/* Header */}
       <div style={{ display: "grid", gridTemplateColumns: grid, columnGap: 8, borderBottom: "1px solid var(--pio-line)", padding: "8px 12px" }}>
         {headers.map((col) => (
-          <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)", textAlign: col === "RESIDUES" ? "right" : "left" }}>{col}</p>
+          <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)", textAlign: col === "RESIDUES" ? "right" : "left", paddingLeft: col === "CONFIDENCE" ? 16 : 0 }}>{col}</p>
         ))}
       </div>
       {/* Rows */}
@@ -3240,7 +3240,7 @@ function ContactTable({
               </div>
               {/* CONFIDENCE — only rendered when column is active */}
               {showConfidence && (
-                <div>
+                <div style={{ paddingLeft: 16 }}>
                   <ContactConfidenceBadge contact={contact} />
                 </div>
               )}
