@@ -114,7 +114,7 @@ const EXAMPLE_GALLERY: ExampleCard[] = [
   },
 ];
 
-const PUBLIC_STRUCTURE_CACHE_KEY = "pio_public_structure_cache_v2";
+const PUBLIC_STRUCTURE_CACHE_KEY = "pio_public_structure_cache_v3";
 const WORKBENCH_PREFERENCES_KEY = "pio_workbench_preferences_v1";
 const LEGACY_CACHE_KEY = "pio_cache_v1";
 
@@ -2529,12 +2529,12 @@ function InteractionSummaryPanel({ summary }: { summary: InteractionSummary | nu
   const MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)" };
 
   const metrics: Array<[string, number]> = [
-    ["Protein-Protein", summary.protein_protein_count],
-    ["Protein-Ligand", summary.protein_ligand_count],
-    ["Protein-Water", summary.protein_water_count],
-    ["Ligand-Water", summary.ligand_water_count],
-    ["Inter-Chain", summary.inter_chain_count],
-    ["Very Close", summary.possible_clash_count],
+    ["Protein-Protein", summary.protein_protein_count ?? 0],
+    ["Protein-Ligand", summary.protein_ligand_count ?? 0],
+    ["Protein-Water", summary.protein_water_count ?? 0],
+    ["Ligand-Water", summary.ligand_water_count ?? 0],
+    ["Inter-Chain", summary.inter_chain_count ?? 0],
+    ["Very Close", summary.possible_clash_count ?? 0],
   ];
 
   return (
