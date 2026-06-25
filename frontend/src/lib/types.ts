@@ -141,7 +141,7 @@ export type LigandInteractionSummary = {
   contact_count: number;
   protein_contact_count: number;
   water_contact_count: number;
-  very_close_contact_count: number;
+  possible_clash_count: number;
   closest_distance_angstrom: number | null;
   closest_contact: ContactRecord | null;
   contacting_residues: TopContactResidue[];
@@ -155,11 +155,11 @@ export type InteractionSummary = {
   ligand_water_count: number;
   intra_chain_count: number;
   inter_chain_count: number;
-  very_close_contact_count: number;
+  possible_clash_count: number;
   top_contacting_residues: TopContactResidue[];
   top_contacting_ligands: TopContactLigand[];
   closest_contacts: ContactRecord[];
-  very_close_contacts: ContactRecord[];
+  possible_clashes: ContactRecord[];
 };
 
 export type AnalysisResponse = {

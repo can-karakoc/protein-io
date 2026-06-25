@@ -1793,7 +1793,7 @@ function QualityPanel({ analysis }: { analysis: AnalysisResponse | null }) {
     return null;
   }
 
-  const veryCloseContacts = analysis.interaction_summary?.very_close_contact_count ?? 0;
+  const veryCloseContacts = analysis.interaction_summary?.possible_clash_count ?? 0;
   const lowConfidence = analysis.confidence?.low_confidence_count ?? 0;
   const paeProvided = Boolean(analysis.pae);
   const hasLigands = analysis.summary.ligand_count > 0;
@@ -1838,7 +1838,7 @@ function QualityPanel({ analysis }: { analysis: AnalysisResponse | null }) {
   ];
 
   const closeContactExamples = [
-    ...(analysis.interaction_summary?.very_close_contacts ?? []),
+    ...(analysis.interaction_summary?.possible_clashes ?? []),
     ...analysis.contacts.filter((contact) => contact.distance_angstrom < 2),
   ]
     .filter((contact, index, rows) => rows.findIndex((row) => contactKey(row) === contactKey(contact)) === index)
@@ -2371,7 +2371,7 @@ function InteractionSummaryPanel({ summary }: { summary: InteractionSummary | nu
     ["Protein-Water", summary.protein_water_count],
     ["Ligand-Water", summary.ligand_water_count],
     ["Inter-Chain", summary.inter_chain_count],
-    ["Very Close", summary.very_close_contact_count],
+    ["Very Close", summary.possible_clash_count],
   ];
 
   return (
@@ -2450,7 +2450,7 @@ function LigandInteractionPanel({
                 <p style={{ ...MONO, fontSize: 13, fontWeight: 500, color: "var(--pio-ink)" }}>{ligand.contact_count}</p>
                 <p style={{ ...MONO, fontSize: 13, fontWeight: 500, color: "var(--pio-ink)" }}>{ligand.protein_contact_count}</p>
                 <p style={{ ...MONO, fontSize: 13, fontWeight: 500, color: "var(--pio-ink)" }}>{ligand.water_contact_count}</p>
-                <p style={{ ...MONO, fontSize: 13, fontWeight: 500, color: "var(--pio-ink)" }}>{ligand.very_close_contact_count}</p>
+                <p style={{ ...MONO, fontSize: 13, fontWeight: 500, color: "var(--pio-ink)" }}>{ligand.possible_clash_count}</p>
                 <div>
                   {ligand.closest_contact && ligand.closest_distance_angstrom !== null ? (
                     <>
@@ -2889,7 +2889,7 @@ function FloatingLigandPanel({
               {[
                 ["PROTEIN", String(interaction?.protein_contact_count ?? 0)],
                 ["WATER", String(interaction?.water_contact_count ?? 0)],
-                ["VERY CLOSE", String(interaction?.very_close_contact_count ?? 0)],
+                ["VERY CLOSE", String(interaction?.possible_clash_count ?? 0)],
               ].map(([label, value]) => (
                 <div
                   key={label}
