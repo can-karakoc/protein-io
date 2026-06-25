@@ -2383,7 +2383,7 @@ function MetadataPanel({ metadata }: { metadata: StructureMetadata | null }) {
 
   const alphaFoldRows: MetaRow[] = [
     { label: "UNIPROT", value: metadata.uniprot_id, mono: true },
-    { label: "METHOD", value: metadata.method ? toTitleCase(metadata.method) : null },
+    { label: "METHOD", value: "Predicted model" },
     { label: "ORGANISM", value: metadata.organism ? toTitleCase(metadata.organism) : null },
     { label: "MODEL VERSION", value: metadata.model_version, mono: true },
     { label: "MODEL DATE", value: formatDepositedDate(metadata.deposition_date), mono: true },

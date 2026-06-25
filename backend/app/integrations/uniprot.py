@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import json
+import logging
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from app.models import UniProtAnnotations, UniProtFeature
+
+logger = logging.getLogger(__name__)
 
 
 UNIPROT_API = "https://rest.uniprot.org/uniprotkb"
@@ -20,7 +23,8 @@ def fetch_uniprot_annotations(uniprot_id: str) -> UniProtAnnotations | None:
     try:
         data = _get_json(f"{UNIPROT_API}/{uniprot_id}.json")
         return _parse_annotations(data)
-    except Exception:
+    except Exception as exc:
+        logger.warning("UniProt annotations unavailable for %s: %s", uniprot_id, exc)
         return None
 
 
