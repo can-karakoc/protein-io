@@ -1604,6 +1604,33 @@ const REPORT_TILE: React.CSSProperties = { background: "var(--pio-paper)", borde
 const REPORT_LABEL: React.CSSProperties = { fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" as const };
 const REPORT_MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)" };
 
+function ReportLimitations({ hasConfidence }: { hasConfidence: boolean }) {
+  const items = [
+    "Contacts are the closest atom-pair distance between two residues — not centroid-to-centroid or any smoothed measure.",
+    `Distance cutoff applies uniformly; contacts just above the cutoff are not shown even if functionally relevant.`,
+    hasConfidence
+      ? "pLDDT scores reflect AlphaFold prediction confidence, not experimental accuracy. Trust labels are heuristic review flags, not validated quality metrics."
+      : null,
+    "Water molecules and small ions are included in protein-water and ligand-water contact counts but excluded from residue-residue totals.",
+    "No sequence alignment or structural superposition is performed. Chain IDs and residue numbers are taken directly from the coordinate file.",
+  ].filter(Boolean) as string[];
+
+  return (
+    <div>
+      <h2 style={REPORT_H2}>Limitations</h2>
+      <p style={REPORT_SUB}>Key assumptions and caveats to consider when interpreting these results.</p>
+      <ul style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+        {items.map((item, i) => (
+          <li key={i} style={{ display: "flex", gap: 10, fontSize: 13, lineHeight: 1.6, color: "var(--pio-graphite)" }}>
+            <span style={{ flexShrink: 0, marginTop: 2, width: 14, height: 14, borderRadius: "50%", background: "var(--pio-line-strong)", display: "inline-block" }} />
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function ReportWorkspace({
   analysis,
   provenance,
@@ -1654,6 +1681,11 @@ function ReportWorkspace({
     <div className="mx-auto w-full max-w-[960px] flex-1 min-h-0 flex flex-col rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)] overflow-clip pr-[3px] pt-[20px] pb-[20px]">
     <div className="overflow-y-auto flex-1 scrollbar-thin-report" style={{ padding: "12px 33px 36px 36px" }}>
       <ReportHeader analysis={analysis} provenance={provenance} onExportContacts={onExportContacts} onExportLigands={onExportLigands} onExportAnalysisJson={onExportAnalysisJson} />
+      {analysis.uniprot_annotations && (
+        <div style={REPORT_DIVIDER}>
+          <UniProtPanel annotations={analysis.uniprot_annotations} />
+        </div>
+      )}
       <div style={REPORT_DIVIDER}>
         <MetadataPanel metadata={analysis.metadata ?? null} />
       </div>
@@ -1677,6 +1709,9 @@ function ReportWorkspace({
       </div>
       <div style={REPORT_DIVIDER}>
         <ProvenancePanel provenance={provenance} showExport={false} />
+      </div>
+      <div style={REPORT_DIVIDER}>
+        <ReportLimitations hasConfidence={analysis.confidence != null} />
       </div>
     </div>
     </div>
