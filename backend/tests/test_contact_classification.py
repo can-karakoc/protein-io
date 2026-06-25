@@ -23,7 +23,7 @@ def test_summarize_interactions_counts_categories_and_top_items():
             "GLY",
             1.7,
             "residue-residue",
-            ["protein-protein", "intra-chain", "very-close-contact"],
+            ["protein-protein", "intra-chain", "very-close-contact", "possible-clash"],
         ),
         make_contact(
             "A",
@@ -66,13 +66,13 @@ def test_summarize_interactions_counts_categories_and_top_items():
     assert summary.protein_ligand_count == 2
     assert summary.ligand_water_count == 1
     assert summary.intra_chain_count == 1
-    assert summary.very_close_contact_count == 1
+    assert summary.possible_clash_count == 1
     assert summary.top_contacting_residues[0].residue_name == "ALA"
     assert summary.top_contacting_residues[0].contact_count == 2
     assert summary.top_contacting_ligands[0].name == "ATP"
     assert summary.top_contacting_ligands[0].contact_count == 3
     assert summary.closest_contacts[0].distance_angstrom == 1.7
-    assert summary.very_close_contacts[0].distance_angstrom == 1.7
+    assert summary.possible_clashes[0].distance_angstrom == 1.7
 
 
 def test_summarize_ligand_interactions_groups_contacts_by_ligand():
@@ -86,7 +86,7 @@ def test_summarize_ligand_interactions_groups_contacts_by_ligand():
             "ATP",
             1.8,
             "protein-ligand",
-            ["protein-ligand", "very-close-contact"],
+            ["protein-ligand", "very-close-contact", "possible-clash"],
         ),
         make_contact(
             "A",
@@ -122,7 +122,7 @@ def test_summarize_ligand_interactions_groups_contacts_by_ligand():
     assert ligand.contact_count == 3
     assert ligand.protein_contact_count == 2
     assert ligand.water_contact_count == 1
-    assert ligand.very_close_contact_count == 1
+    assert ligand.possible_clash_count == 1
     assert ligand.closest_distance_angstrom == 1.8
     assert ligand.closest_contact is not None
     assert ligand.closest_contact.residue_name_a == "ALA"

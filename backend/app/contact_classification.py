@@ -73,7 +73,7 @@ def summarize_interactions(contacts: list[ContactRecord], max_items: int = 5) ->
         ligand_water_count=category_counts["ligand-water"],
         intra_chain_count=category_counts["intra-chain"],
         inter_chain_count=category_counts["inter-chain"],
-        very_close_contact_count=category_counts["very-close-contact"],
+        possible_clash_count=category_counts["possible-clash"],
         top_contacting_residues=[
             TopContactResidue(
                 chain_id=chain_id,
@@ -93,10 +93,10 @@ def summarize_interactions(contacts: list[ContactRecord], max_items: int = 5) ->
             for (chain_id, residue_number, residue_name), count in ligand_counts.most_common(max_items)
         ],
         closest_contacts=closest_contacts,
-        very_close_contacts=[
+        possible_clashes=[
             contact
             for contact in sorted(contacts, key=lambda contact: contact.distance_angstrom)
-            if "very-close-contact" in contact.contact_categories
+            if "possible-clash" in contact.contact_categories
         ][:max_items],
     )
 
@@ -126,8 +126,8 @@ def summarize_ligand_interactions(contacts: list[ContactRecord], max_residues: i
                 contact_count=len(ligand_contact_rows),
                 protein_contact_count=sum(1 for contact in ligand_contact_rows if "protein-ligand" in contact.contact_categories),
                 water_contact_count=sum(1 for contact in ligand_contact_rows if "ligand-water" in contact.contact_categories),
-                very_close_contact_count=sum(
-                    1 for contact in ligand_contact_rows if "very-close-contact" in contact.contact_categories
+                possible_clash_count=sum(
+                    1 for contact in ligand_contact_rows if "possible-clash" in contact.contact_categories
                 ),
                 closest_distance_angstrom=closest_contact.distance_angstrom,
                 closest_contact=closest_contact,
