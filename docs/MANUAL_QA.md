@@ -33,7 +33,7 @@ Use this checklist before public demo updates and after meaningful frontend or b
 ## Contact Category Flow
 
 - `[ ]` Analyze a structure with contacts.
-- `[ ]` Switch the contact filter between `All`, `Protein-protein`, `Protein-ligand`, `Protein-water`, `Ligand-water`, `Inter-chain`, and `Clashes`.
+- `[ ]` Switch the contact filter between `All`, `Protein-protein`, `Protein-ligand`, `Protein-water`, `Ligand-water`, `Inter-chain`, and `Very close`.
 - `[ ]` Confirm the contact table count and visible rows update for each available category.
 - `[ ]` Confirm selecting a filtered contact still highlights the matching residues in the viewer.
 - `[ ]` Confirm exported CSV includes the `contact_categories` column.
@@ -42,7 +42,7 @@ Use this checklist before public demo updates and after meaningful frontend or b
 
 - `[ ]` Analyze a structure with at least one ligand.
 - `[ ]` Confirm the ligand interaction summary appears.
-- `[ ]` Confirm each ligand row shows total, protein, water, clash, closest contact, top residues, and distance buckets.
+- `[ ]` Confirm each ligand row shows total, protein, water, very-close, closest contact, top residues, and distance buckets.
 - `[ ]` Click `Export ligand CSV` and confirm the downloaded CSV includes one row per ligand.
 
 ## Upload Flow
@@ -81,12 +81,10 @@ Use this checklist before public demo updates and after meaningful frontend or b
 - `[ ]` Switch between `Structure` and `pLDDT` coloring modes and confirm the Mol* viewer updates its confidence coloring.
 - `[ ]` Upload a normal experimental-style file and confirm no confidence panel appears.
 
-## Structure Comparison Flow
+## Structure Comparison Status
 
-- `[ ]` Choose two local `.pdb`, `.cif`, or `.mmcif` files in the comparison panel.
-- `[ ]` Click `Compare structures`.
-- `[ ]` Confirm structure deltas, shared contacts, gained contacts, and lost contacts appear.
-- `[ ]` Confirm the comparison warning says residue-level contact identities are used without structural alignment.
+- `[ ]` Confirm the Compare tab clearly says the dedicated user interface is not available yet.
+- `[ ]` Confirm the app does not claim that comparison is currently available in Explore.
 
 ## RCSB Fetch Flow
 
@@ -122,3 +120,10 @@ Use this checklist before public demo updates and after meaningful frontend or b
 - `[ ]` Check mobile-width layout.
 - `[ ]` Confirm the Mol* canvas and controls stay inside the viewer panel.
 - `[ ]` Confirm text does not overlap controls or tables.
+
+## Browser Cache
+
+- `[ ]` Analyze a local uploaded structure, reload, and confirm the upload is not restored.
+- `[ ]` Fetch an RCSB or AlphaFold structure, reload, and confirm the public structure is restored.
+- `[ ]` Confirm the selected mode, results tab, and tab-strip position survive reload.
+- `[ ]` Click `Reset`, reload, and confirm the restored public structure is cleared.

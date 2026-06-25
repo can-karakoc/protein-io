@@ -1,5 +1,13 @@
-from app.contact_classification import summarize_interactions, summarize_ligand_interactions
-from app.models import ContactRecord
+from app.contact_classification import contact_categories, summarize_interactions, summarize_ligand_interactions
+from app.models import AtomRecord, ContactRecord
+
+
+def test_very_close_contact_threshold_is_strictly_below_two_angstrom():
+    protein = make_atom("A", "1", "ALA", "protein")
+    ligand = make_atom("B", "101", "ATP", "ligand")
+
+    assert "very-close-contact" in contact_categories(protein, ligand, "protein-ligand", 1.999)
+    assert "very-close-contact" not in contact_categories(protein, ligand, "protein-ligand", 2.0)
 
 
 def test_summarize_interactions_counts_categories_and_top_items():
@@ -13,7 +21,7 @@ def test_summarize_interactions_counts_categories_and_top_items():
             "GLY",
             1.7,
             "residue-residue",
-            ["protein-protein", "intra-chain", "possible-clash"],
+            ["protein-protein", "intra-chain", "very-close-contact"],
         ),
         make_contact(
             "A",
@@ -56,13 +64,13 @@ def test_summarize_interactions_counts_categories_and_top_items():
     assert summary.protein_ligand_count == 2
     assert summary.ligand_water_count == 1
     assert summary.intra_chain_count == 1
-    assert summary.possible_clash_count == 1
+    assert summary.very_close_contact_count == 1
     assert summary.top_contacting_residues[0].residue_name == "ALA"
     assert summary.top_contacting_residues[0].contact_count == 2
     assert summary.top_contacting_ligands[0].name == "ATP"
     assert summary.top_contacting_ligands[0].contact_count == 3
     assert summary.closest_contacts[0].distance_angstrom == 1.7
-    assert summary.possible_clashes[0].distance_angstrom == 1.7
+    assert summary.very_close_contacts[0].distance_angstrom == 1.7
 
 
 def test_summarize_ligand_interactions_groups_contacts_by_ligand():
@@ -76,7 +84,7 @@ def test_summarize_ligand_interactions_groups_contacts_by_ligand():
             "ATP",
             1.8,
             "protein-ligand",
-            ["protein-ligand", "possible-clash"],
+            ["protein-ligand", "very-close-contact"],
         ),
         make_contact(
             "A",
@@ -112,7 +120,7 @@ def test_summarize_ligand_interactions_groups_contacts_by_ligand():
     assert ligand.contact_count == 3
     assert ligand.protein_contact_count == 2
     assert ligand.water_contact_count == 1
-    assert ligand.possible_clash_count == 1
+    assert ligand.very_close_contact_count == 1
     assert ligand.closest_distance_angstrom == 1.8
     assert ligand.closest_contact is not None
     assert ligand.closest_contact.residue_name_a == "ALA"
@@ -145,4 +153,20 @@ def make_contact(
         distance_angstrom=distance,
         contact_type=contact_type,  # type: ignore[arg-type]
         contact_categories=categories,  # type: ignore[arg-type]
+    )
+
+
+def make_atom(chain_id: str, residue_number: str, residue_name: str, residue_kind: str) -> AtomRecord:
+    return AtomRecord(
+        id=f"{chain_id}:{residue_number}:CA",
+        name="CA",
+        element="C",
+        x=0,
+        y=0,
+        z=0,
+        chain_id=chain_id,
+        residue_id=f"{chain_id}:{residue_number}",
+        residue_name=residue_name,
+        residue_number=residue_number,
+        residue_kind=residue_kind,  # type: ignore[arg-type]
     )

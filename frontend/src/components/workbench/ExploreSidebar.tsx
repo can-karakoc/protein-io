@@ -62,7 +62,6 @@ export function ExploreSidebar({
 }: ExploreSidebarProps) {
   const [tab, setTab] = useState<InputTab>("file");
   const [paeOpen, setPaeOpen] = useState(false);
-  const [confidenceWarningsOn, setConfidenceWarningsOn] = useState(true);
 
   const tabs: Array<{ id: InputTab; label: string }> = [
     { id: "file", label: "File" },
@@ -245,27 +244,6 @@ export function ExploreSidebar({
             />
           </div>
 
-          {/* Confidence-aware Warnings toggle */}
-          <button
-            type="button"
-            onClick={() => setConfidenceWarningsOn((v) => !v)}
-            className="mt-3 flex w-full items-center gap-2"
-          >
-            <span className="pio-label min-w-0 flex-1 whitespace-nowrap" style={{ fontSize: 10 }}>Confidence-aware Warnings</span>
-            <span
-              role="switch"
-              aria-checked={confidenceWarningsOn}
-              className={`relative inline-flex h-[22px] w-[40px] shrink-0 cursor-pointer rounded-full transition-colors duration-200 ${
-                confidenceWarningsOn ? "bg-[#4CAF50]" : "bg-[var(--pio-line-strong)]"
-              }`}
-            >
-              <span
-                className={`absolute top-[2px] h-[18px] w-[18px] rounded-full bg-white shadow-sm transition-transform duration-200 ${
-                  confidenceWarningsOn ? "translate-x-[20px]" : "translate-x-[2px]"
-                }`}
-              />
-            </span>
-          </button>
         </div>
 
         {/* Analyze + Reset */}

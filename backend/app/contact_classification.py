@@ -15,7 +15,7 @@ from app.models import (
 )
 
 
-POSSIBLE_CLASH_DISTANCE = 2.0
+VERY_CLOSE_CONTACT_DISTANCE = 2.0
 
 
 def classify_contact_type(atom_a: AtomRecord, atom_b: AtomRecord) -> ContactType | None:
@@ -44,8 +44,8 @@ def contact_categories(atom_a: AtomRecord, atom_b: AtomRecord, contact_type: Con
     elif contact_type == "ligand-water":
         categories.append("ligand-water")
 
-    if distance < POSSIBLE_CLASH_DISTANCE:
-        categories.append("possible-clash")
+    if distance < VERY_CLOSE_CONTACT_DISTANCE:
+        categories.append("very-close-contact")
 
     return categories
 
@@ -72,7 +72,7 @@ def summarize_interactions(contacts: list[ContactRecord], max_items: int = 5) ->
         ligand_water_count=category_counts["ligand-water"],
         intra_chain_count=category_counts["intra-chain"],
         inter_chain_count=category_counts["inter-chain"],
-        possible_clash_count=category_counts["possible-clash"],
+        very_close_contact_count=category_counts["very-close-contact"],
         top_contacting_residues=[
             TopContactResidue(
                 chain_id=chain_id,
@@ -92,10 +92,10 @@ def summarize_interactions(contacts: list[ContactRecord], max_items: int = 5) ->
             for (chain_id, residue_number, residue_name), count in ligand_counts.most_common(max_items)
         ],
         closest_contacts=closest_contacts,
-        possible_clashes=[
+        very_close_contacts=[
             contact
             for contact in sorted(contacts, key=lambda contact: contact.distance_angstrom)
-            if "possible-clash" in contact.contact_categories
+            if "very-close-contact" in contact.contact_categories
         ][:max_items],
     )
 
@@ -125,7 +125,9 @@ def summarize_ligand_interactions(contacts: list[ContactRecord], max_residues: i
                 contact_count=len(ligand_contact_rows),
                 protein_contact_count=sum(1 for contact in ligand_contact_rows if "protein-ligand" in contact.contact_categories),
                 water_contact_count=sum(1 for contact in ligand_contact_rows if "ligand-water" in contact.contact_categories),
-                possible_clash_count=sum(1 for contact in ligand_contact_rows if "possible-clash" in contact.contact_categories),
+                very_close_contact_count=sum(
+                    1 for contact in ligand_contact_rows if "very-close-contact" in contact.contact_categories
+                ),
                 closest_distance_angstrom=closest_contact.distance_angstrom,
                 closest_contact=closest_contact,
                 contacting_residues=[

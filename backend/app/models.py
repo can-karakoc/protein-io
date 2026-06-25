@@ -11,7 +11,7 @@ ContactCategory = Literal[
     "ligand-water",
     "intra-chain",
     "inter-chain",
-    "possible-clash",
+    "very-close-contact",
 ]
 ConfidenceCategory = Literal["very_high", "confident", "low", "very_low"]
 ResidueKind = Literal["protein", "ligand", "water", "other"]
@@ -96,7 +96,7 @@ class LigandInteractionSummary(BaseModel):
     contact_count: int
     protein_contact_count: int = 0
     water_contact_count: int = 0
-    possible_clash_count: int = 0
+    very_close_contact_count: int = 0
     closest_distance_angstrom: float | None = None
     closest_contact: ContactRecord | None = None
     contacting_residues: list[TopContactResidue] = Field(default_factory=list)
@@ -110,11 +110,11 @@ class InteractionSummary(BaseModel):
     ligand_water_count: int = 0
     intra_chain_count: int = 0
     inter_chain_count: int = 0
-    possible_clash_count: int = 0
+    very_close_contact_count: int = 0
     top_contacting_residues: list[TopContactResidue] = Field(default_factory=list)
     top_contacting_ligands: list[TopContactLigand] = Field(default_factory=list)
     closest_contacts: list[ContactRecord] = Field(default_factory=list)
-    possible_clashes: list[ContactRecord] = Field(default_factory=list)
+    very_close_contacts: list[ContactRecord] = Field(default_factory=list)
 
 
 class StructureSummary(BaseModel):

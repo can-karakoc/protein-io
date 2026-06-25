@@ -34,9 +34,9 @@ See `DESIGN_SYSTEM.md` at repo root for copy-paste patterns.
 | `frontend/src/components/viewer/StructureViewer.tsx` | Mol* 3-D viewer wrapper |
 | `frontend/src/app/globals.css` | All design tokens + `.wb-explore-grid` layout |
 
-## Current state (as of 2026-06-24)
+## Current state (as of 2026-06-25)
 
-**Branch `feat/ui-gaps`** is the latest (not yet merged to main). All prior work is on `main`.
+`main` contains the latest dark-mode and workbench polish. Active feature work should branch from current `main`.
 
 ### What is fully built and live
 - Three-mode shell: `Explore | Compare | Report` with Framer Motion transitions.
@@ -48,10 +48,12 @@ See `DESIGN_SYSTEM.md` at repo root for copy-paste patterns.
 - Floating `FloatingLigandPanel`: draggable, clamped to viewer bounds, minimize/expand animation.
 - Inline viewer controls: pLDDT/Structure color toggle pill (top-right), frosted-glass selection bar (bottom).
 - Metadata row hover: light blue (`--pio-sky`) tint + `cursor-pointer`.
-- Confidence-aware warnings toggle (sidebar) — single-line, left-aligned.
+- Confidence-aware contact annotations and low-confidence filtering.
 - Report tab: white card, deduped title + arrow button, section dividers, download buttons.
 - Compare tab: placeholder card (pending implementation — see Next milestone).
-- `localStorage` structure cache (`pio_cache_v1`): saves structure text + analysis after every successful load; restores on mount; cleared on Reset.
+- `localStorage` public structure cache (`pio_public_structure_cache_v2`): restores only RCSB/AlphaFold analyses. Local uploads and PAE sidecars are not persisted.
+- Workbench preferences (`pio_workbench_preferences_v1`) persist mode, active results tab, and tab-strip position.
+- Light/dark theme support with persisted preference.
 - CSS hiding residual Mol* bottom-left sequence toggle artifact.
 - Dead code removed: `ViewerModeToggle`, `SelectionBar`, `selectionDetails`.
 
@@ -64,7 +66,6 @@ Compare is the only tab that is still a placeholder. Priority order:
 5. Export comparison report.
 
 ### Formally deferred
-- **Dark mode** — no `[data-theme="dark"]` CSS exists. Do not attempt until light mode is finalised and a design pass is planned.
 - **Screenshot comparison vs. reference design** — still outstanding. Compare `protein-io-design-system-boltz.html` against the live Report tab, Ligand panel, and Contacts table.
 - **Mol* bottom-left artifact** — CSS suppression is in `globals.css`. If it resurfaces, check `.msp-layout-bottom-controls` / `.msp-sequence-wrapper` / `.msp-layout-region.msp-layout-bottom`.
 
@@ -77,7 +78,7 @@ Compare is the only tab that is still a placeholder. Priority order:
 Mol* registers a non-passive `wheel` listener on its `<canvas>`. This only fires for events that originate on the canvas, so it does not block scrolling in the results panel. The results panel scroll issue was purely the grid track height bug above.
 
 ### Structure cache
-`CACHE_KEY = "pio_cache_v1"` in `ProteinWorkbench.tsx`. Cache stores: `structureText`, `structureFormat`, `fileName`, `pdbId`, `uniprotId`, `analysis`, `cutoff`, `savedAt`. File uploads are intentionally not cached (quota risk). `saveStructureCache` silently no-ops on `QuotaExceededError`.
+`PUBLIC_STRUCTURE_CACHE_KEY = "pio_public_structure_cache_v2"` in `ProteinWorkbench.tsx`. Only public RCSB and AlphaFold analyses are cached. Local uploads and PAE sidecars are not persisted. `savePublicStructureCache` silently no-ops on `QuotaExceededError`. UI preferences use the separate `pio_workbench_preferences_v1` key.
 
 ### Sticky tab strip
 The tab strip uses `sticky top-0 z-10` inside the `overflow-y-auto` results section. This is valid — sticky positions relative to the nearest scroll ancestor (the section itself).
