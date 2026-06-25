@@ -1396,10 +1396,9 @@ function ResultsPanel({
                 <Download size={14} />
               </button>
             </div>
-            <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>Closest atom pair per categorized contact.</p>
-            {hasContactConfidence && (
-              <p style={{ fontSize: 11, color: "var(--pio-graphite)", opacity: 0.65, marginTop: 4 }}>Trust labels are review heuristics based on pLDDT confidence, not validated scientific metrics.</p>
-            )}
+            <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>
+              Closest atom pair per categorized contact.{hasContactConfidence && <span style={{ fontSize: 11, opacity: 0.55 }}> Trust labels are pLDDT-based review heuristics, not validated metrics.</span>}
+            </p>
             <ContactCategoryFilter
               value={contactFilter}
               onChange={onContactFilterChange}
@@ -2629,18 +2628,10 @@ function ContactConfidenceSummary({
   const percent = totalContactCount > 0 ? Math.round((lowConfidenceContactCount / totalContactCount) * 100) : 0;
 
   return (
-    <div className="grid gap-3 border-b border-[var(--pio-line)] bg-[var(--pio-amber-pale)] p-4 md:grid-cols-[220px_1fr]">
-      <div>
-        <p className="pio-label text-[var(--pio-amber-deep)]">Low-confidence contacts</p>
-        <p className="mt-1 font-mono text-2xl font-semibold text-[var(--pio-amber-deep)]">
-          {lowConfidenceContactCount}
-          <span className="ml-2 text-sm font-normal">of {totalContactCount}</span>
-        </p>
-      </div>
-      <p className="text-sm leading-6 text-[var(--pio-ink)]">
-        Contacts are flagged when either residue endpoint has low or very low pLDDT. Treat these as review targets,
-        especially for predicted structures where local geometry may be uncertain. Current share: {percent}%.
-      </p>
+    <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: "6px 10px", background: "var(--pio-amber-pale)", borderRadius: 10, padding: "10px 14px", marginTop: 12 }}>
+      <span style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "var(--pio-amber-deep)", flexShrink: 0 }}>Low-confidence</span>
+      <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 18, fontWeight: 700, color: "var(--pio-amber-deep)", flexShrink: 0 }}>{lowConfidenceContactCount}</span>
+      <span style={{ fontSize: 12, color: "var(--pio-graphite)" }}>of {totalContactCount} contacts ({percent}%) — either residue has low or very-low pLDDT. Treat as review targets.</span>
     </div>
   );
 }
@@ -3276,6 +3267,16 @@ const TRUST_BADGE_CLASS: Record<string, string> = {
   "no-confidence-data": "pio-badge-neutral",
 };
 
+const TRUST_LABEL_SHORT: Record<string, string> = {
+  "high-confidence": "high conf",
+  "inspect-manually": "inspect",
+  "low-confidence": "low conf",
+  "possible-clash": "clash",
+  "no-confidence-data": "no data",
+};
+
+const COMPACT_BADGE: React.CSSProperties = { padding: "2px 8px", fontSize: 10, whiteSpace: "nowrap" };
+
 function ContactConfidenceBadge({ contact }: { contact: ContactRecord }) {
   const confidences = [contact.source_residue_confidence, contact.target_residue_confidence].filter(
     (confidence): confidence is ResidueConfidence => Boolean(confidence),
@@ -3288,20 +3289,20 @@ function ContactConfidenceBadge({ contact }: { contact: ContactRecord }) {
   if (contact.trust_label) {
     const badgeClass = TRUST_BADGE_CLASS[contact.trust_label] ?? "pio-badge-neutral";
     return (
-      <span title={plddt_tooltip} className={`pio-badge ${badgeClass}`}>
-        {contact.trust_label.replace(/-/g, " ")}
+      <span title={plddt_tooltip} className={`pio-badge ${badgeClass}`} style={COMPACT_BADGE}>
+        {TRUST_LABEL_SHORT[contact.trust_label] ?? contact.trust_label}
       </span>
     );
   }
 
   if (!confidences.length) {
-    return <span className="text-xs text-[var(--pio-graphite)]">N/A</span>;
+    return null;
   }
 
   if (contact.confidence_warning) {
-    return <span title={plddt_tooltip} className="pio-badge pio-badge-warning">Review pLDDT</span>;
+    return <span title={plddt_tooltip} className="pio-badge pio-badge-warning" style={COMPACT_BADGE}>review</span>;
   }
-  return <span title={plddt_tooltip} className="pio-badge pio-badge-active">pLDDT OK</span>;
+  return <span title={plddt_tooltip} className="pio-badge pio-badge-active" style={COMPACT_BADGE}>ok</span>;
 }
 
 function handleSelectableRowKeyDown(event: React.KeyboardEvent<HTMLElement>, onSelect: () => void) {
