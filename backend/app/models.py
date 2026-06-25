@@ -19,6 +19,7 @@ ContactCategory = Literal[
 ConfidenceCategory = Literal["very_high", "confident", "low", "very_low"]
 ResidueKind = Literal["protein", "ligand", "water", "other"]
 TrustLabel = Literal["high-confidence", "inspect-manually", "low-confidence", "possible-clash", "no-confidence-data"]
+InteractionClass = Literal["polar", "ionic", "aromatic", "hydrophobic", "unclassified"]
 
 
 class AtomRecord(BaseModel):
@@ -70,6 +71,7 @@ class ContactRecord(BaseModel):
     distance_angstrom: float
     contact_type: ContactType
     contact_categories: list[ContactCategory] = Field(default_factory=list)
+    interaction_class: InteractionClass = "unclassified"
     source_residue_confidence: ResidueConfidence | None = None
     target_residue_confidence: ResidueConfidence | None = None
     confidence_warning: bool = False
@@ -109,6 +111,7 @@ class LigandInteractionSummary(BaseModel):
     closest_contact: ContactRecord | None = None
     contacting_residues: list[TopContactResidue] = Field(default_factory=list)
     distance_distribution: DistanceDistribution = Field(default_factory=DistanceDistribution)
+    interaction_class_breakdown: dict[str, int] = Field(default_factory=dict)
 
 
 class InteractionSummary(BaseModel):

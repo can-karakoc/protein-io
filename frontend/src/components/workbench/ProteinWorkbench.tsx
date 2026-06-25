@@ -3157,6 +3157,26 @@ function FloatingLigandPanel({
             </div>
           )}
 
+          {/* Interaction class breakdown */}
+          {interaction?.interaction_class_breakdown && Object.keys(interaction.interaction_class_breakdown).length > 0 && (
+            <div>
+              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 5 }}>INTERACTION TYPES</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                {(["polar", "ionic", "aromatic", "hydrophobic"] as const).map((cls) => {
+                  const count = interaction.interaction_class_breakdown?.[cls];
+                  if (!count) return null;
+                  const badge = INTERACTION_CLASS_BADGE[cls];
+                  if (!badge) return null;
+                  return (
+                    <span key={cls} className={`pio-badge ${badge.cls}`} style={{ padding: "3px 9px", fontSize: 10, whiteSpace: "nowrap" }}>
+                      {badge.label} <span style={{ opacity: 0.8, fontWeight: 700 }}>{count}</span>
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Export button */}
           {interaction && (
             <button
@@ -3350,6 +3370,7 @@ function ContactTable({
                 {contact.contact_categories.length ? contact.contact_categories.map((cat) => (
                   <span key={cat} style={{ ...chipBase, ...contactChipStyle(cat), padding: "3px 8px", fontSize: 11 }}>{cat}</span>
                 )) : <span style={{ fontSize: 12, color: "var(--pio-graphite)" }}>—</span>}
+                <InteractionClassBadge contact={contact} />
               </div>
               {/* RESIDUES */}
               <div style={{ display: "flex", flexDirection: "column", gap: 2, alignItems: "flex-end" }}>
@@ -3425,6 +3446,25 @@ function ContactConfidenceBadge({ contact }: { contact: ContactRecord }) {
     return <span title={plddt_tooltip} className="pio-badge pio-badge-warning" style={COMPACT_BADGE}>review</span>;
   }
   return <span title={plddt_tooltip} className="pio-badge pio-badge-active" style={COMPACT_BADGE}>ok</span>;
+}
+
+const INTERACTION_CLASS_BADGE: Record<string, { cls: string; label: string }> = {
+  polar:       { cls: "pio-badge-metadata",  label: "polar" },
+  ionic:       { cls: "pio-badge-caution",   label: "ionic" },
+  aromatic:    { cls: "pio-badge-predicted", label: "aromatic" },
+  hydrophobic: { cls: "pio-badge-active",    label: "hydrophobic" },
+};
+
+function InteractionClassBadge({ contact }: { contact: ContactRecord }) {
+  const cls = contact.interaction_class;
+  if (!cls || cls === "unclassified") return null;
+  const badge = INTERACTION_CLASS_BADGE[cls];
+  if (!badge) return null;
+  return (
+    <span className={`pio-badge ${badge.cls}`} style={COMPACT_BADGE}>
+      {badge.label}
+    </span>
+  );
 }
 
 function handleSelectableRowKeyDown(event: React.KeyboardEvent<HTMLElement>, onSelect: () => void) {

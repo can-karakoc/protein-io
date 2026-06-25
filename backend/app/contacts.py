@@ -7,6 +7,7 @@ from math import dist
 import gemmi
 
 from app.contact_classification import classify_contact_type, contact_categories
+from app.interaction_classifier import classify_interaction_class
 from app.models import AtomRecord, ContactRecord, StructureData
 
 
@@ -207,6 +208,7 @@ def build_contact(atom_a: AtomRecord, atom_b: AtomRecord, distance: float, conta
         distance_angstrom=distance,
         contact_type=contact_type,  # type: ignore[arg-type]
         contact_categories=contact_categories(atom_a, atom_b, contact_type, distance),  # type: ignore[arg-type]
+        interaction_class=classify_interaction_class(atom_a, atom_b, distance),  # type: ignore[arg-type]
     )
 
 

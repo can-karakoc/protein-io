@@ -118,6 +118,9 @@ def summarize_ligand_interactions(contacts: list[ContactRecord], max_residues: i
                 residue_counts[residue_key] += 1
 
         closest_contact = min(ligand_contact_rows, key=lambda contact: contact.distance_angstrom)
+        class_counts: Counter[str] = Counter(
+            c.interaction_class for c in ligand_contact_rows if c.interaction_class != "unclassified"
+        )
         summaries.append(
             LigandInteractionSummary(
                 chain_id=chain_id,
@@ -141,6 +144,7 @@ def summarize_ligand_interactions(contacts: list[ContactRecord], max_residues: i
                     for (residue_chain_id, contacting_residue_number, residue_name), count in residue_counts.most_common(max_residues)
                 ],
                 distance_distribution=ligand_distance_distribution(ligand_contact_rows),
+                interaction_class_breakdown=dict(class_counts),
             )
         )
 
