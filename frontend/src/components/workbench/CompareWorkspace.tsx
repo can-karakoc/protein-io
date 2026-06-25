@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeftRight, Database, Download, FileUp, LoaderCircle, Sparkles, X } from "lucide-react";
+import { ArrowLeftRight, Database, Download, FileUp, LoaderCircle, Search, Sparkles, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { buildApiUrl } from "@/lib/api";
@@ -435,36 +435,36 @@ function ComparisonStructureInput({
           </div>
         </div>
       ) : (
-        <div className="mt-3 flex h-[140px] flex-col justify-between rounded-[12px] bg-[var(--pio-white)] p-3">
-          <label>
+        <div className="mt-3 flex h-[140px] flex-col justify-center rounded-[12px] bg-[var(--pio-white)] px-3 py-4">
+          <label className="block">
             <span className="pio-label">{publicLabel}</span>
-            <input
-              value={publicValue}
-              onChange={(event) => onPublicIdChange(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") onFetch();
-              }}
-              placeholder={publicPlaceholder}
-              className="pio-input mt-2 w-full"
-              autoCapitalize="characters"
-              spellCheck={false}
-            />
+            <div className="mt-2 flex gap-2">
+              <input
+                value={publicValue}
+                onChange={(event) => onPublicIdChange(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") onFetch();
+                }}
+                placeholder={publicPlaceholder}
+                className="pio-input min-w-0 flex-1"
+                autoCapitalize="characters"
+                spellCheck={false}
+              />
+              <button
+                type="button"
+                onClick={onFetch}
+                disabled={!publicValue.trim() || input.isFetching}
+                className="pio-button-secondary shrink-0 gap-1.5 px-4"
+              >
+                {input.isFetching ? (
+                  <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Search className="h-3.5 w-3.5" />
+                )}
+                {input.isFetching ? "Fetching…" : "Fetch"}
+              </button>
+            </div>
           </label>
-          <button
-            type="button"
-            onClick={onFetch}
-            disabled={!publicValue.trim() || input.isFetching}
-            className="pio-button-secondary w-full"
-          >
-            {input.isFetching ? (
-              <LoaderCircle className="h-4 w-4 animate-spin" />
-            ) : input.mode === "rcsb" ? (
-              <Database className="h-4 w-4" />
-            ) : (
-              <Sparkles className="h-4 w-4" />
-            )}
-            {input.isFetching ? "Fetching…" : `Fetch ${input.mode === "rcsb" ? "RCSB" : "AlphaFold"}`}
-          </button>
         </div>
       )}
 
