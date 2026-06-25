@@ -1435,8 +1435,8 @@ function ResultsPanel({
 
         {selectedTab === "methods" ? <ProvenancePanel provenance={provenance} /> : null}
 
-        {selectedTab === "interfaces" && analysis?.interface_analysis ? (
-          <InterfacesTab interfaceAnalysis={analysis.interface_analysis} />
+        {selectedTab === "interfaces" && (analysis?.interface_analysis?.chain_pairs?.length ?? 0) > 0 ? (
+          <InterfacesTab interfaceAnalysis={analysis.interface_analysis!} />
         ) : null}
       </motion.div>
       </AnimatePresence>
@@ -1455,11 +1455,11 @@ function InterfacesTab({ interfaceAnalysis }: { interfaceAnalysis: InterfaceAnal
     <div className="min-w-0">
       <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)" }}>Interfaces</h2>
       <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>
-        Inter-chain contact summary. Chain pairs sorted by contact count.
+        Inter-chain contact summary
       </p>
 
       {/* Summary tiles */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginTop: 16 }}>
         <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
           <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>Inter-chain contacts</p>
           <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 22, fontWeight: 700, marginTop: 4, color: "var(--pio-ink)" }}>
@@ -1470,6 +1470,12 @@ function InterfacesTab({ interfaceAnalysis }: { interfaceAnalysis: InterfaceAnal
           <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>Chain pairs</p>
           <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 22, fontWeight: 700, marginTop: 4, color: "var(--pio-ink)" }}>
             {interfaceAnalysis.chain_pairs.length}
+          </p>
+        </div>
+        <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
+          <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>Intra-chain contacts</p>
+          <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 22, fontWeight: 700, marginTop: 4, color: "var(--pio-ink)" }}>
+            {interfaceAnalysis.intra_chain_contact_count.toLocaleString()}
           </p>
         </div>
       </div>
