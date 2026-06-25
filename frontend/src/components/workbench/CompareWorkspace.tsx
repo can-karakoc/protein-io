@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeftRight, Database, Download, FileUp, LoaderCircle, Search, Sparkles, X } from "lucide-react";
+import { ArrowLeftRight, Database, Download, FileUp, LoaderCircle, Play, RotateCcw, Search, Sparkles, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { buildApiUrl } from "@/lib/api";
@@ -291,8 +291,9 @@ export function CompareWorkspace() {
               type="button"
               onClick={resetComparison}
               className="pio-button-secondary shrink-0"
+              style={{ borderRadius: 12 }}
             >
-              <X className="h-4 w-4" />
+              <RotateCcw className="h-4 w-4" />
               Reset
             </button>
           ) : null}
@@ -300,10 +301,11 @@ export function CompareWorkspace() {
             type="button"
             onClick={() => void compareStructures()}
             disabled={!inputA.file || !inputB.file || isLoading || inputA.isFetching || inputB.isFetching}
-            className="pio-button-primary sm:ml-auto sm:min-w-[190px]"
+            className="pio-button-primary sm:ml-auto sm:min-w-[160px]"
+            style={{ borderRadius: 12 }}
           >
-            {isLoading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <ArrowLeftRight className="h-4 w-4" />}
-            {isLoading ? "Comparing…" : "Compare structures"}
+            {isLoading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+            {isLoading ? "Analyzing…" : "Analyze"}
           </button>
         </div>
 
@@ -360,7 +362,7 @@ function ComparisonStructureInput({
   ];
   const publicValue = input.mode === "rcsb" ? input.pdbId : input.uniprotId;
   const publicLabel = input.mode === "rcsb" ? "PDB ID" : "UniProt accession";
-  const publicPlaceholder = input.mode === "rcsb" ? "e.g. 4HHB" : "e.g. P69905";
+  const publicPlaceholder = input.mode === "rcsb" ? "E.G. 4HHB" : "E.G. P69905";
 
   return (
     <div className="rounded-[12px] border border-[var(--pio-line)] bg-[#FBFBF8] p-4">
@@ -408,7 +410,7 @@ function ComparisonStructureInput({
       </div>
 
       {input.mode === "local" ? (
-        <label className="mt-3 flex h-[140px] cursor-pointer flex-col items-center justify-center rounded-[12px] border border-dashed border-[var(--pio-line-strong)] bg-[var(--pio-white)] px-4 text-center transition-colors hover:bg-[var(--pio-sand)]">
+        <label className="mt-4 flex h-[140px] cursor-pointer flex-col items-center justify-center rounded-[12px] border border-dashed border-[var(--pio-line-strong)] bg-[var(--pio-white)] px-4 text-center transition-colors hover:bg-[var(--pio-sand)]">
           <FileUp className="h-5 w-5 text-[var(--pio-highlight)]" />
           <span className="mt-2 max-w-full truncate text-[13px] font-semibold text-[var(--pio-ink)]">
             {input.file?.name ?? "Choose PDB or mmCIF"}
@@ -425,7 +427,7 @@ function ComparisonStructureInput({
           />
         </label>
       ) : input.file ? (
-        <div className="mt-3 flex h-[140px] items-center justify-center rounded-[12px] bg-[var(--pio-green-pale)] p-4">
+        <div className="mt-4 flex h-[140px] items-center justify-center rounded-[12px] bg-[var(--pio-green-pale)] p-4">
           <div className="text-center">
             <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--pio-green-deep)] opacity-60">Ready</p>
             <p className="mt-1.5 max-w-[200px] truncate font-mono text-[13px] font-semibold text-[var(--pio-green-deep)]" title={input.file.name}>
@@ -435,7 +437,7 @@ function ComparisonStructureInput({
           </div>
         </div>
       ) : (
-        <div className="mt-3 flex h-[140px] flex-col justify-center rounded-[12px] bg-[var(--pio-white)] px-3 py-4">
+        <div className="mt-4 flex h-[140px] flex-col justify-center rounded-[12px] bg-[var(--pio-white)] px-3 py-4">
           <label className="block">
             <span className="pio-label">{publicLabel}</span>
             <div className="mt-2 flex gap-2">
@@ -446,7 +448,7 @@ function ComparisonStructureInput({
                   if (event.key === "Enter") onFetch();
                 }}
                 placeholder={publicPlaceholder}
-                className="pio-input min-w-0 flex-1"
+                className="pio-input min-w-0 flex-1 px-3 py-2"
                 autoCapitalize="characters"
                 spellCheck={false}
               />
