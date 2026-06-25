@@ -132,6 +132,7 @@ interface StructureCache {
   savedAt: string;
   resultsTab?: ResultsTab;
   tabStripScrollLeft?: number;
+  workbenchMode?: WorkbenchMode;
 }
 
 function saveStructureCache(entry: StructureCache) {
@@ -200,15 +201,23 @@ export function ProteinWorkbench() {
     if (cached.pdbId) setInputSource("rcsb");
     else if (cached.uniprotId) setInputSource("alphafold");
     if (cached.resultsTab) setResultsTab(cached.resultsTab);
+    if (cached.workbenchMode) setMode(cached.workbenchMode);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Persist the active tab whenever it changes so reload restores it
+  // Persist the active results tab whenever it changes so reload restores it
   useEffect(() => {
     const existing = loadStructureCache();
     if (!existing) return;
     saveStructureCache({ ...existing, resultsTab });
   }, [resultsTab]);
+
+  // Persist the active workbench mode (Explore / Report / Compare)
+  useEffect(() => {
+    const existing = loadStructureCache();
+    if (!existing) return;
+    saveStructureCache({ ...existing, workbenchMode: mode });
+  }, [mode]);
 
   // Responsive: track whether we're at lg+ breakpoint
   const [isLg, setIsLg] = useState(true);
