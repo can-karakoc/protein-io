@@ -1,6 +1,7 @@
 from app.confidence import analyze_plddt_confidence, confidence_category
+from app.models import StructureMetadata
 from app.parser import parse_pdb_content
-from app.service import analyze_pdb_content
+from app.service import analyze_pdb_content, analyze_pdb_content_with_timing
 
 
 ALPHAFOLD_STYLE_PDB = b"""
@@ -58,3 +59,18 @@ def test_analysis_response_includes_confidence_for_alphafold_upload():
     assert response.confidence.low_confidence_count == 2
     assert len(response.residue_confidences) == 4
     assert "low or very low predicted confidence" in response.warnings[0]
+
+
+def test_force_predicted_via_alphafold_metadata_source():
+    """Files with custom (non-AlphaFold) names should still get pLDDT scoring
+    when metadata.source is 'alphafold'."""
+    metadata = StructureMetadata(source="alphafold")
+    result = analyze_pdb_content_with_timing(
+        ALPHAFOLD_STYLE_PDB,
+        filename="my_design.pdb",
+        metadata=metadata,
+    )
+
+    assert result.response.confidence is not None
+    assert result.response.confidence.residue_count == 4
+    assert len(result.response.residue_confidences) == 4

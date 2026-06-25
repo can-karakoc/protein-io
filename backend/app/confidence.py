@@ -8,9 +8,12 @@ from app.models import ConfidenceCategory, ConfidenceSummary, ResidueConfidence,
 PREDICTED_STRUCTURE_MARKERS = ("alphafold", "colabfold", "openfold", "boltz", "plddt", "af-")
 
 
-def analyze_plddt_confidence(structure: StructureData) -> tuple[ConfidenceSummary | None, list[ResidueConfidence], list[str]]:
+def analyze_plddt_confidence(
+    structure: StructureData,
+    force_predicted: bool = False,
+) -> tuple[ConfidenceSummary | None, list[ResidueConfidence], list[str]]:
     """Interpret B-factor values as pLDDT for predicted-structure uploads."""
-    if not looks_like_predicted_structure(structure.structure_id):
+    if not force_predicted and not looks_like_predicted_structure(structure.structure_id):
         return None, [], []
 
     residue_scores = plddt_by_residue(structure)

@@ -139,7 +139,10 @@ def analyze_pdb_content_with_timing(
     contacts_ms = elapsed_ms(contacts_started)
 
     response_started = perf_counter()
-    confidence, residue_confidences, confidence_warnings = analyze_plddt_confidence(structure)
+    is_predicted = metadata is not None and metadata.source in {"alphafold"}
+    confidence, residue_confidences, confidence_warnings = analyze_plddt_confidence(
+        structure, force_predicted=is_predicted
+    )
     confidence_lookup = build_confidence_lookup(residue_confidences)
     contacts = annotate_contacts_with_confidence(contacts, confidence_lookup)
     summary = structure.summary.model_copy(update={"contact_count": len(contacts)})
