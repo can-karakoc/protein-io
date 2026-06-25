@@ -199,6 +199,23 @@ class StructureData(BaseModel):
         )
 
 
+class ChainPairSummary(BaseModel):
+    chain_a: str
+    chain_b: str
+    contact_count: int
+    inter_chain_contact_count: int
+    mean_plddt_a: float | None = None
+    mean_plddt_b: float | None = None
+    interface_residue_count_a: int = 0
+    interface_residue_count_b: int = 0
+
+
+class InterfaceAnalysis(BaseModel):
+    chain_pairs: list[ChainPairSummary] = Field(default_factory=list)
+    inter_chain_contact_count: int = 0
+    intra_chain_contact_count: int = 0
+
+
 class AnalysisResponse(BaseModel):
     version: str = "0.1.0"
     summary: StructureSummary
@@ -211,6 +228,7 @@ class AnalysisResponse(BaseModel):
     chains: list[ChainSummary]
     ligands: list[LigandSummary]
     contacts: list[ContactRecord]
+    interface_analysis: InterfaceAnalysis | None = None
     warnings: list[str] = Field(default_factory=list)
 
 

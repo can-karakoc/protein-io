@@ -5,6 +5,7 @@ from app.contacts import calculate_contacts
 from app.contact_classification import summarize_interactions, summarize_ligand_interactions
 from app.comparison import compare_analyses
 from app.confidence import analyze_plddt_confidence
+from app.interfaces import analyze_interfaces
 from app.integrations.alphafold import AlphaFoldStructure, fetch_alphafold_structure
 from app.integrations.rcsb import fetch_rcsb_structure
 from app.integrations.rcsb import RcsbStructure
@@ -146,6 +147,7 @@ def analyze_pdb_content_with_timing(
     confidence_lookup = build_confidence_lookup(residue_confidences)
     contacts = annotate_contacts_with_confidence(contacts, confidence_lookup)
     summary = structure.summary.model_copy(update={"contact_count": len(contacts)})
+    interface_analysis = analyze_interfaces(contacts, residue_confidences)
     response = AnalysisResponse(
         summary=summary,
         metadata=metadata,
@@ -157,6 +159,7 @@ def analyze_pdb_content_with_timing(
         chains=structure.chains,
         ligands=structure.ligands,
         contacts=contacts,
+        interface_analysis=interface_analysis,
         warnings=[*structure.warnings, *contact_warnings, *confidence_warnings, *(pae_warnings or [])],
     )
     response_ms = elapsed_ms(response_started)
