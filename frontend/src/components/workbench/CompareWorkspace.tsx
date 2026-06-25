@@ -66,23 +66,18 @@ function emptyComparisonInput(): ComparisonInputState {
 }
 
 export function CompareWorkspace() {
-  const [inputA, setInputA] = useState<ComparisonInputState>(emptyComparisonInput);
-  const [inputB, setInputB] = useState<ComparisonInputState>(emptyComparisonInput);
-  const [cutoff, setCutoff] = useState(4);
-  const [comparison, setComparison] = useState<StructureComparisonResponse | null>(null);
+  // Initialize directly from cache so the save effect never races against a restore effect
+  const [inputA, setInputA] = useState<ComparisonInputState>(() => {
+    const c = loadCompareCache(); return c ? restoreInput(c.inputA) : emptyComparisonInput();
+  });
+  const [inputB, setInputB] = useState<ComparisonInputState>(() => {
+    const c = loadCompareCache(); return c ? restoreInput(c.inputB) : emptyComparisonInput();
+  });
+  const [cutoff, setCutoff] = useState<number>(() => loadCompareCache()?.cutoff ?? 4);
+  const [comparison, setComparison] = useState<StructureComparisonResponse | null>(() => loadCompareCache()?.comparison ?? null);
   const [activeTab, setActiveTab] = useState<ComparisonTab>("shared");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<CompareError>(null);
-
-  // Restore from cache on mount
-  useEffect(() => {
-    const cached = loadCompareCache();
-    if (!cached) return;
-    setInputA(restoreInput(cached.inputA));
-    setInputB(restoreInput(cached.inputB));
-    setCutoff(cached.cutoff);
-    setComparison(cached.comparison);
-  }, []);
 
   // Persist whenever inputs, cutoff, or comparison changes
   useEffect(() => {
