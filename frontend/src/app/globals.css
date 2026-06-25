@@ -260,6 +260,13 @@ button:not(:disabled),
   display: none !important;
 }
 
+/* Move Mol* viewport controls to bottom-right */
+.msp-viewport-controls {
+  top: auto !important;
+  bottom: 10px !important;
+  right: 12px !important;
+}
+
 
 
 
