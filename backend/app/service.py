@@ -8,7 +8,7 @@ from app.confidence import analyze_plddt_confidence
 from app.integrations.alphafold import AlphaFoldStructure, fetch_alphafold_structure
 from app.integrations.rcsb import fetch_rcsb_structure
 from app.integrations.rcsb import RcsbStructure
-from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, PaeSummary, RcsbAnalysisResponse, StructureComparisonResponse, StructureMetadata
+from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, ContactRecord, PaeSummary, RcsbAnalysisResponse, ResidueConfidence, StructureComparisonResponse, StructureMetadata
 from app.parser import detect_structure_format_from_filename, parse_pdb_content
 
 
@@ -53,6 +53,37 @@ class TimedRcsbAnalysis:
 class TimedAlphaFoldAnalysis:
     response: AlphaFoldAnalysisResponse
     timing: AnalysisTiming
+
+
+def build_confidence_lookup(
+    residue_confidences: list[ResidueConfidence],
+) -> dict[tuple[str, str], ResidueConfidence]:
+    """Map (chain_id, residue_number) → ResidueConfidence for O(1) lookups."""
+    return {(rc.chain_id, rc.residue_number): rc for rc in residue_confidences}
+
+
+def annotate_contacts_with_confidence(
+    contacts: list[ContactRecord],
+    confidence_lookup: dict[tuple[str, str], ResidueConfidence],
+) -> list[ContactRecord]:
+    """Return a new list of ContactRecords with pLDDT confidence fields filled in."""
+    LOW_CATEGORIES = {"low", "very_low"}
+    annotated = []
+    for contact in contacts:
+        src = confidence_lookup.get((contact.chain_a, contact.residue_a))
+        tgt = confidence_lookup.get((contact.chain_b, contact.residue_b))
+        warning = bool(
+            (src is not None and src.category in LOW_CATEGORIES) or
+            (tgt is not None and tgt.category in LOW_CATEGORIES)
+        )
+        annotated.append(
+            contact.model_copy(update={
+                "source_residue_confidence": src,
+                "target_residue_confidence": tgt,
+                "confidence_warning": warning,
+            })
+        )
+    return annotated
 
 
 def analyze_pdb_content(
@@ -109,6 +140,8 @@ def analyze_pdb_content_with_timing(
 
     response_started = perf_counter()
     confidence, residue_confidences, confidence_warnings = analyze_plddt_confidence(structure)
+    confidence_lookup = build_confidence_lookup(residue_confidences)
+    contacts = annotate_contacts_with_confidence(contacts, confidence_lookup)
     summary = structure.summary.model_copy(update={"contact_count": len(contacts)})
     response = AnalysisResponse(
         summary=summary,

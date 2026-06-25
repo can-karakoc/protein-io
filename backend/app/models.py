@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -66,6 +68,9 @@ class ContactRecord(BaseModel):
     distance_angstrom: float
     contact_type: ContactType
     contact_categories: list[ContactCategory] = Field(default_factory=list)
+    source_residue_confidence: ResidueConfidence | None = None
+    target_residue_confidence: ResidueConfidence | None = None
+    confidence_warning: bool = False
 
 
 class TopContactResidue(BaseModel):
