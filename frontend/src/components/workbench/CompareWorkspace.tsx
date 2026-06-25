@@ -365,7 +365,7 @@ function ComparisonStructureInput({
   const publicPlaceholder = input.mode === "rcsb" ? "E.G. 4HHB" : "E.G. P69905";
 
   return (
-    <div className="rounded-[12px] border border-[var(--pio-line)] bg-[#FBFBF8] p-4">
+    <div className="rounded-[12px] border border-[var(--pio-line)] bg-[#F5F5F5] p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="pio-label">Structure {side}</p>
