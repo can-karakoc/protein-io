@@ -9,6 +9,7 @@ from app.interfaces import analyze_interfaces
 from app.integrations.alphafold import AlphaFoldStructure, fetch_alphafold_structure
 from app.integrations.rcsb import fetch_rcsb_structure
 from app.integrations.rcsb import RcsbStructure
+from app.integrations.uniprot import fetch_uniprot_annotations
 from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, ContactRecord, PaeSummary, RcsbAnalysisResponse, ResidueConfidence, StructureComparisonResponse, StructureMetadata
 from app.trust_score import assign_trust_label
 from app.parser import detect_structure_format_from_filename, parse_pdb_content
@@ -202,8 +203,10 @@ def analyze_alphafold_id_with_timing(
         cutoff_angstrom=cutoff_angstrom,
         metadata=alphafold_structure.metadata,
     )
+    uniprot_annotations = fetch_uniprot_annotations(uniprot_id)
+    enriched = analysis.response.model_copy(update={"uniprot_annotations": uniprot_annotations})
     return TimedAlphaFoldAnalysis(
-        response=alphafold_response_from_structure(alphafold_structure, analysis.response),
+        response=alphafold_response_from_structure(alphafold_structure, enriched),
         timing=analysis.timing,
     )
 

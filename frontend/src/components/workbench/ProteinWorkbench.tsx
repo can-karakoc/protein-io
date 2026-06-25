@@ -28,6 +28,7 @@ import type {
   ResidueConfidence,
   RcsbAnalysisResponse,
   StructureMetadata,
+  UniProtAnnotations,
   ViewerSelection,
 } from "@/lib/types";
 
@@ -1359,6 +1360,9 @@ function ResultsPanel({
                   </div>
                 );
               })()}
+              {analysis.uniprot_annotations && (
+                <UniProtPanel annotations={analysis.uniprot_annotations} />
+              )}
               <MetadataPanel metadata={analysis.metadata ?? null} />
               <SummaryCards analysis={analysis} />
               <InteractionSummaryPanel summary={analysis.interaction_summary ?? null} />
@@ -1440,6 +1444,89 @@ function ResultsPanel({
       </motion.div>
       </AnimatePresence>
     </section>
+  );
+}
+
+function UniProtPanel({ annotations }: { annotations: UniProtAnnotations }) {
+  const hasContent =
+    annotations.function ||
+    annotations.domains.length > 0 ||
+    annotations.active_sites.length > 0 ||
+    annotations.binding_sites.length > 0;
+  if (!hasContent) return null;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {annotations.function && (
+        <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
+          <p style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: "var(--pio-graphite)" }}>
+            Function
+          </p>
+          <p style={{ fontSize: 13, lineHeight: 1.6, marginTop: 6, color: "var(--pio-ink)" }}>
+            {annotations.function}
+          </p>
+        </div>
+      )}
+      {(annotations.domains.length > 0 || annotations.active_sites.length > 0 || annotations.binding_sites.length > 0) && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
+          {annotations.domains.length > 0 && (
+            <UniProtFeatureSection
+              label="Domains"
+              items={annotations.domains}
+            />
+          )}
+          {annotations.active_sites.length > 0 && (
+            <UniProtFeatureSection
+              label="Active sites"
+              items={annotations.active_sites}
+            />
+          )}
+          {annotations.binding_sites.length > 0 && (
+            <UniProtFeatureSection
+              label="Binding sites"
+              items={annotations.binding_sites}
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function UniProtFeatureSection({
+  label,
+  items,
+}: {
+  label: string;
+  items: Array<{ description: string | null; start: number | null; end: number | null }>;
+}) {
+  return (
+    <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
+      <p style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: "var(--pio-graphite)" }}>
+        {label} <span style={{ fontFamily: "var(--font-pio-mono)", opacity: 0.6 }}>{items.length}</span>
+      </p>
+      <ul style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+        {items.map((item, i) => {
+          const pos = item.start != null
+            ? item.start === item.end
+              ? `pos. ${item.start}`
+              : `${item.start}–${item.end}`
+            : null;
+          return (
+            <li key={i} style={{ fontSize: 12, color: "var(--pio-ink)", lineHeight: 1.45 }}>
+              {item.description && (
+                <span style={{ fontWeight: 600 }}>{item.description}</span>
+              )}
+              {pos && (
+                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 11, color: "var(--pio-graphite)", marginLeft: item.description ? 6 : 0 }}>
+                  {pos}
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 

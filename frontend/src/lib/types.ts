@@ -179,6 +179,21 @@ export type InterfaceAnalysis = {
   intra_chain_contact_count: number;
 };
 
+export type UniProtFeature = {
+  description: string | null;
+  start: number | null;
+  end: number | null;
+};
+
+export type UniProtAnnotations = {
+  protein_name: string | null;
+  gene_names: string[];
+  function: string | null;
+  domains: UniProtFeature[];
+  active_sites: UniProtFeature[];
+  binding_sites: UniProtFeature[];
+};
+
 export type AnalysisResponse = {
   version: string;
   summary: StructureSummary;
@@ -193,6 +208,7 @@ export type AnalysisResponse = {
   contacts: ContactRecord[];
   warnings: string[];
   interface_analysis?: InterfaceAnalysis | null;
+  uniprot_annotations?: UniProtAnnotations | null;
 };
 
 export type StructureComparisonDelta = {

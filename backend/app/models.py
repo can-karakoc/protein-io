@@ -228,7 +228,23 @@ class AnalysisResponse(BaseModel):
     ligands: list[LigandSummary]
     contacts: list[ContactRecord]
     interface_analysis: InterfaceAnalysis | None = None
+    uniprot_annotations: UniProtAnnotations | None = None
     warnings: list[str] = Field(default_factory=list)
+
+
+class UniProtFeature(BaseModel):
+    description: str | None = None
+    start: int | None = None
+    end: int | None = None
+
+
+class UniProtAnnotations(BaseModel):
+    protein_name: str | None = None
+    gene_names: list[str] = Field(default_factory=list)
+    function: str | None = None
+    domains: list[UniProtFeature] = Field(default_factory=list)
+    active_sites: list[UniProtFeature] = Field(default_factory=list)
+    binding_sites: list[UniProtFeature] = Field(default_factory=list)
 
 
 class StructureComparisonDelta(BaseModel):
