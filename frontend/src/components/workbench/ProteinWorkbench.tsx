@@ -13,7 +13,7 @@ import type { WorkbenchMode } from "@/components/workbench/TopNav";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { buildApiUrl } from "@/lib/api";
 import { getCompareSession, type CompareSessionEntry } from "@/lib/compareSession";
-import { contactsToCsv, ligandInteractionsToCsv } from "@/lib/csv";
+import { contactsToCsv, ligandInteractionsToCsv, ligandMedchemReportToCsv } from "@/lib/csv";
 import type {
   AlphaFoldAnalysisResponse,
   AnalysisResponse,
@@ -3383,28 +3383,6 @@ function FloatingLigandPanel({
     })
     .sort((a, b) => a.distance_angstrom - b.distance_angstrom);
 
-  // Interaction fingerprint: group residues by dominant class, show top residues per class
-  const fingerprintGroups: Record<string, string[]> = {};
-  for (const c of ligandContacts) {
-    const cls = c.interaction_class ?? "unclassified";
-    if (cls === "unclassified") continue;
-    const ligIsA = c.chain_a === ligand.chain_id && c.residue_a === ligand.residue_number;
-    const protRes = ligIsA
-      ? `${c.residue_name_b}${c.residue_b}`
-      : `${c.residue_name_a}${c.residue_a}`;
-    if (!fingerprintGroups[cls]) fingerprintGroups[cls] = [];
-    if (!fingerprintGroups[cls].includes(protRes)) fingerprintGroups[cls].push(protRes);
-  }
-  const CLASS_ORDER = ["h-bond", "salt-bridge", "pi-cation", "halogen-bond", "aromatic", "hydrophobic"];
-  const fingerprintParts = CLASS_ORDER
-    .filter((cls) => fingerprintGroups[cls]?.length)
-    .map((cls) => {
-      const badge = INTERACTION_CLASS_BADGE[cls];
-      const residues = fingerprintGroups[cls].slice(0, 3).join("·");
-      const more = fingerprintGroups[cls].length > 3 ? `+${fingerprintGroups[cls].length - 3}` : "";
-      return `${badge?.label ?? cls}(${residues}${more})`;
-    });
-
   const CONTACTS_PREVIEW = 5;
   const shownContacts = showAllContacts ? ligandContacts : ligandContacts.slice(0, CONTACTS_PREVIEW);
 
@@ -3726,39 +3704,59 @@ function FloatingLigandPanel({
             </div>
           )}
 
-          {/* Interaction fingerprint */}
-          {fingerprintParts.length > 0 && (
-            <div>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 4 }}>FINGERPRINT</p>
-              <p style={{ fontSize: 10, ...TEXT, opacity: 0.75, lineHeight: 1.5, wordBreak: "break-word" }}>
-                {fingerprintParts.join("  ·  ")}
-              </p>
-            </div>
-          )}
+          {/* Interaction fingerprint matrix */}
+          <LigandFingerprintMatrix contacts={contacts} ligand={ligand} />
 
-          {/* Export button */}
+          {/* Export buttons */}
           {interaction && (
-            <button
-              type="button"
-              onClick={() => onExport(interaction)}
-              style={{
-                background: "rgba(26,64,106,0.12)",
-                border: "1px solid rgba(26,64,106,0.2)",
-                borderRadius: 8,
-                padding: "8px 12px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 6,
-                fontSize: 12,
-                fontWeight: 600,
-                ...TEXT,
-                cursor: "pointer",
-              }}
-            >
-              <Download size={13} />
-              Export ligand CSV
-            </button>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <button
+                type="button"
+                onClick={() => onExport(interaction)}
+                style={{
+                  background: "rgba(26,64,106,0.12)",
+                  border: "1px solid rgba(26,64,106,0.2)",
+                  borderRadius: 8,
+                  padding: "8px 12px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  ...TEXT,
+                  cursor: "pointer",
+                }}
+              >
+                <Download size={13} />
+                Export ligand CSV
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const csv = ligandMedchemReportToCsv(interaction, contacts);
+                  downloadCsv(csv, `${ligand.name}-${ligand.chain_id}${ligand.residue_number}-medchem-report.csv`);
+                }}
+                style={{
+                  background: "rgba(26,64,106,0.07)",
+                  border: "1px solid rgba(26,64,106,0.15)",
+                  borderRadius: 8,
+                  padding: "8px 12px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  ...TEXT,
+                  cursor: "pointer",
+                  opacity: 0.85,
+                }}
+              >
+                <Download size={13} />
+                Medchem report CSV
+              </button>
+            </div>
           )}
         </div>{/* flex column gap-12 */}
         </div>{/* scrollbar-thin-panel scroll container */}
@@ -4016,6 +4014,132 @@ const INTERACTION_CLASS_BADGE: Record<string, { cls: string; label: string }> = 
   "hydrophobic":  { cls: "pio-badge-active",    label: "hydrophobic" },
   "halogen-bond": { cls: "pio-badge-warning",   label: "halogen" },
 };
+
+// ─── Interaction Fingerprint Matrix ──────────────────────────────────────────
+
+const FP_CLASSES = ["h-bond", "salt-bridge", "aromatic", "pi-cation", "hydrophobic", "halogen-bond"] as const;
+type FpClass = typeof FP_CLASSES[number];
+
+const FP_ABBR: Record<FpClass, string> = {
+  "h-bond": "H",
+  "salt-bridge": "Sa",
+  "aromatic": "Ar",
+  "pi-cation": "Pi",
+  "hydrophobic": "Hy",
+  "halogen-bond": "Ha",
+};
+
+const FP_DOT_COLOR: Record<FpClass, string> = {
+  "h-bond":       "var(--pio-lavender-deep)",
+  "salt-bridge":  "var(--pio-amber-deep)",
+  "aromatic":     "var(--pio-blue-deep)",
+  "pi-cation":    "var(--pio-highlight)",
+  "hydrophobic":  "var(--pio-green-deep)",
+  "halogen-bond": "var(--pio-coral-deep)",
+};
+
+type FpRow = { key: string; count: number; classes: Set<FpClass> };
+
+function buildFingerprint(contacts: ContactRecord[], ligand: { chain_id: string; residue_number: string }): FpRow[] {
+  const map = new Map<string, FpRow>();
+  for (const c of contacts) {
+    if (c.contact_type !== "protein-ligand") continue;
+    const ligIsA = c.chain_a === ligand.chain_id && c.residue_a === ligand.residue_number;
+    const key = ligIsA
+      ? `${c.chain_b}:${c.residue_name_b}${c.residue_b}`
+      : `${c.chain_a}:${c.residue_name_a}${c.residue_a}`;
+    if (!map.has(key)) map.set(key, { key, count: 0, classes: new Set() });
+    const row = map.get(key)!;
+    row.count++;
+    const cls = c.interaction_class;
+    if (cls && cls !== "unclassified" && FP_CLASSES.includes(cls as FpClass)) {
+      row.classes.add(cls as FpClass);
+    }
+  }
+  return [...map.values()].sort((a, b) => b.count - a.count).slice(0, 12);
+}
+
+function LigandFingerprintMatrix({
+  contacts,
+  ligand,
+}: {
+  contacts: ContactRecord[];
+  ligand: { chain_id: string; residue_number: string };
+}) {
+  const TEXT: React.CSSProperties = { color: "#1A406A" };
+  const MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)", color: "#1A406A" };
+  const rows = buildFingerprint(contacts, ligand);
+  if (rows.length === 0) return null;
+
+  return (
+    <div>
+      <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 5 }}>
+        INTERACTION FINGERPRINT
+      </p>
+      <div style={{ background: "rgba(255,255,255,0.6)", borderRadius: 6, overflow: "hidden" }}>
+        {/* Column headers */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "80px repeat(6, 1fr)",
+          padding: "4px 8px",
+          borderBottom: "1px solid rgba(26,64,106,0.1)",
+          background: "rgba(199,217,236,0.25)",
+          alignItems: "center",
+        }}>
+          <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.06em", ...TEXT, opacity: 0.45 }}>RESIDUE</span>
+          {FP_CLASSES.map((cls) => (
+            <div key={cls} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+              <div style={{ width: 7, height: 7, borderRadius: "50%", background: FP_DOT_COLOR[cls], opacity: 0.85 }} />
+              <span style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: "0.04em", ...TEXT, opacity: 0.55 }}>
+                {FP_ABBR[cls]}
+              </span>
+            </div>
+          ))}
+        </div>
+        {/* Residue rows */}
+        {rows.map((row, i) => (
+          <div
+            key={row.key}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "80px repeat(6, 1fr)",
+              padding: "3px 8px",
+              borderBottom: i < rows.length - 1 ? "1px solid rgba(26,64,106,0.05)" : "none",
+              background: i % 2 === 1 ? "rgba(199,217,236,0.10)" : "transparent",
+              alignItems: "center",
+              minHeight: 22,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 4, overflow: "hidden" }}>
+              <span style={{ ...MONO, fontSize: 9.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={row.key}>
+                {row.key}
+              </span>
+              <span style={{ fontSize: 8.5, ...TEXT, opacity: 0.4, flexShrink: 0 }}>({row.count})</span>
+            </div>
+            {FP_CLASSES.map((cls) => (
+              <div key={cls} style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                {row.classes.has(cls) ? (
+                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: FP_DOT_COLOR[cls] }} />
+                ) : (
+                  <div style={{ width: 4, height: 4, borderRadius: "50%", background: "rgba(26,64,106,0.08)" }} />
+                )}
+              </div>
+            ))}
+          </div>
+        ))}
+        {/* Legend footer */}
+        <div style={{ padding: "4px 8px 5px", borderTop: "1px solid rgba(26,64,106,0.08)", display: "flex", flexWrap: "wrap", gap: "3px 10px" }}>
+          {FP_CLASSES.map((cls) => (
+            <span key={cls} style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 8, ...TEXT, opacity: 0.55 }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: FP_DOT_COLOR[cls], flexShrink: 0 }} />
+              {INTERACTION_CLASS_BADGE[cls]?.label ?? cls}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function InteractionClassBadge({ contact }: { contact: ContactRecord }) {
   const cls = contact.interaction_class;

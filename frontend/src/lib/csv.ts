@@ -46,6 +46,90 @@ const LIGAND_COLUMNS = [
   "distance_over_4_angstrom",
 ] as const;
 
+export function ligandMedchemReportToCsv(
+  ligand: LigandInteractionSummary,
+  contacts: ContactRecord[],
+): string {
+  const ligandContacts = contacts
+    .filter((c) => {
+      if (c.contact_type !== "protein-ligand") return false;
+      return (
+        (c.chain_a === ligand.chain_id && c.residue_a === ligand.residue_number) ||
+        (c.chain_b === ligand.chain_id && c.residue_b === ligand.residue_number)
+      );
+    })
+    .sort((a, b) => a.distance_angstrom - b.distance_angstrom);
+
+  // Section 1: summary header
+  const summaryRows = [
+    ["# LIGAND MEDCHEM REPORT"],
+    ["Ligand", ligand.name],
+    ["Chain", ligand.chain_id],
+    ["Residue", ligand.residue_number],
+    ["Total contacts", String(ligand.contact_count)],
+    ["Protein contacts", String(ligand.protein_contact_count)],
+    ["Water contacts", String(ligand.water_contact_count)],
+    ["Possible clashes", String(ligand.possible_clash_count)],
+    ["Closest distance (Å)", String(ligand.closest_distance_angstrom ?? "")],
+    ...Object.entries(ligand.interaction_class_breakdown ?? {}).map(([cls, n]) => [
+      `  ${cls}`,
+      String(n),
+    ]),
+    [],
+  ];
+
+  // Section 2: per-residue fingerprint
+  const fpMap = new Map<string, { count: number; classes: Set<string>; minDist: number }>();
+  for (const c of ligandContacts) {
+    const ligIsA = c.chain_a === ligand.chain_id && c.residue_a === ligand.residue_number;
+    const key = ligIsA
+      ? `${c.chain_b}:${c.residue_name_b}${c.residue_b}`
+      : `${c.chain_a}:${c.residue_name_a}${c.residue_a}`;
+    if (!fpMap.has(key)) fpMap.set(key, { count: 0, classes: new Set(), minDist: Infinity });
+    const r = fpMap.get(key)!;
+    r.count++;
+    if (c.interaction_class && c.interaction_class !== "unclassified") r.classes.add(c.interaction_class);
+    if (c.distance_angstrom < r.minDist) r.minDist = c.distance_angstrom;
+  }
+  const fpHeader = ["# FINGERPRINT — residue, contacts, min_dist_Å, h-bond, salt-bridge, aromatic, pi-cation, hydrophobic, halogen-bond"];
+  const fpCols = ["h-bond", "salt-bridge", "aromatic", "pi-cation", "hydrophobic", "halogen-bond"];
+  const fpRows = [...fpMap.entries()]
+    .sort((a, b) => b[1].count - a[1].count)
+    .map(([key, r]) => [
+      key,
+      String(r.count),
+      r.minDist === Infinity ? "" : r.minDist.toFixed(3),
+      ...fpCols.map((cls) => (r.classes.has(cls) ? "1" : "0")),
+    ]);
+
+  // Section 3: all contacts
+  const contactHeader = ["# CONTACTS — protein_residue, protein_atom, ligand_atom, distance_Å, interaction_type"];
+  const contactRows = ligandContacts.map((c) => {
+    const ligIsA = c.chain_a === ligand.chain_id && c.residue_a === ligand.residue_number;
+    return [
+      ligIsA ? `${c.chain_b}:${c.residue_name_b}${c.residue_b}` : `${c.chain_a}:${c.residue_name_a}${c.residue_a}`,
+      ligIsA ? c.atom_b : c.atom_a,
+      ligIsA ? c.atom_a : c.atom_b,
+      c.distance_angstrom.toFixed(3),
+      c.interaction_class ?? "",
+    ];
+  });
+
+  const escape = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+  const toLine = (row: string[]) => row.map(escape).join(",");
+
+  return [
+    ...summaryRows.map(toLine),
+    ...fpHeader,
+    toLine(["residue", "contacts", "min_dist_Å", ...fpCols]),
+    ...fpRows.map(toLine),
+    "",
+    ...contactHeader,
+    toLine(["protein_residue", "protein_atom", "ligand_atom", "distance_Å", "interaction_type"]),
+    ...contactRows.map(toLine),
+  ].join("\n");
+}
+
 export function ligandInteractionsToCsv(ligands: LigandInteractionSummary[]) {
   const header = LIGAND_COLUMNS.join(",");
   const rows = ligands.map((ligand) =>
