@@ -119,7 +119,7 @@ const WORKBENCH_PREFERENCES_KEY = "pio_workbench_preferences_v1";
 const LEGACY_CACHE_KEY = "pio_cache_v1";
 
 interface PublicStructureCache {
-  version: 2;
+  version: 3;
   source: "rcsb" | "alphafold";
   structureText: string;
   structureFormat: StructureFileFormat;
@@ -150,7 +150,7 @@ function parsePublicStructureCache(raw: string | null): PublicStructureCache | n
   try {
     const parsed = JSON.parse(raw) as PublicStructureCache;
     if (
-      parsed.version !== 2 ||
+      parsed.version !== 3 ||
       (parsed.source !== "rcsb" && parsed.source !== "alphafold") ||
       !parsed.structureText ||
       !parsed.analysis
@@ -587,7 +587,7 @@ function ProteinWorkbenchState({
       setContactFilter("all");
       setResultsTab("overview");
       savePublicStructureCache({
-        version: 2,
+        version: 3,
         source: "rcsb",
         structureText: payload.structure_text,
         structureFormat: payload.structure_format,
@@ -671,7 +671,7 @@ function ProteinWorkbenchState({
       setContactFilter("all");
       setResultsTab("overview");
       savePublicStructureCache({
-        version: 2,
+        version: 3,
         source: "alphafold",
         structureText: payload.structure_text,
         structureFormat: payload.structure_format,
