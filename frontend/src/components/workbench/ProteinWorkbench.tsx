@@ -2947,6 +2947,8 @@ function FloatingLigandPanel({
   const MAX_PANEL_W = 327;
   const SELECTION_BAR_H = 0;
   const SIDE_PAD = 6;
+  const PANEL_BODY_H = 420;
+  const PANEL_HEADER_H = 40;
   // Panel width adapts to viewer column so it never overflows at narrow desktop sizes
   const PANEL_W = Math.min(MAX_PANEL_W, containerW - 2 * SIDE_PAD);
 
@@ -3115,7 +3117,7 @@ function FloatingLigandPanel({
                   // expanding to full — re-clamp so bottom edge stays in view
                   const container = viewerRef.current;
                   if (container) {
-                    const panelH = 509;
+                    const panelH = PANEL_HEADER_H + PANEL_BODY_H;
                     setPos((p) => ({
                       x: clamp(p.x, SIDE_PAD, container.offsetWidth - PANEL_W - SIDE_PAD),
                       y: clamp(p.y, SIDE_PAD, container.offsetHeight - panelH - SELECTION_BAR_H - SIDE_PAD),
@@ -3153,12 +3155,14 @@ function FloatingLigandPanel({
         <motion.div
           key="panel-body"
           initial={{ height: 0, opacity: 0 }}
-          animate={{ height: "auto", opacity: 1 }}
+          animate={{ height: PANEL_BODY_H, opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
           transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
-          style={{ overflow: "hidden" }}
+          style={{ overflow: "clip", paddingTop: 8, paddingBottom: 8, display: "flex", flexDirection: "column" }}
         >
-        <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 12 }}>
+        {/* Structural scrollbar inset: scroll container is nested inside overflow:clip parent with top/bottom padding */}
+        <div className="scrollbar-thin-panel" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "4px 14px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {/* Ligand name heading */}
           <div style={{ borderBottom: "1px solid rgba(26,64,106,0.12)", paddingBottom: 10 }}>
             <p style={{ ...MONO, fontSize: 20, fontWeight: 700, letterSpacing: "-0.01em" }}>
@@ -3407,7 +3411,8 @@ function FloatingLigandPanel({
               Export ligand CSV
             </button>
           )}
-        </div>
+        </div>{/* flex column gap-12 */}
+        </div>{/* scrollbar-thin-panel scroll container */}
         </motion.div>
       )}
       </AnimatePresence>
