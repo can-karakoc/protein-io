@@ -1573,7 +1573,7 @@ function InterfaceResidueList({ residues, label }: { residues: InterfaceResidue[
   const MAX_SHOWN = 8;
   const shown = expanded ? residues : residues.slice(0, MAX_SHOWN);
   return (
-    <div style={{ flex: 1, minWidth: 0 }}>
+    <div style={{ width: 130, flexShrink: 0 }}>
       <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--pio-graphite)", marginBottom: 6 }}>
         Chain {label} <span style={{ opacity: 0.6, fontWeight: 400 }}>({residues.length})</span>
       </p>
@@ -1704,9 +1704,9 @@ function InterfaceContactMap({
   contacts: ContactRecord[];
 }) {
   const MAX_MAP = 15;
-  const CELL = 9;
   const LABEL_W = 38;
-  const HEADER_H = 32;
+  const CELL_H = 12;
+  const HEADER_H = 34;
 
   // Top N by contact count
   const residuesA = pair.interface_residues_a
@@ -1744,48 +1744,57 @@ function InterfaceContactMap({
           Contact map
         </p>
         {truncated && (
-          <span style={{ fontSize: 8.5, color: "var(--pio-graphite)", opacity: 0.7 }}>top {MAX_MAP} residues per chain</span>
+          <span style={{ fontSize: 8.5, color: "var(--pio-graphite)", opacity: 0.7 }}>top {MAX_MAP} per chain</span>
         )}
       </div>
-      <div style={{ overflowX: "auto" }}>
-        <div style={{ display: "inline-block" }}>
-          {/* Column headers — chain B (rotated, short labels) */}
-          <div style={{ display: "flex", paddingLeft: LABEL_W }}>
-            {residuesB.map((res) => (
-              <div key={res.residue_number} style={{ width: CELL, height: HEADER_H, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-                <span style={{ fontSize: 7, color: "var(--pio-graphite)", writingMode: "vertical-lr", transform: "rotate(180deg)", whiteSpace: "nowrap" }}>
-                  {shortLabel(res)}
-                </span>
-              </div>
-            ))}
+
+      {/* CSS grid — fills full width, fixed row heights */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: `${LABEL_W}px repeat(${residuesB.length}, 1fr)`,
+        gridTemplateRows: `${HEADER_H}px repeat(${residuesA.length}, ${CELL_H}px)`,
+        width: "100%",
+      }}>
+        {/* Corner */}
+        <div />
+        {/* Column headers — chain B (rotated) */}
+        {residuesB.map((res) => (
+          <div key={res.residue_number} style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", overflow: "hidden", paddingBottom: 2 }}>
+            <span style={{ fontSize: 7, color: "var(--pio-graphite)", writingMode: "vertical-lr", transform: "rotate(180deg)", whiteSpace: "nowrap" }}>
+              {shortLabel(res)}
+            </span>
           </div>
-          {/* Rows — chain A */}
-          {residuesA.map((resA) => (
-            <div key={resA.residue_number} style={{ display: "flex", alignItems: "center" }}>
-              <span style={{ width: LABEL_W, fontSize: 7, color: "var(--pio-graphite)", textAlign: "right", paddingRight: 4, flexShrink: 0, whiteSpace: "nowrap" }}>
-                {shortLabel(resA)}
-              </span>
-              {residuesB.map((resB) => {
-                const cls = contactMap.get(`${resA.residue_number}_${resB.residue_number}`);
-                return (
-                  <div
-                    key={resB.residue_number}
-                    title={cls ? `${resA.residue_name}${resA.residue_number}–${resB.residue_name}${resB.residue_number} (${cls})` : undefined}
-                    style={{
-                      width: CELL, height: CELL, flexShrink: 0, boxSizing: "border-box",
-                      background: cls ? CONTACT_MAP_CELL_CLR[cls] ?? CONTACT_MAP_CELL_CLR.unclassified : "transparent",
-                      border: "1px solid var(--pio-line)",
-                      opacity: cls ? 1 : 0.2,
-                    }}
-                  />
-                );
-              })}
+        ))}
+        {/* Data rows — chain A */}
+        {residuesA.map((resA) => (
+          <React.Fragment key={resA.residue_number}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 4, overflow: "hidden" }}>
+              <span style={{ fontSize: 7, color: "var(--pio-graphite)", whiteSpace: "nowrap" }}>{shortLabel(resA)}</span>
             </div>
-          ))}
-        </div>
+            {residuesB.map((resB) => {
+              const cls = contactMap.get(`${resA.residue_number}_${resB.residue_number}`);
+              return (
+                <div
+                  key={resB.residue_number}
+                  title={cls ? `${resA.residue_name}${resA.residue_number}–${resB.residue_name}${resB.residue_number} (${cls})` : undefined}
+                  style={{
+                    background: cls ? CONTACT_MAP_CELL_CLR[cls] ?? CONTACT_MAP_CELL_CLR.unclassified : "transparent",
+                    border: "1px solid var(--pio-line)",
+                    boxSizing: "border-box",
+                    opacity: cls ? 1 : 0.15,
+                  }}
+                />
+              );
+            })}
+          </React.Fragment>
+        ))}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 5, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 8.5, color: "var(--pio-graphite)", opacity: 0.7 }}>Rows: Chain {pair.chain_a} · Cols: Chain {pair.chain_b}</span>
+
+      {/* Axis info + legend (wraps to 2 rows) */}
+      <div style={{ display: "flex", gap: 8, marginTop: 6, flexWrap: "wrap", alignItems: "center" }}>
+        <span style={{ fontSize: 8.5, color: "var(--pio-graphite)", opacity: 0.7, marginRight: 4 }}>
+          Rows: Chain {pair.chain_a} · Cols: Chain {pair.chain_b}
+        </span>
         {CONTACT_MAP_LEGEND.filter((l) => classesPresent.has(l.key)).map((l) => (
           <div key={l.key} style={{ display: "flex", alignItems: "center", gap: 3 }}>
             <span style={{ width: 8, height: 8, borderRadius: 2, background: CONTACT_MAP_CELL_CLR[l.key], flexShrink: 0, display: "inline-block" }} />
@@ -1883,9 +1892,9 @@ function InterfacesTab({
                   <div style={{ padding: "12px 12px 16px", background: "var(--pio-paper)", borderTop: "1px solid var(--pio-line)" }}>
                     <InterfaceConfidenceSummary pair={pair} pae={pae} />
                     <InterfaceContactMap pair={pair} contacts={contacts} />
-                    <div style={{ display: "flex", gap: 16 }}>
+                    <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                       <InterfaceResidueList residues={pair.interface_residues_a} label={pair.chain_a} />
-                      <div style={{ width: 1, background: "var(--pio-line)", flexShrink: 0 }} />
+                      <div style={{ width: 1, background: "var(--pio-line)", flexShrink: 0, alignSelf: "stretch" }} />
                       <InterfaceResidueList residues={pair.interface_residues_b} label={pair.chain_b} />
                     </div>
                   </div>
