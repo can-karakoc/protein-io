@@ -65,7 +65,7 @@ type ProvenanceRecord = {
   paeProvided: boolean;
   structureKind: "experimental" | "predicted" | "uploaded coordinates";
 };
-type ExampleId = "sample" | "hemoglobin" | "ligand-bound" | "large-structure" | "alphafold";
+type ExampleId = "sample" | "hemoglobin" | "ligand-bound" | "large-structure" | "alphafold" | "binder-target";
 type ExampleCard = {
   id: ExampleId;
   title: string;
@@ -112,6 +112,15 @@ const EXAMPLE_GALLERY: ExampleCard[] = [
     tags: ["AlphaFold", "pLDDT", "predicted"],
     hint: "Use Confidence, Quality, and low-confidence contact filters after analysis.",
     actionLabel: "Load P69905",
+  },
+  {
+    id: "binder-target",
+    title: "Binder–target interface",
+    source: "RCSB 1PPE",
+    description: "Trypsin bound to BPTI (pancreatic trypsin inhibitor). A textbook 2-chain protease–inhibitor complex with a tight, well-characterised interface.",
+    tags: ["RCSB", "interface", "protein-protein"],
+    hint: "Open the Interfaces tab, expand the chain pair, and inspect the contact map and residue list.",
+    actionLabel: "Load 1PPE",
   },
 ];
 
@@ -722,6 +731,10 @@ function ProteinWorkbenchState({
     }
     if (exampleId === "alphafold") {
       void fetchAlphaFoldStructure("P69905");
+      return;
+    }
+    if (exampleId === "binder-target") {
+      void fetchRcsbStructure("1PPE");
     }
   }
 
@@ -1173,13 +1186,13 @@ function LoadingOverlay({ statusLabel }: { statusLabel: string | null }) {
 
 function tagBackground(tag: string): string {
   const t = tag.toLowerCase();
-  if (t === "ligand" || t === "contacts" || t === "experimental" || t === "multi-chain" || t === "predicted" || t === "plddt" || t === "performance" || t === "starter") return "var(--pio-green-pale)";
+  if (t === "ligand" || t === "contacts" || t === "experimental" || t === "multi-chain" || t === "predicted" || t === "plddt" || t === "performance" || t === "starter" || t === "interface" || t === "protein-protein") return "var(--pio-green-pale)";
   return "var(--pio-blue-pale)";
 }
 
 function tagColor(tag: string): string {
   const t = tag.toLowerCase();
-  if (t === "ligand" || t === "contacts" || t === "experimental" || t === "multi-chain" || t === "predicted" || t === "plddt" || t === "performance" || t === "starter") return "var(--pio-green-deep)";
+  if (t === "ligand" || t === "contacts" || t === "experimental" || t === "multi-chain" || t === "predicted" || t === "plddt" || t === "performance" || t === "starter" || t === "interface" || t === "protein-protein") return "var(--pio-green-deep)";
   return "var(--pio-blue-deep)";
 }
 
