@@ -10,6 +10,7 @@ import type {
   ContactDifference,
   RcsbAnalysisResponse,
   StructureComparisonResponse,
+  StructureMetadata,
   StructureSummary,
 } from "@/lib/types";
 
@@ -356,7 +357,15 @@ export function CompareWorkspace() {
           </div>
         ) : null}
 
-        {comparison && inputA.file && inputB.file ? (
+        {isLoading ? (
+          <div className="mt-8 flex flex-col items-center gap-4 py-12">
+            <LoaderCircle className="h-8 w-8 animate-spin text-[var(--pio-highlight)]" />
+            <p className="text-[14px] font-semibold text-[var(--pio-ink)]">Analyzing both structures…</p>
+            <p className="text-[13px] text-[var(--pio-graphite)]">Parsing coordinates, computing contacts, and diffing contact sets.</p>
+          </div>
+        ) : null}
+
+        {!isLoading && comparison && inputA.file && inputB.file ? (
           <ComparisonResults
             comparison={comparison}
             fileAName={inputA.file.name}
@@ -366,7 +375,7 @@ export function CompareWorkspace() {
             onTabChange={setActiveTab}
             onExport={exportComparisonExamples}
           />
-        ) : (
+        ) : !isLoading ? (
           <div className="mt-8 rounded-[12px] border border-dashed border-[var(--pio-line-strong)] px-6 py-12 text-center">
             <ArrowLeftRight className="mx-auto h-7 w-7 text-[var(--pio-graphite)] opacity-45" />
             <p className="mt-3 text-[15px] font-semibold text-[var(--pio-ink)]">Comparison results will appear here</p>
@@ -374,7 +383,7 @@ export function CompareWorkspace() {
               Choose two structures to calculate count deltas and residue-level shared, gained, and lost contact examples.
             </p>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
     </div>
@@ -546,8 +555,8 @@ function ComparisonResults({
   return (
     <div className="mt-8">
       <div className="grid gap-4 lg:grid-cols-2">
-        <StructureSummaryCard label="Structure A" fileName={fileAName} summary={comparison.structure_a.summary} />
-        <StructureSummaryCard label="Structure B" fileName={fileBName} summary={comparison.structure_b.summary} />
+        <StructureSummaryCard label="Structure A" fileName={fileAName} summary={comparison.structure_a.summary} metadata={comparison.structure_a.metadata} />
+        <StructureSummaryCard label="Structure B" fileName={fileBName} summary={comparison.structure_b.summary} metadata={comparison.structure_b.metadata} />
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
@@ -609,10 +618,12 @@ function StructureSummaryCard({
   label,
   fileName,
   summary,
+  metadata,
 }: {
   label: string;
   fileName: string;
   summary: StructureSummary;
+  metadata?: StructureMetadata | null;
 }) {
   const metrics = [
     ["Atoms", summary.atom_count],
@@ -621,11 +632,34 @@ function StructureSummaryCard({
     ["Ligands", summary.ligand_count],
     ["Contacts", summary.contact_count],
   ];
+  const sourceLabel = metadata?.source === "rcsb" ? "RCSB PDB" : metadata?.source === "alphafold" ? "AlphaFold DB" : "Upload";
+  const sourceBadgeClass = metadata?.source === "rcsb" ? "pio-badge-metadata" : metadata?.source === "alphafold" ? "pio-badge-predicted" : "pio-badge-neutral";
+  const displayTitle = metadata?.title ?? fileName;
+  const meta2: Array<[string, string | number | null | undefined]> = [
+    ["Method", metadata?.method ?? null],
+    ["Organism", metadata?.organism ?? null],
+    ["Resolution", metadata?.resolution_angstrom != null ? `${metadata.resolution_angstrom.toFixed(2)} Å` : null],
+  ].filter(([, v]) => v != null) as Array<[string, string]>;
+
   return (
     <div className="rounded-[12px] bg-[var(--pio-paper)] p-4">
-      <p className="pio-label">{label}</p>
-      <p className="mt-1 truncate font-mono text-[13px] font-semibold text-[var(--pio-ink)]" title={fileName}>{fileName}</p>
-      <div className="mt-4 grid grid-cols-5 gap-2">
+      <div className="flex items-start justify-between gap-3">
+        <p className="pio-label">{label}</p>
+        {metadata && <span className={`pio-badge ${sourceBadgeClass}`}>{sourceLabel}</span>}
+      </div>
+      <p className="mt-1 line-clamp-2 text-[13px] font-semibold leading-[1.4] text-[var(--pio-ink)]" title={displayTitle}>
+        {displayTitle}
+      </p>
+      {meta2.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5">
+          {meta2.map(([k, v]) => (
+            <span key={k} className="text-[11px] text-[var(--pio-graphite)]">
+              <span className="font-semibold">{k}:</span> {v}
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="mt-4 grid grid-cols-5 gap-2 border-t border-[var(--pio-line)] pt-3">
         {metrics.map(([metricLabel, value]) => (
           <div key={metricLabel} className="min-w-0">
             <p className="truncate text-[9px] font-semibold uppercase tracking-[0.06em] text-[var(--pio-graphite)]">{metricLabel}</p>
@@ -657,29 +691,32 @@ function ContactDifferenceTable({ rows }: { rows: ContactDifference[] }) {
     );
   }
   return (
-    <div className="mt-4 overflow-x-auto">
-      <div className="min-w-[720px]">
-        <div className="grid grid-cols-[minmax(250px,2fr)_1fr_1fr_1fr] gap-4 border-b border-[var(--pio-line)] px-3 py-2">
-          {["Contact identity", "Categories", "Distance A", "Distance B"].map((label) => (
+    <div className="mt-4 overflow-x-auto rounded-[12px] border border-[var(--pio-line)]">
+      <div className="min-w-[680px]">
+        <div className="grid grid-cols-[minmax(220px,2fr)_minmax(120px,1fr)_90px_90px] gap-3 border-b border-[var(--pio-line)] bg-[var(--pio-paper)] px-4 py-2.5">
+          {["Contact identity", "Categories", "Dist A", "Dist B"].map((label) => (
             <p key={label} className="pio-label">{label}</p>
           ))}
         </div>
-        {rows.map((row) => (
+        {rows.map((row, i) => (
           <div
             key={`${row.label}-${row.contact_type}-${row.distance_a_angstrom ?? "none"}-${row.distance_b_angstrom ?? "none"}`}
-            className="grid grid-cols-[minmax(250px,2fr)_1fr_1fr_1fr] gap-4 border-b border-[var(--pio-line)] px-3 py-3 text-[12px]"
+            className={[
+              "grid grid-cols-[minmax(220px,2fr)_minmax(120px,1fr)_90px_90px] gap-3 border-b border-[var(--pio-line)] px-4 py-3 last:border-b-0",
+              i % 2 === 1 ? "bg-[var(--pio-paper)]" : "",
+            ].join(" ")}
           >
-            <div>
-              <p className="font-mono font-semibold text-[var(--pio-ink)]">{row.label}</p>
-              <p className="mt-1 text-[var(--pio-graphite)]">{row.contact_type}</p>
+            <div className="min-w-0">
+              <p className="truncate font-mono text-[12px] font-semibold text-[var(--pio-ink)]" title={row.label}>{row.label}</p>
+              <p className="mt-0.5 text-[11px] text-[var(--pio-graphite)]">{row.contact_type.replace(/-/g, "‑")}</p>
             </div>
             <div className="flex flex-wrap content-start gap-1">
-              {row.contact_categories.map((category) => (
+              {row.contact_categories.length ? row.contact_categories.map((category) => (
                 <span key={category} className="pio-badge pio-badge-neutral">{category}</span>
-              ))}
+              )) : <span className="text-[11px] text-[var(--pio-graphite)]">—</span>}
             </div>
-            <p className="font-mono text-[var(--pio-ink)]">{formatDistance(row.distance_a_angstrom)}</p>
-            <p className="font-mono text-[var(--pio-ink)]">{formatDistance(row.distance_b_angstrom)}</p>
+            <p className="font-mono text-[12px] text-[var(--pio-ink)]">{formatDistance(row.distance_a_angstrom)}</p>
+            <p className="font-mono text-[12px] text-[var(--pio-ink)]">{formatDistance(row.distance_b_angstrom)}</p>
           </div>
         ))}
       </div>
