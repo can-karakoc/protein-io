@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -59,12 +60,16 @@ def _extract_gene_names(data: dict) -> list[str]:
     return names
 
 
+_PUBMED_RE = re.compile(r"\s*\((?:PubMed:\d+(?:,\s*PubMed:\d+)*)\)")
+
 def _extract_function(data: dict) -> str | None:
     for comment in data.get("comments", []):
         if comment.get("commentType") == "FUNCTION":
             texts = comment.get("texts", [])
             if texts:
-                return texts[0].get("value") or None
+                raw = texts[0].get("value") or None
+                if raw:
+                    return _PUBMED_RE.sub("", raw).strip() or None
     return None
 
 

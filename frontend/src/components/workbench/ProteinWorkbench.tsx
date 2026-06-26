@@ -115,12 +115,12 @@ const EXAMPLE_GALLERY: ExampleCard[] = [
   },
 ];
 
-const PUBLIC_STRUCTURE_CACHE_KEY = "pio_public_structure_cache_v3";
+const PUBLIC_STRUCTURE_CACHE_KEY = "pio_public_structure_cache_v4";
 const WORKBENCH_PREFERENCES_KEY = "pio_workbench_preferences_v1";
 const LEGACY_CACHE_KEY = "pio_cache_v1";
 
 interface PublicStructureCache {
-  version: 3;
+  version: 4;
   source: "rcsb" | "alphafold";
   structureText: string;
   structureFormat: StructureFileFormat;
@@ -151,7 +151,7 @@ function parsePublicStructureCache(raw: string | null): PublicStructureCache | n
   try {
     const parsed = JSON.parse(raw) as PublicStructureCache;
     if (
-      parsed.version !== 3 ||
+      parsed.version !== 4 ||
       (parsed.source !== "rcsb" && parsed.source !== "alphafold") ||
       !parsed.structureText ||
       !parsed.analysis
@@ -588,7 +588,7 @@ function ProteinWorkbenchState({
       setContactFilter("all");
       setResultsTab("overview");
       savePublicStructureCache({
-        version: 3,
+        version: 4,
         source: "rcsb",
         structureText: payload.structure_text,
         structureFormat: payload.structure_format,
@@ -672,7 +672,7 @@ function ProteinWorkbenchState({
       setContactFilter("all");
       setResultsTab("overview");
       savePublicStructureCache({
-        version: 3,
+        version: 4,
         source: "alphafold",
         structureText: payload.structure_text,
         structureFormat: payload.structure_format,
@@ -1494,7 +1494,8 @@ function UniProtPanel({ annotations }: { annotations: UniProtAnnotations }) {
       {(annotations.variants?.length ?? 0) > 0 && (
         <UniProtFeatureSection
           label="Natural variants"
-          items={annotations.variants}
+          items={(annotations.variants ?? []).slice(0, 25)}
+          overflow={Math.max(0, (annotations.variants?.length ?? 0) - 25)}
         />
       )}
     </div>
@@ -1504,14 +1505,17 @@ function UniProtPanel({ annotations }: { annotations: UniProtAnnotations }) {
 function UniProtFeatureSection({
   label,
   items,
+  overflow = 0,
 }: {
   label: string;
   items: Array<{ description: string | null; start: number | null; end: number | null }>;
+  overflow?: number;
 }) {
+  const totalCount = items.length + overflow;
   return (
     <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
       <p style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: "var(--pio-graphite)" }}>
-        {label} <span style={{ fontFamily: "var(--font-pio-mono)", opacity: 0.6 }}>{items.length}</span>
+        {label} <span style={{ fontFamily: "var(--font-pio-mono)", opacity: 0.6 }}>{totalCount}</span>
       </p>
       <ul style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
         {items.map((item, i) => {
@@ -1533,6 +1537,11 @@ function UniProtFeatureSection({
             </li>
           );
         })}
+        {overflow > 0 && (
+          <li style={{ fontSize: 11, color: "var(--pio-graphite)", fontStyle: "italic", marginTop: 2 }}>
+            +{overflow.toLocaleString()} more — see UniProt for full list
+          </li>
+        )}
       </ul>
     </div>
   );
