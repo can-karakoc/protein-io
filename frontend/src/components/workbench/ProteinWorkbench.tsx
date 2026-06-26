@@ -1448,7 +1448,11 @@ function ResultsPanel({
         {selectedTab === "methods" ? <ProvenancePanel provenance={provenance} /> : null}
 
         {selectedTab === "interfaces" && (analysis?.interface_analysis?.chain_pairs?.length ?? 0) > 0 ? (
-          <InterfacesTab interfaceAnalysis={analysis.interface_analysis!} />
+          <InterfacesTab
+            interfaceAnalysis={analysis.interface_analysis!}
+            pae={analysis.pae ?? null}
+            confidence={analysis.confidence ?? null}
+          />
         ) : null}
       </motion.div>
       </AnimatePresence>
@@ -1593,7 +1597,114 @@ function InterfaceResidueList({ residues, label }: { residues: InterfaceResidue[
   );
 }
 
-function InterfacesTab({ interfaceAnalysis }: { interfaceAnalysis: InterfaceAnalysis }) {
+function pldDTCategory(v: number): "very_high" | "confident" | "low" | "very_low" {
+  if (v >= 90) return "very_high";
+  if (v >= 70) return "confident";
+  if (v >= 50) return "low";
+  return "very_low";
+}
+
+const PLDDT_BADGE: Record<string, { cls: string; label: string }> = {
+  very_high: { cls: "pio-badge-active",    label: "Very high (≥90)" },
+  confident:  { cls: "pio-badge-predicted", label: "Confident (≥70)" },
+  low:        { cls: "pio-badge-caution",   label: "Low (≥50)" },
+  very_low:   { cls: "pio-badge-warning",   label: "Very low (<50)" },
+};
+
+function InterfaceConfidenceSummary({
+  pair,
+  pae,
+}: {
+  pair: ChainPairSummary;
+  pae: PaeSummary | null;
+}) {
+  const hasPlddt = pair.mean_plddt_a != null || pair.mean_plddt_b != null;
+  if (!hasPlddt && !pae) return null;
+
+  const catA = pair.mean_plddt_a != null ? pldDTCategory(pair.mean_plddt_a) : null;
+  const catB = pair.mean_plddt_b != null ? pldDTCategory(pair.mean_plddt_b) : null;
+
+  const overallLabel = (() => {
+    if (!catA && !catB) return null;
+    const cats = [catA, catB].filter(Boolean) as string[];
+    const worst = ["very_low", "low", "confident", "very_high"].find((c) => cats.includes(c))!;
+    if (worst === "very_high") return { text: "High-confidence interface", cls: "pio-badge-active" };
+    if (worst === "confident")  return { text: "Confident interface",       cls: "pio-badge-predicted" };
+    if (worst === "low")        return { text: "Low-confidence interface",  cls: "pio-badge-caution" };
+    return { text: "Very low confidence — interpret carefully", cls: "pio-badge-warning" };
+  })();
+
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase", marginBottom: 8 }}>
+        Interface Confidence
+      </p>
+
+      {/* pLDDT tiles */}
+      {hasPlddt && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+          {([["Chain " + pair.chain_a, pair.mean_plddt_a, catA], ["Chain " + pair.chain_b, pair.mean_plddt_b, catB]] as const).map(([label, val, cat]) => (
+            <div key={String(label)} style={{ background: "rgba(255,255,255,0.7)", borderRadius: 8, padding: "10px 12px" }}>
+              <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.07em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>{label}</p>
+              {val != null && cat ? (
+                <>
+                  <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 18, fontWeight: 700, color: "var(--pio-ink)", marginTop: 3 }}>
+                    {val.toFixed(1)}
+                  </p>
+                  <span className={`pio-badge ${PLDDT_BADGE[cat].cls}`} style={{ fontSize: 9, padding: "2px 7px", marginTop: 5, display: "inline-block" }}>
+                    {PLDDT_BADGE[cat].label}
+                  </span>
+                </>
+              ) : (
+                <p style={{ fontSize: 12, color: "var(--pio-graphite)", marginTop: 4, opacity: 0.6 }}>No pLDDT data</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Overall label */}
+      {overallLabel && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span className={`pio-badge ${overallLabel.cls}`} style={{ fontSize: 10, padding: "3px 10px" }}>
+            {overallLabel.text}
+          </span>
+        </div>
+      )}
+
+      {/* PAE context — global stats, shown only when PAE sidecar was loaded */}
+      {pae && (
+        <div style={{ marginTop: 10, padding: "8px 12px", borderRadius: 8, background: "rgba(199,217,236,0.25)", border: "1px solid rgba(26,64,106,0.1)" }}>
+          <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.07em", color: "var(--pio-graphite)", textTransform: "uppercase", marginBottom: 6 }}>
+            PAE context (global)
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+            {[
+              ["Mean PAE", `${pae.mean_predicted_aligned_error.toFixed(1)} Å`],
+              ["Max PAE",  `${pae.max_predicted_aligned_error.toFixed(1)} Å`],
+              ["High-err pairs", pae.high_error_pair_count.toLocaleString()],
+            ].map(([label, val]) => (
+              <div key={String(label)}>
+                <p style={{ fontSize: 9, color: "var(--pio-graphite)", fontWeight: 600 }}>{label}</p>
+                <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 700, color: "var(--pio-ink)", marginTop: 2 }}>{val}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InterfacesTab({
+  interfaceAnalysis,
+  pae,
+  confidence,
+}: {
+  interfaceAnalysis: InterfaceAnalysis;
+  pae: PaeSummary | null;
+  confidence: ConfidenceSummary | null;
+}) {
   const [expandedPair, setExpandedPair] = useState<string | null>(null);
 
   return (
@@ -1604,7 +1715,7 @@ function InterfacesTab({ interfaceAnalysis }: { interfaceAnalysis: InterfaceAnal
       </p>
 
       {/* Summary tiles */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginTop: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: confidence ? "1fr 1fr 1fr 1fr" : "1fr 1fr 1fr", gap: 10, marginTop: 16 }}>
         <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
           <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>Inter-chain contacts</p>
           <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 22, fontWeight: 700, marginTop: 4, color: "var(--pio-ink)" }}>
@@ -1623,6 +1734,19 @@ function InterfacesTab({ interfaceAnalysis }: { interfaceAnalysis: InterfaceAnal
             {interfaceAnalysis.intra_chain_contact_count.toLocaleString()}
           </p>
         </div>
+        {confidence && (
+          <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
+            <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>Mean pLDDT</p>
+            <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 22, fontWeight: 700, marginTop: 4, color: "var(--pio-ink)" }}>
+              {confidence.average_plddt.toFixed(1)}
+            </p>
+            {(() => {
+              const cat = pldDTCategory(confidence.average_plddt);
+              const b = PLDDT_BADGE[cat];
+              return <span className={`pio-badge ${b.cls}`} style={{ fontSize: 9, padding: "2px 7px", marginTop: 5, display: "inline-block" }}>{b.label}</span>;
+            })()}
+          </div>
+        )}
       </div>
 
       {/* Chain pairs table */}
@@ -1654,6 +1778,7 @@ function InterfacesTab({ interfaceAnalysis }: { interfaceAnalysis: InterfaceAnal
                 </div>
                 {isExpanded && (
                   <div style={{ padding: "12px 12px 16px", background: "var(--pio-paper)", borderTop: "1px solid var(--pio-line)" }}>
+                    <InterfaceConfidenceSummary pair={pair} pae={pae} />
                     <div style={{ display: "flex", gap: 16 }}>
                       <InterfaceResidueList residues={pair.interface_residues_a} label={pair.chain_a} />
                       <div style={{ width: 1, background: "var(--pio-line)", flexShrink: 0 }} />
