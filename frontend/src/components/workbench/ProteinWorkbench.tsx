@@ -115,12 +115,12 @@ const EXAMPLE_GALLERY: ExampleCard[] = [
   },
 ];
 
-const PUBLIC_STRUCTURE_CACHE_KEY = "pio_public_structure_cache_v4";
+const PUBLIC_STRUCTURE_CACHE_KEY = "pio_public_structure_cache_v5";
 const WORKBENCH_PREFERENCES_KEY = "pio_workbench_preferences_v1";
 const LEGACY_CACHE_KEY = "pio_cache_v1";
 
 interface PublicStructureCache {
-  version: 4;
+  version: 5;
   source: "rcsb" | "alphafold";
   structureText: string;
   structureFormat: StructureFileFormat;
@@ -151,7 +151,7 @@ function parsePublicStructureCache(raw: string | null): PublicStructureCache | n
   try {
     const parsed = JSON.parse(raw) as PublicStructureCache;
     if (
-      parsed.version !== 4 ||
+      parsed.version !== 5 ||
       (parsed.source !== "rcsb" && parsed.source !== "alphafold") ||
       !parsed.structureText ||
       !parsed.analysis
@@ -588,7 +588,7 @@ function ProteinWorkbenchState({
       setContactFilter("all");
       setResultsTab("overview");
       savePublicStructureCache({
-        version: 4,
+        version: 5,
         source: "rcsb",
         structureText: payload.structure_text,
         structureFormat: payload.structure_format,
@@ -672,7 +672,7 @@ function ProteinWorkbenchState({
       setContactFilter("all");
       setResultsTab("overview");
       savePublicStructureCache({
-        version: 4,
+        version: 5,
         source: "alphafold",
         structureText: payload.structure_text,
         structureFormat: payload.structure_format,
@@ -3532,10 +3532,12 @@ function ContactConfidenceBadge({ contact }: { contact: ContactRecord }) {
 }
 
 const INTERACTION_CLASS_BADGE: Record<string, { cls: string; label: string }> = {
-  polar:       { cls: "pio-badge-predicted", label: "polar" },
-  ionic:       { cls: "pio-badge-caution",   label: "ionic" },
-  aromatic:    { cls: "pio-badge-predicted", label: "aromatic" },
-  hydrophobic: { cls: "pio-badge-active",    label: "hydrophobic" },
+  "h-bond":       { cls: "pio-badge-predicted", label: "H-bond" },
+  "salt-bridge":  { cls: "pio-badge-caution",   label: "salt bridge" },
+  "aromatic":     { cls: "pio-badge-metadata",  label: "aromatic" },
+  "pi-cation":    { cls: "pio-badge-metadata",  label: "π-cation" },
+  "hydrophobic":  { cls: "pio-badge-active",    label: "hydrophobic" },
+  "halogen-bond": { cls: "pio-badge-warning",   label: "halogen" },
 };
 
 function InteractionClassBadge({ contact }: { contact: ContactRecord }) {

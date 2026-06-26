@@ -34,7 +34,7 @@ export type ContactRecord = {
   distance_angstrom: number;
   contact_type: ContactType;
   contact_categories: ContactCategory[];
-  interaction_class?: "polar" | "ionic" | "aromatic" | "hydrophobic" | "unclassified" | null;
+  interaction_class?: "h-bond" | "salt-bridge" | "aromatic" | "pi-cation" | "hydrophobic" | "halogen-bond" | "unclassified" | null;
   source_residue_confidence?: ResidueConfidence | null;
   target_residue_confidence?: ResidueConfidence | null;
   confidence_warning?: boolean;
