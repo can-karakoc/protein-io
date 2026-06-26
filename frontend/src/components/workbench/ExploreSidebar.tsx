@@ -66,7 +66,7 @@ export function ExploreSidebar({
   const tabs: Array<{ id: InputTab; label: string }> = [
     { id: "file", label: "File" },
     { id: "pdb", label: "PDB ID" },
-    { id: "alphafold", label: "AlphaFold" },
+    { id: "alphafold", label: "UniProt" },
   ];
 
   return (
@@ -217,7 +217,7 @@ export function ExploreSidebar({
                 Fetch
               </button>
             </div>
-            <p className="mt-1 text-[12px] text-[var(--pio-graphite)]">Fetches predicted model from AlphaFold DB.</p>
+            <p className="mt-1 text-[12px] text-[var(--pio-graphite)]">Fetches AlphaFold predicted model via UniProt accession.</p>
           </div>
         )}
 

@@ -408,7 +408,7 @@ function ComparisonStructureInput({
   const modes: Array<{ id: ComparisonInputMode; label: string; icon: typeof FileUp }> = [
     { id: "local", label: "File", icon: FileUp },
     { id: "rcsb", label: "PDB ID", icon: Database },
-    { id: "alphafold", label: "AlphaFold", icon: Sparkles },
+    { id: "alphafold", label: "UniProt", icon: Sparkles },
   ];
   const publicValue = input.mode === "rcsb" ? input.pdbId : input.uniprotId;
   const publicLabel = input.mode === "rcsb" ? "PDB ID" : "UniProt accession";

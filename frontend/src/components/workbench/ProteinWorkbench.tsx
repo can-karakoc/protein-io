@@ -1739,7 +1739,7 @@ function ReportWorkspace({
             Load and analyze a structure first, then return here for a concise summary with methods and provenance.
           </p>
           <div style={{ display: "flex", gap: 8, marginTop: 20, justifyContent: "center", flexWrap: "wrap" }}>
-            {([["Load sample", onLoadSample], ["Fetch PDB ID", onFocusRcsb], ["Fetch AlphaFold", onFocusAlphaFold]] as const).map(([label, fn]) => (
+            {([["Load sample", onLoadSample], ["Fetch PDB ID", onFocusRcsb], ["Fetch UniProt", onFocusAlphaFold]] as const).map(([label, fn]) => (
               <button key={label} type="button" onClick={fn}
                 className="rounded-[12px] border border-[var(--pio-line-strong)] bg-[var(--pio-white)] px-4 py-2 text-[13px] font-semibold text-[var(--pio-ink)] hover:bg-[var(--pio-sand)]">
                 {label}
@@ -3240,7 +3240,7 @@ function FloatingLigandPanel({
             <div>
               <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 5 }}>INTERACTION TYPES</p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                {(["polar", "ionic", "aromatic", "hydrophobic"] as const).map((cls) => {
+                {(["h-bond", "salt-bridge", "aromatic", "pi-cation", "hydrophobic", "halogen-bond"] as const).map((cls) => {
                   const count = interaction.interaction_class_breakdown?.[cls];
                   if (!count) return null;
                   const badge = INTERACTION_CLASS_BADGE[cls];
