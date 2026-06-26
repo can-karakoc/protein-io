@@ -326,3 +326,16 @@ class RcsbAnalysisResponse(FetchedStructureAnalysisResponse):
 
 class AlphaFoldAnalysisResponse(FetchedStructureAnalysisResponse):
     pass
+
+
+class BatchDesignEntry(BaseModel):
+    filename: str
+    analysis: AnalysisResponse | None = None
+    error: str | None = None
+
+
+class BatchAnalysisResponse(BaseModel):
+    entries: list[BatchDesignEntry]
+    total: int
+    succeeded: int
+    failed: int

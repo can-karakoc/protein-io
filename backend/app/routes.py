@@ -5,7 +5,7 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from starlette.responses import Response
 
 from app.integrations.alphafold import AlphaFoldFetchError
-from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, RcsbAnalysisResponse, StructureComparisonResponse
+from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, BatchAnalysisResponse, RcsbAnalysisResponse, StructureComparisonResponse
 from app.pae import PaeParseError, analyze_pae_json
 from app.integrations.rcsb import RcsbFetchError
 from app.parser import StructureParseError
@@ -90,6 +90,20 @@ async def compare_structures(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/api/batch/analyze", response_model=BatchAnalysisResponse)
+async def batch_analyze_structures(
+    files: list[UploadFile] = File(...),
+    cutoff_angstrom: float = Form(4.0),
+) -> BatchAnalysisResponse:
+    if len(files) > 50:
+        raise HTTPException(status_code=400, detail="Maximum 50 structures per batch request.")
+    if cutoff_angstrom <= 0:
+        raise HTTPException(status_code=400, detail="cutoff_angstrom must be greater than zero.")
+    from app.batch import batch_analyze
+    file_contents = [(f.filename or f"file_{i}", await f.read()) for i, f in enumerate(files)]
+    return await batch_analyze(file_contents, cutoff_angstrom=cutoff_angstrom)
 
 
 @router.get("/api/rcsb/{pdb_id}/analyze", response_model=RcsbAnalysisResponse)
