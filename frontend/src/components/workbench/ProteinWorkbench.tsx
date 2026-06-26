@@ -3177,7 +3177,7 @@ function FloatingLigandPanel({
                   );
                 })}
                 {interaction.water_bridge_count != null && interaction.water_bridge_count > 0 && (
-                  <span className="pio-badge pio-badge-neutral" style={{ padding: "3px 9px", fontSize: 10, whiteSpace: "nowrap" }}>
+                  <span className="pio-badge pio-badge-warning" style={{ padding: "3px 9px", fontSize: 10, whiteSpace: "nowrap" }}>
                     water bridge <span style={{ opacity: 0.8, fontWeight: 700 }}>{interaction.water_bridge_count}</span>
                   </span>
                 )}
