@@ -3,7 +3,7 @@
 import { Menu, Moon, Sun } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 
-export type WorkbenchMode = "explore" | "compare" | "report";
+export type WorkbenchMode = "explore" | "compare" | "report" | "batch";
 
 type TopNavProps = {
   mode: WorkbenchMode;
@@ -15,6 +15,7 @@ const MODES: Array<{ id: WorkbenchMode; label: string }> = [
   { id: "explore", label: "Explore" },
   { id: "compare", label: "Compare" },
   { id: "report", label: "Report" },
+  { id: "batch", label: "Batch" },
 ];
 
 export function TopNav({ mode, onModeChange, onSidebarToggle }: TopNavProps) {

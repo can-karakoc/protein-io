@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import { StructureViewer } from "@/components/viewer/StructureViewer";
+import { BatchWorkspace } from "@/components/workbench/BatchWorkspace";
 import { CompareWorkspace } from "@/components/workbench/CompareWorkspace";
 import { ExploreSidebar } from "@/components/workbench/ExploreSidebar";
 import { WorkbenchShell } from "@/components/workbench/WorkbenchShell";
@@ -1065,6 +1066,17 @@ function ProteinWorkbenchState({
               window.requestAnimationFrame(() => document.getElementById("uniprot-id")?.focus());
             }}
           />
+        </motion.div>
+      ) : mode === "batch" ? (
+        <motion.div
+          key="batch"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
+          className="h-full"
+        >
+          <BatchWorkspace />
         </motion.div>
       ) : (
         <motion.div
