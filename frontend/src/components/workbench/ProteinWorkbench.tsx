@@ -3319,7 +3319,7 @@ function FloatingLigandPanel({
                   {(["RESIDUE", "ATOMS", "DIST", "TYPE"] as const).map((h) => (
                     <span key={h} style={{
                       fontSize: 8.5, fontWeight: 700, letterSpacing: "0.08em", ...TEXT, opacity: 0.55,
-                      textAlign: h === "DIST" || h === "TYPE" ? "right" : "left",
+                      textAlign: "left",
                     }}>{h}</span>
                   ))}
                 </div>
@@ -3350,10 +3350,10 @@ function FloatingLigandPanel({
                       <span style={{ ...MONO, fontSize: 9.5, opacity: 0.7, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={`${protAtom}–${ligAtom}`}>
                         {protAtom}–{ligAtom}
                       </span>
-                      <span style={{ ...MONO, fontSize: 10, fontWeight: 600, whiteSpace: "nowrap", textAlign: "right" }}>
+                      <span style={{ ...MONO, fontSize: 10, fontWeight: 600, whiteSpace: "nowrap", textAlign: "left" }}>
                         {c.distance_angstrom.toFixed(2)} Å
                       </span>
-                      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                      <div style={{ display: "flex", justifyContent: "flex-start" }}>
                         {badge ? (
                           <span className={`pio-badge ${badge.cls}`} style={{ padding: "2px 6px", fontSize: 9, whiteSpace: "nowrap" }}>
                             {badge.label}
