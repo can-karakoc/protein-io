@@ -194,43 +194,54 @@ export function BatchWorkspace() {
           />
         </label>
 
-        {/* File list */}
-        {files.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--pio-graphite)", marginBottom: 2 }}>
-              Files ({files.length})
-            </p>
-            <div style={{ maxHeight: 200, overflowY: "auto" }}>
-              {files.map((f) => (
-                <div
-                  key={f.name}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "3px 6px",
-                    borderRadius: 6,
-                    background: "var(--pio-paper)",
-                    marginBottom: 2,
-                    gap: 6,
-                  }}
-                >
-                  <span style={{ fontSize: 10.5, color: "var(--pio-ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
-                    {f.name}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => removeFile(f.name)}
-                    style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--pio-graphite)", flexShrink: 0, lineHeight: 1 }}
-                    aria-label={`Remove ${f.name}`}
+        {/* File list — live files take priority; fall back to cached entry names */}
+        {(files.length > 0 || (result && files.length === 0)) && (() => {
+          const fromCache = files.length === 0;
+          const names = fromCache ? result!.entries.map(e => e.filename) : files.map(f => f.name);
+          return (
+            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--pio-graphite)" }}>
+                  Files ({names.length})
+                </p>
+                {fromCache && (
+                  <span style={{ fontSize: 9, color: "var(--pio-graphite)", opacity: 0.6, fontStyle: "italic" }}>cached</span>
+                )}
+              </div>
+              <div style={{ maxHeight: 200, overflowY: "auto" }}>
+                {names.map((name) => (
+                  <div
+                    key={name}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "3px 6px",
+                      borderRadius: 6,
+                      background: "var(--pio-paper)",
+                      marginBottom: 2,
+                      gap: 6,
+                    }}
                   >
-                    ×
-                  </button>
-                </div>
-              ))}
+                    <span style={{ fontSize: 10.5, color: "var(--pio-ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+                      {name}
+                    </span>
+                    {!fromCache && (
+                      <button
+                        type="button"
+                        onClick={() => removeFile(name)}
+                        style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--pio-graphite)", flexShrink: 0, lineHeight: 1 }}
+                        aria-label={`Remove ${name}`}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Cutoff */}
         <div>
