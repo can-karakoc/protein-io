@@ -1569,31 +1569,42 @@ function PldDTCell({ value }: { value: number | null }) {
 }
 
 function InterfaceResidueList({ residues, label }: { residues: InterfaceResidue[]; label: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const MAX_SHOWN = 8;
+  const shown = expanded ? residues : residues.slice(0, MAX_SHOWN);
   return (
-    <div style={{ flex: 1 }}>
-      <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--pio-graphite)", marginBottom: 8 }}>
-        Chain {label} ({residues.length} residues)
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--pio-graphite)", marginBottom: 6 }}>
+        Chain {label} <span style={{ opacity: 0.6, fontWeight: 400 }}>({residues.length})</span>
       </p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-        {residues.map((r) => {
+      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        {shown.map((r) => {
           const plddtColor = r.plddt == null ? "var(--pio-graphite)" : r.plddt >= 90 ? "var(--pio-green-deep)" : r.plddt >= 70 ? "var(--pio-ink)" : "var(--pio-coral)";
           return (
             <div key={`${r.chain_id}-${r.residue_number}`}
-                 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", borderRadius: 6, background: "var(--pio-white)" }}>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
-                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 11, fontWeight: 700, color: "var(--pio-ink)" }}>{r.residue_name}</span>
-                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 10, color: "var(--pio-graphite)" }}>{r.residue_number}</span>
+                 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "3px 7px", borderRadius: 5, background: "var(--pio-white)" }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 10.5, fontWeight: 700, color: "var(--pio-ink)" }}>{r.residue_name}</span>
+                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 9.5, color: "var(--pio-graphite)" }}>{r.residue_number}</span>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 10, color: "var(--pio-graphite)" }}>{r.contact_count}c</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                <span style={{ fontSize: 9.5, color: "var(--pio-graphite)" }}>{r.contact_count}c</span>
                 {r.plddt != null && (
-                  <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 10, fontWeight: 600, color: plddtColor }}>{r.plddt.toFixed(0)}</span>
+                  <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 9.5, fontWeight: 600, color: plddtColor }}>{r.plddt.toFixed(0)}</span>
                 )}
               </div>
             </div>
           );
         })}
       </div>
+      {residues.length > MAX_SHOWN && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          style={{ marginTop: 5, fontSize: 9.5, color: "var(--pio-highlight)", background: "none", border: "none", cursor: "pointer", padding: 0, fontWeight: 600 }}
+        >
+          {expanded ? "Show less" : `+${residues.length - MAX_SHOWN} more`}
+        </button>
+      )}
     </div>
   );
 }
@@ -1636,62 +1647,26 @@ function InterfaceConfidenceSummary({
   })();
 
   return (
-    <div style={{ marginBottom: 14 }}>
-      <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase", marginBottom: 8 }}>
-        Interface Confidence
-      </p>
-
-      {/* pLDDT tiles */}
+    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
       {hasPlddt && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+        <>
           {([["Chain " + pair.chain_a, pair.mean_plddt_a, catA], ["Chain " + pair.chain_b, pair.mean_plddt_b, catB]] as const).map(([label, val, cat]) => (
-            <div key={String(label)} style={{ background: "rgba(255,255,255,0.7)", borderRadius: 8, padding: "10px 12px" }}>
-              <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.07em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>{label}</p>
+            <div key={String(label)} style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--pio-white)", borderRadius: 7, padding: "4px 10px" }}>
+              <span style={{ fontSize: 9.5, fontWeight: 600, color: "var(--pio-graphite)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</span>
               {val != null && cat ? (
                 <>
-                  <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 18, fontWeight: 700, color: "var(--pio-ink)", marginTop: 3 }}>
-                    {val.toFixed(1)}
-                  </p>
-                  <span className={`pio-badge ${PLDDT_BADGE[cat].cls}`} style={{ fontSize: 9, padding: "2px 7px", marginTop: 5, display: "inline-block" }}>
-                    {PLDDT_BADGE[cat].label}
-                  </span>
+                  <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 13, fontWeight: 700, color: "var(--pio-ink)" }}>{val.toFixed(1)}</span>
+                  <span className={`pio-badge ${PLDDT_BADGE[cat].cls}`} style={{ fontSize: 8.5, padding: "1px 6px" }}>{PLDDT_BADGE[cat].label}</span>
                 </>
               ) : (
-                <p style={{ fontSize: 12, color: "var(--pio-graphite)", marginTop: 4, opacity: 0.6 }}>No pLDDT data</p>
+                <span style={{ fontSize: 10, color: "var(--pio-graphite)", opacity: 0.5 }}>—</span>
               )}
             </div>
           ))}
-        </div>
+        </>
       )}
-
-      {/* Overall label */}
       {overallLabel && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span className={`pio-badge ${overallLabel.cls}`} style={{ fontSize: 10, padding: "3px 10px" }}>
-            {overallLabel.text}
-          </span>
-        </div>
-      )}
-
-      {/* PAE context — global stats, shown only when PAE sidecar was loaded */}
-      {pae && (
-        <div style={{ marginTop: 10, padding: "8px 12px", borderRadius: 8, background: "rgba(199,217,236,0.25)", border: "1px solid rgba(26,64,106,0.1)" }}>
-          <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.07em", color: "var(--pio-graphite)", textTransform: "uppercase", marginBottom: 6 }}>
-            PAE context (global)
-          </p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
-            {[
-              ["Mean PAE", `${pae.mean_predicted_aligned_error.toFixed(1)} Å`],
-              ["Max PAE",  `${pae.max_predicted_aligned_error.toFixed(1)} Å`],
-              ["High-err pairs", pae.high_error_pair_count.toLocaleString()],
-            ].map(([label, val]) => (
-              <div key={String(label)}>
-                <p style={{ fontSize: 9, color: "var(--pio-graphite)", fontWeight: 600 }}>{label}</p>
-                <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 700, color: "var(--pio-ink)", marginTop: 2 }}>{val}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+        <span className={`pio-badge ${overallLabel.cls}`} style={{ fontSize: 9, padding: "3px 9px" }}>{overallLabel.text}</span>
       )}
     </div>
   );
@@ -1715,6 +1690,11 @@ const CONTACT_MAP_LEGEND = [
   { key: "halogen-bond", label: "Halogen" },
 ];
 const CLASS_PRIORITY = ["salt-bridge", "h-bond", "pi-cation", "halogen-bond", "aromatic", "hydrophobic", "unclassified"];
+const AA1: Record<string, string> = {
+  ALA:"A",ARG:"R",ASN:"N",ASP:"D",CYS:"C",GLN:"Q",GLU:"E",GLY:"G",
+  HIS:"H",ILE:"I",LEU:"L",LYS:"K",MET:"M",PHE:"F",PRO:"P",
+  SER:"S",THR:"T",TRP:"W",TYR:"Y",VAL:"V",
+};
 
 function InterfaceContactMap({
   pair,
@@ -1723,67 +1703,67 @@ function InterfaceContactMap({
   pair: ChainPairSummary;
   contacts: ContactRecord[];
 }) {
+  const MAX_MAP = 15;
+  const CELL = 9;
+  const LABEL_W = 38;
+  const HEADER_H = 32;
+
+  // Top N by contact count
   const residuesA = pair.interface_residues_a
-    .slice()
-    .sort((a, b) => parseInt(a.residue_number) - parseInt(b.residue_number));
+    .slice().sort((a, b) => b.contact_count - a.contact_count).slice(0, MAX_MAP);
   const residuesB = pair.interface_residues_b
-    .slice()
-    .sort((a, b) => parseInt(a.residue_number) - parseInt(b.residue_number));
+    .slice().sort((a, b) => b.contact_count - a.contact_count).slice(0, MAX_MAP);
 
   if (residuesA.length === 0 || residuesB.length === 0) return null;
+
+  const shortLabel = (r: InterfaceResidue) => `${AA1[r.residue_name] ?? r.residue_name[0]}${r.residue_number}`;
 
   // Build map: "resNumA_resNumB" → best interaction_class
   const contactMap = new Map<string, string>();
   for (const c of contacts) {
-    let resA: string | null = null;
-    let resB: string | null = null;
-    if (c.chain_a === pair.chain_a && c.chain_b === pair.chain_b) {
-      resA = c.residue_a; resB = c.residue_b;
-    } else if (c.chain_a === pair.chain_b && c.chain_b === pair.chain_a) {
-      resA = c.residue_b; resB = c.residue_a;
-    }
-    if (resA && resB) {
-      const key = `${resA}_${resB}`;
+    let rA: string | null = null, rB: string | null = null;
+    if (c.chain_a === pair.chain_a && c.chain_b === pair.chain_b) { rA = c.residue_a; rB = c.residue_b; }
+    else if (c.chain_a === pair.chain_b && c.chain_b === pair.chain_a) { rA = c.residue_b; rB = c.residue_a; }
+    if (rA && rB) {
+      const key = `${rA}_${rB}`;
       const cls = c.interaction_class ?? "unclassified";
-      const existing = contactMap.get(key);
-      if (!existing || CLASS_PRIORITY.indexOf(cls) < CLASS_PRIORITY.indexOf(existing)) {
-        contactMap.set(key, cls);
-      }
+      const ex = contactMap.get(key);
+      if (!ex || CLASS_PRIORITY.indexOf(cls) < CLASS_PRIORITY.indexOf(ex)) contactMap.set(key, cls);
     }
   }
 
   if (contactMap.size === 0) return null;
 
   const classesPresent = new Set(contactMap.values());
-  const CELL = 12;
-  const LABEL_W = 56;
-  const HEADER_H = 48;
+  const truncated = pair.interface_residues_a.length > MAX_MAP || pair.interface_residues_b.length > MAX_MAP;
 
   return (
-    <div style={{ marginBottom: 16 }}>
-      <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase", marginBottom: 8 }}>
-        Contact map
-      </p>
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+        <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>
+          Contact map
+        </p>
+        {truncated && (
+          <span style={{ fontSize: 8.5, color: "var(--pio-graphite)", opacity: 0.7 }}>top {MAX_MAP} residues per chain</span>
+        )}
+      </div>
       <div style={{ overflowX: "auto" }}>
-        <div style={{ display: "inline-block", minWidth: LABEL_W + residuesB.length * CELL }}>
-          {/* Column headers — chain B residues (rotated) */}
+        <div style={{ display: "inline-block" }}>
+          {/* Column headers — chain B (rotated, short labels) */}
           <div style={{ display: "flex", paddingLeft: LABEL_W }}>
             {residuesB.map((res) => (
-              <div
-                key={res.residue_number}
-                style={{ width: CELL, height: HEADER_H, display: "flex", alignItems: "flex-end", justifyContent: "center", overflow: "visible" }}
-              >
-                <span style={{ fontSize: 7, color: "var(--pio-graphite)", writingMode: "vertical-lr", transform: "rotate(180deg)", whiteSpace: "nowrap", letterSpacing: "0.03em" }}>
-                  {res.residue_name}{res.residue_number}
+              <div key={res.residue_number} style={{ width: CELL, height: HEADER_H, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+                <span style={{ fontSize: 7, color: "var(--pio-graphite)", writingMode: "vertical-lr", transform: "rotate(180deg)", whiteSpace: "nowrap" }}>
+                  {shortLabel(res)}
                 </span>
               </div>
             ))}
           </div>
-          {/* Rows — chain A residues */}
+          {/* Rows — chain A */}
           {residuesA.map((resA) => (
             <div key={resA.residue_number} style={{ display: "flex", alignItems: "center" }}>
-              <span style={{ width: LABEL_W, fontSize: 7, color: "var(--pio-graphite)", textAlign: "right", paddingRight: 6, letterSpacing: "0.03em", flexShrink: 0, whiteSpace: "nowrap" }}>
-                {resA.residue_name}{resA.residue_number}
+              <span style={{ width: LABEL_W, fontSize: 7, color: "var(--pio-graphite)", textAlign: "right", paddingRight: 4, flexShrink: 0, whiteSpace: "nowrap" }}>
+                {shortLabel(resA)}
               </span>
               {residuesB.map((resB) => {
                 const cls = contactMap.get(`${resA.residue_number}_${resB.residue_number}`);
@@ -1792,13 +1772,10 @@ function InterfaceContactMap({
                     key={resB.residue_number}
                     title={cls ? `${resA.residue_name}${resA.residue_number}–${resB.residue_name}${resB.residue_number} (${cls})` : undefined}
                     style={{
-                      width: CELL,
-                      height: CELL,
-                      flexShrink: 0,
+                      width: CELL, height: CELL, flexShrink: 0, boxSizing: "border-box",
                       background: cls ? CONTACT_MAP_CELL_CLR[cls] ?? CONTACT_MAP_CELL_CLR.unclassified : "transparent",
                       border: "1px solid var(--pio-line)",
-                      boxSizing: "border-box",
-                      opacity: cls ? 1 : 0.25,
+                      opacity: cls ? 1 : 0.2,
                     }}
                   />
                 );
@@ -1807,17 +1784,12 @@ function InterfaceContactMap({
           ))}
         </div>
       </div>
-      {/* Axis labels */}
-      <div style={{ display: "flex", gap: 20, marginTop: 6, flexWrap: "wrap" }}>
-        <p style={{ fontSize: 9, color: "var(--pio-graphite)", fontWeight: 600 }}>Rows: Chain {pair.chain_a}</p>
-        <p style={{ fontSize: 9, color: "var(--pio-graphite)", fontWeight: 600 }}>Cols: Chain {pair.chain_b}</p>
-      </div>
-      {/* Legend */}
-      <div style={{ display: "flex", gap: 10, marginTop: 8, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 5, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 8.5, color: "var(--pio-graphite)", opacity: 0.7 }}>Rows: Chain {pair.chain_a} · Cols: Chain {pair.chain_b}</span>
         {CONTACT_MAP_LEGEND.filter((l) => classesPresent.has(l.key)).map((l) => (
-          <div key={l.key} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <span style={{ width: 10, height: 10, borderRadius: 2, background: CONTACT_MAP_CELL_CLR[l.key], flexShrink: 0, display: "inline-block" }} />
-            <span style={{ fontSize: 9, color: "var(--pio-graphite)" }}>{l.label}</span>
+          <div key={l.key} style={{ display: "flex", alignItems: "center", gap: 3 }}>
+            <span style={{ width: 8, height: 8, borderRadius: 2, background: CONTACT_MAP_CELL_CLR[l.key], flexShrink: 0, display: "inline-block" }} />
+            <span style={{ fontSize: 8.5, color: "var(--pio-graphite)" }}>{l.label}</span>
           </div>
         ))}
       </div>
