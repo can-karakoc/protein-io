@@ -1,9 +1,31 @@
 "use client";
 
 import { AlertCircle, CheckCircle2, FileUp, Loader2, Play, RotateCcw, XCircle } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { buildApiUrl } from "@/lib/api";
 import type { AnalysisResponse } from "@/lib/types";
+
+const BATCH_CACHE_KEY = "pio_batch_cache_v1";
+
+function loadBatchCache(): BatchAnalysisResponse | null {
+  try {
+    const raw = localStorage.getItem(BATCH_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { version: 1; result: BatchAnalysisResponse };
+    if (parsed.version !== 1 || !parsed.result?.entries) return null;
+    return parsed.result;
+  } catch {
+    return null;
+  }
+}
+
+function saveBatchCache(result: BatchAnalysisResponse) {
+  try {
+    localStorage.setItem(BATCH_CACHE_KEY, JSON.stringify({ version: 1, result }));
+  } catch {
+    // QuotaExceededError on very large batches — silently skip
+  }
+}
 
 type BatchDesignEntry = {
   filename: string;
@@ -31,6 +53,17 @@ export function BatchWorkspace() {
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Restore cached results on mount
+  useEffect(() => {
+    const cached = loadBatchCache();
+    if (cached) setResult(cached);
+  }, []);
+
+  // Persist results whenever they change
+  useEffect(() => {
+    if (result) saveBatchCache(result);
+  }, [result]);
+
   function handleFiles(incoming: FileList | null) {
     if (!incoming) return;
     const accepted = Array.from(incoming).filter((f) =>
@@ -50,6 +83,7 @@ export function BatchWorkspace() {
     setFiles([]);
     setResult(null);
     setError(null);
+    try { localStorage.removeItem(BATCH_CACHE_KEY); } catch { /* ignore */ }
   }
 
   async function analyze() {
@@ -101,20 +135,20 @@ export function BatchWorkspace() {
     : [];
 
   return (
-    <div style={{ display: "flex", height: "100%", minHeight: 0 }}>
+    <div className="h-full flex flex-col overflow-clip rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
+      <div className="flex flex-1 min-h-0">
       {/* Sidebar */}
       <aside
         style={{
           width: 280,
           flexShrink: 0,
           background: "var(--pio-white)",
-          boxShadow: "8px 0 24px rgba(17,22,16,0.07)",
+          borderRight: "1px solid var(--pio-line)",
           display: "flex",
           flexDirection: "column",
           overflowY: "auto",
           padding: "20px 20px 24px",
           gap: 16,
-          zIndex: 1,
         }}
       >
         <p style={{ fontSize: 20, fontWeight: 700, color: "var(--pio-ink)", marginBottom: 4 }}>
@@ -301,6 +335,7 @@ export function BatchWorkspace() {
             onSort={toggleSort}
           />
         )}
+      </div>
       </div>
     </div>
   );
