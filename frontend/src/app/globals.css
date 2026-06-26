@@ -286,6 +286,8 @@ button:not(:disabled),
 }
 .scrollbar-thin-report::-webkit-scrollbar-track {
   background: transparent;
+  margin-top: 24px;
+  margin-bottom: 24px;
 }
 .scrollbar-thin-report::-webkit-scrollbar-thumb {
   background: transparent;
@@ -298,8 +300,8 @@ button:not(:disabled),
   background: rgba(var(--pio-ink-rgb), 0.38);
 }
 
-/* ── Thin inset scrollbar (sidebar + results panels) ──────── */
-/* Track margins keep the thumb away from rounded corners */
+/* ── Thin inset scrollbar (sidebar + results + compare panels) ── */
+/* Track margins keep the thumb away from the rounded corners    */
 .scrollbar-thin-panel {
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
@@ -312,8 +314,8 @@ button:not(:disabled),
 }
 .scrollbar-thin-panel::-webkit-scrollbar-track {
   background: transparent;
-  margin-top: 16px;
-  margin-bottom: 16px;
+  margin-top: 24px;
+  margin-bottom: 24px;
 }
 .scrollbar-thin-panel::-webkit-scrollbar-thumb {
   background: transparent;

@@ -257,7 +257,7 @@ export function CompareWorkspace() {
   }
 
   return (
-    <div className="h-full overflow-y-auto rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
+    <div className="scrollbar-thin-panel h-full overflow-y-auto rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
       <div className="mx-auto max-w-[1180px] px-5 py-6 sm:px-8 sm:py-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
