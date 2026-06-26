@@ -260,7 +260,7 @@ function ProteinWorkbenchState({
   );
   const [contactFilter, setContactFilter] = useState<ContactFilter>("all");
   const [resultsTab, setResultsTab] = useState<ResultsTab>(initialPreferences.resultsTab);
-  const resultsColumnRef = useRef<HTMLElement | null>(null);
+  const resultsColumnRef = useRef<HTMLDivElement | null>(null);
   const [initialTabStripScrollLeft] = useState(initialPreferences.tabStripScrollLeft ?? 0);
   const tabStripScrollLeftRef = useRef(initialTabStripScrollLeft);
   const [inputSource, setInputSource] = useState<InputSource>(initialCache?.source ?? "upload");
@@ -966,9 +966,10 @@ function ProteinWorkbenchState({
             {isAnyLoading && <LoadingOverlay statusLabel={viewerStatusLabel} />}
           </div>
 
-          {/* Results column */}
-          <section ref={resultsColumnRef} className="scrollbar-thin-panel relative z-[1] min-h-0 overflow-y-auto bg-[var(--pio-white)] border-t border-[var(--pio-line)] md:border-t-0 md:shadow-[-8px_0_24px_rgba(17,22,16,0.07)]">
+          {/* Results column — flex wrapper; scroll lives inside ResultsPanel */}
+          <div className="relative z-[1] min-h-0 flex flex-col bg-[var(--pio-white)] border-t border-[var(--pio-line)] md:border-t-0 md:shadow-[-8px_0_24px_rgba(17,22,16,0.07)]">
             <ResultsPanel
+              contentRef={resultsColumnRef}
               activeTab={resultsTab}
               onTabChange={setResultsTab}
               initialTabStripScrollLeft={initialTabStripScrollLeft}
@@ -1022,7 +1023,7 @@ function ProteinWorkbenchState({
               onExportLigands={exportLigandCsv}
               onLoadExample={loadGalleryExample}
             />
-          </section>
+          </div>
         </motion.div>
       ) : mode === "report" ? (
         <motion.div
@@ -1207,6 +1208,7 @@ function ResultsPanel({
   onLoadExample,
   initialTabStripScrollLeft,
   onTabStripScroll,
+  contentRef,
 }: {
   activeTab: ResultsTab;
   onTabChange: (tab: ResultsTab) => void;
@@ -1233,6 +1235,7 @@ function ResultsPanel({
   onLoadExample: (exampleId: ExampleId) => void;
   initialTabStripScrollLeft?: number;
   onTabStripScroll?: (x: number) => void;
+  contentRef?: React.RefObject<HTMLDivElement | null>;
 }) {
   const panelRef = useRef<HTMLElement | null>(null);
   const tabStripRef = useRef<HTMLDivElement | null>(null);
@@ -1273,10 +1276,13 @@ function ResultsPanel({
 
   if (!analysis) {
     return (
-      <section ref={panelRef} className="min-w-0">
-        <EmptyWorkbenchState
-          onLoadExample={onLoadExample}
-        />
+      <section ref={panelRef} className="min-w-0 flex flex-col h-full">
+        <div ref={contentRef} className="flex-1 min-h-0 overflow-y-auto scrollbar-thin-panel">
+          <EmptyWorkbenchState
+            onLoadExample={onLoadExample}
+          />
+        </div>
+        <div className="shrink-0 h-5" />
       </section>
     );
   }
@@ -1308,9 +1314,9 @@ function ResultsPanel({
   }
 
   return (
-    <section ref={panelRef} className="min-w-0">
+    <section ref={panelRef} className="min-w-0 flex flex-col h-full">
       <div
-        className="sticky top-0 z-10 bg-[var(--pio-white)] px-3 sm:px-5 pb-4 pt-4 shadow-[0_1px_0_rgba(17,22,16,0.07)]"
+        className="shrink-0 bg-[var(--pio-white)] px-3 sm:px-5 pb-4 pt-4 shadow-[0_1px_0_rgba(17,22,16,0.07)]"
         role="tablist"
         aria-label="Analysis results"
       >
@@ -1330,6 +1336,7 @@ function ResultsPanel({
         </div>
       </div>
 
+      <div ref={contentRef} className="flex-1 min-h-0 overflow-y-auto scrollbar-thin-panel">
       <AnimatePresence mode="wait" initial={false}>
       <motion.div
         key={selectedTab}
@@ -1444,6 +1451,8 @@ function ResultsPanel({
         ) : null}
       </motion.div>
       </AnimatePresence>
+      </div>
+      <div className="shrink-0 h-5" />
     </section>
   );
 }
