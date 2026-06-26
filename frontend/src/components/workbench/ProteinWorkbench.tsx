@@ -12,7 +12,8 @@ import { WorkbenchShell } from "@/components/workbench/WorkbenchShell";
 import type { WorkbenchMode } from "@/components/workbench/TopNav";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { buildApiUrl } from "@/lib/api";
-import { contactsToCsv, ligandInteractionsToCsv } from "@/lib/csv";
+import { getCompareSession, type CompareSessionEntry } from "@/lib/compareSession";
+import { contactsToCsv, ligandInteractionsToCsv, ligandMedchemReportToCsv } from "@/lib/csv";
 import type {
   AlphaFoldAnalysisResponse,
   AnalysisResponse,
@@ -1955,13 +1956,17 @@ function InterfacesTab({
 }
 
 const REPORT_DIVIDER: React.CSSProperties = { paddingTop: 24, marginTop: 8 };
+
+// ---------------------------------------------------------------------------
+// Compare-cache reader — used by Report to surface the last comparison result
+// ---------------------------------------------------------------------------
 const REPORT_H2: React.CSSProperties = { fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)" };
 const REPORT_SUB: React.CSSProperties = { fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 };
 const REPORT_TILE: React.CSSProperties = { background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" };
 const REPORT_LABEL: React.CSSProperties = { fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" as const };
 const REPORT_MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)" };
 
-function ReportLimitations({ hasConfidence }: { hasConfidence: boolean }) {
+function ReportLimitations({ hasConfidence, hasComparison }: { hasConfidence: boolean; hasComparison: boolean }) {
   const items = [
     "Contacts are the closest atom-pair distance between two residues — not centroid-to-centroid or any smoothed measure.",
     `Distance cutoff applies uniformly; contacts just above the cutoff are not shown even if functionally relevant.`,
@@ -1970,6 +1975,9 @@ function ReportLimitations({ hasConfidence }: { hasConfidence: boolean }) {
       : null,
     "Water molecules and small ions are included in protein-water and ligand-water contact counts but excluded from residue-residue totals.",
     "No sequence alignment or structural superposition is performed. Chain IDs and residue numbers are taken directly from the coordinate file.",
+    hasComparison
+      ? "Structure comparison uses residue-level contact identity without structural alignment. Results may differ from RMSD or TM-score based comparisons."
+      : null,
   ].filter(Boolean) as string[];
 
   return (
@@ -1984,6 +1992,37 @@ function ReportLimitations({ hasConfidence }: { hasConfidence: boolean }) {
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+function ReportComparisonSection({ snapshot }: { snapshot: CompareSessionEntry }) {
+  const { comparison, cutoff, labelA, labelB } = snapshot;
+  const { shared_contact_count, gained_contact_count, lost_contact_count } = comparison.contacts;
+  const tiles: [string, number, string][] = [
+    ["Shared contacts", shared_contact_count, "var(--pio-ink)"],
+    ["Gained in B", gained_contact_count, "var(--pio-green-deep)"],
+    ["Lost from A", lost_contact_count, "var(--pio-coral-deep)"],
+  ];
+  return (
+    <div>
+      <h2 style={REPORT_H2}>Structure Comparison</h2>
+      <p style={REPORT_SUB}>
+        Comparing <strong>{labelA}</strong> vs <strong>{labelB}</strong> at {cutoff.toFixed(1)} Å cutoff.
+      </p>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 14 }}>
+        {tiles.map(([label, value, color]) => (
+          <div key={label} style={REPORT_TILE}>
+            <p style={REPORT_LABEL}>{label}</p>
+            <p style={{ ...REPORT_MONO, fontSize: 22, fontWeight: 700, color, lineHeight: 1, marginTop: 4 }}>
+              {value.toLocaleString()}
+            </p>
+          </div>
+        ))}
+      </div>
+      {comparison.warnings.map((w, i) => (
+        <p key={i} style={{ marginTop: 8, fontSize: 12, color: "var(--pio-amber-deep)" }}>{w}</p>
+      ))}
     </div>
   );
 }
@@ -2009,7 +2048,23 @@ function ReportWorkspace({
   onFocusRcsb: () => void;
   onFocusAlphaFold: () => void;
 }) {
+  const comparisonSnapshot = getCompareSession();
+
   if (!analysis) {
+    if (comparisonSnapshot) {
+      return (
+        <div className="h-full flex flex-col">
+          <div className="mx-auto w-full max-w-[960px] flex-1 min-h-0 flex flex-col rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)] overflow-clip pr-[3px] pt-[20px] pb-[20px]">
+            <div className="overflow-y-auto flex-1 scrollbar-thin-report" style={{ padding: "12px 33px 36px 36px" }}>
+              <ReportComparisonSection snapshot={comparisonSnapshot} />
+              <div style={REPORT_DIVIDER}>
+                <ReportLimitations hasConfidence={false} hasComparison={true} />
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="flex min-h-full items-center justify-center p-8">
         <div className="w-full max-w-[480px] rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] p-10 text-center shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
@@ -2067,8 +2122,13 @@ function ReportWorkspace({
       <div style={REPORT_DIVIDER}>
         <ProvenancePanel provenance={provenance} showExport={false} />
       </div>
+      {comparisonSnapshot && (
+        <div style={REPORT_DIVIDER}>
+          <ReportComparisonSection snapshot={comparisonSnapshot} />
+        </div>
+      )}
       <div style={REPORT_DIVIDER}>
-        <ReportLimitations hasConfidence={analysis.confidence != null} />
+        <ReportLimitations hasConfidence={analysis.confidence != null} hasComparison={!!comparisonSnapshot} />
       </div>
     </div>
     </div>
@@ -3323,28 +3383,6 @@ function FloatingLigandPanel({
     })
     .sort((a, b) => a.distance_angstrom - b.distance_angstrom);
 
-  // Interaction fingerprint: group residues by dominant class, show top residues per class
-  const fingerprintGroups: Record<string, string[]> = {};
-  for (const c of ligandContacts) {
-    const cls = c.interaction_class ?? "unclassified";
-    if (cls === "unclassified") continue;
-    const ligIsA = c.chain_a === ligand.chain_id && c.residue_a === ligand.residue_number;
-    const protRes = ligIsA
-      ? `${c.residue_name_b}${c.residue_b}`
-      : `${c.residue_name_a}${c.residue_a}`;
-    if (!fingerprintGroups[cls]) fingerprintGroups[cls] = [];
-    if (!fingerprintGroups[cls].includes(protRes)) fingerprintGroups[cls].push(protRes);
-  }
-  const CLASS_ORDER = ["h-bond", "salt-bridge", "pi-cation", "halogen-bond", "aromatic", "hydrophobic"];
-  const fingerprintParts = CLASS_ORDER
-    .filter((cls) => fingerprintGroups[cls]?.length)
-    .map((cls) => {
-      const badge = INTERACTION_CLASS_BADGE[cls];
-      const residues = fingerprintGroups[cls].slice(0, 3).join("·");
-      const more = fingerprintGroups[cls].length > 3 ? `+${fingerprintGroups[cls].length - 3}` : "";
-      return `${badge?.label ?? cls}(${residues}${more})`;
-    });
-
   const CONTACTS_PREVIEW = 5;
   const shownContacts = showAllContacts ? ligandContacts : ligandContacts.slice(0, CONTACTS_PREVIEW);
 
@@ -3666,39 +3704,59 @@ function FloatingLigandPanel({
             </div>
           )}
 
-          {/* Interaction fingerprint */}
-          {fingerprintParts.length > 0 && (
-            <div>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 4 }}>FINGERPRINT</p>
-              <p style={{ fontSize: 10, ...TEXT, opacity: 0.75, lineHeight: 1.5, wordBreak: "break-word" }}>
-                {fingerprintParts.join("  ·  ")}
-              </p>
-            </div>
-          )}
+          {/* Interaction fingerprint matrix */}
+          <LigandFingerprintMatrix contacts={contacts} ligand={ligand} />
 
-          {/* Export button */}
+          {/* Export buttons */}
           {interaction && (
-            <button
-              type="button"
-              onClick={() => onExport(interaction)}
-              style={{
-                background: "rgba(26,64,106,0.12)",
-                border: "1px solid rgba(26,64,106,0.2)",
-                borderRadius: 8,
-                padding: "8px 12px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 6,
-                fontSize: 12,
-                fontWeight: 600,
-                ...TEXT,
-                cursor: "pointer",
-              }}
-            >
-              <Download size={13} />
-              Export ligand CSV
-            </button>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <button
+                type="button"
+                onClick={() => onExport(interaction)}
+                style={{
+                  background: "rgba(26,64,106,0.12)",
+                  border: "1px solid rgba(26,64,106,0.2)",
+                  borderRadius: 8,
+                  padding: "8px 12px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  ...TEXT,
+                  cursor: "pointer",
+                }}
+              >
+                <Download size={13} />
+                Export ligand CSV
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const csv = ligandMedchemReportToCsv(interaction, contacts);
+                  downloadCsv(csv, `${ligand.name}-${ligand.chain_id}${ligand.residue_number}-medchem-report.csv`);
+                }}
+                style={{
+                  background: "rgba(26,64,106,0.07)",
+                  border: "1px solid rgba(26,64,106,0.15)",
+                  borderRadius: 8,
+                  padding: "8px 12px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  ...TEXT,
+                  cursor: "pointer",
+                  opacity: 0.85,
+                }}
+              >
+                <Download size={13} />
+                Medchem report CSV
+              </button>
+            </div>
           )}
         </div>{/* flex column gap-12 */}
         </div>{/* scrollbar-thin-panel scroll container */}
@@ -3956,6 +4014,98 @@ const INTERACTION_CLASS_BADGE: Record<string, { cls: string; label: string }> = 
   "hydrophobic":  { cls: "pio-badge-active",    label: "hydrophobic" },
   "halogen-bond": { cls: "pio-badge-warning",   label: "halogen" },
 };
+
+// ─── Interaction Fingerprint Matrix ──────────────────────────────────────────
+import {
+  FP_CLASSES,
+  FP_ABBR,
+  FP_DOT_COLOR,
+  FP_FULL_LABEL,
+  buildFingerprint,
+  type FpRow,
+} from "@/lib/fingerprint";
+
+function LigandFingerprintMatrix({
+  contacts,
+  ligand,
+}: {
+  contacts: ContactRecord[];
+  ligand: { chain_id: string; residue_number: string };
+}) {
+  const TEXT: React.CSSProperties = { color: "#1A406A" };
+  const MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)", color: "#1A406A" };
+  const rows = buildFingerprint(contacts, ligand);
+  if (rows.length === 0) return null;
+
+  return (
+    <div>
+      <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 5 }}>
+        INTERACTION FINGERPRINT
+      </p>
+      <div style={{ background: "rgba(255,255,255,0.6)", borderRadius: 6, overflow: "hidden" }}>
+        {/* Column headers */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "80px repeat(6, 1fr)",
+          padding: "4px 8px",
+          borderBottom: "1px solid rgba(26,64,106,0.1)",
+          background: "rgba(199,217,236,0.25)",
+          alignItems: "center",
+        }}>
+          <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.06em", ...TEXT, opacity: 0.45 }}>RESIDUE</span>
+          {FP_CLASSES.map((cls) => (
+            <div key={cls} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+              <div style={{ width: 7, height: 7, borderRadius: "50%", background: FP_DOT_COLOR[cls], opacity: 0.85 }} />
+              <span style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: "0.04em", ...TEXT, opacity: 0.55 }}>
+                {FP_ABBR[cls]}
+              </span>
+            </div>
+          ))}
+        </div>
+        {/* Residue rows */}
+        {rows.map((row, i) => (
+          <div
+            key={row.key}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "80px repeat(6, 1fr)",
+              padding: "3px 8px",
+              borderBottom: i < rows.length - 1 ? "1px solid rgba(26,64,106,0.05)" : "none",
+              background: i % 2 === 1 ? "rgba(199,217,236,0.10)" : "transparent",
+              alignItems: "center",
+              minHeight: 22,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 4, overflow: "hidden" }}>
+              <span style={{ ...MONO, fontSize: 9.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={row.key}>
+                {row.key}
+              </span>
+              <span style={{ fontSize: 8.5, ...TEXT, opacity: 0.4, flexShrink: 0 }}>({row.count})</span>
+            </div>
+            {FP_CLASSES.map((cls) => (
+              <div key={cls} style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                {row.classes.has(cls) ? (
+                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: FP_DOT_COLOR[cls] }} />
+                ) : (
+                  <div style={{ width: 4, height: 4, borderRadius: "50%", background: "rgba(26,64,106,0.08)" }} />
+                )}
+              </div>
+            ))}
+          </div>
+        ))}
+        {/* Legend footer */}
+        <div style={{ padding: "4px 8px 5px", borderTop: "1px solid rgba(26,64,106,0.08)", display: "flex", flexWrap: "wrap", gap: "3px 10px" }}>
+          {FP_CLASSES.map((cls) => (
+            <span key={cls} style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 8, ...TEXT, opacity: 0.55 }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: FP_DOT_COLOR[cls], flexShrink: 0 }} />
+              {FP_FULL_LABEL[cls]}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function InteractionClassBadge({ contact }: { contact: ContactRecord }) {
   const cls = contact.interaction_class;
