@@ -1452,6 +1452,7 @@ function ResultsPanel({
             interfaceAnalysis={analysis.interface_analysis!}
             pae={analysis.pae ?? null}
             confidence={analysis.confidence ?? null}
+            contacts={analysis.contacts}
           />
         ) : null}
       </motion.div>
@@ -1696,14 +1697,144 @@ function InterfaceConfidenceSummary({
   );
 }
 
+const CONTACT_MAP_CELL_CLR: Record<string, string> = {
+  "h-bond":       "var(--pio-lavender)",
+  "salt-bridge":  "var(--pio-amber)",
+  "aromatic":     "var(--pio-lavender-pale)",
+  "pi-cation":    "var(--pio-sky)",
+  "hydrophobic":  "var(--pio-green)",
+  "halogen-bond": "var(--pio-coral)",
+  "unclassified": "var(--pio-graphite)",
+};
+const CONTACT_MAP_LEGEND = [
+  { key: "h-bond",       label: "H-bond" },
+  { key: "salt-bridge",  label: "Salt bridge" },
+  { key: "hydrophobic",  label: "Hydrophobic" },
+  { key: "aromatic",     label: "Aromatic" },
+  { key: "pi-cation",    label: "π-cation" },
+  { key: "halogen-bond", label: "Halogen" },
+];
+const CLASS_PRIORITY = ["salt-bridge", "h-bond", "pi-cation", "halogen-bond", "aromatic", "hydrophobic", "unclassified"];
+
+function InterfaceContactMap({
+  pair,
+  contacts,
+}: {
+  pair: ChainPairSummary;
+  contacts: ContactRecord[];
+}) {
+  const residuesA = pair.interface_residues_a
+    .slice()
+    .sort((a, b) => parseInt(a.residue_number) - parseInt(b.residue_number));
+  const residuesB = pair.interface_residues_b
+    .slice()
+    .sort((a, b) => parseInt(a.residue_number) - parseInt(b.residue_number));
+
+  if (residuesA.length === 0 || residuesB.length === 0) return null;
+
+  // Build map: "resNumA_resNumB" → best interaction_class
+  const contactMap = new Map<string, string>();
+  for (const c of contacts) {
+    let resA: string | null = null;
+    let resB: string | null = null;
+    if (c.chain_a === pair.chain_a && c.chain_b === pair.chain_b) {
+      resA = c.residue_a; resB = c.residue_b;
+    } else if (c.chain_a === pair.chain_b && c.chain_b === pair.chain_a) {
+      resA = c.residue_b; resB = c.residue_a;
+    }
+    if (resA && resB) {
+      const key = `${resA}_${resB}`;
+      const cls = c.interaction_class ?? "unclassified";
+      const existing = contactMap.get(key);
+      if (!existing || CLASS_PRIORITY.indexOf(cls) < CLASS_PRIORITY.indexOf(existing)) {
+        contactMap.set(key, cls);
+      }
+    }
+  }
+
+  if (contactMap.size === 0) return null;
+
+  const classesPresent = new Set(contactMap.values());
+  const CELL = 12;
+  const LABEL_W = 56;
+  const HEADER_H = 48;
+
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase", marginBottom: 8 }}>
+        Contact map
+      </p>
+      <div style={{ overflowX: "auto" }}>
+        <div style={{ display: "inline-block", minWidth: LABEL_W + residuesB.length * CELL }}>
+          {/* Column headers — chain B residues (rotated) */}
+          <div style={{ display: "flex", paddingLeft: LABEL_W }}>
+            {residuesB.map((res) => (
+              <div
+                key={res.residue_number}
+                style={{ width: CELL, height: HEADER_H, display: "flex", alignItems: "flex-end", justifyContent: "center", overflow: "visible" }}
+              >
+                <span style={{ fontSize: 7, color: "var(--pio-graphite)", writingMode: "vertical-lr", transform: "rotate(180deg)", whiteSpace: "nowrap", letterSpacing: "0.03em" }}>
+                  {res.residue_name}{res.residue_number}
+                </span>
+              </div>
+            ))}
+          </div>
+          {/* Rows — chain A residues */}
+          {residuesA.map((resA) => (
+            <div key={resA.residue_number} style={{ display: "flex", alignItems: "center" }}>
+              <span style={{ width: LABEL_W, fontSize: 7, color: "var(--pio-graphite)", textAlign: "right", paddingRight: 6, letterSpacing: "0.03em", flexShrink: 0, whiteSpace: "nowrap" }}>
+                {resA.residue_name}{resA.residue_number}
+              </span>
+              {residuesB.map((resB) => {
+                const cls = contactMap.get(`${resA.residue_number}_${resB.residue_number}`);
+                return (
+                  <div
+                    key={resB.residue_number}
+                    title={cls ? `${resA.residue_name}${resA.residue_number}–${resB.residue_name}${resB.residue_number} (${cls})` : undefined}
+                    style={{
+                      width: CELL,
+                      height: CELL,
+                      flexShrink: 0,
+                      background: cls ? CONTACT_MAP_CELL_CLR[cls] ?? CONTACT_MAP_CELL_CLR.unclassified : "transparent",
+                      border: "1px solid var(--pio-line)",
+                      boxSizing: "border-box",
+                      opacity: cls ? 1 : 0.25,
+                    }}
+                  />
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* Axis labels */}
+      <div style={{ display: "flex", gap: 20, marginTop: 6, flexWrap: "wrap" }}>
+        <p style={{ fontSize: 9, color: "var(--pio-graphite)", fontWeight: 600 }}>Rows: Chain {pair.chain_a}</p>
+        <p style={{ fontSize: 9, color: "var(--pio-graphite)", fontWeight: 600 }}>Cols: Chain {pair.chain_b}</p>
+      </div>
+      {/* Legend */}
+      <div style={{ display: "flex", gap: 10, marginTop: 8, flexWrap: "wrap" }}>
+        {CONTACT_MAP_LEGEND.filter((l) => classesPresent.has(l.key)).map((l) => (
+          <div key={l.key} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <span style={{ width: 10, height: 10, borderRadius: 2, background: CONTACT_MAP_CELL_CLR[l.key], flexShrink: 0, display: "inline-block" }} />
+            <span style={{ fontSize: 9, color: "var(--pio-graphite)" }}>{l.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function InterfacesTab({
   interfaceAnalysis,
   pae,
   confidence,
+  contacts,
 }: {
   interfaceAnalysis: InterfaceAnalysis;
   pae: PaeSummary | null;
   confidence: ConfidenceSummary | null;
+  contacts: ContactRecord[];
 }) {
   const [expandedPair, setExpandedPair] = useState<string | null>(null);
 
@@ -1779,6 +1910,7 @@ function InterfacesTab({
                 {isExpanded && (
                   <div style={{ padding: "12px 12px 16px", background: "var(--pio-paper)", borderTop: "1px solid var(--pio-line)" }}>
                     <InterfaceConfidenceSummary pair={pair} pae={pae} />
+                    <InterfaceContactMap pair={pair} contacts={contacts} />
                     <div style={{ display: "flex", gap: 16 }}>
                       <InterfaceResidueList residues={pair.interface_residues_a} label={pair.chain_a} />
                       <div style={{ width: 1, background: "var(--pio-line)", flexShrink: 0 }} />
