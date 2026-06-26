@@ -3312,7 +3312,7 @@ function FloatingLigandPanel({
               <div style={{ background: "rgba(255,255,255,0.6)", borderRadius: 6, overflow: "hidden" }}>
                 {/* Table header */}
                 <div style={{
-                  display: "grid", gridTemplateColumns: "1fr 1.1fr 58px 52px",
+                  display: "grid", gridTemplateColumns: "1fr 1fr 54px 74px",
                   gap: 6, padding: "5px 8px", borderBottom: "1px solid rgba(26,64,106,0.1)",
                   background: "rgba(199,217,236,0.3)",
                 }}>
@@ -3337,7 +3337,7 @@ function FloatingLigandPanel({
                     <div
                       key={`${c.chain_a}${c.residue_a}${c.atom_a}-${c.chain_b}${c.residue_b}${c.atom_b}`}
                       style={{
-                        display: "grid", gridTemplateColumns: "1fr 1.1fr 58px 52px",
+                        display: "grid", gridTemplateColumns: "1fr 1fr 54px 74px",
                         alignItems: "center", gap: 6,
                         padding: "5px 8px",
                         borderBottom: i < shownContacts.length - 1 ? "1px solid rgba(26,64,106,0.06)" : "none",
