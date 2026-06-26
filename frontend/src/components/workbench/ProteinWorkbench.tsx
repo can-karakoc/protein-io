@@ -3312,12 +3312,15 @@ function FloatingLigandPanel({
               <div style={{ background: "rgba(255,255,255,0.6)", borderRadius: 6, overflow: "hidden" }}>
                 {/* Table header */}
                 <div style={{
-                  display: "grid", gridTemplateColumns: "1fr 1.2fr auto auto",
-                  padding: "4px 8px", borderBottom: "1px solid rgba(26,64,106,0.1)",
+                  display: "grid", gridTemplateColumns: "1fr 1.1fr 58px 52px",
+                  gap: 6, padding: "5px 8px", borderBottom: "1px solid rgba(26,64,106,0.1)",
                   background: "rgba(199,217,236,0.3)",
                 }}>
-                  {["RESIDUE", "ATOMS", "DIST", "TYPE"].map((h) => (
-                    <span key={h} style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "0.08em", ...TEXT, opacity: 0.55 }}>{h}</span>
+                  {(["RESIDUE", "ATOMS", "DIST", "TYPE"] as const).map((h) => (
+                    <span key={h} style={{
+                      fontSize: 8.5, fontWeight: 700, letterSpacing: "0.08em", ...TEXT, opacity: 0.55,
+                      textAlign: h === "DIST" || h === "TYPE" ? "right" : "left",
+                    }}>{h}</span>
                   ))}
                 </div>
                 {/* Contact rows */}
@@ -3334,29 +3337,31 @@ function FloatingLigandPanel({
                     <div
                       key={`${c.chain_a}${c.residue_a}${c.atom_a}-${c.chain_b}${c.residue_b}${c.atom_b}`}
                       style={{
-                        display: "grid", gridTemplateColumns: "1fr 1.2fr auto auto",
-                        alignItems: "center", gap: 4,
-                        padding: "4px 8px",
+                        display: "grid", gridTemplateColumns: "1fr 1.1fr 58px 52px",
+                        alignItems: "center", gap: 6,
+                        padding: "5px 8px",
                         borderBottom: i < shownContacts.length - 1 ? "1px solid rgba(26,64,106,0.06)" : "none",
                         background: i % 2 === 1 ? "rgba(199,217,236,0.15)" : "transparent",
                       }}
                     >
-                      <span style={{ ...MONO, fontSize: 10.5, fontWeight: 600 }} title={`${protChain}:${protResN}${protResNum}`}>
+                      <span style={{ ...MONO, fontSize: 10.5, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={`${protChain}:${protResN}${protResNum}`}>
                         {protChain}:{protResN}{protResNum}
                       </span>
                       <span style={{ ...MONO, fontSize: 9.5, opacity: 0.7, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={`${protAtom}–${ligAtom}`}>
                         {protAtom}–{ligAtom}
                       </span>
-                      <span style={{ ...MONO, fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>
+                      <span style={{ ...MONO, fontSize: 10, fontWeight: 600, whiteSpace: "nowrap", textAlign: "right" }}>
                         {c.distance_angstrom.toFixed(2)} Å
                       </span>
-                      {badge ? (
-                        <span className={`pio-badge ${badge.cls}`} style={{ padding: "2px 6px", fontSize: 9, whiteSpace: "nowrap" }}>
-                          {badge.label}
-                        </span>
-                      ) : (
-                        <span style={{ fontSize: 9, ...TEXT, opacity: 0.35 }}>—</span>
-                      )}
+                      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                        {badge ? (
+                          <span className={`pio-badge ${badge.cls}`} style={{ padding: "2px 6px", fontSize: 9, whiteSpace: "nowrap" }}>
+                            {badge.label}
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: 9, ...TEXT, opacity: 0.35 }}>—</span>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
