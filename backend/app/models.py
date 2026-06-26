@@ -203,6 +203,14 @@ class StructureData(BaseModel):
         )
 
 
+class InterfaceResidue(BaseModel):
+    chain_id: str
+    residue_number: str
+    residue_name: str
+    contact_count: int
+    plddt: float | None = None
+
+
 class ChainPairSummary(BaseModel):
     chain_a: str
     chain_b: str
@@ -211,6 +219,8 @@ class ChainPairSummary(BaseModel):
     mean_plddt_b: float | None = None
     interface_residue_count_a: int = 0
     interface_residue_count_b: int = 0
+    interface_residues_a: list[InterfaceResidue] = Field(default_factory=list)
+    interface_residues_b: list[InterfaceResidue] = Field(default_factory=list)
 
 
 class WaterBridgeRecord(BaseModel):
@@ -267,6 +277,7 @@ class UniProtAnnotations(BaseModel):
     domains: list[UniProtFeature] = Field(default_factory=list)
     active_sites: list[UniProtFeature] = Field(default_factory=list)
     binding_sites: list[UniProtFeature] = Field(default_factory=list)
+    variants: list[UniProtFeature] = Field(default_factory=list)
 
 
 class StructureComparisonDelta(BaseModel):

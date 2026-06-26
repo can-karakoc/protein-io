@@ -16,6 +16,7 @@ DEFAULT_TIMEOUT_SECONDS = 10
 _DOMAIN_TYPE = "domain"
 _ACTIVE_SITE_TYPE = "active site"
 _BINDING_SITE_TYPE = "binding site"
+_VARIANT_TYPE = "natural variant"
 
 
 def fetch_uniprot_annotations(uniprot_id: str) -> UniProtAnnotations | None:
@@ -32,7 +33,7 @@ def _parse_annotations(data: dict) -> UniProtAnnotations:
     protein_name = _extract_protein_name(data)
     gene_names = _extract_gene_names(data)
     function = _extract_function(data)
-    domains, active_sites, binding_sites = _extract_features(data)
+    domains, active_sites, binding_sites, variants = _extract_features(data)
     return UniProtAnnotations(
         protein_name=protein_name,
         gene_names=gene_names,
@@ -40,6 +41,7 @@ def _parse_annotations(data: dict) -> UniProtAnnotations:
         domains=domains,
         active_sites=active_sites,
         binding_sites=binding_sites,
+        variants=variants,
     )
 
 
@@ -68,10 +70,11 @@ def _extract_function(data: dict) -> str | None:
 
 def _extract_features(
     data: dict,
-) -> tuple[list[UniProtFeature], list[UniProtFeature], list[UniProtFeature]]:
+) -> tuple[list[UniProtFeature], list[UniProtFeature], list[UniProtFeature], list[UniProtFeature]]:
     domains: list[UniProtFeature] = []
     active_sites: list[UniProtFeature] = []
     binding_sites: list[UniProtFeature] = []
+    variants: list[UniProtFeature] = []
 
     for feature in data.get("features", []):
         feature_type = (feature.get("type") or "").lower()
@@ -91,8 +94,10 @@ def _extract_features(
             active_sites.append(record)
         elif feature_type == _BINDING_SITE_TYPE:
             binding_sites.append(record)
+        elif feature_type == _VARIANT_TYPE:
+            variants.append(record)
 
-    return domains, active_sites, binding_sites
+    return domains, active_sites, binding_sites, variants
 
 
 def _get_json(url: str) -> dict:

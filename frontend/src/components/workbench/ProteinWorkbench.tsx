@@ -21,6 +21,7 @@ import type {
   ContactRecord,
   ConfidenceSummary,
   InterfaceAnalysis,
+  InterfaceResidue,
   InteractionSummary,
   LigandInteractionSummary,
   LigandSummary,
@@ -1452,7 +1453,8 @@ function UniProtPanel({ annotations }: { annotations: UniProtAnnotations }) {
     annotations.function ||
     annotations.domains.length > 0 ||
     annotations.active_sites.length > 0 ||
-    annotations.binding_sites.length > 0;
+    annotations.binding_sites.length > 0 ||
+    (annotations.variants?.length ?? 0) > 0;
   if (!hasContent) return null;
 
   return (
@@ -1488,6 +1490,12 @@ function UniProtPanel({ annotations }: { annotations: UniProtAnnotations }) {
             />
           )}
         </div>
+      )}
+      {(annotations.variants?.length ?? 0) > 0 && (
+        <UniProtFeatureSection
+          label="Natural variants"
+          items={annotations.variants}
+        />
       )}
     </div>
   );
@@ -1536,12 +1544,44 @@ function PldDTCell({ value }: { value: number | null }) {
   return <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 600, color }}>{value.toFixed(1)}</span>;
 }
 
+function InterfaceResidueList({ residues, label }: { residues: InterfaceResidue[]; label: string }) {
+  return (
+    <div style={{ flex: 1 }}>
+      <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--pio-graphite)", marginBottom: 8 }}>
+        Chain {label} ({residues.length} residues)
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        {residues.map((r) => {
+          const plddtColor = r.plddt == null ? "var(--pio-graphite)" : r.plddt >= 90 ? "var(--pio-green-deep)" : r.plddt >= 70 ? "var(--pio-ink)" : "var(--pio-coral)";
+          return (
+            <div key={`${r.chain_id}-${r.residue_number}`}
+                 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", borderRadius: 6, background: "var(--pio-white)" }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
+                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 11, fontWeight: 700, color: "var(--pio-ink)" }}>{r.residue_name}</span>
+                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 10, color: "var(--pio-graphite)" }}>{r.residue_number}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 10, color: "var(--pio-graphite)" }}>{r.contact_count}c</span>
+                {r.plddt != null && (
+                  <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 10, fontWeight: 600, color: plddtColor }}>{r.plddt.toFixed(0)}</span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function InterfacesTab({ interfaceAnalysis }: { interfaceAnalysis: InterfaceAnalysis }) {
+  const [expandedPair, setExpandedPair] = useState<string | null>(null);
+
   return (
     <div className="min-w-0">
       <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)" }}>Interfaces</h2>
       <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>
-        Inter-chain contact summary
+        Inter-chain contact summary — click a row to see interface residues
       </p>
 
       {/* Summary tiles */}
@@ -1569,28 +1609,45 @@ function InterfacesTab({ interfaceAnalysis }: { interfaceAnalysis: InterfaceAnal
       {/* Chain pairs table */}
       <div style={{ overflowX: "auto", marginTop: 20 }}>
         <div style={{ minWidth: 600 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "60px 60px 90px 80px 80px 100px 100px", columnGap: 8, borderBottom: "1px solid var(--pio-line)", padding: "8px 12px" }}>
-            {["CHAIN A", "CHAIN B", "CONTACTS", "RES A", "RES B", "MEAN pLDDT A", "MEAN pLDDT B"].map((col) => (
-              <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)" }}>{col}</p>
+          <div style={{ display: "grid", gridTemplateColumns: "60px 60px 90px 80px 80px 100px 100px 24px", columnGap: 8, borderBottom: "1px solid var(--pio-line)", padding: "8px 12px" }}>
+            {["CHAIN A", "CHAIN B", "CONTACTS", "RES A", "RES B", "MEAN pLDDT A", "MEAN pLDDT B", ""].map((col, i) => (
+              <p key={i} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)" }}>{col}</p>
             ))}
           </div>
-          {interfaceAnalysis.chain_pairs.map((pair: ChainPairSummary, i: number) => (
-            <div key={`${pair.chain_a}-${pair.chain_b}`}>
-              <div style={{ display: "grid", gridTemplateColumns: "60px 60px 90px 80px 80px 100px 100px", columnGap: 8, padding: "10px 12px", alignItems: "center" }}
-                   className="hover:bg-[var(--pio-paper)]">
-                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 13, fontWeight: 600, color: "var(--pio-ink)" }}>{pair.chain_a}</span>
-                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 13, fontWeight: 600, color: "var(--pio-ink)" }}>{pair.chain_b}</span>
-                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, color: "var(--pio-ink)" }}>{pair.contact_count.toLocaleString()}</span>
-                <span style={{ fontSize: 12, color: "var(--pio-graphite)" }}>{pair.interface_residue_count_a}</span>
-                <span style={{ fontSize: 12, color: "var(--pio-graphite)" }}>{pair.interface_residue_count_b}</span>
-                <PldDTCell value={pair.mean_plddt_a} />
-                <PldDTCell value={pair.mean_plddt_b} />
+          {interfaceAnalysis.chain_pairs.map((pair: ChainPairSummary, i: number) => {
+            const pairKey = `${pair.chain_a}-${pair.chain_b}`;
+            const isExpanded = expandedPair === pairKey;
+            return (
+              <div key={pairKey}>
+                <div
+                  style={{ display: "grid", gridTemplateColumns: "60px 60px 90px 80px 80px 100px 100px 24px", columnGap: 8, padding: "10px 12px", alignItems: "center", cursor: "pointer" }}
+                  className="hover:bg-[var(--pio-paper)]"
+                  onClick={() => setExpandedPair(isExpanded ? null : pairKey)}
+                >
+                  <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 13, fontWeight: 600, color: "var(--pio-ink)" }}>{pair.chain_a}</span>
+                  <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 13, fontWeight: 600, color: "var(--pio-ink)" }}>{pair.chain_b}</span>
+                  <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, color: "var(--pio-ink)" }}>{pair.contact_count.toLocaleString()}</span>
+                  <span style={{ fontSize: 12, color: "var(--pio-graphite)" }}>{pair.interface_residue_count_a}</span>
+                  <span style={{ fontSize: 12, color: "var(--pio-graphite)" }}>{pair.interface_residue_count_b}</span>
+                  <PldDTCell value={pair.mean_plddt_a} />
+                  <PldDTCell value={pair.mean_plddt_b} />
+                  <span style={{ fontSize: 12, color: "var(--pio-graphite)", textAlign: "center", userSelect: "none" }}>{isExpanded ? "▲" : "▼"}</span>
+                </div>
+                {isExpanded && (
+                  <div style={{ padding: "12px 12px 16px", background: "var(--pio-paper)", borderTop: "1px solid var(--pio-line)" }}>
+                    <div style={{ display: "flex", gap: 16 }}>
+                      <InterfaceResidueList residues={pair.interface_residues_a} label={pair.chain_a} />
+                      <div style={{ width: 1, background: "var(--pio-line)", flexShrink: 0 }} />
+                      <InterfaceResidueList residues={pair.interface_residues_b} label={pair.chain_b} />
+                    </div>
+                  </div>
+                )}
+                {i < interfaceAnalysis.chain_pairs.length - 1 && (
+                  <div style={{ height: 1, background: "var(--pio-line)" }} />
+                )}
               </div>
-              {i < interfaceAnalysis.chain_pairs.length - 1 && (
-                <div style={{ height: 1, background: "var(--pio-line)" }} />
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

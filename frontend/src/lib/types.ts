@@ -166,6 +166,14 @@ export type InteractionSummary = {
   possible_clashes: ContactRecord[];
 };
 
+export type InterfaceResidue = {
+  chain_id: string;
+  residue_number: string;
+  residue_name: string;
+  contact_count: number;
+  plddt: number | null;
+};
+
 export type ChainPairSummary = {
   chain_a: string;
   chain_b: string;
@@ -174,6 +182,8 @@ export type ChainPairSummary = {
   mean_plddt_b: number | null;
   interface_residue_count_a: number;
   interface_residue_count_b: number;
+  interface_residues_a: InterfaceResidue[];
+  interface_residues_b: InterfaceResidue[];
 };
 
 export type InterfaceAnalysis = {
@@ -195,6 +205,7 @@ export type UniProtAnnotations = {
   domains: UniProtFeature[];
   active_sites: UniProtFeature[];
   binding_sites: UniProtFeature[];
+  variants: UniProtFeature[];
 };
 
 export type AnalysisResponse = {
