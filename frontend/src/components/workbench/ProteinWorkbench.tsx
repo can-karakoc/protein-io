@@ -2567,17 +2567,17 @@ function SummaryCards({ analysis }: { analysis: AnalysisResponse | null }) {
 
   return (
     <div>
-      <div className="flex flex-col gap-2">
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
         {items.map(([label, value, description]) => (
           <div
             key={label}
-            className="flex items-center justify-between rounded-[12px] bg-[var(--pio-paper)] px-4 py-3"
+            style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}
           >
-            <div>
-              <p className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">{label}</p>
-              <p className="mt-0.5 text-[22px] font-bold leading-none text-[var(--pio-ink)]">{value.toLocaleString()}</p>
-            </div>
-            <p className="max-w-[160px] text-right text-[12px] leading-[1.4] text-[var(--pio-graphite)]">{description}</p>
+            <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>{label}</p>
+            <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 22, fontWeight: 700, marginTop: 4, color: "var(--pio-ink)", lineHeight: 1 }}>
+              {value.toLocaleString()}
+            </p>
+            <p style={{ fontSize: 10, color: "var(--pio-graphite)", marginTop: 6, lineHeight: 1.4, opacity: 0.8 }}>{description}</p>
           </div>
         ))}
       </div>
@@ -2673,13 +2673,13 @@ function ConfidencePanel({
 
   return (
     <div className="pio-panel p-4">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <div>
           <h2 className="pio-section-title">Predicted confidence</h2>
           <p className="pio-section-copy mt-1">
             pLDDT values were read from residue B-factors for this predicted structure.
           </p>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginTop: 12 }}>
             <div>
               <p className="pio-label">Average pLDDT</p>
               <p className="pio-value mt-1 text-xl font-bold text-[var(--pio-lavender-deep)]">{confidence.average_plddt.toFixed(2)}</p>
@@ -2714,7 +2714,7 @@ function ConfidencePanel({
         </div>
       </div>
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8, marginTop: 16 }}>
         {categories.map(([label, count, color]) => (
           <div key={label} className="pio-kv-card flex items-center justify-between">
             <div className="flex items-center gap-2">
