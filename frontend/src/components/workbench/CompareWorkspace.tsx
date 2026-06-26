@@ -44,9 +44,11 @@ type CompareCacheEntry = {
 const COMPARE_CACHE_KEY = "pio_compare_v1";
 const SUPPORTED_STRUCTURE_FILE = /\.(pdb|cif|mmcif)$/i;
 
+// Module-level snapshot — survives tab switches within a session without touching localStorage.
+// localStorage is still written (trimmed) for cross-session persistence (page reload).
+let _sessionSnapshot: CompareCacheEntry | null = null;
+
 function trimComparisonForCache(c: StructureComparisonResponse): StructureComparisonResponse {
-  // Drop the heavy per-atom contact arrays — the compare view only needs summary counts,
-  // delta tiles, structure metadata, and the contact-difference rows (capped to 500).
   const trimAnalysis = (a: typeof c.structure_a) => ({
     ...a,
     contacts: [],
@@ -67,9 +69,12 @@ function trimComparisonForCache(c: StructureComparisonResponse): StructureCompar
 }
 
 function saveCompareCache(entry: CompareCacheEntry) {
+  // Always keep the full entry in memory — no trimming needed for session snapshot
+  _sessionSnapshot = entry;
+
+  // Trim before writing to localStorage to stay within the 5 MB quota
   const trimmed: CompareCacheEntry = {
     ...entry,
-    // Strip fileText for public sources (can re-fetch); keep for local uploads
     inputA: entry.inputA.mode !== "local" ? { ...entry.inputA, fileText: null } : entry.inputA,
     inputB: entry.inputB.mode !== "local" ? { ...entry.inputB, fileText: null } : entry.inputB,
     comparison: entry.comparison ? trimComparisonForCache(entry.comparison) : null,
@@ -78,6 +83,8 @@ function saveCompareCache(entry: CompareCacheEntry) {
 }
 
 function loadCompareCache(): CompareCacheEntry | null {
+  // Prefer in-memory snapshot (full fidelity); fall back to localStorage (page reload case)
+  if (_sessionSnapshot) return _sessionSnapshot;
   try {
     const raw = localStorage.getItem(COMPARE_CACHE_KEY);
     return raw ? (JSON.parse(raw) as CompareCacheEntry) : null;
