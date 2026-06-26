@@ -44,8 +44,37 @@ type CompareCacheEntry = {
 const COMPARE_CACHE_KEY = "pio_compare_v1";
 const SUPPORTED_STRUCTURE_FILE = /\.(pdb|cif|mmcif)$/i;
 
+function trimComparisonForCache(c: StructureComparisonResponse): StructureComparisonResponse {
+  // Drop the heavy per-atom contact arrays — the compare view only needs summary counts,
+  // delta tiles, structure metadata, and the contact-difference rows (capped to 500).
+  const trimAnalysis = (a: typeof c.structure_a) => ({
+    ...a,
+    contacts: [],
+    residue_confidences: [],
+    water_bridges: [],
+  });
+  return {
+    ...c,
+    structure_a: trimAnalysis(c.structure_a),
+    structure_b: trimAnalysis(c.structure_b),
+    contacts: {
+      ...c.contacts,
+      shared_contacts: c.contacts.shared_contacts.slice(0, 500),
+      gained_contacts: c.contacts.gained_contacts.slice(0, 500),
+      lost_contacts: c.contacts.lost_contacts.slice(0, 500),
+    },
+  };
+}
+
 function saveCompareCache(entry: CompareCacheEntry) {
-  try { localStorage.setItem(COMPARE_CACHE_KEY, JSON.stringify(entry)); } catch { /* quota */ }
+  const trimmed: CompareCacheEntry = {
+    ...entry,
+    // Strip fileText for public sources (can re-fetch); keep for local uploads
+    inputA: entry.inputA.mode !== "local" ? { ...entry.inputA, fileText: null } : entry.inputA,
+    inputB: entry.inputB.mode !== "local" ? { ...entry.inputB, fileText: null } : entry.inputB,
+    comparison: entry.comparison ? trimComparisonForCache(entry.comparison) : null,
+  };
+  try { localStorage.setItem(COMPARE_CACHE_KEY, JSON.stringify(trimmed)); } catch { /* quota */ }
 }
 
 function loadCompareCache(): CompareCacheEntry | null {
