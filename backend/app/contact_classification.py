@@ -12,6 +12,7 @@ from app.models import (
     LigandInteractionSummary,
     TopContactLigand,
     TopContactResidue,
+    WaterBridgeRecord,
 )
 
 
@@ -101,7 +102,11 @@ def summarize_interactions(contacts: list[ContactRecord], max_items: int = 5) ->
     )
 
 
-def summarize_ligand_interactions(contacts: list[ContactRecord], max_residues: int = 5) -> list[LigandInteractionSummary]:
+def summarize_ligand_interactions(
+    contacts: list[ContactRecord],
+    water_bridges: list[WaterBridgeRecord] | None = None,
+    max_residues: int = 5,
+) -> list[LigandInteractionSummary]:
     ligand_contacts: dict[tuple[str, str, str], list[ContactRecord]] = {}
 
     for contact in contacts:
@@ -109,6 +114,12 @@ def summarize_ligand_interactions(contacts: list[ContactRecord], max_residues: i
         if ligand_key is None:
             continue
         ligand_contacts.setdefault(ligand_key, []).append(contact)
+
+    # ligand key = (chain_id, residue_id, residue_name) — mirrors ligand_residue_key()
+    bridge_by_ligand: dict[tuple[str, str, str], int] = {}
+    for bridge in (water_bridges or []):
+        key = (bridge.ligand_chain, bridge.ligand_residue, bridge.ligand_residue_name)
+        bridge_by_ligand[key] = bridge_by_ligand.get(key, 0) + 1
 
     summaries: list[LigandInteractionSummary] = []
     for (chain_id, residue_number, name), ligand_contact_rows in ligand_contacts.items():
@@ -145,6 +156,7 @@ def summarize_ligand_interactions(contacts: list[ContactRecord], max_residues: i
                 ],
                 distance_distribution=ligand_distance_distribution(ligand_contact_rows),
                 interaction_class_breakdown=dict(class_counts),
+                water_bridge_count=bridge_by_ligand.get((chain_id, residue_number, name), 0),
             )
         )
 

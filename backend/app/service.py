@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from time import perf_counter
 
-from app.contacts import calculate_contacts
+from app.contacts import calculate_contacts, find_water_bridges
 from app.contact_classification import summarize_interactions, summarize_ligand_interactions
 from app.comparison import compare_analyses
 from app.confidence import analyze_plddt_confidence
@@ -138,6 +138,7 @@ def analyze_pdb_content_with_timing(
 
     contacts_started = perf_counter()
     contacts, contact_warnings = calculate_contacts(structure, cutoff_angstrom=cutoff_angstrom)
+    water_bridges = find_water_bridges(structure)
     contacts_ms = elapsed_ms(contacts_started)
 
     response_started = perf_counter()
@@ -156,7 +157,8 @@ def analyze_pdb_content_with_timing(
         residue_confidences=residue_confidences,
         pae=pae,
         interaction_summary=summarize_interactions(contacts),
-        ligand_interactions=summarize_ligand_interactions(contacts),
+        ligand_interactions=summarize_ligand_interactions(contacts, water_bridges=water_bridges),
+        water_bridges=water_bridges,
         chains=structure.chains,
         ligands=structure.ligands,
         contacts=contacts,

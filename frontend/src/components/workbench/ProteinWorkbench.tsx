@@ -3158,7 +3158,10 @@ function FloatingLigandPanel({
           )}
 
           {/* Interaction class breakdown */}
-          {interaction?.interaction_class_breakdown && Object.keys(interaction.interaction_class_breakdown).length > 0 && (
+          {interaction && (
+            (interaction.interaction_class_breakdown && Object.keys(interaction.interaction_class_breakdown).length > 0) ||
+            (interaction.water_bridge_count != null && interaction.water_bridge_count > 0)
+          ) && (
             <div>
               <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 5 }}>INTERACTION TYPES</p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
@@ -3173,6 +3176,11 @@ function FloatingLigandPanel({
                     </span>
                   );
                 })}
+                {interaction.water_bridge_count != null && interaction.water_bridge_count > 0 && (
+                  <span className="pio-badge pio-badge-metadata" style={{ padding: "3px 9px", fontSize: 10, whiteSpace: "nowrap" }}>
+                    water bridge <span style={{ opacity: 0.8, fontWeight: 700 }}>{interaction.water_bridge_count}</span>
+                  </span>
+                )}
               </div>
             </div>
           )}

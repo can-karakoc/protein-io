@@ -8,7 +8,7 @@ import gemmi
 
 from app.contact_classification import classify_contact_type, contact_categories
 from app.interaction_classifier import classify_interaction_class
-from app.models import AtomRecord, ContactRecord, StructureData
+from app.models import AtomRecord, ContactRecord, StructureData, WaterBridgeRecord
 
 
 DEFAULT_DISTANCE_CUTOFF = 4.0
@@ -82,6 +82,66 @@ def calculate_contacts(
         contacts = contacts[:max_contacts]
 
     return contacts, warnings
+
+
+WATER_BRIDGE_CUTOFF = 3.5  # Å — H-bond range, matching PLIP's threshold
+
+
+def find_water_bridges(structure: StructureData) -> list[WaterBridgeRecord]:
+    """
+    Detect water-mediated protein-ligand contacts.
+
+    A bridge exists when a single HOH oxygen is within WATER_BRIDGE_CUTOFF of
+    at least one protein atom AND at least one ligand atom. Reports the closest
+    protein and ligand atom for each bridging water molecule.
+    """
+    protein_atoms = [a for a in structure.atoms if a.residue_kind == "protein" and not is_hydrogen_atom(a)]
+    ligand_atoms  = [a for a in structure.atoms if a.residue_kind == "ligand"  and not is_hydrogen_atom(a)]
+    water_atoms   = [a for a in structure.atoms if a.residue_kind == "water"   and not is_hydrogen_atom(a)]
+
+    if not (water_atoms and protein_atoms and ligand_atoms):
+        return []
+
+    bridges: list[WaterBridgeRecord] = []
+
+    for water in water_atoms:
+        best_protein: tuple[AtomRecord, float] | None = None
+        for pa in protein_atoms:
+            d = atom_distance(water, pa)
+            if d <= WATER_BRIDGE_CUTOFF and (best_protein is None or d < best_protein[1]):
+                best_protein = (pa, d)
+
+        if best_protein is None:
+            continue
+
+        best_ligand: tuple[AtomRecord, float] | None = None
+        for la in ligand_atoms:
+            d = atom_distance(water, la)
+            if d <= WATER_BRIDGE_CUTOFF and (best_ligand is None or d < best_ligand[1]):
+                best_ligand = (la, d)
+
+        if best_ligand is None:
+            continue
+
+        pa, dp = best_protein
+        la, dl = best_ligand
+        bridges.append(WaterBridgeRecord(
+            water_chain=water.chain_id,
+            water_residue=water.residue_id,
+            water_residue_number=water.residue_number,
+            protein_chain=pa.chain_id,
+            protein_residue=pa.residue_id,
+            protein_residue_name=pa.residue_name,
+            protein_atom=pa.name,
+            dist_to_protein=round(dp, 3),
+            ligand_chain=la.chain_id,
+            ligand_residue=la.residue_id,
+            ligand_residue_name=la.residue_name,
+            ligand_atom=la.name,
+            dist_to_ligand=round(dl, 3),
+        ))
+
+    return sorted(bridges, key=lambda b: (b.ligand_residue, b.dist_to_protein + b.dist_to_ligand))
 
 
 def build_neighbor_search_index(atoms: list[AtomRecord], cutoff_angstrom: float) -> NeighborSearchIndex:

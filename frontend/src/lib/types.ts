@@ -149,6 +149,7 @@ export type LigandInteractionSummary = {
   contacting_residues: TopContactResidue[];
   distance_distribution: DistanceDistribution;
   interaction_class_breakdown?: Record<string, number>;
+  water_bridge_count?: number;
 };
 
 export type InteractionSummary = {
@@ -208,9 +209,26 @@ export type AnalysisResponse = {
   chains: ChainSummary[];
   ligands: LigandSummary[];
   contacts: ContactRecord[];
+  water_bridges?: WaterBridgeRecord[];
   warnings: string[];
   interface_analysis?: InterfaceAnalysis | null;
   uniprot_annotations?: UniProtAnnotations | null;
+};
+
+export type WaterBridgeRecord = {
+  water_chain: string;
+  water_residue: string;
+  water_residue_number: string;
+  protein_chain: string;
+  protein_residue: string;
+  protein_residue_name: string;
+  protein_atom: string;
+  dist_to_protein: number;
+  ligand_chain: string;
+  ligand_residue: string;
+  ligand_residue_name: string;
+  ligand_atom: string;
+  dist_to_ligand: number;
 };
 
 export type StructureComparisonDelta = {

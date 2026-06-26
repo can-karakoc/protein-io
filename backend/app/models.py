@@ -112,6 +112,7 @@ class LigandInteractionSummary(BaseModel):
     contacting_residues: list[TopContactResidue] = Field(default_factory=list)
     distance_distribution: DistanceDistribution = Field(default_factory=DistanceDistribution)
     interaction_class_breakdown: dict[str, int] = Field(default_factory=dict)
+    water_bridge_count: int = 0
 
 
 class InteractionSummary(BaseModel):
@@ -212,6 +213,22 @@ class ChainPairSummary(BaseModel):
     interface_residue_count_b: int = 0
 
 
+class WaterBridgeRecord(BaseModel):
+    water_chain: str
+    water_residue: str
+    water_residue_number: str
+    protein_chain: str
+    protein_residue: str
+    protein_residue_name: str
+    protein_atom: str
+    dist_to_protein: float
+    ligand_chain: str
+    ligand_residue: str
+    ligand_residue_name: str
+    ligand_atom: str
+    dist_to_ligand: float
+
+
 class InterfaceAnalysis(BaseModel):
     chain_pairs: list[ChainPairSummary] = Field(default_factory=list)
     inter_chain_contact_count: int = 0
@@ -230,6 +247,7 @@ class AnalysisResponse(BaseModel):
     chains: list[ChainSummary]
     ligands: list[LigandSummary]
     contacts: list[ContactRecord]
+    water_bridges: list[WaterBridgeRecord] = Field(default_factory=list)
     interface_analysis: InterfaceAnalysis | None = None
     uniprot_annotations: UniProtAnnotations | None = None
     warnings: list[str] = Field(default_factory=list)
