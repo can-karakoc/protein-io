@@ -3177,7 +3177,7 @@ function FloatingLigandPanel({
                   );
                 })}
                 {interaction.water_bridge_count != null && interaction.water_bridge_count > 0 && (
-                  <span className="pio-badge pio-badge-metadata" style={{ padding: "3px 9px", fontSize: 10, whiteSpace: "nowrap" }}>
+                  <span className="pio-badge pio-badge-neutral" style={{ padding: "3px 9px", fontSize: 10, whiteSpace: "nowrap" }}>
                     water bridge <span style={{ opacity: 0.8, fontWeight: 700 }}>{interaction.water_bridge_count}</span>
                   </span>
                 )}
@@ -3457,7 +3457,7 @@ function ContactConfidenceBadge({ contact }: { contact: ContactRecord }) {
 }
 
 const INTERACTION_CLASS_BADGE: Record<string, { cls: string; label: string }> = {
-  polar:       { cls: "pio-badge-metadata",  label: "polar" },
+  polar:       { cls: "pio-badge-predicted", label: "polar" },
   ionic:       { cls: "pio-badge-caution",   label: "ionic" },
   aromatic:    { cls: "pio-badge-predicted", label: "aromatic" },
   hydrophobic: { cls: "pio-badge-active",    label: "hydrophobic" },
