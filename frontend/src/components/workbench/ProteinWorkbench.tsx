@@ -1573,7 +1573,7 @@ function InterfaceResidueList({ residues, label }: { residues: InterfaceResidue[
   const MAX_SHOWN = 8;
   const shown = expanded ? residues : residues.slice(0, MAX_SHOWN);
   return (
-    <div style={{ width: 130, flexShrink: 0 }}>
+    <div style={{ flex: 1, minWidth: 0 }}>
       <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--pio-graphite)", marginBottom: 6 }}>
         Chain {label} <span style={{ opacity: 0.6, fontWeight: 400 }}>({residues.length})</span>
       </p>
@@ -1705,7 +1705,6 @@ function InterfaceContactMap({
 }) {
   const MAX_MAP = 15;
   const LABEL_W = 38;
-  const CELL_H = 12;
   const HEADER_H = 34;
 
   // Top N by contact count
@@ -1713,6 +1712,22 @@ function InterfaceContactMap({
     .slice().sort((a, b) => b.contact_count - a.contact_count).slice(0, MAX_MAP);
   const residuesB = pair.interface_residues_b
     .slice().sort((a, b) => b.contact_count - a.contact_count).slice(0, MAX_MAP);
+
+  // Measure container to compute square cell size
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [cellSize, setCellSize] = useState(14);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || residuesB.length === 0) return;
+    const compute = () => {
+      const available = el.clientWidth - LABEL_W;
+      if (available > 0) setCellSize(Math.max(8, Math.min(Math.floor(available / residuesB.length), 24)));
+    };
+    compute();
+    const ro = new ResizeObserver(compute);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [residuesB.length]);
 
   if (residuesA.length === 0 || residuesB.length === 0) return null;
 
@@ -1738,7 +1753,7 @@ function InterfaceContactMap({
   const truncated = pair.interface_residues_a.length > MAX_MAP || pair.interface_residues_b.length > MAX_MAP;
 
   return (
-    <div style={{ marginBottom: 14 }}>
+    <div ref={containerRef} style={{ marginBottom: 14 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
         <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>
           Contact map
@@ -1748,12 +1763,11 @@ function InterfaceContactMap({
         )}
       </div>
 
-      {/* CSS grid — fills full width, fixed row heights */}
+      {/* CSS grid — square cells sized to fill the container width */}
       <div style={{
         display: "grid",
-        gridTemplateColumns: `${LABEL_W}px repeat(${residuesB.length}, 1fr)`,
-        gridTemplateRows: `${HEADER_H}px repeat(${residuesA.length}, ${CELL_H}px)`,
-        width: "100%",
+        gridTemplateColumns: `${LABEL_W}px repeat(${residuesB.length}, ${cellSize}px)`,
+        gridTemplateRows: `${HEADER_H}px repeat(${residuesA.length}, ${cellSize}px)`,
       }}>
         {/* Corner */}
         <div />
