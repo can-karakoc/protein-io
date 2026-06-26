@@ -116,9 +116,10 @@ def summarize_ligand_interactions(
         ligand_contacts.setdefault(ligand_key, []).append(contact)
 
     # ligand key = (chain_id, residue_id, residue_name) — mirrors ligand_residue_key()
+    # key mirrors ligand_residue_key(): (chain_id, residue_number, residue_name)
     bridge_by_ligand: dict[tuple[str, str, str], int] = {}
     for bridge in (water_bridges or []):
-        key = (bridge.ligand_chain, bridge.ligand_residue, bridge.ligand_residue_name)
+        key = (bridge.ligand_chain, bridge.ligand_residue_number, bridge.ligand_residue_name)
         bridge_by_ligand[key] = bridge_by_ligand.get(key, 0) + 1
 
     summaries: list[LigandInteractionSummary] = []

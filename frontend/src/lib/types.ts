@@ -226,6 +226,7 @@ export type WaterBridgeRecord = {
   dist_to_protein: number;
   ligand_chain: string;
   ligand_residue: string;
+  ligand_residue_number: string;
   ligand_residue_name: string;
   ligand_atom: string;
   dist_to_ligand: number;

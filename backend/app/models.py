@@ -224,6 +224,7 @@ class WaterBridgeRecord(BaseModel):
     dist_to_protein: float
     ligand_chain: str
     ligand_residue: str
+    ligand_residue_number: str
     ligand_residue_name: str
     ligand_atom: str
     dist_to_ligand: float

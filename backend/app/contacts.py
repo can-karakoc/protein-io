@@ -136,6 +136,7 @@ def find_water_bridges(structure: StructureData) -> list[WaterBridgeRecord]:
             dist_to_protein=round(dp, 3),
             ligand_chain=la.chain_id,
             ligand_residue=la.residue_id,
+            ligand_residue_number=la.residue_number,
             ligand_residue_name=la.residue_name,
             ligand_atom=la.name,
             dist_to_ligand=round(dl, 3),

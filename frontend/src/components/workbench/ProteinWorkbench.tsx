@@ -1247,11 +1247,11 @@ function ResultsPanel({
     { id: "chains", label: "Chains", visible: true, count: analysis ? chains.length : undefined },
     { id: "ligands", label: "Ligands", visible: true, count: analysis ? ligands.length : undefined },
     { id: "contacts", label: "Contacts", visible: true, count: analysis ? allContactCount : undefined },
+    { id: "interfaces", label: "Interfaces", visible: !!(analysis?.interface_analysis?.chain_pairs?.length), count: analysis?.interface_analysis?.chain_pairs?.length ?? undefined },
     { id: "confidence", label: "Confidence", visible: Boolean(analysis?.confidence) },
     { id: "pae", label: "PAE", visible: Boolean(analysis?.pae) },
     { id: "quality", label: "Quality", visible: Boolean(analysis) },
     { id: "methods", label: "Methods", visible: Boolean(analysis) },
-    { id: "interfaces", label: "Interfaces", visible: !!(analysis?.interface_analysis?.chain_pairs?.length), count: analysis?.interface_analysis?.chain_pairs?.length ?? undefined },
   ];
   const visibleTabs = tabs.filter((tab) => tab.visible);
   const selectedTab = visibleTabs.some((tab) => tab.id === activeTab) ? activeTab : "overview";
@@ -1568,15 +1568,15 @@ function InterfacesTab({ interfaceAnalysis }: { interfaceAnalysis: InterfaceAnal
 
       {/* Chain pairs table */}
       <div style={{ overflowX: "auto", marginTop: 20 }}>
-        <div style={{ minWidth: 480 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "60px 60px 1fr 80px 80px 90px 90px", columnGap: 8, borderBottom: "1px solid var(--pio-line)", padding: "8px 12px" }}>
+        <div style={{ minWidth: 600 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "60px 60px 90px 80px 80px 100px 100px", columnGap: 8, borderBottom: "1px solid var(--pio-line)", padding: "8px 12px" }}>
             {["CHAIN A", "CHAIN B", "CONTACTS", "RES A", "RES B", "MEAN pLDDT A", "MEAN pLDDT B"].map((col) => (
               <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)" }}>{col}</p>
             ))}
           </div>
           {interfaceAnalysis.chain_pairs.map((pair: ChainPairSummary, i: number) => (
             <div key={`${pair.chain_a}-${pair.chain_b}`}>
-              <div style={{ display: "grid", gridTemplateColumns: "60px 60px 1fr 80px 80px 90px 90px", columnGap: 8, padding: "10px 12px", alignItems: "center" }}
+              <div style={{ display: "grid", gridTemplateColumns: "60px 60px 90px 80px 80px 100px 100px", columnGap: 8, padding: "10px 12px", alignItems: "center" }}
                    className="hover:bg-[var(--pio-paper)]">
                 <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 13, fontWeight: 600, color: "var(--pio-ink)" }}>{pair.chain_a}</span>
                 <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 13, fontWeight: 600, color: "var(--pio-ink)" }}>{pair.chain_b}</span>
