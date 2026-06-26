@@ -1704,8 +1704,8 @@ function InterfaceContactMap({
   contacts: ContactRecord[];
 }) {
   const MAX_MAP = 15;
-  const LABEL_W = 38;
-  const HEADER_H = 34;
+  const LABEL_W = 44;
+  const HEADER_H = 38;
 
   // Top N by contact count
   const residuesA = pair.interface_residues_a
@@ -1773,7 +1773,7 @@ function InterfaceContactMap({
         <div />
         {/* Column headers — chain B (rotated) */}
         {residuesB.map((res) => (
-          <div key={res.residue_number} style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", overflow: "hidden", paddingBottom: 2 }}>
+          <div key={res.residue_number} style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", overflow: "hidden", paddingBottom: 6 }}>
             <span style={{ fontSize: 7, color: "var(--pio-graphite)", writingMode: "vertical-lr", transform: "rotate(180deg)", whiteSpace: "nowrap" }}>
               {shortLabel(res)}
             </span>
@@ -1782,7 +1782,7 @@ function InterfaceContactMap({
         {/* Data rows — chain A */}
         {residuesA.map((resA) => (
           <React.Fragment key={resA.residue_number}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 4, overflow: "hidden" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 8, overflow: "hidden" }}>
               <span style={{ fontSize: 7, color: "var(--pio-graphite)", whiteSpace: "nowrap" }}>{shortLabel(resA)}</span>
             </div>
             {residuesB.map((resB) => {
@@ -1905,11 +1905,15 @@ function InterfacesTab({
                 {isExpanded && (
                   <div style={{ padding: "12px 12px 16px", background: "var(--pio-paper)", borderTop: "1px solid var(--pio-line)" }}>
                     <InterfaceConfidenceSummary pair={pair} pae={pae} />
-                    <InterfaceContactMap pair={pair} contacts={contacts} />
                     <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                      <InterfaceResidueList residues={pair.interface_residues_a} label={pair.chain_a} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <InterfaceContactMap pair={pair} contacts={contacts} />
+                      </div>
                       <div style={{ width: 1, background: "var(--pio-line)", flexShrink: 0, alignSelf: "stretch" }} />
-                      <InterfaceResidueList residues={pair.interface_residues_b} label={pair.chain_b} />
+                      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+                        <InterfaceResidueList residues={pair.interface_residues_a} label={pair.chain_a} />
+                        <InterfaceResidueList residues={pair.interface_residues_b} label={pair.chain_b} />
+                      </div>
                     </div>
                   </div>
                 )}
