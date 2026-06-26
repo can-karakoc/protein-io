@@ -1955,13 +1955,44 @@ function InterfacesTab({
 }
 
 const REPORT_DIVIDER: React.CSSProperties = { paddingTop: 24, marginTop: 8 };
+
+// ---------------------------------------------------------------------------
+// Compare-cache reader — used by Report to surface the last comparison result
+// ---------------------------------------------------------------------------
+type CompareCacheSnapshot = {
+  comparison: import("@/lib/types").StructureComparisonResponse;
+  cutoff: number;
+  labelA: string;
+  labelB: string;
+};
+
+function labelFromCacheInput(input: { mode: string; pdbId: string; uniprotId: string; fileName: string | null }): string {
+  if (input.mode === "rcsb") return input.pdbId.toUpperCase() || "Structure A";
+  if (input.mode === "alphafold") return input.uniprotId.toUpperCase() || "Structure A";
+  return input.fileName ?? "Uploaded file";
+}
+
+function loadComparisonFromCache(): CompareCacheSnapshot | null {
+  try {
+    const raw = localStorage.getItem("pio_compare_v1");
+    if (!raw) return null;
+    const entry = JSON.parse(raw) as { comparison: import("@/lib/types").StructureComparisonResponse | null; cutoff: number; inputA: { mode: string; pdbId: string; uniprotId: string; fileName: string | null }; inputB: { mode: string; pdbId: string; uniprotId: string; fileName: string | null } };
+    if (!entry.comparison) return null;
+    return {
+      comparison: entry.comparison,
+      cutoff: entry.cutoff ?? 4.0,
+      labelA: labelFromCacheInput(entry.inputA),
+      labelB: labelFromCacheInput(entry.inputB),
+    };
+  } catch { return null; }
+}
 const REPORT_H2: React.CSSProperties = { fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)" };
 const REPORT_SUB: React.CSSProperties = { fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 };
 const REPORT_TILE: React.CSSProperties = { background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" };
 const REPORT_LABEL: React.CSSProperties = { fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" as const };
 const REPORT_MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)" };
 
-function ReportLimitations({ hasConfidence }: { hasConfidence: boolean }) {
+function ReportLimitations({ hasConfidence, hasComparison }: { hasConfidence: boolean; hasComparison: boolean }) {
   const items = [
     "Contacts are the closest atom-pair distance between two residues — not centroid-to-centroid or any smoothed measure.",
     `Distance cutoff applies uniformly; contacts just above the cutoff are not shown even if functionally relevant.`,
@@ -1970,6 +2001,9 @@ function ReportLimitations({ hasConfidence }: { hasConfidence: boolean }) {
       : null,
     "Water molecules and small ions are included in protein-water and ligand-water contact counts but excluded from residue-residue totals.",
     "No sequence alignment or structural superposition is performed. Chain IDs and residue numbers are taken directly from the coordinate file.",
+    hasComparison
+      ? "Structure comparison uses residue-level contact identity without structural alignment. Results may differ from RMSD or TM-score based comparisons."
+      : null,
   ].filter(Boolean) as string[];
 
   return (
@@ -1984,6 +2018,37 @@ function ReportLimitations({ hasConfidence }: { hasConfidence: boolean }) {
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+function ReportComparisonSection({ snapshot }: { snapshot: CompareCacheSnapshot }) {
+  const { comparison, cutoff, labelA, labelB } = snapshot;
+  const { shared_contact_count, gained_contact_count, lost_contact_count } = comparison.contacts;
+  const tiles: [string, number, string][] = [
+    ["Shared contacts", shared_contact_count, "var(--pio-ink)"],
+    ["Gained in B", gained_contact_count, "var(--pio-green-deep)"],
+    ["Lost from A", lost_contact_count, "var(--pio-coral-deep)"],
+  ];
+  return (
+    <div>
+      <h2 style={REPORT_H2}>Structure Comparison</h2>
+      <p style={REPORT_SUB}>
+        Comparing <strong>{labelA}</strong> vs <strong>{labelB}</strong> at {cutoff.toFixed(1)} Å cutoff.
+      </p>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 14 }}>
+        {tiles.map(([label, value, color]) => (
+          <div key={label} style={REPORT_TILE}>
+            <p style={REPORT_LABEL}>{label}</p>
+            <p style={{ ...REPORT_MONO, fontSize: 22, fontWeight: 700, color, lineHeight: 1, marginTop: 4 }}>
+              {value.toLocaleString()}
+            </p>
+          </div>
+        ))}
+      </div>
+      {comparison.warnings.map((w, i) => (
+        <p key={i} style={{ marginTop: 8, fontSize: 12, color: "var(--pio-amber-deep)" }}>{w}</p>
+      ))}
     </div>
   );
 }
@@ -2009,6 +2074,8 @@ function ReportWorkspace({
   onFocusRcsb: () => void;
   onFocusAlphaFold: () => void;
 }) {
+  const [comparisonSnapshot] = useState<CompareCacheSnapshot | null>(() => loadComparisonFromCache());
+
   if (!analysis) {
     return (
       <div className="flex min-h-full items-center justify-center p-8">
@@ -2067,8 +2134,13 @@ function ReportWorkspace({
       <div style={REPORT_DIVIDER}>
         <ProvenancePanel provenance={provenance} showExport={false} />
       </div>
+      {comparisonSnapshot && (
+        <div style={REPORT_DIVIDER}>
+          <ReportComparisonSection snapshot={comparisonSnapshot} />
+        </div>
+      )}
       <div style={REPORT_DIVIDER}>
-        <ReportLimitations hasConfidence={analysis.confidence != null} />
+        <ReportLimitations hasConfidence={analysis.confidence != null} hasComparison={!!comparisonSnapshot} />
       </div>
     </div>
     </div>
