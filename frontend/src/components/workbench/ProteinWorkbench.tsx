@@ -953,6 +953,7 @@ function ProteinWorkbenchState({
                     <FloatingLigandPanel
                       ligand={selLigand}
                       interaction={selInteraction}
+                      contacts={analysis?.contacts ?? []}
                       viewerRef={viewerColumnRef}
                       onClose={() => setSelection(null)}
                       onExport={(interaction) => exportSingleLigandCsv(interaction)}
@@ -2923,17 +2924,20 @@ function ChainTable({
 function FloatingLigandPanel({
   ligand,
   interaction,
+  contacts,
   viewerRef,
   onClose,
   onExport,
 }: {
   ligand: LigandSummary;
   interaction: LigandInteractionSummary | null;
+  contacts: ContactRecord[];
   viewerRef: React.RefObject<HTMLDivElement | null>;
   onClose: () => void;
   onExport: (i: LigandInteractionSummary) => void;
 }) {
   const [minimized, setMinimized] = useState(false);
+  const [showAllContacts, setShowAllContacts] = useState(false);
   const [pos, setPos] = useState<{ x: number; y: number }>({ x: 16, y: 16 });
   const [containerW, setContainerW] = useState(400);
   const dragging = useRef(false);
@@ -3022,6 +3026,41 @@ function FloatingLigandPanel({
     three_to_4_angstrom: 0,
     over_4_angstrom: 0,
   };
+
+  // Per-contact table: all protein-ligand contacts for this specific ligand, sorted by distance
+  const ligandContacts = contacts
+    .filter((c) => {
+      if (c.contact_type !== "protein-ligand") return false;
+      const ligIsA = c.chain_a === ligand.chain_id && c.residue_a === ligand.residue_number;
+      const ligIsB = c.chain_b === ligand.chain_id && c.residue_b === ligand.residue_number;
+      return ligIsA || ligIsB;
+    })
+    .sort((a, b) => a.distance_angstrom - b.distance_angstrom);
+
+  // Interaction fingerprint: group residues by dominant class, show top residues per class
+  const fingerprintGroups: Record<string, string[]> = {};
+  for (const c of ligandContacts) {
+    const cls = c.interaction_class ?? "unclassified";
+    if (cls === "unclassified") continue;
+    const ligIsA = c.chain_a === ligand.chain_id && c.residue_a === ligand.residue_number;
+    const protRes = ligIsA
+      ? `${c.residue_name_b}${c.residue_b}`
+      : `${c.residue_name_a}${c.residue_a}`;
+    if (!fingerprintGroups[cls]) fingerprintGroups[cls] = [];
+    if (!fingerprintGroups[cls].includes(protRes)) fingerprintGroups[cls].push(protRes);
+  }
+  const CLASS_ORDER = ["h-bond", "salt-bridge", "pi-cation", "halogen-bond", "aromatic", "hydrophobic"];
+  const fingerprintParts = CLASS_ORDER
+    .filter((cls) => fingerprintGroups[cls]?.length)
+    .map((cls) => {
+      const badge = INTERACTION_CLASS_BADGE[cls];
+      const residues = fingerprintGroups[cls].slice(0, 3).join("·");
+      const more = fingerprintGroups[cls].length > 3 ? `+${fingerprintGroups[cls].length - 3}` : "";
+      return `${badge?.label ?? cls}(${residues}${more})`;
+    });
+
+  const CONTACTS_PREVIEW = 5;
+  const shownContacts = showAllContacts ? ligandContacts : ligandContacts.slice(0, CONTACTS_PREVIEW);
 
   const TEXT: React.CSSProperties = { color: "#1A406A" };
   const MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)", color: "#1A406A" };
@@ -3257,6 +3296,90 @@ function FloatingLigandPanel({
                   </span>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* Per-contact table */}
+          {ligandContacts.length > 0 && (
+            <div>
+              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 5 }}>
+                CONTACTS ({ligandContacts.length})
+              </p>
+              <div style={{ background: "rgba(255,255,255,0.6)", borderRadius: 6, overflow: "hidden" }}>
+                {/* Table header */}
+                <div style={{
+                  display: "grid", gridTemplateColumns: "1fr 1.2fr auto auto",
+                  padding: "4px 8px", borderBottom: "1px solid rgba(26,64,106,0.1)",
+                  background: "rgba(199,217,236,0.3)",
+                }}>
+                  {["RESIDUE", "ATOMS", "DIST", "TYPE"].map((h) => (
+                    <span key={h} style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "0.08em", ...TEXT, opacity: 0.55 }}>{h}</span>
+                  ))}
+                </div>
+                {/* Contact rows */}
+                {shownContacts.map((c, i) => {
+                  const ligIsA = c.chain_a === ligand.chain_id && c.residue_a === ligand.residue_number;
+                  const protChain  = ligIsA ? c.chain_b : c.chain_a;
+                  const protResN   = ligIsA ? c.residue_name_b : c.residue_name_a;
+                  const protResNum = ligIsA ? c.residue_b : c.residue_a;
+                  const protAtom   = ligIsA ? c.atom_b : c.atom_a;
+                  const ligAtom    = ligIsA ? c.atom_a : c.atom_b;
+                  const cls = c.interaction_class;
+                  const badge = cls && cls !== "unclassified" ? INTERACTION_CLASS_BADGE[cls] : null;
+                  return (
+                    <div
+                      key={`${c.chain_a}${c.residue_a}${c.atom_a}-${c.chain_b}${c.residue_b}${c.atom_b}`}
+                      style={{
+                        display: "grid", gridTemplateColumns: "1fr 1.2fr auto auto",
+                        alignItems: "center", gap: 4,
+                        padding: "4px 8px",
+                        borderBottom: i < shownContacts.length - 1 ? "1px solid rgba(26,64,106,0.06)" : "none",
+                        background: i % 2 === 1 ? "rgba(199,217,236,0.15)" : "transparent",
+                      }}
+                    >
+                      <span style={{ ...MONO, fontSize: 10.5, fontWeight: 600 }} title={`${protChain}:${protResN}${protResNum}`}>
+                        {protChain}:{protResN}{protResNum}
+                      </span>
+                      <span style={{ ...MONO, fontSize: 9.5, opacity: 0.7, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={`${protAtom}–${ligAtom}`}>
+                        {protAtom}–{ligAtom}
+                      </span>
+                      <span style={{ ...MONO, fontSize: 10, fontWeight: 600, whiteSpace: "nowrap" }}>
+                        {c.distance_angstrom.toFixed(2)} Å
+                      </span>
+                      {badge ? (
+                        <span className={`pio-badge ${badge.cls}`} style={{ padding: "2px 6px", fontSize: 9, whiteSpace: "nowrap" }}>
+                          {badge.label}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: 9, ...TEXT, opacity: 0.35 }}>—</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              {ligandContacts.length > CONTACTS_PREVIEW && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllContacts((v) => !v)}
+                  style={{
+                    marginTop: 4, width: "100%", fontSize: 10, fontWeight: 600,
+                    ...TEXT, opacity: 0.6, background: "none", border: "none",
+                    cursor: "pointer", textAlign: "center", padding: "3px 0",
+                  }}
+                >
+                  {showAllContacts ? "Show fewer ↑" : `Show all ${ligandContacts.length} contacts ↓`}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Interaction fingerprint */}
+          {fingerprintParts.length > 0 && (
+            <div>
+              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 4 }}>FINGERPRINT</p>
+              <p style={{ fontSize: 10, ...TEXT, opacity: 0.75, lineHeight: 1.5, wordBreak: "break-word" }}>
+                {fingerprintParts.join("  ·  ")}
+              </p>
             </div>
           )}
 
