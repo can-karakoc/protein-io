@@ -11,6 +11,7 @@ export type CompareSessionEntry = {
   cutoff: number;
   labelA: string;
   labelB: string;
+  savedAt: string;
 };
 
 // Module-level — survives tab switches for the lifetime of the JS session.

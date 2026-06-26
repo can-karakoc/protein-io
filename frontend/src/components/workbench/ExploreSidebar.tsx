@@ -1,9 +1,10 @@
 "use client";
 
-import { AlertCircle, ChevronDown, FileUp, Loader2, Play, RotateCcw, Search } from "lucide-react";
+import { AlertCircle, BookMarked, ChevronDown, FileUp, Loader2, Play, RotateCcw, Save, Search, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import type { AnalysisResponse, StructureMetadata } from "@/lib/types";
+import { type SavedRunMeta, relativeTime } from "@/lib/savedRuns";
 
 type InputTab = "file" | "pdb" | "alphafold";
 
@@ -32,6 +33,10 @@ type ExploreSidebarProps = {
   isAlphaFoldLoading: boolean;
   error: { title: string; message: string; nextStep: string } | null;
   warnings: string[];
+  savedRuns: SavedRunMeta[];
+  onSaveRun: () => void;
+  onLoadRun: (id: string) => void;
+  onDeleteRun: (id: string) => void;
 };
 
 export function ExploreSidebar({
@@ -59,9 +64,14 @@ export function ExploreSidebar({
   isAlphaFoldLoading,
   error,
   warnings,
+  savedRuns,
+  onSaveRun,
+  onLoadRun,
+  onDeleteRun,
 }: ExploreSidebarProps) {
   const [tab, setTab] = useState<InputTab>("file");
   const [paeOpen, setPaeOpen] = useState(false);
+  const [savedRunsOpen, setSavedRunsOpen] = useState(true);
 
   const tabs: Array<{ id: InputTab; label: string }> = [
     { id: "file", label: "File" },
@@ -311,6 +321,88 @@ export function ExploreSidebar({
           </ul>
         </div>
       )}
+
+      {/* ── Saved Runs ── */}
+      <div className="mt-4 border-t border-[var(--pio-line)] pt-4">
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => setSavedRunsOpen((o) => !o)}
+            className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--pio-ink-muted)] hover:text-[var(--pio-ink)] transition-colors"
+          >
+            <BookMarked className="h-3 w-3" />
+            Saved Runs {savedRuns.length > 0 ? `(${savedRuns.length})` : ""}
+            <ChevronDown
+              className="h-3 w-3 transition-transform"
+              style={{ transform: savedRunsOpen ? "rotate(0deg)" : "rotate(-90deg)" }}
+            />
+          </button>
+          {analysis && (
+            <button
+              type="button"
+              onClick={onSaveRun}
+              className="flex items-center gap-1 rounded-[8px] bg-[var(--pio-sand)] px-2 py-1 text-[11px] font-semibold text-[var(--pio-ink)] hover:bg-[var(--pio-line)] transition-colors"
+            >
+              <Save className="h-3 w-3" />
+              Save
+            </button>
+          )}
+        </div>
+
+        {savedRunsOpen && (
+          <div className="mt-2 space-y-2">
+            {savedRuns.length === 0 ? (
+              <p className="text-[11px] text-[var(--pio-ink-muted)] leading-5">
+                No saved runs yet.{analysis ? " Click Save to save this analysis." : ""}
+              </p>
+            ) : (
+              savedRuns.map((run) => (
+                <div
+                  key={run.id}
+                  className="rounded-[10px] border border-[var(--pio-line)] bg-[var(--pio-paper)] p-2.5"
+                >
+                  <div className="flex items-start justify-between gap-1">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[12px] font-semibold text-[var(--pio-ink)]">{run.name}</p>
+                      <div className="mt-0.5 flex items-center gap-1.5 flex-wrap">
+                        <span className="pio-badge pio-badge-metadata text-[10px]">
+                          {run.source === "rcsb" ? "RCSB" : run.source === "alphafold" ? "AlphaFold" : "Upload"}
+                        </span>
+                        <span className="text-[10px] text-[var(--pio-ink-muted)]">{relativeTime(run.savedAt)}</span>
+                        {!run.hasStructureText && (
+                          <span className="text-[10px] text-[var(--pio-amber-deep)]">no 3D</span>
+                        )}
+                      </div>
+                      <div className="mt-1 flex items-center gap-2 text-[10px] text-[var(--pio-ink-muted)]">
+                        <span>{run.summary.chain_count}ch</span>
+                        <span>{run.summary.residue_count}res</span>
+                        <span>{run.summary.contact_count}ct</span>
+                        {run.summary.ligand_count > 0 && <span>{run.summary.ligand_count}lig</span>}
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 flex-col gap-1">
+                      <button
+                        type="button"
+                        onClick={() => onLoadRun(run.id)}
+                        className="rounded-[6px] bg-[var(--pio-highlight)] px-2 py-0.5 text-[10px] font-semibold text-[var(--pio-highlight-text)] hover:opacity-90 transition-opacity"
+                      >
+                        Load
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDeleteRun(run.id)}
+                        className="flex items-center justify-center rounded-[6px] border border-[var(--pio-line)] bg-[var(--pio-white)] p-0.5 hover:bg-[var(--pio-coral-pale)] transition-colors"
+                      >
+                        <Trash2 className="h-2.5 w-2.5 text-[var(--pio-coral-deep)]" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
     </div>
     </aside>
   );

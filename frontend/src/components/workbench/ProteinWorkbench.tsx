@@ -13,6 +13,17 @@ import type { WorkbenchMode } from "@/components/workbench/TopNav";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { buildApiUrl } from "@/lib/api";
 import { getCompareSession, type CompareSessionEntry } from "@/lib/compareSession";
+import {
+  listSavedRuns,
+  getSavedRun,
+  saveRun,
+  deleteSavedRun,
+  makeRunId,
+  runDisplayName,
+  relativeTime,
+  type SavedRunMeta,
+  type SavedRun,
+} from "@/lib/savedRuns";
 import { contactsToCsv, ligandInteractionsToCsv, ligandMedchemReportToCsv } from "@/lib/csv";
 import type {
   AlphaFoldAnalysisResponse,
@@ -228,15 +239,29 @@ export function ProteinWorkbench() {
     () => parseWorkbenchPreferences(preferencesSnapshot),
     [preferencesSnapshot],
   );
+  // Local workspace mode: if no public cache, auto-restore the most recently saved run
+  const initialSavedRun = useMemo(() => {
+    if (initialCache) return null;
+    const runs = listSavedRuns();
+    if (!runs.length) return null;
+    return getSavedRun(runs[0].id);
+  }, [initialCache]);
 
   useEffect(() => {
     localStorage.removeItem(LEGACY_CACHE_KEY);
   }, []);
 
+  const stateKey = initialCache
+    ? `${initialCache.savedAt}:${preferencesSnapshot ?? "defaults"}`
+    : initialSavedRun
+      ? `saved:${initialSavedRun.id}:${preferencesSnapshot ?? "defaults"}`
+      : `empty:${preferencesSnapshot ?? "defaults"}`;
+
   return (
     <ProteinWorkbenchState
-      key={`${initialCache?.savedAt ?? "empty"}:${preferencesSnapshot ?? "defaults"}`}
+      key={stateKey}
       initialCache={initialCache}
+      initialSavedRun={initialSavedRun}
       initialPreferences={initialPreferences}
       preferencesHydrated={preferencesSnapshot !== null}
     />
@@ -245,44 +270,51 @@ export function ProteinWorkbench() {
 
 function ProteinWorkbenchState({
   initialCache,
+  initialSavedRun,
   initialPreferences,
   preferencesHydrated,
 }: {
   initialCache: PublicStructureCache | null;
+  initialSavedRun: SavedRun | null;
   initialPreferences: WorkbenchPreferences;
   preferencesHydrated: boolean;
 }) {
+  // Prefer public cache, then saved run for initial hydration
+  const seed = initialCache ?? initialSavedRun;
   const [mode, setMode] = useState<WorkbenchMode>(initialPreferences.workbenchMode);
-  const [fileName, setFileName] = useState<string>(initialCache?.fileName ?? "");
-  const [structureText, setStructureText] = useState(initialCache?.structureText ?? "");
+  const [fileName, setFileName] = useState<string>(seed?.fileName ?? "");
+  const [structureText, setStructureText] = useState(seed?.structureText ?? "");
   const [structureFormat, setStructureFormat] = useState<StructureFileFormat>(
-    initialCache?.structureFormat ?? "pdb",
+    seed?.structureFormat ?? "pdb",
   );
   const [paeFileName, setPaeFileName] = useState("");
   const [paeText, setPaeText] = useState("");
-  const [pdbId, setPdbId] = useState(initialCache?.pdbId ?? "");
-  const [uniprotId, setUniprotId] = useState(initialCache?.uniprotId ?? "");
-  const [cutoff, setCutoff] = useState(initialCache?.cutoff ?? 4.0);
-  const [analysis, setAnalysis] = useState<AnalysisResponse | null>(initialCache?.analysis ?? null);
+  const [pdbId, setPdbId] = useState(initialCache?.pdbId ?? initialSavedRun?.pdbId ?? "");
+  const [uniprotId, setUniprotId] = useState(initialCache?.uniprotId ?? initialSavedRun?.uniprotId ?? "");
+  const [cutoff, setCutoff] = useState(seed?.cutoff ?? 4.0);
+  const [analysis, setAnalysis] = useState<AnalysisResponse | null>(seed?.analysis ?? null);
   const [selection, setSelection] = useState<ViewerSelection | null>(null);
   const viewerColumnRef = useRef<HTMLDivElement | null>(null);
   const [viewerColorMode, setViewerColorMode] = useState<ViewerColorMode>(
-    initialCache?.analysis.confidence ? "plddt" : "structure",
+    seed?.analysis?.confidence ? "plddt" : "structure",
   );
   const [contactFilter, setContactFilter] = useState<ContactFilter>("all");
   const [resultsTab, setResultsTab] = useState<ResultsTab>(initialPreferences.resultsTab);
   const resultsColumnRef = useRef<HTMLDivElement | null>(null);
   const [initialTabStripScrollLeft] = useState(initialPreferences.tabStripScrollLeft ?? 0);
   const tabStripScrollLeftRef = useRef(initialTabStripScrollLeft);
-  const [inputSource, setInputSource] = useState<InputSource>(initialCache?.source ?? "upload");
+  const [inputSource, setInputSource] = useState<InputSource>(
+    initialCache?.source ?? initialSavedRun?.source ?? "upload",
+  );
   const [analysisTimestamp, setAnalysisTimestamp] = useState<string | null>(
-    initialCache?.savedAt ?? null,
+    seed?.savedAt ?? null,
   );
   const [error, setError] = useState<WorkbenchError>(null);
   const [, setStatus] = useState<WorkbenchStatus>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isRcsbLoading, setIsRcsbLoading] = useState(false);
   const [isAlphaFoldLoading, setIsAlphaFoldLoading] = useState(false);
+  const [savedRuns, setSavedRuns] = useState<SavedRunMeta[]>(() => listSavedRuns());
 
   // Persist the active results tab whenever it changes so reload restores it
   useEffect(() => {
@@ -308,6 +340,58 @@ function ProteinWorkbenchState({
   useEffect(() => {
     if (resultsColumnRef.current) resultsColumnRef.current.scrollTop = 0;
   }, [resultsTab]);
+
+  function handleSaveRun() {
+    if (!analysis) return;
+    const id = makeRunId();
+    const name = runDisplayName({ source: inputSource === "sample" ? "upload" : inputSource, fileName, pdbId, uniprotId });
+    const run: SavedRun = {
+      id,
+      name,
+      source: inputSource === "sample" ? "upload" : inputSource,
+      savedAt: new Date().toISOString(),
+      cutoff,
+      hasStructureText: true,
+      summary: {
+        chain_count: analysis.summary.chain_count,
+        residue_count: analysis.summary.residue_count,
+        contact_count: analysis.summary.contact_count,
+        ligand_count: analysis.summary.ligand_count,
+      },
+      hasConfidence: analysis.confidence != null,
+      fileName,
+      pdbId,
+      uniprotId,
+      structureText,
+      structureFormat,
+      analysis,
+    };
+    saveRun(run);
+    setSavedRuns(listSavedRuns());
+  }
+
+  function handleLoadRun(id: string) {
+    const run = getSavedRun(id);
+    if (!run) return;
+    setFileName(run.fileName);
+    setStructureText(run.structureText);
+    setStructureFormat(run.structureFormat);
+    setPdbId(run.pdbId);
+    setUniprotId(run.uniprotId);
+    setCutoff(run.cutoff);
+    setAnalysis(run.analysis);
+    setInputSource(run.source);
+    setAnalysisTimestamp(run.savedAt);
+    setError(null);
+    setViewerColorMode(run.analysis.confidence ? "plddt" : "structure");
+    setMode("explore");
+    setSidebarOpen(false);
+  }
+
+  function handleDeleteRun(id: string) {
+    deleteSavedRun(id);
+    setSavedRuns(listSavedRuns());
+  }
 
   const hasStructure = structureText.trim().length > 0;
   const contacts = useMemo(() => analysis?.contacts ?? [], [analysis]);
@@ -879,6 +963,10 @@ function ProteinWorkbenchState({
             isAlphaFoldLoading={isAlphaFoldLoading}
             error={error}
             warnings={analysis?.warnings ?? []}
+            savedRuns={savedRuns}
+            onSaveRun={handleSaveRun}
+            onLoadRun={handleLoadRun}
+            onDeleteRun={handleDeleteRun}
           />
           </div>{/* end hidden lg:block sidebar wrapper */}
 
@@ -1054,10 +1142,12 @@ function ProteinWorkbenchState({
             analysis={analysis}
             provenance={provenance}
             contacts={confidenceAwareContacts}
+            savedRuns={savedRuns}
             onExportContacts={exportCsv}
             onExportLigands={exportLigandCsv}
             onExportAnalysisJson={exportAnalysisJson}
             onLoadSample={loadExample}
+            onLoadRun={handleLoadRun}
             onFocusRcsb={() => {
               setMode("explore");
               window.requestAnimationFrame(() => document.getElementById("pdb-id")?.focus());
@@ -1154,6 +1244,10 @@ function ProteinWorkbenchState({
             isAlphaFoldLoading={isAlphaFoldLoading}
             error={error}
             warnings={analysis?.warnings ?? []}
+            savedRuns={savedRuns}
+            onSaveRun={handleSaveRun}
+            onLoadRun={handleLoadRun}
+            onDeleteRun={handleDeleteRun}
           />
         </motion.div>
       )}
@@ -2031,34 +2125,66 @@ function ReportWorkspace({
   analysis,
   provenance,
   contacts,
+  savedRuns,
   onExportContacts,
   onExportLigands,
   onExportAnalysisJson,
   onLoadSample,
   onFocusRcsb,
   onFocusAlphaFold,
+  onLoadRun,
 }: {
   analysis: AnalysisResponse | null;
   provenance: ProvenanceRecord | null;
   contacts: ContactRecord[];
+  savedRuns: SavedRunMeta[];
   onExportContacts: () => void;
   onExportLigands: () => void;
   onExportAnalysisJson: () => void;
   onLoadSample: () => void;
   onFocusRcsb: () => void;
   onFocusAlphaFold: () => void;
+  onLoadRun: (id: string) => void;
 }) {
   const comparisonSnapshot = getCompareSession();
 
-  if (!analysis) {
-    if (comparisonSnapshot) {
+  // Show compare results when they're more recent than the explore analysis
+  const compareIsNewer =
+    comparisonSnapshot != null &&
+    analysis != null &&
+    provenance?.analysisTimestamp != null &&
+    new Date(comparisonSnapshot.savedAt).getTime() > new Date(provenance.analysisTimestamp).getTime();
+
+  const showCompare = comparisonSnapshot != null && (analysis == null || compareIsNewer);
+
+  if (!analysis || compareIsNewer) {
+    if (showCompare && comparisonSnapshot) {
       return (
         <div className="h-full flex flex-col">
           <div className="mx-auto w-full max-w-[960px] flex-1 min-h-0 flex flex-col rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)] overflow-clip pr-[3px] pt-[20px] pb-[20px]">
             <div className="overflow-y-auto flex-1 scrollbar-thin-report" style={{ padding: "12px 33px 36px 36px" }}>
               <ReportComparisonSection snapshot={comparisonSnapshot} />
+              {savedRuns.length > 0 && (
+                <div style={REPORT_DIVIDER}>
+                  <RunHistoryTimeline savedRuns={savedRuns} onLoadRun={onLoadRun} />
+                </div>
+              )}
               <div style={REPORT_DIVIDER}>
                 <ReportLimitations hasConfidence={false} hasComparison={true} />
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    if (savedRuns.length > 0) {
+      return (
+        <div className="h-full flex flex-col">
+          <div className="mx-auto w-full max-w-[960px] flex-1 min-h-0 flex flex-col rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)] overflow-clip pr-[3px] pt-[20px] pb-[20px]">
+            <div className="overflow-y-auto flex-1 scrollbar-thin-report" style={{ padding: "12px 33px 36px 36px" }}>
+              <RunHistoryTimeline savedRuns={savedRuns} onLoadRun={onLoadRun} />
+              <div style={REPORT_DIVIDER}>
+                <ReportLimitations hasConfidence={false} hasComparison={false} />
               </div>
             </div>
           </div>
@@ -2122,13 +2248,13 @@ function ReportWorkspace({
       <div style={REPORT_DIVIDER}>
         <ProvenancePanel provenance={provenance} showExport={false} />
       </div>
-      {comparisonSnapshot && (
+      {savedRuns.length > 0 && (
         <div style={REPORT_DIVIDER}>
-          <ReportComparisonSection snapshot={comparisonSnapshot} />
+          <RunHistoryTimeline savedRuns={savedRuns} onLoadRun={onLoadRun} />
         </div>
       )}
       <div style={REPORT_DIVIDER}>
-        <ReportLimitations hasConfidence={analysis.confidence != null} hasComparison={!!comparisonSnapshot} />
+        <ReportLimitations hasConfidence={analysis.confidence != null} hasComparison={false} />
       </div>
     </div>
     </div>
@@ -2561,6 +2687,98 @@ function QualityCheckCard({
         <span style={{ fontSize: 22, fontWeight: 700, color: valueColor, lineHeight: 1.1, marginLeft: 8, flexShrink: 0 }}>{value}</span>
       </div>
       <p style={{ fontSize: 12, lineHeight: 1.5, marginTop: 8, color: descColor }}>{description}</p>
+    </div>
+  );
+}
+
+function RunHistoryTimeline({
+  savedRuns,
+  onLoadRun,
+}: {
+  savedRuns: SavedRunMeta[];
+  onLoadRun: (id: string) => void;
+}) {
+  const SOURCE_LABEL: Record<string, string> = { rcsb: "RCSB", alphafold: "AlphaFold", upload: "Upload" };
+  return (
+    <div>
+      <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)" }}>
+        Run History
+      </h2>
+      <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4, marginBottom: 16 }}>
+        {savedRuns.length} saved run{savedRuns.length !== 1 ? "s" : ""} in this workspace.
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {savedRuns.map((run, i) => (
+          <div
+            key={run.id}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: "10px 14px",
+              borderRadius: 10,
+              border: "1px solid var(--pio-line)",
+              background: "var(--pio-paper)",
+            }}
+          >
+            <div
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                background: "rgba(199,217,236,0.4)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                fontSize: 11,
+                fontWeight: 700,
+                color: "var(--pio-highlight)",
+              }}
+            >
+              {i + 1}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--pio-ink)" }}>{run.name}</span>
+                <span className="pio-badge pio-badge-metadata" style={{ fontSize: 10 }}>
+                  {SOURCE_LABEL[run.source] ?? run.source}
+                </span>
+                {run.hasConfidence && (
+                  <span className="pio-badge pio-badge-predicted" style={{ fontSize: 10 }}>pLDDT</span>
+                )}
+                {!run.hasStructureText && (
+                  <span className="pio-badge pio-badge-caution" style={{ fontSize: 10 }}>no 3D</span>
+                )}
+              </div>
+              <div style={{ display: "flex", gap: 12, marginTop: 3, fontSize: 11, color: "var(--pio-graphite)" }}>
+                <span>{relativeTime(run.savedAt)}</span>
+                <span>{run.cutoff.toFixed(1)} Å cutoff</span>
+                <span>{run.summary.chain_count}ch · {run.summary.residue_count}res · {run.summary.contact_count}ct
+                  {run.summary.ligand_count > 0 ? ` · ${run.summary.ligand_count}lig` : ""}
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => onLoadRun(run.id)}
+              style={{
+                flexShrink: 0,
+                padding: "5px 12px",
+                borderRadius: 8,
+                background: "var(--pio-highlight)",
+                color: "var(--pio-highlight-text)",
+                fontSize: 12,
+                fontWeight: 600,
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              Load
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
