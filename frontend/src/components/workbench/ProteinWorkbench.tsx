@@ -12,6 +12,7 @@ import { WorkbenchShell } from "@/components/workbench/WorkbenchShell";
 import type { WorkbenchMode } from "@/components/workbench/TopNav";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { buildApiUrl } from "@/lib/api";
+import { getCompareSession, type CompareSessionEntry } from "@/lib/compareSession";
 import { contactsToCsv, ligandInteractionsToCsv } from "@/lib/csv";
 import type {
   AlphaFoldAnalysisResponse,
@@ -1959,33 +1960,6 @@ const REPORT_DIVIDER: React.CSSProperties = { paddingTop: 24, marginTop: 8 };
 // ---------------------------------------------------------------------------
 // Compare-cache reader — used by Report to surface the last comparison result
 // ---------------------------------------------------------------------------
-type CompareCacheSnapshot = {
-  comparison: import("@/lib/types").StructureComparisonResponse;
-  cutoff: number;
-  labelA: string;
-  labelB: string;
-};
-
-function labelFromCacheInput(input: { mode: string; pdbId: string; uniprotId: string; fileName: string | null }): string {
-  if (input.mode === "rcsb") return input.pdbId.toUpperCase() || "Structure A";
-  if (input.mode === "alphafold") return input.uniprotId.toUpperCase() || "Structure A";
-  return input.fileName ?? "Uploaded file";
-}
-
-function loadComparisonFromCache(): CompareCacheSnapshot | null {
-  try {
-    const raw = localStorage.getItem("pio_compare_v1");
-    if (!raw) return null;
-    const entry = JSON.parse(raw) as { comparison: import("@/lib/types").StructureComparisonResponse | null; cutoff: number; inputA: { mode: string; pdbId: string; uniprotId: string; fileName: string | null }; inputB: { mode: string; pdbId: string; uniprotId: string; fileName: string | null } };
-    if (!entry.comparison) return null;
-    return {
-      comparison: entry.comparison,
-      cutoff: entry.cutoff ?? 4.0,
-      labelA: labelFromCacheInput(entry.inputA),
-      labelB: labelFromCacheInput(entry.inputB),
-    };
-  } catch { return null; }
-}
 const REPORT_H2: React.CSSProperties = { fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)" };
 const REPORT_SUB: React.CSSProperties = { fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 };
 const REPORT_TILE: React.CSSProperties = { background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" };
@@ -2022,7 +1996,7 @@ function ReportLimitations({ hasConfidence, hasComparison }: { hasConfidence: bo
   );
 }
 
-function ReportComparisonSection({ snapshot }: { snapshot: CompareCacheSnapshot }) {
+function ReportComparisonSection({ snapshot }: { snapshot: CompareSessionEntry }) {
   const { comparison, cutoff, labelA, labelB } = snapshot;
   const { shared_contact_count, gained_contact_count, lost_contact_count } = comparison.contacts;
   const tiles: [string, number, string][] = [
@@ -2074,9 +2048,23 @@ function ReportWorkspace({
   onFocusRcsb: () => void;
   onFocusAlphaFold: () => void;
 }) {
-  const [comparisonSnapshot] = useState<CompareCacheSnapshot | null>(() => loadComparisonFromCache());
+  const comparisonSnapshot = getCompareSession();
 
   if (!analysis) {
+    if (comparisonSnapshot) {
+      return (
+        <div className="h-full flex flex-col">
+          <div className="mx-auto w-full max-w-[960px] flex-1 min-h-0 flex flex-col rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)] overflow-clip pr-[3px] pt-[20px] pb-[20px]">
+            <div className="overflow-y-auto flex-1 scrollbar-thin-report" style={{ padding: "12px 33px 36px 36px" }}>
+              <ReportComparisonSection snapshot={comparisonSnapshot} />
+              <div style={REPORT_DIVIDER}>
+                <ReportLimitations hasConfidence={false} hasComparison={true} />
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="flex min-h-full items-center justify-center p-8">
         <div className="w-full max-w-[480px] rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] p-10 text-center shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { buildApiUrl } from "@/lib/api";
 import { comparisonContactsToCsv } from "@/lib/csv";
+import { setCompareSession, labelFromInput } from "@/lib/compareSession";
 import type {
   AlphaFoldAnalysisResponse,
   ContactDifference,
@@ -118,13 +119,15 @@ export function CompareWorkspace() {
 
   // Persist whenever inputs, cutoff, or comparison changes
   useEffect(() => {
-    saveCompareCache({
-      savedAt: Date.now(),
-      cutoff,
-      inputA: { mode: inputA.mode, pdbId: inputA.pdbId, uniprotId: inputA.uniprotId, fileName: inputA.file?.name ?? null, fileText: inputA.fileText },
-      inputB: { mode: inputB.mode, pdbId: inputB.pdbId, uniprotId: inputB.uniprotId, fileName: inputB.file?.name ?? null, fileText: inputB.fileText },
-      comparison,
-    });
+    const inputACache = { mode: inputA.mode, pdbId: inputA.pdbId, uniprotId: inputA.uniprotId, fileName: inputA.file?.name ?? null, fileText: inputA.fileText };
+    const inputBCache = { mode: inputB.mode, pdbId: inputB.pdbId, uniprotId: inputB.uniprotId, fileName: inputB.file?.name ?? null, fileText: inputB.fileText };
+    saveCompareCache({ savedAt: Date.now(), cutoff, inputA: inputACache, inputB: inputBCache, comparison });
+    // Keep shared session entry in sync so Report can read it without touching localStorage
+    setCompareSession(
+      comparison
+        ? { comparison, cutoff, labelA: labelFromInput(inputACache), labelB: labelFromInput(inputBCache) }
+        : null
+    );
   }, [inputA, inputB, cutoff, comparison]);
 
   const activeRows = useMemo(() => {

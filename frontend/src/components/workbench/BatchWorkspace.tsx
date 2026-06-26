@@ -1,7 +1,7 @@
 "use client";
 
-import { AlertCircle, CheckCircle2, FileUp, Loader2, Play, RotateCcw, XCircle } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { AlertCircle, CheckCircle2, Download, FileUp, Loader2, Play, RotateCcw, XCircle } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { buildApiUrl } from "@/lib/api";
 import type { AnalysisResponse } from "@/lib/types";
 
@@ -40,8 +40,74 @@ type BatchAnalysisResponse = {
   failed: number;
 };
 
-type SortKey = "filename" | "chains" | "residues" | "contacts" | "plddt";
+type RankedEntry = BatchDesignEntry & { score: number | null; rank: number | null };
+
+type SortKey = "filename" | "chains" | "residues" | "contacts" | "plddt" | "score";
 type SortDir = "asc" | "desc";
+
+// Score = 70% pLDDT (confidence) + 30% contact density (relative to batch).
+// Clashes subtract up to 10 points. Range 0–100.
+function computeRankedEntries(entries: BatchDesignEntry[]): RankedEntry[] {
+  const succeeded = entries.filter((e) => e.analysis != null);
+  const maxDensity = Math.max(
+    ...succeeded.map((e) => {
+      const a = e.analysis!;
+      return a.summary.residue_count > 0 ? a.summary.contact_count / a.summary.residue_count : 0;
+    }),
+    1,
+  );
+
+  const withScores: RankedEntry[] = entries.map((e) => {
+    const a = e.analysis;
+    if (!a) return { ...e, score: null, rank: null };
+
+    const plddt = a.confidence?.average_plddt;
+    const density = a.summary.residue_count > 0 ? a.summary.contact_count / a.summary.residue_count : 0;
+    const clashes = a.interaction_summary?.possible_clash_count ?? 0;
+    const residues = a.summary.residue_count || 1;
+
+    const plddtPart = plddt != null ? (plddt / 100) * 70 : 35;
+    const densityPart = (density / maxDensity) * 30;
+    const clashPenalty = Math.min(10, (clashes / residues) * 200);
+
+    return { ...e, score: Math.max(0, plddtPart + densityPart - clashPenalty), rank: null };
+  });
+
+  // Assign ranks only to succeeded entries, by descending score
+  const scoredOnly = withScores
+    .filter((e) => e.score != null)
+    .sort((a, b) => b.score! - a.score!);
+  scoredOnly.forEach((e, i) => { e.rank = i + 1; });
+
+  return withScores;
+}
+
+function exportCsv(entries: RankedEntry[], cutoff: number) {
+  const headers = ["Rank", "File", "Score", "Chains", "Residues", "Contacts", "pLDDT", "Clashes", "Status", "Error"];
+  const rows = entries.map((e) => {
+    const a = e.analysis;
+    return [
+      e.rank ?? "",
+      e.filename,
+      e.score != null ? e.score.toFixed(1) : "",
+      a?.summary.chain_count ?? "",
+      a?.summary.residue_count ?? "",
+      a?.summary.contact_count ?? "",
+      a?.confidence?.average_plddt?.toFixed(1) ?? "",
+      a?.interaction_summary?.possible_clash_count ?? "",
+      e.error ? "Error" : "OK",
+      e.error ?? "",
+    ];
+  });
+  const csv = [headers, ...rows].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `batch-analysis-${cutoff.toFixed(1)}A.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export function BatchWorkspace() {
   const [files, setFiles] = useState<File[]>([]);
@@ -49,8 +115,8 @@ export function BatchWorkspace() {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<BatchAnalysisResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [sortKey, setSortKey] = useState<SortKey>("filename");
-  const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [sortKey, setSortKey] = useState<SortKey>("score");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Restore cached results on mount
@@ -63,6 +129,24 @@ export function BatchWorkspace() {
   useEffect(() => {
     if (result) saveBatchCache(result);
   }, [result]);
+
+  const rankedEntries = useMemo(
+    () => (result ? computeRankedEntries(result.entries) : []),
+    [result],
+  );
+
+  const sortedEntries = useMemo(() => {
+    return [...rankedEntries].sort((a, b) => {
+      const dir = sortDir === "asc" ? 1 : -1;
+      if (sortKey === "filename") return dir * a.filename.localeCompare(b.filename);
+      const va = entryMetric(a, sortKey);
+      const vb = entryMetric(b, sortKey);
+      if (va == null && vb == null) return 0;
+      if (va == null) return dir;
+      if (vb == null) return -dir;
+      return dir * (va - vb);
+    });
+  }, [rankedEntries, sortKey, sortDir]);
 
   function handleFiles(incoming: FileList | null) {
     if (!incoming) return;
@@ -117,22 +201,9 @@ export function BatchWorkspace() {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
       setSortKey(key);
-      setSortDir("asc");
+      setSortDir(key === "filename" ? "asc" : "desc");
     }
   }
-
-  const sortedEntries = result
-    ? [...result.entries].sort((a, b) => {
-        const dir = sortDir === "asc" ? 1 : -1;
-        if (sortKey === "filename") return dir * a.filename.localeCompare(b.filename);
-        const va = entryMetric(a, sortKey);
-        const vb = entryMetric(b, sortKey);
-        if (va == null && vb == null) return 0;
-        if (va == null) return dir;
-        if (vb == null) return -dir;
-        return dir * (va - vb);
-      })
-    : [];
 
   return (
     <div className="h-full flex flex-col overflow-clip rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
@@ -315,6 +386,18 @@ export function BatchWorkspace() {
           )}
         </div>
 
+        {/* Score legend */}
+        {result && (
+          <div style={{ borderRadius: 10, background: "var(--pio-paper)", padding: "10px 12px" }}>
+            <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--pio-graphite)", marginBottom: 6 }}>
+              Score formula
+            </p>
+            <p style={{ fontSize: 10.5, color: "var(--pio-graphite)", lineHeight: 1.6 }}>
+              70% pLDDT confidence + 30% contact density − clash penalty (0–100)
+            </p>
+          </div>
+        )}
+
         {/* Error */}
         {error && (
           <div style={{ borderRadius: 10, background: "var(--pio-coral-pale)", padding: "10px 12px", display: "flex", gap: 8, alignItems: "flex-start" }}>
@@ -343,7 +426,9 @@ export function BatchWorkspace() {
             entries={sortedEntries}
             sortKey={sortKey}
             sortDir={sortDir}
+            cutoff={cutoff}
             onSort={toggleSort}
+            onExport={() => exportCsv(rankedEntries, cutoff)}
           />
         )}
       </div>
@@ -352,8 +437,9 @@ export function BatchWorkspace() {
   );
 }
 
-function entryMetric(entry: BatchDesignEntry, key: SortKey): number | null {
+function entryMetric(entry: RankedEntry, key: SortKey): number | null {
   const a = entry.analysis;
+  if (key === "score") return entry.score;
   if (!a) return null;
   if (key === "chains") return a.summary.chain_count;
   if (key === "residues") return a.summary.residue_count;
@@ -362,28 +448,61 @@ function entryMetric(entry: BatchDesignEntry, key: SortKey): number | null {
   return null;
 }
 
+const RANK_COLORS: Record<number, { color: string; bg: string }> = {
+  1: { color: "var(--pio-amber-deep)", bg: "rgba(217,119,6,0.12)" },
+  2: { color: "var(--pio-graphite)", bg: "var(--pio-paper)" },
+  3: { color: "#92400e", bg: "rgba(146,64,14,0.10)" },
+};
+
 function BatchResultsView({
   result,
   entries,
   sortKey,
   sortDir,
+  cutoff,
   onSort,
+  onExport,
 }: {
   result: BatchAnalysisResponse;
-  entries: BatchDesignEntry[];
+  entries: RankedEntry[];
   sortKey: SortKey;
   sortDir: SortDir;
+  cutoff: number;
   onSort: (k: SortKey) => void;
+  onExport: () => void;
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
       {/* Summary bar */}
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
         <SummaryChip icon={<CheckCircle2 size={13} />} label="Succeeded" value={result.succeeded} color="var(--pio-green-deep)" bg="var(--pio-green-pale)" />
         {result.failed > 0 && (
           <SummaryChip icon={<XCircle size={13} />} label="Failed" value={result.failed} color="var(--pio-coral-deep)" bg="var(--pio-coral-pale)" />
         )}
         <SummaryChip icon={null} label="Total" value={result.total} color="var(--pio-graphite)" bg="var(--pio-paper)" />
+        <div style={{ marginLeft: "auto" }}>
+          <button
+            type="button"
+            onClick={onExport}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              height: 32,
+              padding: "0 14px",
+              borderRadius: 10,
+              border: "1px solid var(--pio-line-strong)",
+              background: "var(--pio-white)",
+              color: "var(--pio-ink)",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            <Download size={12} />
+            Export CSV
+          </button>
+        </div>
       </div>
 
       {/* Table */}
@@ -392,7 +511,7 @@ function BatchResultsView({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "minmax(0,2fr) 60px 80px 80px 80px 80px",
+            gridTemplateColumns: "minmax(0,2fr) 60px 80px 80px 72px 72px 72px",
             background: "var(--pio-paper)",
             borderBottom: "1px solid var(--pio-line)",
             padding: "0 12px",
@@ -405,6 +524,7 @@ function BatchResultsView({
               ["residues", "Residues"],
               ["contacts", "Contacts"],
               ["plddt", "pLDDT"],
+              ["score", "Score"],
             ] as [SortKey, string][]
           ).map(([key, label]) => (
             <SortableHeader key={key} label={label} sortKey={key} active={sortKey === key} dir={sortDir} onSort={onSort} />
@@ -419,6 +539,10 @@ function BatchResultsView({
           <DesignRow key={entry.filename} entry={entry} isLast={i === entries.length - 1} />
         ))}
       </div>
+
+      <p style={{ fontSize: 10.5, color: "var(--pio-graphite)", opacity: 0.7 }}>
+        Score = 70% pLDDT + 30% contact density (relative to batch) − clash penalty. Cutoff: {cutoff.toFixed(1)} Å.
+      </p>
     </div>
   );
 }
@@ -494,7 +618,7 @@ function SortableHeader({
   );
 }
 
-function DesignRow({ entry, isLast }: { entry: BatchDesignEntry; isLast: boolean }) {
+function DesignRow({ entry, isLast }: { entry: RankedEntry; isLast: boolean }) {
   const a = entry.analysis;
   const plddt = a?.confidence?.average_plddt;
   const plddtColor =
@@ -506,38 +630,62 @@ function DesignRow({ entry, isLast }: { entry: BatchDesignEntry; isLast: boolean
       ? "var(--pio-ink)"
       : "var(--pio-coral)";
 
+  const rankStyle = entry.rank != null ? RANK_COLORS[entry.rank] : null;
+  const isTopThree = entry.rank != null && entry.rank <= 3;
+
   return (
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "minmax(0,2fr) 60px 80px 80px 80px 80px",
+        gridTemplateColumns: "minmax(0,2fr) 60px 80px 80px 72px 72px 72px",
         padding: "0 12px",
         borderBottom: isLast ? "none" : "1px solid var(--pio-line)",
         alignItems: "center",
         minHeight: 38,
+        background: isTopThree ? "rgba(199,217,236,0.08)" : undefined,
       }}
     >
-      {/* Filename */}
-      <div style={{ paddingRight: 8, overflow: "hidden" }}>
-        <span
-          style={{
-            fontFamily: "var(--font-pio-mono)",
-            fontSize: 11,
-            color: "var(--pio-ink)",
-            display: "block",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-          title={entry.filename}
-        >
-          {entry.filename}
-        </span>
-        {entry.error && (
-          <span style={{ fontSize: 10, color: "var(--pio-coral-deep)", display: "block", marginTop: 1 }}>
-            {entry.error}
+      {/* Filename + rank badge */}
+      <div style={{ paddingRight: 8, overflow: "hidden", display: "flex", alignItems: "center", gap: 6 }}>
+        {entry.rank != null && (
+          <span
+            style={{
+              flexShrink: 0,
+              fontSize: 9,
+              fontWeight: 700,
+              fontFamily: "var(--font-pio-mono)",
+              color: rankStyle?.color ?? "var(--pio-graphite)",
+              background: rankStyle?.bg ?? "var(--pio-paper)",
+              borderRadius: 4,
+              padding: "1px 5px",
+              minWidth: 22,
+              textAlign: "center",
+            }}
+          >
+            #{entry.rank}
           </span>
         )}
+        <div style={{ overflow: "hidden", flex: 1 }}>
+          <span
+            style={{
+              fontFamily: "var(--font-pio-mono)",
+              fontSize: 11,
+              color: "var(--pio-ink)",
+              display: "block",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+            title={entry.filename}
+          >
+            {entry.filename}
+          </span>
+          {entry.error && (
+            <span style={{ fontSize: 10, color: "var(--pio-coral-deep)", display: "block", marginTop: 1 }}>
+              {entry.error}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Chains */}
@@ -549,6 +697,10 @@ function DesignRow({ entry, isLast }: { entry: BatchDesignEntry; isLast: boolean
       {/* pLDDT */}
       <div style={{ fontSize: 11, fontFamily: "var(--font-pio-mono)", fontWeight: 600, color: plddt != null ? plddtColor : "var(--pio-graphite)", opacity: plddt != null ? 1 : 0.4 }}>
         {plddt != null ? plddt.toFixed(1) : "—"}
+      </div>
+      {/* Score */}
+      <div style={{ fontSize: 11, fontFamily: "var(--font-pio-mono)", fontWeight: entry.rank === 1 ? 700 : 600, color: entry.score != null ? "var(--pio-ink)" : "var(--pio-graphite)", opacity: entry.score != null ? 1 : 0.4 }}>
+        {entry.score != null ? entry.score.toFixed(1) : "—"}
       </div>
 
       {/* Status */}
