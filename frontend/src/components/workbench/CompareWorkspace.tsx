@@ -6,9 +6,20 @@ import { useEffect, useMemo, useState } from "react";
 import { buildApiUrl } from "@/lib/api";
 import { comparisonContactsToCsv } from "@/lib/csv";
 import { setCompareSession, labelFromInput } from "@/lib/compareSession";
+import {
+  FP_CLASSES,
+  FP_ABBR,
+  FP_DOT_COLOR,
+  FP_FULL_LABEL,
+  buildFingerprint,
+  buildDiffFingerprint,
+  type DiffFpRow,
+  type DiffStatus,
+} from "@/lib/fingerprint";
 import type {
   AlphaFoldAnalysisResponse,
   ContactDifference,
+  LigandInteractionSummary,
   RcsbAnalysisResponse,
   StructureComparisonResponse,
   StructureMetadata,
@@ -404,11 +415,11 @@ export function CompareWorkspace() {
           </div>
         ) : null}
 
-        {!isLoading && comparison && inputA.file && inputB.file ? (
+        {!isLoading && comparison ? (
           <ComparisonResults
             comparison={comparison}
-            fileAName={inputA.file.name}
-            fileBName={inputB.file.name}
+            fileAName={labelFromInput({ mode: inputA.mode, pdbId: inputA.pdbId, uniprotId: inputA.uniprotId, fileName: inputA.file?.name ?? null })}
+            fileBName={labelFromInput({ mode: inputB.mode, pdbId: inputB.pdbId, uniprotId: inputB.uniprotId, fileName: inputB.file?.name ?? null })}
             activeTab={activeTab}
             activeRows={activeRows}
             onTabChange={setActiveTab}
@@ -641,6 +652,8 @@ function ComparisonResults({
 
       <ContactDifferenceTable rows={activeRows} />
 
+      <LigandPoseComparisonSection comparison={comparison} labelA={fileAName} labelB={fileBName} />
+
       {comparison.warnings.length ? (
         <div className="mt-5 rounded-[12px] bg-[var(--pio-paper)] px-4 py-3">
           <p className="pio-label">Methods and limitations</p>
@@ -765,6 +778,240 @@ function ContactDifferenceTable({ rows }: { rows: ContactDifference[] }) {
 
 function formatDistance(value: number | null) {
   return value == null ? "—" : `${value.toFixed(3)} Å`;
+}
+
+// ─── Ligand Pose Comparison ───────────────────────────────────────────────────
+
+const DIFF_DOT: Record<DiffStatus | "absent", { bg: string; opacity: number; size: number }> = {
+  stable:  { bg: "currentColor",              opacity: 1,    size: 7 },
+  gained:  { bg: "var(--pio-green-deep)",      opacity: 1,    size: 7 },
+  lost:    { bg: "var(--pio-coral-deep)",      opacity: 0.55, size: 7 },
+  absent:  { bg: "rgba(26,64,106,0.10)",       opacity: 1,    size: 4 },
+};
+
+function DiffFingerprintMatrix({ rows, labelA, labelB }: { rows: DiffFpRow[]; labelA: string; labelB: string }) {
+  if (rows.length === 0) return (
+    <p className="text-[12px] text-[var(--pio-graphite)]">No protein-ligand contacts found — re-run comparison to populate fingerprint data.</p>
+  );
+
+  const statusBadge: Record<DiffStatus, string> = {
+    stable: "A+B",
+    gained: "+B",
+    lost: "−A",
+  };
+  const statusColor: Record<DiffStatus, string> = {
+    stable: "var(--pio-ink)",
+    gained: "var(--pio-green-deep)",
+    lost: "var(--pio-coral-deep)",
+  };
+  const statusBg: Record<DiffStatus, string> = {
+    stable: "var(--pio-paper)",
+    gained: "var(--pio-green-pale)",
+    lost: "var(--pio-coral-pale)",
+  };
+
+  return (
+    <div className="overflow-x-auto rounded-[10px] border border-[var(--pio-line)]">
+      {/* Header */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "100px 40px repeat(6, 1fr)",
+        background: "var(--pio-paper)",
+        borderBottom: "1px solid var(--pio-line)",
+        padding: "5px 10px",
+        alignItems: "center",
+        minWidth: 380,
+      }}>
+        <span className="pio-label">Residue</span>
+        <span className="pio-label">A/B</span>
+        {FP_CLASSES.map((cls) => (
+          <div key={cls} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+            <div style={{ width: 7, height: 7, borderRadius: "50%", background: FP_DOT_COLOR[cls] }} />
+            <span style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: "0.04em", color: "var(--pio-graphite)" }}>{FP_ABBR[cls]}</span>
+          </div>
+        ))}
+      </div>
+      {/* Rows */}
+      {rows.map((row, i) => (
+        <div
+          key={row.key}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "100px 40px repeat(6, 1fr)",
+            padding: "3px 10px",
+            borderBottom: i < rows.length - 1 ? "1px solid var(--pio-line)" : "none",
+            alignItems: "center",
+            minHeight: 26,
+            minWidth: 380,
+            background: row.status === "gained"
+              ? "rgba(var(--pio-green-pale-rgb, 236,253,245), 0.3)"
+              : row.status === "lost"
+              ? "rgba(var(--pio-coral-pale-rgb, 255,241,242), 0.3)"
+              : i % 2 === 1 ? "var(--pio-paper)" : undefined,
+          }}
+        >
+          <span
+            className="font-mono text-[10px] font-semibold text-[var(--pio-ink)]"
+            style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+            title={row.key}
+          >
+            {row.key}
+          </span>
+          <span
+            style={{
+              fontSize: 8.5,
+              fontWeight: 700,
+              color: statusColor[row.status],
+              background: statusBg[row.status],
+              borderRadius: 4,
+              padding: "1px 4px",
+              textAlign: "center",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {statusBadge[row.status]}
+          </span>
+          {FP_CLASSES.map((cls) => {
+            const diff = row.classDiff[cls];
+            const cfg = DIFF_DOT[diff];
+            const color = diff === "stable" ? FP_DOT_COLOR[cls] : cfg.bg;
+            return (
+              <div key={cls} style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                <div style={{
+                  width: cfg.size,
+                  height: cfg.size,
+                  borderRadius: "50%",
+                  background: color,
+                  opacity: cfg.opacity,
+                  flexShrink: 0,
+                }} />
+              </div>
+            );
+          })}
+        </div>
+      ))}
+      {/* Legend */}
+      <div style={{
+        borderTop: "1px solid var(--pio-line)",
+        padding: "5px 10px",
+        display: "flex",
+        flexWrap: "wrap",
+        gap: "4px 14px",
+        background: "var(--pio-paper)",
+      }}>
+        {(["stable", "gained", "lost"] as DiffStatus[]).map((s) => (
+          <span key={s} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 9, color: statusColor[s] }}>
+            <span style={{ fontWeight: 700, background: statusBg[s], borderRadius: 3, padding: "0px 4px", fontSize: 8 }}>
+              {statusBadge[s]}
+            </span>
+            {s === "stable" ? `in both ${labelA} + ${labelB}` : s === "gained" ? `new in ${labelB}` : `only in ${labelA}`}
+          </span>
+        ))}
+        <span style={{ fontSize: 9, color: "var(--pio-graphite)", opacity: 0.6 }}>
+          Dots colored by interaction type — H H-bond · Sa salt bridge · Ar aromatic · Pi π-cation · Hy hydrophobic · Ha halogen
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function LigandPoseComparisonSection({
+  comparison,
+  labelA,
+  labelB,
+}: {
+  comparison: StructureComparisonResponse;
+  labelA: string;
+  labelB: string;
+}) {
+  const ligandsA = comparison.structure_a.ligand_interactions ?? [];
+  const ligandsB = comparison.structure_b.ligand_interactions ?? [];
+  const contactsA = comparison.structure_a.contacts ?? [];
+  const contactsB = comparison.structure_b.contacts ?? [];
+
+  if (ligandsA.length === 0 && ligandsB.length === 0) return null;
+
+  // Match ligands by name
+  const namesA = new Set(ligandsA.map((l) => l.name));
+  const namesB = new Set(ligandsB.map((l) => l.name));
+  const shared = ligandsA.filter((l) => namesB.has(l.name));
+  const onlyA = ligandsA.filter((l) => !namesB.has(l.name));
+  const onlyB = ligandsB.filter((l) => !namesA.has(l.name));
+
+  const hasContacts = contactsA.length > 0 || contactsB.length > 0;
+
+  return (
+    <div className="mt-8">
+      <h2 className="text-[20px] font-bold text-[var(--pio-ink)]">Ligand comparison</h2>
+      <p className="mt-1 text-[13px] text-[var(--pio-graphite)]">
+        Per-ligand interaction fingerprint diff — rows are contacting residues, columns are interaction types.
+        <span className="ml-1 font-semibold text-[var(--pio-green-deep)]">+B</span> = gained in B,{" "}
+        <span className="font-semibold text-[var(--pio-coral-deep)]">−A</span> = lost from A,{" "}
+        <span className="font-semibold">A+B</span> = stable.
+      </p>
+
+      {!hasContacts && (
+        <div className="mt-4 rounded-[10px] bg-[var(--pio-paper)] px-4 py-3 text-[12px] text-[var(--pio-graphite)]">
+          Per-contact data is not available from the session cache. Re-run the comparison to see fingerprint details.
+        </div>
+      )}
+
+      {hasContacts && shared.length === 0 && (
+        <div className="mt-4 rounded-[10px] bg-[var(--pio-paper)] px-4 py-3 text-[12px] text-[var(--pio-graphite)]">
+          No ligands with matching names found between A and B. Showing individual ligand contacts below.
+        </div>
+      )}
+
+      {hasContacts && shared.map((ligA) => {
+        const ligB = ligandsB.find((l) => l.name === ligA.name)!;
+        const fpA = buildFingerprint(contactsA, ligA);
+        const fpB = buildFingerprint(contactsB, ligB);
+        const diffRows = buildDiffFingerprint(fpA, fpB);
+        return (
+          <div key={ligA.name} className="mt-5">
+            <div className="mb-3 flex items-center gap-3">
+              <span className="font-mono text-[15px] font-bold text-[var(--pio-ink)]">{ligA.name}</span>
+              <span className="pio-badge pio-badge-neutral text-[10px]">
+                {labelA}: {ligA.chain_id}:{ligA.residue_number} · {ligA.protein_contact_count} contacts
+              </span>
+              <span className="pio-badge pio-badge-neutral text-[10px]">
+                {labelB}: {ligB.chain_id}:{ligB.residue_number} · {ligB.protein_contact_count} contacts
+              </span>
+            </div>
+            <DiffFingerprintMatrix rows={diffRows} labelA={labelA} labelB={labelB} />
+          </div>
+        );
+      })}
+
+      {(onlyA.length > 0 || onlyB.length > 0) && (
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          {onlyA.length > 0 && (
+            <div className="rounded-[10px] border border-[var(--pio-line)] p-3">
+              <p className="pio-label mb-2">Only in {labelA}</p>
+              {onlyA.map((l) => <LigandOneSideRow key={l.name} ligand={l} />)}
+            </div>
+          )}
+          {onlyB.length > 0 && (
+            <div className="rounded-[10px] border border-[var(--pio-line)] p-3">
+              <p className="pio-label mb-2">Only in {labelB}</p>
+              {onlyB.map((l) => <LigandOneSideRow key={l.name} ligand={l} />)}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LigandOneSideRow({ ligand }: { ligand: LigandInteractionSummary }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-[8px] bg-[var(--pio-paper)] px-3 py-2 mb-1 last:mb-0">
+      <span className="font-mono text-[12px] font-semibold text-[var(--pio-ink)]">{ligand.name}</span>
+      <span className="text-[11px] text-[var(--pio-graphite)]">
+        {ligand.chain_id}:{ligand.residue_number} · {ligand.protein_contact_count} contacts
+      </span>
+    </div>
+  );
 }
 
 function formatBytes(bytes: number) {

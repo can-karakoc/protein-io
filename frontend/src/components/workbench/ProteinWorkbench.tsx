@@ -4016,48 +4016,14 @@ const INTERACTION_CLASS_BADGE: Record<string, { cls: string; label: string }> = 
 };
 
 // ─── Interaction Fingerprint Matrix ──────────────────────────────────────────
-
-const FP_CLASSES = ["h-bond", "salt-bridge", "aromatic", "pi-cation", "hydrophobic", "halogen-bond"] as const;
-type FpClass = typeof FP_CLASSES[number];
-
-const FP_ABBR: Record<FpClass, string> = {
-  "h-bond": "H",
-  "salt-bridge": "Sa",
-  "aromatic": "Ar",
-  "pi-cation": "Pi",
-  "hydrophobic": "Hy",
-  "halogen-bond": "Ha",
-};
-
-const FP_DOT_COLOR: Record<FpClass, string> = {
-  "h-bond":       "var(--pio-lavender-deep)",
-  "salt-bridge":  "var(--pio-amber-deep)",
-  "aromatic":     "var(--pio-blue-deep)",
-  "pi-cation":    "var(--pio-highlight)",
-  "hydrophobic":  "var(--pio-green-deep)",
-  "halogen-bond": "var(--pio-coral-deep)",
-};
-
-type FpRow = { key: string; count: number; classes: Set<FpClass> };
-
-function buildFingerprint(contacts: ContactRecord[], ligand: { chain_id: string; residue_number: string }): FpRow[] {
-  const map = new Map<string, FpRow>();
-  for (const c of contacts) {
-    if (c.contact_type !== "protein-ligand") continue;
-    const ligIsA = c.chain_a === ligand.chain_id && c.residue_a === ligand.residue_number;
-    const key = ligIsA
-      ? `${c.chain_b}:${c.residue_name_b}${c.residue_b}`
-      : `${c.chain_a}:${c.residue_name_a}${c.residue_a}`;
-    if (!map.has(key)) map.set(key, { key, count: 0, classes: new Set() });
-    const row = map.get(key)!;
-    row.count++;
-    const cls = c.interaction_class;
-    if (cls && cls !== "unclassified" && FP_CLASSES.includes(cls as FpClass)) {
-      row.classes.add(cls as FpClass);
-    }
-  }
-  return [...map.values()].sort((a, b) => b.count - a.count).slice(0, 12);
-}
+import {
+  FP_CLASSES,
+  FP_ABBR,
+  FP_DOT_COLOR,
+  FP_FULL_LABEL,
+  buildFingerprint,
+  type FpRow,
+} from "@/lib/fingerprint";
 
 function LigandFingerprintMatrix({
   contacts,
@@ -4132,7 +4098,7 @@ function LigandFingerprintMatrix({
           {FP_CLASSES.map((cls) => (
             <span key={cls} style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 8, ...TEXT, opacity: 0.55 }}>
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: FP_DOT_COLOR[cls], flexShrink: 0 }} />
-              {INTERACTION_CLASS_BADGE[cls]?.label ?? cls}
+              {FP_FULL_LABEL[cls]}
             </span>
           ))}
         </div>
