@@ -1628,7 +1628,7 @@ function InterfacesTab({ interfaceAnalysis }: { interfaceAnalysis: InterfaceAnal
       {/* Chain pairs table */}
       <div style={{ overflowX: "auto", marginTop: 20 }}>
         <div style={{ minWidth: 600 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "60px 60px 90px 80px 80px 100px 100px 24px", columnGap: 8, borderBottom: "1px solid var(--pio-line)", padding: "8px 12px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 24px", columnGap: 8, borderBottom: "1px solid var(--pio-line)", padding: "8px 12px" }}>
             {["CHAIN A", "CHAIN B", "CONTACTS", "RES A", "RES B", "MEAN pLDDT A", "MEAN pLDDT B", ""].map((col, i) => (
               <p key={i} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)" }}>{col}</p>
             ))}
@@ -1639,7 +1639,7 @@ function InterfacesTab({ interfaceAnalysis }: { interfaceAnalysis: InterfaceAnal
             return (
               <div key={pairKey}>
                 <div
-                  style={{ display: "grid", gridTemplateColumns: "60px 60px 90px 80px 80px 100px 100px 24px", columnGap: 8, padding: "10px 12px", alignItems: "center", cursor: "pointer" }}
+                  style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 24px", columnGap: 8, padding: "10px 12px", alignItems: "center", cursor: "pointer" }}
                   className="hover:bg-[var(--pio-paper)]"
                   onClick={() => setExpandedPair(isExpanded ? null : pairKey)}
                 >
@@ -1879,7 +1879,7 @@ function ReportHeader({
   );
 }
 
-const REPORT_CONTACT_GRID = "minmax(200px,2fr) minmax(120px,1fr) minmax(160px,1.5fr) minmax(80px,0.7fr) minmax(80px,0.7fr)";
+const REPORT_CONTACT_GRID = "1fr 1fr 1fr 1fr 1fr";
 
 function ReportContactSummary({ contacts }: { contacts: ContactRecord[] }) {
   if (!contacts.length) return null;
@@ -2712,14 +2712,14 @@ function LigandInteractionPanel({
       <div style={{ overflowX: "auto", marginTop: 12 }}>
         <div style={{ minWidth: 1050 }}>
           {/* Header */}
-          <div style={{ display: "grid", gridTemplateColumns: "140px 80px 80px 70px 80px 130px 220px 150px", columnGap: 12, borderBottom: "1px solid var(--pio-line)", padding: "8px 0" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", columnGap: 12, borderBottom: "1px solid var(--pio-line)", padding: "8px 0" }}>
             {["LIGAND","CONTACTS","PROTEIN","WATER","VERY CLOSE","CLOSEST","TOP RESIDUES","BUCKETS"].map((col) => (
               <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)" }}>{col}</p>
             ))}
           </div>
           {ligandInteractions.map((ligand, i) => (
             <div key={`${ligand.name}-${ligand.chain_id}-${ligand.residue_number}`}>
-              <div style={{ display: "grid", gridTemplateColumns: "140px 80px 80px 70px 80px 130px 220px 150px", columnGap: 12, padding: "10px 0", alignItems: "start" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", columnGap: 12, padding: "10px 0", alignItems: "start" }}>
                 <p style={{ ...MONO, fontSize: 12, color: "var(--pio-ink)" }}>{ligand.name} {ligand.chain_id}:{ligand.residue_number}</p>
                 <p style={{ ...MONO, fontSize: 13, fontWeight: 500, color: "var(--pio-ink)" }}>{ligand.contact_count}</p>
                 <p style={{ ...MONO, fontSize: 13, fontWeight: 500, color: "var(--pio-ink)" }}>{ligand.protein_contact_count}</p>
@@ -3427,7 +3427,7 @@ function FloatingLigandPanel({
 
 // ─── LigandTable ─────────────────────────────────────────────────────────────
 
-const LIGAND_GRID = "2fr 1fr 1fr 1fr";
+const LIGAND_GRID = "1fr 1fr 1fr 1fr";
 
 function LigandTable({
   ligands,
@@ -3514,8 +3514,8 @@ function contactChipStyle(key: string): React.CSSProperties {
   return { background: "rgba(199,217,236,0.6)", color: "var(--pio-highlight)" };
 }
 
-const CONTACT_GRID_3 = "120px 1fr 100px";
-const CONTACT_GRID_4 = "120px 1fr 100px 90px";
+const CONTACT_GRID_3 = "1fr 1fr 1fr";
+const CONTACT_GRID_4 = "1fr 1fr 1fr 1fr";
 
 function ContactTable({
   contacts,
