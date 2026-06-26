@@ -70,7 +70,7 @@ export function ExploreSidebar({
   ];
 
   return (
-    <aside className="relative z-[1] flex h-full flex-col overflow-y-auto bg-[var(--pio-white)] p-6 shadow-[8px_0_24px_rgba(17,22,16,0.07)]">
+    <aside className="scrollbar-thin-panel relative z-[1] flex h-full flex-col overflow-y-auto bg-[var(--pio-white)] p-6 shadow-[8px_0_24px_rgba(17,22,16,0.07)]">
       {/* ── Load Structure ── */}
       <div>
         <p className="mb-3 text-[20px] font-bold text-[var(--pio-ink)]">Load Structure</p>

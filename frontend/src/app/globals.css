@@ -298,6 +298,34 @@ button:not(:disabled),
   background: rgba(var(--pio-ink-rgb), 0.38);
 }
 
+/* ── Thin inset scrollbar (sidebar + results panels) ──────── */
+/* Track margins keep the thumb away from rounded corners */
+.scrollbar-thin-panel {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.scrollbar-thin-panel:hover {
+  scrollbar-color: rgba(var(--pio-ink-rgb), 0.18) transparent;
+}
+.scrollbar-thin-panel::-webkit-scrollbar {
+  width: 4px;
+}
+.scrollbar-thin-panel::-webkit-scrollbar-track {
+  background: transparent;
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+.scrollbar-thin-panel::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 99px;
+}
+.scrollbar-thin-panel:hover::-webkit-scrollbar-thumb {
+  background: rgba(var(--pio-ink-rgb), 0.18);
+}
+.scrollbar-thin-panel:hover::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--pio-ink-rgb), 0.35);
+}
+
 /* ── Hide scrollbar while keeping scroll ──────────────────── */
 .scrollbar-hide {
   scrollbar-width: none;

@@ -967,7 +967,7 @@ function ProteinWorkbenchState({
           </div>
 
           {/* Results column */}
-          <section ref={resultsColumnRef} className="relative z-[1] min-h-0 overflow-y-auto bg-[var(--pio-white)] border-t border-[var(--pio-line)] md:border-t-0 md:shadow-[-8px_0_24px_rgba(17,22,16,0.07)]">
+          <section ref={resultsColumnRef} className="scrollbar-thin-panel relative z-[1] min-h-0 overflow-y-auto bg-[var(--pio-white)] border-t border-[var(--pio-line)] md:border-t-0 md:shadow-[-8px_0_24px_rgba(17,22,16,0.07)]">
             <ResultsPanel
               activeTab={resultsTab}
               onTabChange={setResultsTab}
