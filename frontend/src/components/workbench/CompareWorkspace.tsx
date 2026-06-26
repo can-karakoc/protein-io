@@ -136,7 +136,7 @@ export function CompareWorkspace() {
     // Keep shared session entry in sync so Report can read it without touching localStorage
     setCompareSession(
       comparison
-        ? { comparison, cutoff, labelA: labelFromInput(inputACache), labelB: labelFromInput(inputBCache) }
+        ? { comparison, cutoff, labelA: labelFromInput(inputACache), labelB: labelFromInput(inputBCache), savedAt: new Date().toISOString() }
         : null
     );
   }, [inputA, inputB, cutoff, comparison]);
