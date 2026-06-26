@@ -19,7 +19,7 @@ ContactCategory = Literal[
 ConfidenceCategory = Literal["very_high", "confident", "low", "very_low"]
 ResidueKind = Literal["protein", "ligand", "water", "other"]
 TrustLabel = Literal["high-confidence", "inspect-manually", "low-confidence", "possible-clash", "no-confidence-data"]
-InteractionClass = Literal["polar", "ionic", "aromatic", "hydrophobic", "unclassified"]
+InteractionClass = Literal["h-bond", "salt-bridge", "aromatic", "pi-cation", "hydrophobic", "halogen-bond", "unclassified"]
 
 
 class AtomRecord(BaseModel):
