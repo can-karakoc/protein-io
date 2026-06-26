@@ -2672,58 +2672,61 @@ function ConfidencePanel({
   ] as const;
 
   return (
-    <div className="pio-panel p-4">
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <div>
-          <h2 className="pio-section-title">Predicted confidence</h2>
-          <p className="pio-section-copy mt-1">
-            pLDDT values were read from residue B-factors for this predicted structure.
-          </p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginTop: 12 }}>
-            <div>
-              <p className="pio-label">Average pLDDT</p>
-              <p className="pio-value mt-1 text-xl font-bold text-[var(--pio-lavender-deep)]">{confidence.average_plddt.toFixed(2)}</p>
-            </div>
-            <div>
-              <p className="pio-label">Residues</p>
-              <p className="pio-value mt-1 text-xl font-bold">{confidence.residue_count}</p>
-            </div>
-            <div>
-              <p className="pio-label">Low confidence</p>
-              <p className="pio-value mt-1 text-xl font-bold text-[var(--pio-amber-deep)]">{confidence.low_confidence_count}</p>
-            </div>
-          </div>
-        </div>
+    <div>
+      <h2 className="pio-section-title">Predicted confidence</h2>
+      <p className="pio-section-copy mt-1">
+        pLDDT values were read from residue B-factors for this predicted structure.
+      </p>
 
-        <div className="flex shrink-0 flex-col gap-3">
-          <div className="inline-flex rounded-full border border-[var(--pio-line-strong)] bg-[var(--pio-white)] p-1">
-            {(["structure", "plddt"] as const).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => onColorModeChange(mode)}
-                className={`h-8 rounded-full px-3 text-xs font-semibold ${
-                  colorMode === mode ? "bg-[var(--pio-ink)] text-[var(--pio-white)]" : "text-[var(--pio-graphite)] hover:text-[var(--pio-ink)]"
-                }`}
-              >
-                {mode === "plddt" ? "pLDDT" : "Structure"}
-              </button>
-            ))}
-          </div>
-          <p className="text-xs text-[var(--pio-graphite)]">{residueConfidences.length} residues available for confidence coloring.</p>
+      {/* Stat tiles */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 16 }}>
+        <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
+          <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>Average pLDDT</p>
+          <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 22, fontWeight: 700, marginTop: 4, color: "var(--pio-lavender-deep)", lineHeight: 1 }}>{confidence.average_plddt.toFixed(2)}</p>
+        </div>
+        <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
+          <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>Residues</p>
+          <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 22, fontWeight: 700, marginTop: 4, color: "var(--pio-ink)", lineHeight: 1 }}>{confidence.residue_count}</p>
+        </div>
+        <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
+          <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>Low confidence</p>
+          <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 22, fontWeight: 700, marginTop: 4, color: "var(--pio-amber-deep)", lineHeight: 1 }}>{confidence.low_confidence_count}</p>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8, marginTop: 16 }}>
+      {/* Category tiles */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 8 }}>
         {categories.map(([label, count, color]) => (
-          <div key={label} className="pio-kv-card flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="h-3 w-3" style={{ backgroundColor: color }} />
-              <span className="text-sm text-[var(--pio-ink)]">{label}</span>
+          <div key={label} style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ width: 10, height: 10, borderRadius: "50%", background: color, flexShrink: 0 }} />
+              <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>{label}</p>
             </div>
-            <span className="pio-value text-sm">{count}</span>
+            <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 22, fontWeight: 700, marginTop: 4, color: "var(--pio-ink)", lineHeight: 1 }}>{count}</p>
           </div>
         ))}
+      </div>
+
+      {/* Color mode toggle */}
+      <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 20 }}>
+        <div style={{ display: "flex", gap: 4 }}>
+          {(["structure", "plddt"] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => onColorModeChange(mode)}
+              style={{
+                height: 32, borderRadius: 20, padding: "0 14px", fontSize: 12, fontWeight: 600,
+                background: colorMode === mode ? "var(--pio-ink)" : "var(--pio-paper)",
+                color: colorMode === mode ? "var(--pio-white)" : "var(--pio-graphite)",
+                border: "none", cursor: "pointer", transition: "background 0.15s, color 0.15s",
+              }}
+            >
+              {mode === "plddt" ? "pLDDT" : "Structure"}
+            </button>
+          ))}
+        </div>
+        <p style={{ fontSize: 11, color: "var(--pio-graphite)" }}>{residueConfidences.length} residues</p>
       </div>
     </div>
   );
