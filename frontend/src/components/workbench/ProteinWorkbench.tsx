@@ -8,6 +8,7 @@ import { StructureViewer } from "@/components/viewer/StructureViewer";
 import { BatchWorkspace } from "@/components/workbench/BatchWorkspace";
 import { ChatWorkspace } from "@/components/workbench/ChatWorkspace";
 import { CompareWorkspace } from "@/components/workbench/CompareWorkspace";
+import { LigandsWorkspace } from "@/components/workbench/LigandsWorkspace";
 import { ExploreSidebar } from "@/components/workbench/ExploreSidebar";
 import { WorkbenchShell } from "@/components/workbench/WorkbenchShell";
 import type { WorkbenchMode } from "@/components/workbench/TopNav";
@@ -1157,6 +1158,20 @@ function ProteinWorkbenchState({
               setMode("explore");
               window.requestAnimationFrame(() => document.getElementById("uniprot-id")?.focus());
             }}
+          />
+        </motion.div>
+      ) : mode === "ligands" ? (
+        <motion.div
+          key="ligands"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
+          className="h-full p-4 overflow-hidden"
+        >
+          <LigandsWorkspace
+            analysis={analysis}
+            onFocusExplore={() => setMode("explore")}
           />
         </motion.div>
       ) : mode === "batch" ? (
