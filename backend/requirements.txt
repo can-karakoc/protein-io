@@ -1,4 +1,6 @@
+anthropic>=0.112.0
 fastapi>=0.115.0
+python-dotenv>=1.0.0
 gemmi>=0.7.5
 pydantic>=2.8.0
 python-multipart>=0.0.9
