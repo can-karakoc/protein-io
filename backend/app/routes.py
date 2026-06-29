@@ -1,9 +1,12 @@
 import logging
 from time import perf_counter
+from typing import Any
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from pydantic import BaseModel
 from starlette.responses import Response
 
+from app.chat import run_chat
 from app.integrations.alphafold import AlphaFoldFetchError
 from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, BatchAnalysisResponse, RcsbAnalysisResponse, StructureComparisonResponse
 from app.pae import PaeParseError, analyze_pae_json
@@ -154,3 +157,22 @@ async def analyze_alphafold(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+# ── Chat ─────────────────────────────────────────────────────────────────────
+
+class ChatRequest(BaseModel):
+    analysis: AnalysisResponse
+    messages: list[dict[str, Any]]
+
+
+class ChatResponse(BaseModel):
+    reply: str | None
+    tool_calls: list[dict[str, Any]]
+    error: str | None = None
+
+
+@router.post("/api/chat", response_model=ChatResponse)
+async def chat(request: ChatRequest) -> ChatResponse:
+    result = await run_chat(request.analysis, request.messages)
+    return ChatResponse(**result)

@@ -6,6 +6,7 @@ import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } fro
 
 import { StructureViewer } from "@/components/viewer/StructureViewer";
 import { BatchWorkspace } from "@/components/workbench/BatchWorkspace";
+import { ChatWorkspace } from "@/components/workbench/ChatWorkspace";
 import { CompareWorkspace } from "@/components/workbench/CompareWorkspace";
 import { ExploreSidebar } from "@/components/workbench/ExploreSidebar";
 import { WorkbenchShell } from "@/components/workbench/WorkbenchShell";
@@ -989,7 +990,7 @@ function ProteinWorkbenchState({
                     type="button"
                     onClick={() => setViewerColorMode(m)}
                     className={[
-                      "rounded-full px-3 py-1 text-[11px] font-semibold transition-colors",
+                      "rounded-full px-3 py-1 text-pio-xs font-semibold transition-colors",
                       viewerColorMode === m
                         ? "bg-[var(--pio-ink)] text-[var(--pio-white)]"
                         : "bg-transparent text-[var(--pio-graphite)] hover:text-[var(--pio-ink)]",
@@ -1169,6 +1170,20 @@ function ProteinWorkbenchState({
         >
           <BatchWorkspace />
         </motion.div>
+      ) : mode === "chat" ? (
+        <motion.div
+          key="chat"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
+          className="h-full"
+        >
+          <ChatWorkspace
+            analysis={analysis}
+            onFocusExplore={() => setMode("explore")}
+          />
+        </motion.div>
       ) : (
         <motion.div
           key="compare"
@@ -1210,7 +1225,7 @@ function ProteinWorkbenchState({
           transition={{ type: "spring", damping: 28, stiffness: 280 }}
         >
           <div className="flex items-center justify-between border-b border-[rgba(20,20,15,0.08)] px-4 py-3">
-            <span className="text-[13px] font-semibold text-[var(--pio-ink)]">Load Structure</span>
+            <span className="text-pio-base font-semibold text-[var(--pio-ink)]">Load Structure</span>
             <button
               type="button"
               onClick={() => setSidebarOpen(false)}
@@ -1283,7 +1298,7 @@ function LoadingOverlay({ statusLabel }: { statusLabel: string | null }) {
 
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center bg-white">
-      <p className="text-[22px] font-semibold text-[#14140f] tracking-tight">
+      <p className="text-pio-4xl font-semibold text-[#14140f] tracking-tight">
         {headline}
       </p>
       <p className="mt-2 text-sm text-[#6b6f63]">This might take a minute.</p>
@@ -1418,7 +1433,7 @@ function ResultsPanel({
         aria-selected={isActive}
         onClick={() => preservePanelPosition(() => onTabChange(tab.id))}
         className={[
-          "flex-1 min-w-max whitespace-nowrap text-center rounded-[12px] px-2 sm:px-3.5 py-[7px] text-[13px] font-semibold transition-colors",
+          "flex-1 min-w-max whitespace-nowrap text-center rounded-[12px] px-2 sm:px-3.5 py-[7px] text-pio-base font-semibold transition-colors",
           isActive
             ? "bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)]"
             : "text-[var(--pio-highlight)] opacity-70 hover:opacity-100 hover:bg-[var(--pio-line)]",
@@ -1426,7 +1441,7 @@ function ResultsPanel({
       >
         {tab.label}
         {tab.count != null && (
-          <span className={["ml-1.5 text-[10px] font-semibold", isActive ? "opacity-70" : "opacity-50"].join(" ")}>
+          <span className={["ml-1.5 text-pio-2xs font-semibold", isActive ? "opacity-70" : "opacity-50"].join(" ")}>
             {tab.count.toLocaleString()}
           </span>
         )}
@@ -2204,7 +2219,7 @@ function ReportWorkspace({
           <div style={{ display: "flex", gap: 8, marginTop: 20, justifyContent: "center", flexWrap: "wrap" }}>
             {([["Load sample", onLoadSample], ["Fetch PDB ID", onFocusRcsb], ["Fetch UniProt", onFocusAlphaFold]] as const).map(([label, fn]) => (
               <button key={label} type="button" onClick={fn}
-                className="rounded-[12px] border border-[var(--pio-line-strong)] bg-[var(--pio-white)] px-4 py-2 text-[13px] font-semibold text-[var(--pio-ink)] hover:bg-[var(--pio-sand)]">
+                className="rounded-[12px] border border-[var(--pio-line-strong)] bg-[var(--pio-white)] px-4 py-2 text-pio-base font-semibold text-[var(--pio-ink)] hover:bg-[var(--pio-sand)]">
                 {label}
               </button>
             ))}
@@ -2458,10 +2473,10 @@ function EmptyWorkbenchState({
 }) {
   return (
     <div className="p-6">
-      <h2 className="text-[21px] font-bold tracking-[-0.01em] text-[var(--pio-ink)]">
+      <h2 className="text-pio-4xl font-bold tracking-[-0.01em] text-[var(--pio-ink)]">
         Start a structure analysis
       </h2>
-      <p className="mt-2 text-[14px] leading-relaxed text-[var(--pio-graphite)]">
+      <p className="mt-2 text-pio-lg leading-relaxed text-[var(--pio-graphite)]">
         Explore protein structures, contacts, ligands, and confidence in one browser workspace. Start with a
         structure file, PDB ID, AlphaFold accession, or sample structure.
       </p>
@@ -2479,7 +2494,7 @@ function ExampleGallery({
 }) {
   return (
     <div>
-      <h3 className="text-[18px] font-bold tracking-[-0.01em] text-[var(--pio-ink)]">Example Gallery</h3>
+      <h3 className="text-pio-2xl font-bold tracking-[-0.01em] text-[var(--pio-ink)]">Example Gallery</h3>
       <div className="mt-4 flex flex-col gap-3">
         {EXAMPLE_GALLERY.map((example) => (
           <article
@@ -2487,13 +2502,13 @@ function ExampleGallery({
             className="pio-gallery-card flex min-w-0 flex-col gap-3 rounded-[8px] bg-[#F5F5F5] p-4"
           >
             <div className="min-w-0">
-              <h4 className="text-[15.5px] font-bold leading-snug text-[var(--pio-ink)]">
+              <h4 className="text-pio-xl font-bold leading-snug text-[var(--pio-ink)]">
                 {example.title}
               </h4>
-              <p className="mt-0.5 font-[family-name:var(--font-pio-mono)] text-[12px] text-[var(--pio-graphite)]">
+              <p className="mt-0.5 font-[family-name:var(--font-pio-mono)] text-pio-sm text-[var(--pio-graphite)]">
                 {example.source}
               </p>
-              <p className="mt-1.5 text-[13.5px] leading-[1.5] text-[var(--pio-graphite)]"
+              <p className="mt-1.5 text-pio-md leading-[1.5] text-[var(--pio-graphite)]"
                 style={{
                   display: "-webkit-box",
                   WebkitLineClamp: 3,
@@ -2507,7 +2522,7 @@ function ExampleGallery({
                 {example.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="rounded-full px-[10px] py-[3px] text-[11px] font-semibold"
+                    className="rounded-full px-[10px] py-[3px] text-pio-xs font-semibold"
                     style={{ background: tagBackground(tag), color: tagColor(tag) }}
                   >
                     {tag}
@@ -2518,7 +2533,7 @@ function ExampleGallery({
             <button
               type="button"
               onClick={() => onLoadExample(example.id)}
-              className="flex w-full items-center justify-center rounded-[12px] bg-[var(--pio-highlight)] py-[6px] text-[13px] font-semibold text-[var(--pio-highlight-text)] transition-colors hover:opacity-90"
+              className="flex w-full items-center justify-center rounded-[12px] bg-[var(--pio-highlight)] py-[6px] text-pio-base font-semibold text-[var(--pio-highlight-text)] transition-colors hover:opacity-90"
             >
               Load
             </button>
@@ -3070,11 +3085,11 @@ function MetadataPanel({ metadata }: { metadata: StructureMetadata | null }) {
       >
         {rows.map((row) => (
           <div key={row.label} className="cursor-pointer rounded-[6px] px-2 py-1.5 transition-colors hover:bg-[var(--pio-sky)]">
-            <p className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">{row.label}</p>
+            <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">{row.label}</p>
             {row.mono ? (
-              <p className="mt-0.5 font-mono text-[12px] font-medium text-[var(--pio-ink)]">{row.value}</p>
+              <p className="mt-0.5 font-mono text-pio-sm font-medium text-[var(--pio-ink)]">{row.value}</p>
             ) : (
-              <p className="mt-0.5 text-[13px] font-medium text-[var(--pio-ink)]">{row.value}</p>
+              <p className="mt-0.5 text-pio-base font-medium text-[var(--pio-ink)]">{row.value}</p>
             )}
           </div>
         ))}
@@ -3420,8 +3435,8 @@ function ChainTable({
   return (
     <div className="min-w-0">
       {/* Heading */}
-      <h2 className="text-[20px] font-bold text-[var(--pio-ink)]">Chains</h2>
-      <p className="mt-1 text-[13.5px] leading-[1.5] text-[var(--pio-graphite)]">Protein residue and atom counts grouped by chain.</p>
+      <h2 className="text-pio-3xl font-bold text-[var(--pio-ink)]">Chains</h2>
+      <p className="mt-1 text-pio-md leading-[1.5] text-[var(--pio-graphite)]">Protein residue and atom counts grouped by chain.</p>
 
       {chains.length ? (
         <div className="mt-4">
@@ -3431,7 +3446,7 @@ function ChainTable({
             style={{ display: "grid", gridTemplateColumns: CHAIN_GRID }}
           >
             {["CHAIN", "RESIDUES", "ATOMS"].map((col) => (
-              <p key={col} className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">{col}</p>
+              <p key={col} className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">{col}</p>
             ))}
           </div>
 
@@ -3459,9 +3474,9 @@ function ChainTable({
                       background: selected ? "var(--pio-row-selection-bg)" : undefined,
                     }}
                   >
-                    <p className="text-[15px] font-semibold text-[var(--pio-ink)]">{chain.id}</p>
-                    <p className="font-mono text-[14px] font-medium text-[var(--pio-ink)]">{chain.residue_count.toLocaleString()}</p>
-                    <p className="font-mono text-[14px] font-medium text-[var(--pio-ink)]">{chain.atom_count.toLocaleString()}</p>
+                    <p className="text-pio-xl font-semibold text-[var(--pio-ink)]">{chain.id}</p>
+                    <p className="font-mono text-pio-lg font-medium text-[var(--pio-ink)]">{chain.residue_count.toLocaleString()}</p>
+                    <p className="font-mono text-pio-lg font-medium text-[var(--pio-ink)]">{chain.atom_count.toLocaleString()}</p>
                   </div>
                   {i < chains.length - 1 && (
                     <div className="mx-3 h-px bg-[var(--pio-line)]" />
@@ -3474,7 +3489,7 @@ function ChainTable({
       ) : (
         <div className="mt-8 flex flex-col items-center">
           <ChainNodeIcon size={40} color="var(--pio-line-strong)" />
-          <p className="mt-3 text-center text-[13.5px] text-[var(--pio-graphite)]">No chains detected in this structure.</p>
+          <p className="mt-3 text-center text-pio-md text-[var(--pio-graphite)]">No chains detected in this structure.</p>
         </div>
       )}
     </div>

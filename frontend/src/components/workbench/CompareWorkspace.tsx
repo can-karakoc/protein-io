@@ -314,10 +314,10 @@ export function CompareWorkspace() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="pio-label">Structure comparison</p>
-            <h1 className="mt-1 text-[26px] font-bold tracking-[-0.025em] text-[var(--pio-ink)]">
+            <h1 className="mt-1 text-pio-5xl font-bold tracking-[-0.025em] text-[var(--pio-ink)]">
               Compare residue-level contact patterns
             </h1>
-            <p className="mt-2 max-w-[720px] text-[14px] leading-6 text-[var(--pio-graphite)]">
+            <p className="mt-2 max-w-[720px] text-pio-lg leading-6 text-[var(--pio-graphite)]">
               Analyze two coordinate files with the same distance cutoff, then review shared, gained, and lost
               residue-contact identities.
             </p>
@@ -329,7 +329,7 @@ export function CompareWorkspace() {
           </div>
         </div>
 
-        <div className="mt-6 rounded-[12px] border border-[var(--pio-quality-amber-border)] bg-[var(--pio-quality-amber-bg)] px-4 py-3 text-[13px] leading-5 text-[var(--pio-quality-amber-fg)]">
+        <div className="mt-6 rounded-[12px] border border-[var(--pio-quality-amber-border)] bg-[var(--pio-quality-amber-bg)] px-4 py-3 text-pio-base leading-5 text-[var(--pio-quality-amber-fg)]">
           Contact identities use chain ID, residue name, residue number, and contact type. Equivalent structures with
           different chain or residue numbering may appear different even when their folds are similar.
         </div>
@@ -366,7 +366,7 @@ export function CompareWorkspace() {
         <div className="mt-5 rounded-[12px] bg-[var(--pio-paper)] p-4">
           <div className="flex items-center justify-between">
             <span className="pio-label">Contact cutoff</span>
-            <span className="font-mono text-[13px] text-[var(--pio-graphite)]">{cutoff.toFixed(1)} Å</span>
+            <span className="font-mono text-pio-base text-[var(--pio-graphite)]">{cutoff.toFixed(1)} Å</span>
           </div>
           <div className="mt-2 flex items-center gap-3">
             <input
@@ -392,7 +392,7 @@ export function CompareWorkspace() {
               type="button"
               onClick={() => void compareStructures()}
               disabled={!inputA.file || !inputB.file || isLoading || inputA.isFetching || inputB.isFetching}
-              className="ml-auto flex min-w-[160px] items-center justify-center gap-2 rounded-[12px] bg-[var(--pio-highlight)] py-[10px] text-[13px] font-semibold text-[var(--pio-highlight-text)] transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45"
+              className="ml-auto flex min-w-[160px] items-center justify-center gap-2 rounded-[12px] bg-[var(--pio-highlight)] py-[10px] text-pio-base font-semibold text-[var(--pio-highlight-text)] transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45"
             >
               {isLoading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
               {isLoading ? "Analyzing…" : "Analyze"}
@@ -410,8 +410,8 @@ export function CompareWorkspace() {
         {isLoading ? (
           <div className="mt-8 flex flex-col items-center gap-4 py-12">
             <LoaderCircle className="h-8 w-8 animate-spin text-[var(--pio-highlight)]" />
-            <p className="text-[14px] font-semibold text-[var(--pio-ink)]">Analyzing both structures…</p>
-            <p className="text-[13px] text-[var(--pio-graphite)]">Parsing coordinates, computing contacts, and diffing contact sets.</p>
+            <p className="text-pio-lg font-semibold text-[var(--pio-ink)]">Analyzing both structures…</p>
+            <p className="text-pio-base text-[var(--pio-graphite)]">Parsing coordinates, computing contacts, and diffing contact sets.</p>
           </div>
         ) : null}
 
@@ -428,8 +428,8 @@ export function CompareWorkspace() {
         ) : !isLoading ? (
           <div className="mt-8 rounded-[12px] border border-dashed border-[var(--pio-line-strong)] px-6 py-12 text-center">
             <ArrowLeftRight className="mx-auto h-7 w-7 text-[var(--pio-graphite)] opacity-45" />
-            <p className="mt-3 text-[15px] font-semibold text-[var(--pio-ink)]">Comparison results will appear here</p>
-            <p className="mx-auto mt-1 max-w-[470px] text-[13px] leading-5 text-[var(--pio-graphite)]">
+            <p className="mt-3 text-pio-xl font-semibold text-[var(--pio-ink)]">Comparison results will appear here</p>
+            <p className="mx-auto mt-1 max-w-[470px] text-pio-base leading-5 text-[var(--pio-graphite)]">
               Choose two structures to calculate count deltas and residue-level shared, gained, and lost contact examples.
             </p>
           </div>
@@ -496,7 +496,7 @@ function ComparisonStructureInput({
               onClick={() => onModeChange(mode.id)}
               aria-pressed={selected}
               className={[
-                "flex min-w-0 items-center justify-center gap-1.5 rounded-[7px] px-2 py-2 text-[11px] font-semibold transition-colors",
+                "flex min-w-0 items-center justify-center gap-1.5 rounded-[7px] px-2 py-2 text-pio-xs font-semibold transition-colors",
                 selected
                   ? "bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)]"
                   : "text-[var(--pio-graphite)] hover:bg-[var(--pio-paper)]",
@@ -512,10 +512,10 @@ function ComparisonStructureInput({
       {input.mode === "local" ? (
         <label className="mt-4 flex h-[140px] cursor-pointer flex-col items-center justify-center rounded-[12px] border border-dashed border-[var(--pio-line-strong)] bg-[var(--pio-white)] px-4 text-center transition-colors hover:bg-[var(--pio-sand)]">
           <FileUp className="h-5 w-5 text-[var(--pio-highlight)]" />
-          <span className="mt-2 max-w-full truncate text-[13px] font-semibold text-[var(--pio-ink)]">
+          <span className="mt-2 max-w-full truncate text-pio-base font-semibold text-[var(--pio-ink)]">
             {input.file?.name ?? "Choose PDB or mmCIF"}
           </span>
-          <span className="mt-1 text-[11px] text-[var(--pio-graphite)]">
+          <span className="mt-1 text-pio-xs text-[var(--pio-graphite)]">
             {input.file ? formatBytes(input.file.size) : ".pdb, .cif, or .mmcif"}
           </span>
           <input
@@ -529,11 +529,11 @@ function ComparisonStructureInput({
       ) : input.file ? (
         <div className="mt-4 flex h-[140px] items-center justify-center rounded-[12px] bg-[var(--pio-green-pale)] p-4">
           <div className="text-center">
-            <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--pio-green-deep)] opacity-60">Ready</p>
-            <p className="mt-1.5 max-w-[200px] truncate font-mono text-[13px] font-semibold text-[var(--pio-green-deep)]" title={input.file.name}>
+            <p className="text-pio-2xs font-semibold uppercase tracking-[0.08em] text-[var(--pio-green-deep)] opacity-60">Ready</p>
+            <p className="mt-1.5 max-w-[200px] truncate font-mono text-pio-base font-semibold text-[var(--pio-green-deep)]" title={input.file.name}>
               {input.file.name}
             </p>
-            <p className="mt-0.5 font-mono text-[11px] text-[var(--pio-green-deep)] opacity-60">{formatBytes(input.file.size)}</p>
+            <p className="mt-0.5 font-mono text-pio-xs text-[var(--pio-green-deep)] opacity-60">{formatBytes(input.file.size)}</p>
           </div>
         </div>
       ) : (
@@ -571,7 +571,7 @@ function ComparisonStructureInput({
       )}
 
       {input.error ? (
-        <p className="mt-3 text-[12px] leading-5 text-[var(--pio-coral-deep)]" role="alert">
+        <p className="mt-3 text-pio-sm leading-5 text-[var(--pio-coral-deep)]" role="alert">
           {input.error}
         </p>
       ) : null}
@@ -619,8 +619,8 @@ function ComparisonResults({
 
       <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-[20px] font-bold text-[var(--pio-ink)]">Contact differences</h2>
-          <p className="mt-1 text-[13px] text-[var(--pio-graphite)]">
+          <h2 className="text-pio-3xl font-bold text-[var(--pio-ink)]">Contact differences</h2>
+          <p className="mt-1 text-pio-base text-[var(--pio-graphite)]">
             Counts include all identities; up to 500 representative rows are shown per category.
           </p>
         </div>
@@ -639,13 +639,13 @@ function ComparisonResults({
             aria-selected={activeTab === tab.id}
             onClick={() => onTabChange(tab.id)}
             className={[
-              "min-w-max flex-1 rounded-[9px] px-4 py-2 text-[13px] font-semibold transition-colors",
+              "min-w-max flex-1 rounded-[9px] px-4 py-2 text-pio-base font-semibold transition-colors",
               activeTab === tab.id
                 ? "bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)]"
                 : "text-[var(--pio-graphite)] hover:bg-[var(--pio-line)]",
             ].join(" ")}
           >
-            {tab.label} <span className="ml-1 font-mono text-[11px] opacity-75">{tab.count}</span>
+            {tab.label} <span className="ml-1 font-mono text-pio-xs opacity-75">{tab.count}</span>
           </button>
         ))}
       </div>
@@ -657,7 +657,7 @@ function ComparisonResults({
       {comparison.warnings.length ? (
         <div className="mt-5 rounded-[12px] bg-[var(--pio-paper)] px-4 py-3">
           <p className="pio-label">Methods and limitations</p>
-          <ul className="mt-2 list-inside list-disc space-y-1 text-[13px] leading-5 text-[var(--pio-graphite)]">
+          <ul className="mt-2 list-inside list-disc space-y-1 text-pio-base leading-5 text-[var(--pio-graphite)]">
             {comparison.warnings.map((warning) => <li key={warning}>{warning}</li>)}
           </ul>
         </div>
@@ -699,13 +699,13 @@ function StructureSummaryCard({
         <p className="pio-label">{label}</p>
         {metadata && <span className={`pio-badge ${sourceBadgeClass}`}>{sourceLabel}</span>}
       </div>
-      <p className="mt-1 line-clamp-2 text-[13px] font-semibold leading-[1.4] text-[var(--pio-ink)]" title={displayTitle}>
+      <p className="mt-1 line-clamp-2 text-pio-base font-semibold leading-[1.4] text-[var(--pio-ink)]" title={displayTitle}>
         {displayTitle}
       </p>
       {meta2.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5">
           {meta2.map(([k, v]) => (
-            <span key={k} className="text-[11px] text-[var(--pio-graphite)]">
+            <span key={k} className="text-pio-xs text-[var(--pio-graphite)]">
               <span className="font-semibold">{k}:</span> {v}
             </span>
           ))}
@@ -714,8 +714,8 @@ function StructureSummaryCard({
       <div className="mt-4 grid grid-cols-5 gap-2 border-t border-[var(--pio-line)] pt-3">
         {metrics.map(([metricLabel, value]) => (
           <div key={metricLabel} className="min-w-0">
-            <p className="truncate text-[9px] font-semibold uppercase tracking-[0.06em] text-[var(--pio-graphite)]">{metricLabel}</p>
-            <p className="mt-1 font-mono text-[14px] font-semibold text-[var(--pio-ink)]">{Number(value).toLocaleString()}</p>
+            <p className="truncate text-pio-3xs font-semibold uppercase tracking-[0.06em] text-[var(--pio-graphite)]">{metricLabel}</p>
+            <p className="mt-1 font-mono text-pio-lg font-semibold text-[var(--pio-ink)]">{Number(value).toLocaleString()}</p>
           </div>
         ))}
       </div>
@@ -729,7 +729,7 @@ function DeltaCard({ label, value }: { label: string; value: number }) {
     <div className="rounded-[10px] border border-[var(--pio-line)] px-3 py-3">
       <p className="pio-label">Δ {label}</p>
       <p className={`mt-1 font-mono text-lg font-bold ${tone}`}>{value > 0 ? `+${value}` : value}</p>
-      <p className="mt-1 text-[10px] text-[var(--pio-graphite)]">B minus A</p>
+      <p className="mt-1 text-pio-2xs text-[var(--pio-graphite)]">B minus A</p>
     </div>
   );
 }
@@ -759,16 +759,16 @@ function ContactDifferenceTable({ rows }: { rows: ContactDifference[] }) {
             ].join(" ")}
           >
             <div className="min-w-0">
-              <p className="truncate font-mono text-[12px] font-semibold text-[var(--pio-ink)]" title={row.label}>{row.label}</p>
-              <p className="mt-0.5 text-[11px] text-[var(--pio-graphite)]">{row.contact_type.replace(/-/g, "‑")}</p>
+              <p className="truncate font-mono text-pio-sm font-semibold text-[var(--pio-ink)]" title={row.label}>{row.label}</p>
+              <p className="mt-0.5 text-pio-xs text-[var(--pio-graphite)]">{row.contact_type.replace(/-/g, "‑")}</p>
             </div>
             <div className="flex flex-wrap content-start gap-1">
               {row.contact_categories.length ? row.contact_categories.map((category) => (
                 <span key={category} className="pio-badge pio-badge-neutral">{category}</span>
-              )) : <span className="text-[11px] text-[var(--pio-graphite)]">—</span>}
+              )) : <span className="text-pio-xs text-[var(--pio-graphite)]">—</span>}
             </div>
-            <p className="font-mono text-[12px] text-[var(--pio-ink)]">{formatDistance(row.distance_a_angstrom)}</p>
-            <p className="font-mono text-[12px] text-[var(--pio-ink)]">{formatDistance(row.distance_b_angstrom)}</p>
+            <p className="font-mono text-pio-sm text-[var(--pio-ink)]">{formatDistance(row.distance_a_angstrom)}</p>
+            <p className="font-mono text-pio-sm text-[var(--pio-ink)]">{formatDistance(row.distance_b_angstrom)}</p>
           </div>
         ))}
       </div>
@@ -791,7 +791,7 @@ const DIFF_DOT: Record<DiffStatus | "absent", { bg: string; opacity: number; siz
 
 function DiffFingerprintMatrix({ rows, labelA, labelB }: { rows: DiffFpRow[]; labelA: string; labelB: string }) {
   if (rows.length === 0) return (
-    <p className="text-[12px] text-[var(--pio-graphite)]">No protein-ligand contacts found — re-run comparison to populate fingerprint data.</p>
+    <p className="text-pio-sm text-[var(--pio-graphite)]">No protein-ligand contacts found — re-run comparison to populate fingerprint data.</p>
   );
 
   const statusBadge: Record<DiffStatus, string> = {
@@ -851,7 +851,7 @@ function DiffFingerprintMatrix({ rows, labelA, labelB }: { rows: DiffFpRow[]; la
           }}
         >
           <span
-            className="font-mono text-[10px] font-semibold text-[var(--pio-ink)]"
+            className="font-mono text-pio-2xs font-semibold text-[var(--pio-ink)]"
             style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
             title={row.key}
           >
@@ -942,8 +942,8 @@ function LigandPoseComparisonSection({
 
   return (
     <div className="mt-8">
-      <h2 className="text-[20px] font-bold text-[var(--pio-ink)]">Ligand comparison</h2>
-      <p className="mt-1 text-[13px] text-[var(--pio-graphite)]">
+      <h2 className="text-pio-3xl font-bold text-[var(--pio-ink)]">Ligand comparison</h2>
+      <p className="mt-1 text-pio-base text-[var(--pio-graphite)]">
         Per-ligand interaction fingerprint diff — rows are contacting residues, columns are interaction types.
         <span className="ml-1 font-semibold text-[var(--pio-green-deep)]">+B</span> = gained in B,{" "}
         <span className="font-semibold text-[var(--pio-coral-deep)]">−A</span> = lost from A,{" "}
@@ -951,13 +951,13 @@ function LigandPoseComparisonSection({
       </p>
 
       {!hasContacts && (
-        <div className="mt-4 rounded-[10px] bg-[var(--pio-paper)] px-4 py-3 text-[12px] text-[var(--pio-graphite)]">
+        <div className="mt-4 rounded-[10px] bg-[var(--pio-paper)] px-4 py-3 text-pio-sm text-[var(--pio-graphite)]">
           Per-contact data is not available from the session cache. Re-run the comparison to see fingerprint details.
         </div>
       )}
 
       {hasContacts && shared.length === 0 && (
-        <div className="mt-4 rounded-[10px] bg-[var(--pio-paper)] px-4 py-3 text-[12px] text-[var(--pio-graphite)]">
+        <div className="mt-4 rounded-[10px] bg-[var(--pio-paper)] px-4 py-3 text-pio-sm text-[var(--pio-graphite)]">
           No ligands with matching names found between A and B. Showing individual ligand contacts below.
         </div>
       )}
@@ -970,11 +970,11 @@ function LigandPoseComparisonSection({
         return (
           <div key={ligA.name} className="mt-5">
             <div className="mb-3 flex items-center gap-3">
-              <span className="font-mono text-[15px] font-bold text-[var(--pio-ink)]">{ligA.name}</span>
-              <span className="pio-badge pio-badge-neutral text-[10px]">
+              <span className="font-mono text-pio-xl font-bold text-[var(--pio-ink)]">{ligA.name}</span>
+              <span className="pio-badge pio-badge-neutral text-pio-2xs">
                 {labelA}: {ligA.chain_id}:{ligA.residue_number} · {ligA.protein_contact_count} contacts
               </span>
-              <span className="pio-badge pio-badge-neutral text-[10px]">
+              <span className="pio-badge pio-badge-neutral text-pio-2xs">
                 {labelB}: {ligB.chain_id}:{ligB.residue_number} · {ligB.protein_contact_count} contacts
               </span>
             </div>
@@ -1006,8 +1006,8 @@ function LigandPoseComparisonSection({
 function LigandOneSideRow({ ligand }: { ligand: LigandInteractionSummary }) {
   return (
     <div className="flex items-center justify-between gap-3 rounded-[8px] bg-[var(--pio-paper)] px-3 py-2 mb-1 last:mb-0">
-      <span className="font-mono text-[12px] font-semibold text-[var(--pio-ink)]">{ligand.name}</span>
-      <span className="text-[11px] text-[var(--pio-graphite)]">
+      <span className="font-mono text-pio-sm font-semibold text-[var(--pio-ink)]">{ligand.name}</span>
+      <span className="text-pio-xs text-[var(--pio-graphite)]">
         {ligand.chain_id}:{ligand.residue_number} · {ligand.protein_contact_count} contacts
       </span>
     </div>

@@ -3,7 +3,7 @@
 import { Menu, Moon, Sun } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 
-export type WorkbenchMode = "explore" | "compare" | "report" | "batch";
+export type WorkbenchMode = "explore" | "compare" | "report" | "batch" | "chat";
 
 type TopNavProps = {
   mode: WorkbenchMode;
@@ -16,6 +16,7 @@ const MODES: Array<{ id: WorkbenchMode; label: string }> = [
   { id: "compare", label: "Compare" },
   { id: "report", label: "Report" },
   { id: "batch", label: "Batch" },
+  { id: "chat", label: "Chat" },
 ];
 
 export function TopNav({ mode, onModeChange, onSidebarToggle }: TopNavProps) {
@@ -44,7 +45,7 @@ export function TopNav({ mode, onModeChange, onSidebarToggle }: TopNavProps) {
                 type="button"
                 onClick={() => onModeChange(item.id)}
                 className={[
-                  "flex h-[34px] items-center rounded-[12px] px-3 sm:px-5 text-[13px] sm:text-[13.5px] font-semibold transition-colors",
+                  "flex h-[34px] items-center rounded-[12px] px-3 sm:px-5 text-pio-base sm:text-pio-md font-semibold transition-colors",
                   isActive
                     ? "bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)]"
                     : "bg-[rgba(26,64,106,0.04)] text-[var(--pio-ink)] opacity-70 hover:opacity-100 hover:bg-[rgba(26,64,106,0.09)]",
@@ -62,7 +63,7 @@ export function TopNav({ mode, onModeChange, onSidebarToggle }: TopNavProps) {
             href="https://github.com/can-karakoc/protein-io/tree/main/docs"
             target="_blank"
             rel="noreferrer"
-            className="text-[11px] sm:text-[13.5px] font-medium text-[var(--pio-ink)] opacity-50 transition-opacity hover:opacity-80"
+            className="text-pio-xs sm:text-pio-md font-medium text-[var(--pio-ink)] opacity-50 transition-opacity hover:opacity-80"
           >
             Docs
           </a>
@@ -70,7 +71,7 @@ export function TopNav({ mode, onModeChange, onSidebarToggle }: TopNavProps) {
             href="https://github.com/can-karakoc/protein-io"
             target="_blank"
             rel="noreferrer"
-            className="text-[11px] sm:text-[13.5px] font-medium text-[var(--pio-ink)] opacity-50 transition-opacity hover:opacity-80"
+            className="text-pio-xs sm:text-pio-md font-medium text-[var(--pio-ink)] opacity-50 transition-opacity hover:opacity-80"
           >
             GitHub
           </a>
