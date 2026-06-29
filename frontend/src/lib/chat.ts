@@ -1,5 +1,6 @@
 import { buildApiUrl } from "@/lib/api";
-import type { AnalysisResponse } from "@/lib/types";
+import type { AnalysisResponse, StructureComparisonResponse } from "@/lib/types";
+import type { CompareSessionEntry } from "@/lib/compareSession";
 
 export type ChatMessage = {
   id: string;
@@ -21,6 +22,7 @@ export async function sendChatMessage(
   analysis: AnalysisResponse,
   history: ChatMessage[],
   userText: string,
+  compareEntry?: CompareSessionEntry | null,
 ): Promise<{ reply: string; toolCalls: ChatMessage["toolCalls"]; error: string | null }> {
   // Build Anthropic-format message list from prior conversation
   const messages: ApiMessage[] = [];
@@ -31,10 +33,15 @@ export async function sendChatMessage(
   }
   messages.push({ role: "user", content: userText });
 
+  // Serialize comparison: include label_a/label_b alongside the raw comparison data
+  const comparison = compareEntry
+    ? { ...compareEntry.comparison, label_a: compareEntry.labelA, label_b: compareEntry.labelB }
+    : null;
+
   const res = await fetch(buildApiUrl("/api/chat"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ analysis, messages }),
+    body: JSON.stringify({ analysis, messages, comparison }),
   });
 
   if (!res.ok) {
@@ -62,4 +69,6 @@ export const TOOL_LABELS: Record<string, string> = {
   get_ligand_details: "Ligand details",
   get_residue_contacts: "Residue contacts",
   get_chain_summary: "Chain summary",
+  compare_structures: "Comparison data",
+  generate_report: "Generated report",
 };

@@ -1,5 +1,6 @@
 import json
 import os
+from collections import Counter
 
 import anthropic
 
@@ -73,10 +74,52 @@ TOOLS: list[dict] = [
             "required": [],
         },
     },
+    {
+        "name": "compare_structures",
+        "description": (
+            "Returns the structural comparison between two loaded structures: delta metrics (residue/contact/chain/ligand counts), "
+            "plus shared, gained (present in B but not A), and lost (present in A but not B) contacts. "
+            "Only returns data when a comparison has been run in Compare mode — check for an error key if not available."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "section": {
+                    "type": "string",
+                    "enum": ["all", "delta", "shared", "gained", "lost"],
+                    "description": "Which part of the comparison to return. Default: all",
+                },
+                "limit": {"type": "integer", "description": "Max contacts per section (default 20, max 50)"},
+            },
+            "required": [],
+        },
+    },
+    {
+        "name": "generate_report",
+        "description": (
+            "Generates a structured markdown report of the loaded structure. "
+            "Use this when the user asks for a summary, report, or comprehensive overview. "
+            "Returns pre-formatted markdown covering the requested sections."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "sections": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": ["overview", "chains", "contacts", "ligands", "confidence", "comparison"],
+                    },
+                    "description": "Sections to include. Omit for all sections.",
+                },
+            },
+            "required": [],
+        },
+    },
 ]
 
 
-def _build_system(analysis: AnalysisResponse) -> str:
+def _build_system(analysis: AnalysisResponse, comparison: dict | None = None) -> str:
     s = analysis.summary
     m = analysis.metadata
     title = (m.title or m.pdb_id or m.uniprot_id or "Uploaded structure") if m else "Uploaded structure"
@@ -102,11 +145,17 @@ def _build_system(analysis: AnalysisResponse) -> str:
         "- Only state facts retrieved via tools or explicitly in this summary. Never invent residue numbers, distances, or interaction types.\n"
         "- When a user asks about a specific residue, ligand, or contact, use the appropriate tool to look it up first.\n"
         "- Cite exact values (distances in Å, residue IDs, chain labels) from tool results.\n"
-        "- Be concise and scientifically precise. Flag uncertainty clearly."
+        "- Be concise and scientifically precise. Flag uncertainty clearly.\n"
+        + (
+            f"- A structural comparison is loaded: structure A ({comparison.get('label_a','A')}) vs structure B ({comparison.get('label_b','B')}). "
+            "Use the compare_structures tool to answer questions about differences.\n"
+            if comparison else
+            "- No comparison is loaded. The compare_structures tool will return an error if called.\n"
+        )
     )
 
 
-def _run_tool(name: str, tool_input: dict, analysis: AnalysisResponse) -> object:
+def _run_tool(name: str, tool_input: dict, analysis: AnalysisResponse, comparison: dict | None = None) -> object:
     if name == "get_structure_summary":
         m = analysis.metadata
         return {
@@ -215,15 +264,134 @@ def _run_tool(name: str, tool_input: dict, analysis: AnalysisResponse) -> object
             return {"chain_id": ch.id, "residue_count": ch.residue_count, "atom_count": ch.atom_count}
         return {"chains": [{"chain_id": c.id, "residue_count": c.residue_count} for c in analysis.chains]}
 
+    if name == "compare_structures":
+        if not comparison:
+            return {"error": "No comparison loaded. Run a comparison in Compare mode first, then ask your question."}
+        section = tool_input.get("section", "all")
+        limit = min(int(tool_input.get("limit", 20)), 50)
+        contacts = comparison.get("contacts", {})
+        delta = comparison.get("delta", {})
+        meta_a = (comparison.get("structure_a") or {}).get("metadata") or {}
+        meta_b = (comparison.get("structure_b") or {}).get("metadata") or {}
+        result: dict = {
+            "structure_a": comparison.get("label_a") or meta_a.get("pdb_id") or meta_a.get("uniprot_id") or "Structure A",
+            "structure_b": comparison.get("label_b") or meta_b.get("pdb_id") or meta_b.get("uniprot_id") or "Structure B",
+        }
+        if section in ("all", "delta"):
+            result["delta"] = delta
+        if section in ("all", "shared"):
+            result["shared_contact_count"] = contacts.get("shared_contact_count", 0)
+            result["shared_contacts"] = contacts.get("shared_contacts", [])[:limit]
+        if section in ("all", "gained"):
+            result["gained_contact_count"] = contacts.get("gained_contact_count", 0)
+            result["gained_contacts"] = contacts.get("gained_contacts", [])[:limit]
+        if section in ("all", "lost"):
+            result["lost_contact_count"] = contacts.get("lost_contact_count", 0)
+            result["lost_contacts"] = contacts.get("lost_contacts", [])[:limit]
+        return result
+
+    if name == "generate_report":
+        requested = set(tool_input.get("sections") or [])
+        include_all = not requested
+        return {"report_markdown": _build_report(analysis, requested, include_all, comparison)}
+
     return {"error": f"Unknown tool: {name}"}
 
 
-async def run_chat(analysis: AnalysisResponse, messages: list[dict]) -> dict:
+def _build_report(analysis: AnalysisResponse, sections: set, include_all: bool, comparison: dict | None) -> str:
+    parts: list[str] = []
+    m = analysis.metadata
+    title = (m.title or m.pdb_id or m.uniprot_id or "Uploaded structure") if m else "Uploaded structure"
+
+    if include_all or "overview" in sections:
+        lines = [f"## {title}"]
+        if m:
+            if m.pdb_id: lines.append(f"**PDB ID:** {m.pdb_id}")
+            if m.uniprot_id: lines.append(f"**UniProt:** {m.uniprot_id}")
+            if m.method: lines.append(f"**Method:** {m.method}")
+            if m.resolution_angstrom: lines.append(f"**Resolution:** {m.resolution_angstrom:.2f} Å")
+        s = analysis.summary
+        lines.append(
+            f"\n**{s.chain_count}** chain(s) · **{s.residue_count}** residues · "
+            f"**{s.contact_count}** contacts · **{s.ligand_count}** ligand(s)"
+        )
+        parts.append("\n".join(lines))
+
+    if include_all or "chains" in sections:
+        rows = ["## Chain Composition", "| Chain | Residues | Atoms |", "|---|---|---|"]
+        for c in analysis.chains:
+            rows.append(f"| {c.id} | {c.residue_count} | {c.atom_count} |")
+        parts.append("\n".join(rows) if analysis.chains else "## Chain Composition\n_No chain data._")
+
+    if include_all or "contacts" in sections:
+        rows = ["## Contacts"]
+        if analysis.contacts:
+            type_counts = Counter(c.contact_type for c in analysis.contacts)
+            class_counts = Counter(c.interaction_class for c in analysis.contacts)
+            rows.append("**By type:**")
+            rows += [f"- {k}: {v}" for k, v in sorted(type_counts.items(), key=lambda x: -x[1])]
+            classified = {k: v for k, v in class_counts.items() if k != "unclassified"}
+            if classified:
+                rows.append("\n**By interaction class:**")
+                rows += [f"- {k}: {v}" for k, v in sorted(classified.items(), key=lambda x: -x[1])]
+        else:
+            rows.append(f"Total: {analysis.summary.contact_count} contacts.")
+        parts.append("\n".join(rows))
+
+    if include_all or "ligands" in sections:
+        if analysis.ligand_interactions:
+            rows = ["## Ligands", "| Ligand | Chain | Total contacts | Protein contacts | Closest (Å) |", "|---|---|---|---|---|"]
+            for li in analysis.ligand_interactions:
+                rows.append(f"| {li.name} | {li.chain_id} | {li.contact_count} | {li.protein_contact_count} | {li.closest_distance_angstrom:.2f} |")
+            parts.append("\n".join(rows))
+        else:
+            parts.append("## Ligands\n_No ligands detected._")
+
+    if include_all or "confidence" in sections:
+        if analysis.confidence:
+            c = analysis.confidence
+            total = max(1, analysis.summary.residue_count)
+            tier = "high" if c.mean_plddt >= 70 else "moderate" if c.mean_plddt >= 50 else "low"
+            parts.append(
+                f"## Confidence (pLDDT)\n"
+                f"Mean pLDDT: **{c.mean_plddt:.1f}** ({tier} confidence)\n\n"
+                f"| Band | Residues | % |\n|---|---|---|\n"
+                f"| Very high (≥90) | {c.very_high_count} | {100*c.very_high_count/total:.1f}% |\n"
+                f"| High (70–90) | {c.high_count} | {100*c.high_count/total:.1f}% |\n"
+                f"| Moderate (50–70) | {c.moderate_count} | {100*c.moderate_count/total:.1f}% |\n"
+                f"| Low (<50) | {c.low_count} | {100*c.low_count/total:.1f}% |"
+            )
+        else:
+            parts.append("## Confidence (pLDDT)\n_No confidence data (experimental structure)._")
+
+    if (include_all or "comparison" in sections) and comparison:
+        delta = comparison.get("delta", {})
+        contacts = comparison.get("contacts", {})
+        label_a = comparison.get("label_a", "Structure A")
+        label_b = comparison.get("label_b", "Structure B")
+        rows = [
+            f"## Structural Comparison: {label_a} vs {label_b}",
+            "| Metric | Delta (B − A) |", "|---|---|",
+            f"| Residues | {delta.get('residue_count_delta', 'N/A'):+} |",
+            f"| Contacts | {delta.get('contact_count_delta', 'N/A'):+} |",
+            f"| Chains | {delta.get('chain_count_delta', 'N/A'):+} |",
+            f"| Ligands | {delta.get('ligand_count_delta', 'N/A'):+} |",
+            "",
+            f"Shared contacts: **{contacts.get('shared_contact_count', 0)}** · "
+            f"Gained: **{contacts.get('gained_contact_count', 0)}** · "
+            f"Lost: **{contacts.get('lost_contact_count', 0)}**",
+        ]
+        parts.append("\n".join(rows))
+
+    return "\n\n---\n\n".join(parts)
+
+
+async def run_chat(analysis: AnalysisResponse, messages: list[dict], comparison: dict | None = None) -> dict:
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
         return {"reply": None, "tool_calls": [], "error": "ANTHROPIC_API_KEY is not set on the server."}
     try:
-        return await _run_chat(api_key, analysis, messages)
+        return await _run_chat(api_key, analysis, messages, comparison)
     except anthropic.AuthenticationError:
         return {"reply": None, "tool_calls": [], "error": "Invalid Anthropic API key."}
     except anthropic.RateLimitError:
@@ -232,10 +400,10 @@ async def run_chat(analysis: AnalysisResponse, messages: list[dict]) -> dict:
         return {"reply": None, "tool_calls": [], "error": f"Chat error: {exc}"}
 
 
-async def _run_chat(api_key: str, analysis: AnalysisResponse, messages: list[dict]) -> dict:
+async def _run_chat(api_key: str, analysis: AnalysisResponse, messages: list[dict], comparison: dict | None = None) -> dict:
 
     client = anthropic.AsyncAnthropic(api_key=api_key)
-    system = _build_system(analysis)
+    system = _build_system(analysis, comparison)
     tool_calls_log: list[dict] = []
     current_messages = list(messages)
 
@@ -256,7 +424,7 @@ async def _run_chat(api_key: str, analysis: AnalysisResponse, messages: list[dic
             tool_uses = [b for b in response.content if b.type == "tool_use"]
             tool_results = []
             for tu in tool_uses:
-                result = _run_tool(tu.name, tu.input, analysis)
+                result = _run_tool(tu.name, tu.input, analysis, comparison)
                 tool_calls_log.append({"name": tu.name, "input": tu.input, "result": result})
                 tool_results.append({
                     "type": "tool_result",

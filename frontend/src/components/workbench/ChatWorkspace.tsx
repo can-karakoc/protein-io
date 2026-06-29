@@ -6,6 +6,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 import type { AnalysisResponse } from "@/lib/types";
+import type { CompareSessionEntry } from "@/lib/compareSession";
 import { type ChatMessage, TOOL_LABELS, makeMsgId, sendChatMessage } from "@/lib/chat";
 
 type Phase = "thinking" | "tracing" | "done";
@@ -17,10 +18,11 @@ type LiveState = {
 
 type ChatWorkspaceProps = {
   analysis: AnalysisResponse | null;
+  compareEntry: CompareSessionEntry | null;
   onFocusExplore: () => void;
 };
 
-export function ChatWorkspace({ analysis, onFocusExplore }: ChatWorkspaceProps) {
+export function ChatWorkspace({ analysis, compareEntry, onFocusExplore }: ChatWorkspaceProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [live, setLive] = useState<LiveState | null>(null);
@@ -43,7 +45,7 @@ export function ChatWorkspace({ analysis, onFocusExplore }: ChatWorkspaceProps) 
     // Phase 1: thinking
     setLive({ phase: "thinking", toolSteps: [] });
 
-    const { reply, toolCalls, error } = await sendChatMessage(analysis, messages, text);
+    const { reply, toolCalls, error } = await sendChatMessage(analysis, messages, text, compareEntry);
 
     // Phase 2: animate tool steps if any
     if (toolCalls && toolCalls.length > 0) {
@@ -116,7 +118,12 @@ export function ChatWorkspace({ analysis, onFocusExplore }: ChatWorkspaceProps) 
           <div className="flex items-center gap-2 min-w-0">
             <Bot size={15} className="text-[var(--pio-highlight)] shrink-0" />
             <span className="text-pio-base font-semibold text-[var(--pio-ink)] shrink-0">Structure Chat</span>
-            <span className="pio-badge pio-badge-metadata text-pio-2xs ml-1 truncate max-w-[280px]">{structureName}</span>
+            <span className="pio-badge pio-badge-metadata text-pio-2xs ml-1 truncate max-w-[200px]">{structureName}</span>
+            {compareEntry && (
+              <span className="pio-badge pio-badge-active text-pio-2xs ml-0.5 shrink-0">
+                + {compareEntry.labelB}
+              </span>
+            )}
           </div>
           {messages.length > 0 && !live && (
             <button type="button" onClick={() => setMessages([])}
@@ -136,7 +143,7 @@ export function ChatWorkspace({ analysis, onFocusExplore }: ChatWorkspaceProps) 
                 Ask anything about the loaded structure — contacts, ligands, chains, confidence scores, interaction types.
               </p>
               <div className="flex flex-wrap gap-2 justify-center mt-2">
-                {STARTER_PROMPTS.map((p) => (
+                {[...STARTER_PROMPTS, ...(compareEntry ? COMPARE_PROMPTS : [])].map((p) => (
                   <button key={p} type="button"
                     onClick={() => { setInput(p); textareaRef.current?.focus(); }}
                     className="rounded-[10px] border border-[var(--pio-line)] bg-[var(--pio-paper)] px-3 py-1.5 text-pio-xs text-[var(--pio-ink)] hover:bg-[var(--pio-sand)] transition-colors">
@@ -349,5 +356,10 @@ const STARTER_PROMPTS = [
   "What ligands are present and how many contacts does each have?",
   "Which residues form the most contacts?",
   "Are there any h-bonds in this structure?",
-  "Summarize the chain composition",
+  "Generate a full report of this structure",
+];
+
+const COMPARE_PROMPTS = [
+  "What contacts were gained and lost between the two structures?",
+  "Summarize the structural differences",
 ];

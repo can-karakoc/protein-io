@@ -1181,6 +1181,7 @@ function ProteinWorkbenchState({
         >
           <ChatWorkspace
             analysis={analysis}
+            compareEntry={getCompareSession()}
             onFocusExplore={() => setMode("explore")}
           />
         </motion.div>

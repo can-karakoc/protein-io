@@ -164,6 +164,7 @@ async def analyze_alphafold(
 class ChatRequest(BaseModel):
     analysis: AnalysisResponse
     messages: list[dict[str, Any]]
+    comparison: dict[str, Any] | None = None
 
 
 class ChatResponse(BaseModel):
@@ -174,5 +175,5 @@ class ChatResponse(BaseModel):
 
 @router.post("/api/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest) -> ChatResponse:
-    result = await run_chat(request.analysis, request.messages)
+    result = await run_chat(request.analysis, request.messages, request.comparison)
     return ChatResponse(**result)
