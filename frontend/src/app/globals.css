@@ -5,18 +5,18 @@
    pio-base is the primary body size; pio-xs/sm are UI chrome; pio-2xl+ are headings.
    ──────────────────────────────────────────────────────────────────────────── */
 @theme {
-  --font-size-pio-3xs:  9px;    /* micro labels, chart annotations      */
-  --font-size-pio-2xs:  10px;   /* tiny badges, metadata tags          */
-  --font-size-pio-xs:   11px;   /* small labels, table headers          */
-  --font-size-pio-sm:   12px;   /* secondary / helper text              */
-  --font-size-pio-base: 13px;   /* ← primary body text                  */
-  --font-size-pio-md:   13.5px; /* nav items, slightly-larger body      */
-  --font-size-pio-lg:   14px;   /* emphasized body, some UI controls    */
-  --font-size-pio-xl:   15px;   /* larger UI text, sub-headings         */
-  --font-size-pio-2xl:  18px;   /* card sub-headings                    */
-  --font-size-pio-3xl:  20px;   /* section titles (.pio-section-title)  */
-  --font-size-pio-4xl:  22px;   /* page-level headings                  */
-  --font-size-pio-5xl:  26px;   /* display / hero headings              */
+  --font-size-pio-3xs:  0.5625rem; /* micro labels, chart annotations  (≈9px)  */
+  --font-size-pio-2xs:  0.8rem;    /* tiny badges, metadata tags       (≈13px) */
+  --font-size-pio-xs:   0.6875rem; /* small labels, table headers      (≈11px) */
+  --font-size-pio-sm:   0.75rem;   /* secondary / helper text          (12px)  */
+  --font-size-pio-base: 0.8125rem; /* ← primary body text              (13px)  */
+  --font-size-pio-md:   0.844rem;  /* nav items, slightly-larger body  (≈13.5px)*/
+  --font-size-pio-lg:   0.875rem;  /* emphasized body, some UI controls(14px)  */
+  --font-size-pio-xl:   0.9375rem; /* larger UI text, sub-headings     (15px)  */
+  --font-size-pio-2xl:  1.125rem;  /* card sub-headings                (18px)  */
+  --font-size-pio-3xl:  1.25rem;   /* section titles (.pio-section-title)(20px)*/
+  --font-size-pio-4xl:  1.375rem;  /* page-level headings              (22px)  */
+  --font-size-pio-5xl:  1.625rem;  /* display / hero headings          (26px)  */
 }
 
 :root {

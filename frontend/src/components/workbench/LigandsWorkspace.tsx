@@ -115,7 +115,7 @@ export function LigandsWorkspace({
                   <span className="font-mono text-pio-base font-bold text-[var(--pio-ink)] truncate">{l.name}</span>
                   {topType && (
                     <span
-                      className="shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold text-white"
+                      className="shrink-0 rounded-full px-1.5 py-0.5 text-pio-3xs font-semibold text-white"
                       style={{ background: TYPE_META[topType].color }}
                     >
                       {TYPE_META[topType].label.split(" ")[0]}

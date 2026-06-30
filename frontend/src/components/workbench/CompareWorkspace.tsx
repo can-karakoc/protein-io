@@ -827,7 +827,7 @@ function DiffFingerprintMatrix({ rows, labelA, labelB }: { rows: DiffFpRow[]; la
         {FP_CLASSES.map((cls) => (
           <div key={cls} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
             <div style={{ width: 7, height: 7, borderRadius: "50%", background: FP_DOT_COLOR[cls] }} />
-            <span style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: "0.04em", color: "var(--pio-graphite)" }}>{FP_ABBR[cls]}</span>
+            <span className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.04em", color: "var(--pio-graphite)" }}>{FP_ABBR[cls]}</span>
           </div>
         ))}
       </div>
@@ -858,8 +858,8 @@ function DiffFingerprintMatrix({ rows, labelA, labelB }: { rows: DiffFpRow[]; la
             {row.key}
           </span>
           <span
+            className="text-pio-3xs"
             style={{
-              fontSize: 8.5,
               fontWeight: 700,
               color: statusColor[row.status],
               background: statusBg[row.status],
@@ -900,14 +900,14 @@ function DiffFingerprintMatrix({ rows, labelA, labelB }: { rows: DiffFpRow[]; la
         background: "var(--pio-paper)",
       }}>
         {(["stable", "gained", "lost"] as DiffStatus[]).map((s) => (
-          <span key={s} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 9, color: statusColor[s] }}>
-            <span style={{ fontWeight: 700, background: statusBg[s], borderRadius: 3, padding: "0px 4px", fontSize: 8 }}>
+          <span key={s} className="text-pio-3xs" style={{ display: "flex", alignItems: "center", gap: 4, color: statusColor[s] }}>
+            <span className="text-pio-3xs" style={{ fontWeight: 700, background: statusBg[s], borderRadius: 3, padding: "0px 4px" }}>
               {statusBadge[s]}
             </span>
             {s === "stable" ? `in both ${labelA} + ${labelB}` : s === "gained" ? `new in ${labelB}` : `only in ${labelA}`}
           </span>
         ))}
-        <span style={{ fontSize: 9, color: "var(--pio-graphite)", opacity: 0.6 }}>
+        <span className="text-pio-3xs" style={{ color: "var(--pio-graphite)", opacity: 0.6 }}>
           Dots colored by interaction type — H H-bond · Sa salt bridge · Ar aromatic · Pi π-cation · Hy hydrophobic · Ha halogen
         </span>
       </div>

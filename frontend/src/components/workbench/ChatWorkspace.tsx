@@ -90,8 +90,8 @@ export function ChatWorkspace({ analysis, compareEntry, onFocusExplore }: ChatWo
           <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(199,217,236,0.4)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <MessageSquare size={22} color="var(--pio-highlight)" />
           </div>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--pio-ink)" }}>No structure loaded</h2>
-          <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.6, marginTop: 8 }}>
+          <h2 className="text-pio-2xl" style={{ fontWeight: 700, color: "var(--pio-ink)" }}>No structure loaded</h2>
+          <p className="text-pio-md" style={{ color: "var(--pio-graphite)", lineHeight: 1.6, marginTop: 8 }}>
             Load and analyze a structure in Explore first, then ask questions about it here.
           </p>
           <button type="button" onClick={onFocusExplore}

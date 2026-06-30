@@ -1026,8 +1026,8 @@ function ProteinWorkbenchState({
                     }}
                   >
                     <div>
-                      <p style={{ fontSize: 8, fontWeight: 700, color: "rgba(255,255,255,0.45)", letterSpacing: "0.12em", textTransform: "uppercase", lineHeight: 1, marginBottom: 3, whiteSpace: "nowrap" }}>Selected</p>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: "#fff", lineHeight: 1, whiteSpace: "nowrap", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis" }}>{selection.label}</p>
+                      <p className="text-pio-3xs" style={{ fontWeight: 700, color: "rgba(255,255,255,0.45)", letterSpacing: "0.12em", textTransform: "uppercase", lineHeight: 1, marginBottom: 3, whiteSpace: "nowrap" }}>Selected</p>
+                      <p className="text-pio-base" style={{ fontWeight: 700, color: "#fff", lineHeight: 1, whiteSpace: "nowrap", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis" }}>{selection.label}</p>
                     </div>
                     <button
                       type="button"
@@ -1549,7 +1549,7 @@ function ResultsPanel({
           <div className="min-w-0">
             {/* Heading row */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)", flex: 1, minWidth: 0 }}>Contacts</h2>
+              <h2 className="text-pio-4xl" style={{ fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)", flex: 1, minWidth: 0 }}>Contacts</h2>
               <button
                 type="button"
                 onClick={onExportContacts}
@@ -1560,8 +1560,8 @@ function ResultsPanel({
                 <Download size={14} />
               </button>
             </div>
-            <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>
-              Closest atom pair per categorized contact.{hasContactConfidence && <span style={{ fontSize: 11, opacity: 0.55 }}> Trust labels are pLDDT-based review heuristics, not validated metrics.</span>}
+            <p className="text-pio-md" style={{ color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>
+              Closest atom pair per categorized contact.{hasContactConfidence && <span className="text-pio-xs" style={{ opacity: 0.55 }}> Trust labels are pLDDT-based review heuristics, not validated metrics.</span>}
             </p>
             <ContactCategoryFilter
               value={contactFilter}
@@ -1627,10 +1627,10 @@ function UniProtPanel({ annotations }: { annotations: UniProtAnnotations }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       {annotations.function && (
         <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
-          <p style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: "var(--pio-graphite)" }}>
+          <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: "var(--pio-graphite)" }}>
             Function
           </p>
-          <p style={{ fontSize: 13, lineHeight: 1.6, marginTop: 6, color: "var(--pio-ink)" }}>
+          <p className="text-pio-base" style={{ lineHeight: 1.6, marginTop: 6, color: "var(--pio-ink)" }}>
             {annotations.function}
           </p>
         </div>
@@ -1680,7 +1680,7 @@ function UniProtFeatureSection({
   const totalCount = items.length + overflow;
   return (
     <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
-      <p style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: "var(--pio-graphite)" }}>
+      <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: "var(--pio-graphite)" }}>
         {label} <span style={{ fontFamily: "var(--font-pio-mono)", opacity: 0.6 }}>{totalCount}</span>
       </p>
       <ul style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
@@ -1691,12 +1691,12 @@ function UniProtFeatureSection({
               : `${item.start}–${item.end}`
             : null;
           return (
-            <li key={i} style={{ fontSize: 12, color: "var(--pio-ink)", lineHeight: 1.45 }}>
+            <li key={i} className="text-pio-sm" style={{ color: "var(--pio-ink)", lineHeight: 1.45 }}>
               {item.description && (
                 <span style={{ fontWeight: 600 }}>{item.description}</span>
               )}
               {pos && (
-                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 11, color: "var(--pio-graphite)", marginLeft: item.description ? 6 : 0 }}>
+                <span className="text-pio-xs" style={{ fontFamily: "var(--font-pio-mono)", color: "var(--pio-graphite)", marginLeft: item.description ? 6 : 0 }}>
                   {pos}
                 </span>
               )}
@@ -1704,7 +1704,7 @@ function UniProtFeatureSection({
           );
         })}
         {overflow > 0 && (
-          <li style={{ fontSize: 11, color: "var(--pio-graphite)", fontStyle: "italic", marginTop: 2 }}>
+          <li className="text-pio-xs" style={{ color: "var(--pio-graphite)", fontStyle: "italic", marginTop: 2 }}>
             +{overflow.toLocaleString()} more — see UniProt for full list
           </li>
         )}
@@ -1714,9 +1714,9 @@ function UniProtFeatureSection({
 }
 
 function PldDTCell({ value }: { value: number | null }) {
-  if (value == null) return <span style={{ fontSize: 12, color: "var(--pio-graphite)", opacity: 0.5 }}>—</span>;
+  if (value == null) return <span className="text-pio-sm" style={{ color: "var(--pio-graphite)", opacity: 0.5 }}>—</span>;
   const color = value >= 90 ? "var(--pio-green-deep)" : value >= 70 ? "var(--pio-ink)" : "var(--pio-coral)";
-  return <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 600, color }}>{value.toFixed(1)}</span>;
+  return <span className="text-pio-sm" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: 600, color }}>{value.toFixed(1)}</span>;
 }
 
 function InterfaceResidueList({ residues, label }: { residues: InterfaceResidue[]; label: string }) {
@@ -1725,7 +1725,7 @@ function InterfaceResidueList({ residues, label }: { residues: InterfaceResidue[
   const shown = expanded ? residues : residues.slice(0, MAX_SHOWN);
   return (
     <div style={{ flex: 1, minWidth: 0 }}>
-      <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--pio-graphite)", marginBottom: 6 }}>
+      <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--pio-graphite)", marginBottom: 6 }}>
         Chain {label} <span style={{ opacity: 0.6, fontWeight: 400 }}>({residues.length})</span>
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -1735,13 +1735,13 @@ function InterfaceResidueList({ residues, label }: { residues: InterfaceResidue[
             <div key={`${r.chain_id}-${r.residue_number}`}
                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "3px 7px", borderRadius: 5, background: "var(--pio-white)" }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 10.5, fontWeight: 700, color: "var(--pio-ink)" }}>{r.residue_name}</span>
-                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 9.5, color: "var(--pio-graphite)" }}>{r.residue_number}</span>
+                <span className="text-pio-3xs" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: 700, color: "var(--pio-ink)" }}>{r.residue_name}</span>
+                <span className="text-pio-3xs" style={{ fontFamily: "var(--font-pio-mono)", color: "var(--pio-graphite)" }}>{r.residue_number}</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                <span style={{ fontSize: 9.5, color: "var(--pio-graphite)" }}>{r.contact_count}c</span>
+                <span className="text-pio-3xs" style={{ color: "var(--pio-graphite)" }}>{r.contact_count}c</span>
                 {r.plddt != null && (
-                  <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 9.5, fontWeight: 600, color: plddtColor }}>{r.plddt.toFixed(0)}</span>
+                  <span className="text-pio-3xs" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: 600, color: plddtColor }}>{r.plddt.toFixed(0)}</span>
                 )}
               </div>
             </div>
@@ -1751,7 +1751,7 @@ function InterfaceResidueList({ residues, label }: { residues: InterfaceResidue[
       {residues.length > MAX_SHOWN && (
         <button
           onClick={() => setExpanded(!expanded)}
-          style={{ marginTop: 5, fontSize: 9.5, color: "var(--pio-highlight)", background: "none", border: "none", cursor: "pointer", padding: 0, fontWeight: 600 }}
+          style={{ marginTop: 5, color: "var(--pio-highlight)", background: "none", border: "none", cursor: "pointer", padding: 0, fontWeight: 600 }}
         >
           {expanded ? "Show less" : `+${residues.length - MAX_SHOWN} more`}
         </button>
@@ -1803,21 +1803,21 @@ function InterfaceConfidenceSummary({
         <>
           {([["Chain " + pair.chain_a, pair.mean_plddt_a, catA], ["Chain " + pair.chain_b, pair.mean_plddt_b, catB]] as const).map(([label, val, cat]) => (
             <div key={String(label)} style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--pio-white)", borderRadius: 7, padding: "4px 10px" }}>
-              <span style={{ fontSize: 9.5, fontWeight: 600, color: "var(--pio-graphite)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</span>
+              <span className="text-pio-3xs" style={{ fontWeight: 600, color: "var(--pio-graphite)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</span>
               {val != null && cat ? (
                 <>
-                  <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 13, fontWeight: 700, color: "var(--pio-ink)" }}>{val.toFixed(1)}</span>
-                  <span className={`pio-badge ${PLDDT_BADGE[cat].cls}`} style={{ fontSize: 8.5, padding: "1px 6px" }}>{PLDDT_BADGE[cat].label}</span>
+                  <span className="text-pio-base" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: 700, color: "var(--pio-ink)" }}>{val.toFixed(1)}</span>
+                  <span className={`pio-badge ${PLDDT_BADGE[cat].cls}`} style={{ padding: "1px 6px" }}>{PLDDT_BADGE[cat].label}</span>
                 </>
               ) : (
-                <span style={{ fontSize: 10, color: "var(--pio-graphite)", opacity: 0.5 }}>—</span>
+                <span className="text-pio-3xs" style={{ color: "var(--pio-graphite)", opacity: 0.5 }}>—</span>
               )}
             </div>
           ))}
         </>
       )}
       {overallLabel && (
-        <span className={`pio-badge ${overallLabel.cls}`} style={{ fontSize: 9, padding: "3px 9px" }}>{overallLabel.text}</span>
+        <span className={`pio-badge ${overallLabel.cls}`} style={{ padding: "3px 9px" }}>{overallLabel.text}</span>
       )}
     </div>
   );
@@ -1906,11 +1906,11 @@ function InterfaceContactMap({
   return (
     <div ref={containerRef} style={{ marginBottom: 14 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-        <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>
+        <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>
           Contact map
         </p>
         {truncated && (
-          <span style={{ fontSize: 8.5, color: "var(--pio-graphite)", opacity: 0.7 }}>top {MAX_MAP} per chain</span>
+          <span className="text-pio-3xs" style={{ color: "var(--pio-graphite)", opacity: 0.7 }}>top {MAX_MAP} per chain</span>
         )}
       </div>
 
@@ -1925,7 +1925,7 @@ function InterfaceContactMap({
         {/* Column headers — chain B (rotated) */}
         {residuesB.map((res) => (
           <div key={res.residue_number} style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", overflow: "hidden", paddingBottom: 6 }}>
-            <span style={{ fontSize: 7, color: "var(--pio-graphite)", writingMode: "vertical-lr", transform: "rotate(180deg)", whiteSpace: "nowrap" }}>
+            <span className="text-pio-3xs" style={{ color: "var(--pio-graphite)", writingMode: "vertical-lr", transform: "rotate(180deg)", whiteSpace: "nowrap" }}>
               {shortLabel(res)}
             </span>
           </div>
@@ -1934,7 +1934,7 @@ function InterfaceContactMap({
         {residuesA.map((resA) => (
           <React.Fragment key={resA.residue_number}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 8, overflow: "hidden" }}>
-              <span style={{ fontSize: 7, color: "var(--pio-graphite)", whiteSpace: "nowrap" }}>{shortLabel(resA)}</span>
+              <span className="text-pio-3xs" style={{ color: "var(--pio-graphite)", whiteSpace: "nowrap" }}>{shortLabel(resA)}</span>
             </div>
             {residuesB.map((resB) => {
               const cls = contactMap.get(`${resA.residue_number}_${resB.residue_number}`);
@@ -1957,13 +1957,13 @@ function InterfaceContactMap({
 
       {/* Axis info + legend (wraps to 2 rows) */}
       <div style={{ display: "flex", gap: 8, marginTop: 6, flexWrap: "wrap", alignItems: "center" }}>
-        <span style={{ fontSize: 8.5, color: "var(--pio-graphite)", opacity: 0.7, marginRight: 4 }}>
+        <span className="text-pio-3xs" style={{ color: "var(--pio-graphite)", opacity: 0.7, marginRight: 4 }}>
           Rows: Chain {pair.chain_a} · Cols: Chain {pair.chain_b}
         </span>
         {CONTACT_MAP_LEGEND.filter((l) => classesPresent.has(l.key)).map((l) => (
           <div key={l.key} style={{ display: "flex", alignItems: "center", gap: 3 }}>
             <span style={{ width: 8, height: 8, borderRadius: 2, background: CONTACT_MAP_CELL_CLR[l.key], flexShrink: 0, display: "inline-block" }} />
-            <span style={{ fontSize: 8.5, color: "var(--pio-graphite)" }}>{l.label}</span>
+            <span className="text-pio-3xs" style={{ color: "var(--pio-graphite)" }}>{l.label}</span>
           </div>
         ))}
       </div>
@@ -1986,41 +1986,41 @@ function InterfacesTab({
 
   return (
     <div className="min-w-0">
-      <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)" }}>Interfaces</h2>
-      <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>
+      <h2 className="text-pio-4xl" style={{ fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)" }}>Interfaces</h2>
+      <p className="text-pio-md" style={{ color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>
         Inter-chain contact summary — click a row to see interface residues
       </p>
 
       {/* Summary tiles */}
       <div style={{ display: "grid", gridTemplateColumns: confidence ? "1fr 1fr 1fr 1fr" : "1fr 1fr 1fr", gap: 10, marginTop: 16 }}>
         <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
-          <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>Inter-chain contacts</p>
-          <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 22, fontWeight: 700, marginTop: 4, color: "var(--pio-ink)" }}>
+          <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>Inter-chain contacts</p>
+          <p className="text-pio-4xl" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: 700, marginTop: 4, color: "var(--pio-ink)" }}>
             {interfaceAnalysis.inter_chain_contact_count.toLocaleString()}
           </p>
         </div>
         <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
-          <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>Chain pairs</p>
-          <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 22, fontWeight: 700, marginTop: 4, color: "var(--pio-ink)" }}>
+          <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>Chain pairs</p>
+          <p className="text-pio-4xl" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: 700, marginTop: 4, color: "var(--pio-ink)" }}>
             {interfaceAnalysis.chain_pairs.length}
           </p>
         </div>
         <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
-          <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>Intra-chain contacts</p>
-          <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 22, fontWeight: 700, marginTop: 4, color: "var(--pio-ink)" }}>
+          <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>Intra-chain contacts</p>
+          <p className="text-pio-4xl" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: 700, marginTop: 4, color: "var(--pio-ink)" }}>
             {interfaceAnalysis.intra_chain_contact_count.toLocaleString()}
           </p>
         </div>
         {confidence && (
           <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
-            <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>Mean pLDDT</p>
-            <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 22, fontWeight: 700, marginTop: 4, color: "var(--pio-ink)" }}>
+            <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>Mean pLDDT</p>
+            <p className="text-pio-4xl" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: 700, marginTop: 4, color: "var(--pio-ink)" }}>
               {confidence.average_plddt.toFixed(1)}
             </p>
             {(() => {
               const cat = pldDTCategory(confidence.average_plddt);
               const b = PLDDT_BADGE[cat];
-              return <span className={`pio-badge ${b.cls}`} style={{ fontSize: 9, padding: "2px 7px", marginTop: 5, display: "inline-block" }}>{b.label}</span>;
+              return <span className={`pio-badge ${b.cls}`} style={{ padding: "2px 7px", marginTop: 5, display: "inline-block" }}>{b.label}</span>;
             })()}
           </div>
         )}
@@ -2031,7 +2031,7 @@ function InterfacesTab({
         <div style={{ minWidth: 600 }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 24px", columnGap: 8, borderBottom: "1px solid var(--pio-line)", padding: "8px 12px" }}>
             {["CHAIN A", "CHAIN B", "CONTACTS", "RES A", "RES B", "MEAN pLDDT A", "MEAN pLDDT B", ""].map((col, i) => (
-              <p key={i} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)" }}>{col}</p>
+              <p key={i} className="text-pio-3xs" style={{ fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)" }}>{col}</p>
             ))}
           </div>
           {interfaceAnalysis.chain_pairs.map((pair: ChainPairSummary, i: number) => {
@@ -2044,14 +2044,14 @@ function InterfacesTab({
                   className="hover:bg-[var(--pio-paper)]"
                   onClick={() => setExpandedPair(isExpanded ? null : pairKey)}
                 >
-                  <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 13, fontWeight: 600, color: "var(--pio-ink)" }}>{pair.chain_a}</span>
-                  <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 13, fontWeight: 600, color: "var(--pio-ink)" }}>{pair.chain_b}</span>
-                  <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, color: "var(--pio-ink)" }}>{pair.contact_count.toLocaleString()}</span>
-                  <span style={{ fontSize: 12, color: "var(--pio-graphite)" }}>{pair.interface_residue_count_a}</span>
-                  <span style={{ fontSize: 12, color: "var(--pio-graphite)" }}>{pair.interface_residue_count_b}</span>
+                  <span className="text-pio-base" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: 600, color: "var(--pio-ink)" }}>{pair.chain_a}</span>
+                  <span className="text-pio-base" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: 600, color: "var(--pio-ink)" }}>{pair.chain_b}</span>
+                  <span className="text-pio-sm" style={{ fontFamily: "var(--font-pio-mono)", color: "var(--pio-ink)" }}>{pair.contact_count.toLocaleString()}</span>
+                  <span className="text-pio-sm" style={{ color: "var(--pio-graphite)" }}>{pair.interface_residue_count_a}</span>
+                  <span className="text-pio-sm" style={{ color: "var(--pio-graphite)" }}>{pair.interface_residue_count_b}</span>
                   <PldDTCell value={pair.mean_plddt_a} />
                   <PldDTCell value={pair.mean_plddt_b} />
-                  <span style={{ fontSize: 12, color: "var(--pio-graphite)", textAlign: "center", userSelect: "none" }}>{isExpanded ? "▲" : "▼"}</span>
+                  <span className="text-pio-sm" style={{ color: "var(--pio-graphite)", textAlign: "center", userSelect: "none" }}>{isExpanded ? "▲" : "▼"}</span>
                 </div>
                 {isExpanded && (
                   <div style={{ padding: "12px 12px 16px", background: "var(--pio-paper)", borderTop: "1px solid var(--pio-line)" }}>
@@ -2085,10 +2085,10 @@ const REPORT_DIVIDER: React.CSSProperties = { paddingTop: 24, marginTop: 8 };
 // ---------------------------------------------------------------------------
 // Compare-cache reader — used by Report to surface the last comparison result
 // ---------------------------------------------------------------------------
-const REPORT_H2: React.CSSProperties = { fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)" };
-const REPORT_SUB: React.CSSProperties = { fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 };
+const REPORT_H2: React.CSSProperties = { fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)" };
+const REPORT_SUB: React.CSSProperties = { color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 };
 const REPORT_TILE: React.CSSProperties = { background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" };
-const REPORT_LABEL: React.CSSProperties = { fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" as const };
+const REPORT_LABEL: React.CSSProperties = { fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" as const };
 const REPORT_MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)" };
 
 function ReportLimitations({ hasConfidence, hasComparison }: { hasConfidence: boolean; hasComparison: boolean }) {
@@ -2111,7 +2111,7 @@ function ReportLimitations({ hasConfidence, hasComparison }: { hasConfidence: bo
       <p style={REPORT_SUB}>Key assumptions and caveats to consider when interpreting these results.</p>
       <ul style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
         {items.map((item, i) => (
-          <li key={i} style={{ display: "flex", gap: 10, fontSize: 13, lineHeight: 1.6, color: "var(--pio-graphite)" }}>
+          <li key={i} className="text-pio-base" style={{ display: "flex", gap: 10, lineHeight: 1.6, color: "var(--pio-graphite)" }}>
             <span style={{ flexShrink: 0, marginTop: 2, width: 14, height: 14, borderRadius: "50%", background: "var(--pio-line-strong)", display: "inline-block" }} />
             {item}
           </li>
@@ -2139,14 +2139,14 @@ function ReportComparisonSection({ snapshot }: { snapshot: CompareSessionEntry }
         {tiles.map(([label, value, color]) => (
           <div key={label} style={REPORT_TILE}>
             <p style={REPORT_LABEL}>{label}</p>
-            <p style={{ ...REPORT_MONO, fontSize: 22, fontWeight: 700, color, lineHeight: 1, marginTop: 4 }}>
+            <p className="text-pio-4xl" style={{ ...REPORT_MONO, fontWeight: 700, color, lineHeight: 1, marginTop: 4 }}>
               {value.toLocaleString()}
             </p>
           </div>
         ))}
       </div>
       {comparison.warnings.map((w, i) => (
-        <p key={i} style={{ marginTop: 8, fontSize: 12, color: "var(--pio-amber-deep)" }}>{w}</p>
+        <p key={i} className="text-pio-sm" style={{ marginTop: 8, color: "var(--pio-amber-deep)" }}>{w}</p>
       ))}
     </div>
   );
@@ -2228,8 +2228,8 @@ function ReportWorkspace({
           <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(199,217,236,0.4)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <Database size={22} color="var(--pio-highlight)" />
           </div>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--pio-ink)" }}>No analysis yet</h2>
-          <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.6, marginTop: 8 }}>
+          <h2 className="text-pio-2xl" style={{ fontWeight: 700, color: "var(--pio-ink)" }}>No analysis yet</h2>
+          <p className="text-pio-md" style={{ color: "var(--pio-graphite)", lineHeight: 1.6, marginTop: 8 }}>
             Load and analyze a structure first, then return here for a concise summary with methods and provenance.
           </p>
           <div style={{ display: "flex", gap: 8, marginTop: 20, justifyContent: "center", flexWrap: "wrap" }}>
@@ -2333,11 +2333,11 @@ function ReportHeader({
   return (
     <div>
       {/* Label */}
-      <p style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.1em", color: "var(--pio-highlight)", textTransform: "uppercase", marginBottom: 10 }}>Report</p>
+      <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.1em", color: "var(--pio-highlight)", textTransform: "uppercase", marginBottom: 10 }}>Report</p>
 
       {/* Title + external link */}
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.02em", color: "var(--pio-ink)", lineHeight: 1.2, flex: 1, minWidth: 0 }}>{title}</h1>
+        <h1 className="text-pio-5xl" style={{ fontWeight: 800, letterSpacing: "-0.02em", color: "var(--pio-ink)", lineHeight: 1.2, flex: 1, minWidth: 0 }}>{title}</h1>
         {entryUrl ? (
           <a href={entryUrl} target="_blank" rel="noreferrer" aria-label={isAlphaFold ? "AlphaFold DB entry" : "RCSB entry"}
             style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: "50%", background: "var(--pio-highlight)", color: "var(--pio-highlight-text)", flexShrink: 0, textDecoration: "none", marginTop: 4 }}>
@@ -2357,7 +2357,7 @@ function ReportHeader({
       <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
         {exports.map(([label, fn, disabled]) => (
           <button key={label} type="button" onClick={fn} disabled={disabled}
-            style={{ borderRadius: 12, border: "1px solid var(--pio-line-strong)", background: "var(--pio-white)", color: "var(--pio-ink)", padding: "7px 13px", fontSize: 12, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 6, opacity: disabled ? 0.45 : 1 }}>
+            style={{ borderRadius: 12, border: "1px solid var(--pio-line-strong)", background: "var(--pio-white)", color: "var(--pio-ink)", padding: "7px 13px", fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 6, opacity: disabled ? 0.45 : 1 }}>
             <Download size={12} color={disabled ? "var(--pio-graphite)" : "var(--pio-highlight)"} />
             {label}
           </button>
@@ -2369,7 +2369,7 @@ function ReportHeader({
         {facts.map(([label, value]) => (
           <div key={label} style={REPORT_TILE}>
             <p style={REPORT_LABEL}>{label}</p>
-            <p style={{ ...REPORT_MONO, fontSize: 13, fontWeight: 600, color: "var(--pio-ink)", marginTop: 4 }}>{value}</p>
+            <p className="text-pio-base" style={{ ...REPORT_MONO, fontWeight: 600, color: "var(--pio-ink)", marginTop: 4 }}>{value}</p>
           </div>
         ))}
       </div>
@@ -2385,7 +2385,7 @@ function ReportContactSummary({ contacts }: { contacts: ContactRecord[] }) {
   const lowConfidenceContacts = contacts.filter((c) => c.confidence_warning).length;
   const closestContacts = [...contacts].sort((a, b) => a.distance_angstrom - b.distance_angstrom).slice(0, 10);
   const hasConfidence = contacts.some((c) => c.source_residue_confidence || c.target_residue_confidence);
-  const chipBase: React.CSSProperties = { borderRadius: 999, fontWeight: 500, display: "inline-block", fontSize: 11, padding: "3px 8px", whiteSpace: "nowrap" };
+  const chipBase: React.CSSProperties = { borderRadius: 999, fontWeight: 500, display: "inline-block", padding: "3px 8px", whiteSpace: "nowrap" };
 
   return (
     <div>
@@ -2395,7 +2395,7 @@ function ReportContactSummary({ contacts }: { contacts: ContactRecord[] }) {
           <p style={REPORT_SUB}>Closest 10 contacts by distance for the current cutoff.</p>
         </div>
         {hasConfidence && (
-          <span style={{ background: "rgba(194,160,64,0.12)", border: "1px solid rgba(194,160,64,0.3)", borderRadius: 8, padding: "5px 12px", fontSize: 12, fontWeight: 600, color: "#5C4A00", flexShrink: 0 }}>
+          <span className="text-pio-sm" style={{ background: "rgba(194,160,64,0.12)", border: "1px solid rgba(194,160,64,0.3)", borderRadius: 8, padding: "5px 12px", fontWeight: 600, color: "#5C4A00", flexShrink: 0 }}>
             {lowConfidenceContacts} low-confidence
           </span>
         )}
@@ -2413,16 +2413,16 @@ function ReportContactSummary({ contacts }: { contacts: ContactRecord[] }) {
           {closestContacts.map((contact, i) => (
             <div key={contactKey(contact)}>
               <div style={{ display: "grid", gridTemplateColumns: REPORT_CONTACT_GRID, columnGap: 12, padding: "10px 0", alignItems: "start" }}>
-                <p style={{ ...REPORT_MONO, fontSize: 12, color: "var(--pio-ink)" }}>
+                <p className="text-pio-sm" style={{ ...REPORT_MONO, color: "var(--pio-ink)" }}>
                   {contact.chain_a}:{contact.residue_name_a}{contact.residue_a}.{contact.atom_a} – {contact.chain_b}:{contact.residue_name_b}{contact.residue_b}.{contact.atom_b}
                 </p>
                 <div><span style={{ ...chipBase, ...contactChipStyle(contact.contact_type) }}>{contact.contact_type}</span></div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
                   {contact.contact_categories.length ? contact.contact_categories.map((cat) => (
                     <span key={cat} style={{ ...chipBase, ...contactChipStyle(cat) }}>{cat}</span>
-                  )) : <span style={{ fontSize: 12, color: "var(--pio-graphite)" }}>—</span>}
+                  )) : <span className="text-pio-sm" style={{ color: "var(--pio-graphite)" }}>—</span>}
                 </div>
-                <p style={{ ...REPORT_MONO, fontSize: 12.5, fontWeight: 600, color: "var(--pio-ink)" }}>{contact.distance_angstrom.toFixed(3)} Å</p>
+                <p className="text-pio-sm" style={{ ...REPORT_MONO, fontWeight: 600, color: "var(--pio-ink)" }}>{contact.distance_angstrom.toFixed(3)} Å</p>
                 <div>
                   {contact.source_residue_confidence || contact.target_residue_confidence ? (
                     <ContactConfidenceBadge contact={contact} />
@@ -2463,18 +2463,18 @@ function ConfidenceReportCard({ confidence }: { confidence: ConfidenceSummary })
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 14 }}>
         <div style={REPORT_TILE}>
           <p style={REPORT_LABEL}>Average pLDDT</p>
-          <p style={{ ...REPORT_MONO, fontSize: 26, fontWeight: 700, color: "var(--pio-ink)", marginTop: 4, lineHeight: 1 }}>{confidence.average_plddt.toFixed(2)}</p>
+          <p className="text-pio-5xl" style={{ ...REPORT_MONO, fontWeight: 700, color: "var(--pio-ink)", marginTop: 4, lineHeight: 1 }}>{confidence.average_plddt.toFixed(2)}</p>
         </div>
         <div style={REPORT_TILE}>
           <p style={REPORT_LABEL}>Low-confidence residues</p>
-          <p style={{ ...REPORT_MONO, fontSize: 26, fontWeight: 700, color: "var(--pio-ink)", marginTop: 4, lineHeight: 1 }}>{confidence.low_confidence_count.toLocaleString()}</p>
+          <p className="text-pio-5xl" style={{ ...REPORT_MONO, fontWeight: 700, color: "var(--pio-ink)", marginTop: 4, lineHeight: 1 }}>{confidence.low_confidence_count.toLocaleString()}</p>
         </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 8 }}>
         {categories.map(([label, value, bg]) => (
           <div key={label} style={{ ...REPORT_TILE, background: bg, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <p style={{ ...REPORT_LABEL, color: "var(--pio-ink)" }}>{label}</p>
-            <p style={{ ...REPORT_MONO, fontSize: 18, fontWeight: 700, color: "var(--pio-ink)" }}>{value.toLocaleString()}</p>
+            <p className="text-pio-2xl" style={{ ...REPORT_MONO, fontWeight: 700, color: "var(--pio-ink)" }}>{value.toLocaleString()}</p>
           </div>
         ))}
       </div>
@@ -2618,8 +2618,8 @@ function QualityPanel({ analysis }: { analysis: AnalysisResponse | null }) {
 
   return (
     <div>
-      <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)" }}>Quality</h2>
-      <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>
+      <h2 className="text-pio-4xl" style={{ fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)" }}>Quality</h2>
+      <p className="text-pio-md" style={{ color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>
         Practical validation signals from existing contact, ligand, confidence, and PAE data.
       </p>
 
@@ -2630,7 +2630,7 @@ function QualityPanel({ analysis }: { analysis: AnalysisResponse | null }) {
         borderRadius: 10,
         padding: "10px 14px",
       }}>
-        <p style={{ fontSize: 12.5, fontWeight: 400, color: "var(--pio-quality-amber-fg)", lineHeight: 1.5 }}>
+        <p className="text-pio-sm" style={{ fontWeight: 400, color: "var(--pio-quality-amber-fg)", lineHeight: 1.5 }}>
           These are screening/review signals, not full crystallographic validation or chemical perception.
         </p>
       </div>
@@ -2642,10 +2642,10 @@ function QualityPanel({ analysis }: { analysis: AnalysisResponse | null }) {
       </div>
 
       <div style={{ marginTop: 20, paddingTop: 16 }}>
-        <h3 style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--pio-ink)" }}>
+        <h3 className="text-pio-2xl" style={{ fontWeight: 700, letterSpacing: "-0.01em", color: "var(--pio-ink)" }}>
           Close-Contact Examples
         </h3>
-        <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", marginTop: 4 }}>
+        <p className="text-pio-md" style={{ color: "var(--pio-graphite)", marginTop: 4 }}>
           Representative atom pairs under 2 Å. Review them in context before drawing a chemical conclusion.
         </p>
 
@@ -2659,7 +2659,7 @@ function QualityPanel({ analysis }: { analysis: AnalysisResponse | null }) {
             }}>
               {["ATOM 1", "ATOM 2", "DISTANCE"].map((col) => (
                 <p key={col} style={{
-                  fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)",
+ fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)",
                   textAlign: col === "DISTANCE" ? "right" : "left",
                 }}>{col}</p>
               ))}
@@ -2675,9 +2675,9 @@ function QualityPanel({ analysis }: { analysis: AnalysisResponse | null }) {
                   padding: "10px 0",
                   borderBottom: i < closeContactExamples.length - 1 ? "1px solid var(--pio-line)" : "none",
                 }}>
-                  <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 500, color: "var(--pio-ink)" }}>{atom1}</span>
-                  <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 500, color: "var(--pio-ink)" }}>{atom2}</span>
-                  <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 600, color: "var(--pio-ink)", textAlign: "right" }}>{dist}</span>
+                  <span className="text-pio-sm" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: 500, color: "var(--pio-ink)" }}>{atom1}</span>
+                  <span className="text-pio-sm" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: 500, color: "var(--pio-ink)" }}>{atom2}</span>
+                  <span className="text-pio-sm" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: 600, color: "var(--pio-ink)", textAlign: "right" }}>{dist}</span>
                 </div>
               );
             })}
@@ -2685,7 +2685,7 @@ function QualityPanel({ analysis }: { analysis: AnalysisResponse | null }) {
         ) : (
           <div style={{ textAlign: "center", paddingTop: 24 }}>
             <ChainNodeIcon size={40} color="var(--pio-line-strong)" />
-            <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", marginTop: 12 }}>No close contacts detected.</p>
+            <p className="text-pio-md" style={{ color: "var(--pio-graphite)", marginTop: 12 }}>No close contacts detected.</p>
           </div>
         )}
       </div>
@@ -2714,10 +2714,10 @@ function QualityCheckCard({
   return (
     <div style={{ background: bg, borderRadius: 12, padding: "14px 16px", overflow: "hidden", gridColumn: fullWidth ? "1 / -1" : undefined }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <p style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: labelColor, lineHeight: 1.3 }}>{label}</p>
-        <span style={{ fontSize: 22, fontWeight: 700, color: valueColor, lineHeight: 1.1, marginLeft: 8, flexShrink: 0 }}>{value}</span>
+        <p className="text-pio-3xs" style={{ fontWeight: 600, letterSpacing: "0.07em", color: labelColor, lineHeight: 1.3 }}>{label}</p>
+        <span className="text-pio-4xl" style={{ fontWeight: 700, color: valueColor, lineHeight: 1.1, marginLeft: 8, flexShrink: 0 }}>{value}</span>
       </div>
-      <p style={{ fontSize: 12, lineHeight: 1.5, marginTop: 8, color: descColor }}>{description}</p>
+      <p className="text-pio-sm" style={{ lineHeight: 1.5, marginTop: 8, color: descColor }}>{description}</p>
     </div>
   );
 }
@@ -2732,10 +2732,10 @@ function RunHistoryTimeline({
   const SOURCE_LABEL: Record<string, string> = { rcsb: "RCSB", alphafold: "AlphaFold", upload: "Upload" };
   return (
     <div>
-      <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)" }}>
+      <h2 className="text-pio-4xl" style={{ fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)" }}>
         Run History
       </h2>
-      <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4, marginBottom: 16 }}>
+      <p className="text-pio-md" style={{ color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4, marginBottom: 16 }}>
         {savedRuns.length} saved run{savedRuns.length !== 1 ? "s" : ""} in this workspace.
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -2762,7 +2762,7 @@ function RunHistoryTimeline({
                 alignItems: "center",
                 justifyContent: "center",
                 flexShrink: 0,
-                fontSize: 11,
+
                 fontWeight: 700,
                 color: "var(--pio-highlight)",
               }}
@@ -2771,18 +2771,18 @@ function RunHistoryTimeline({
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--pio-ink)" }}>{run.name}</span>
-                <span className="pio-badge pio-badge-metadata" style={{ fontSize: 10 }}>
+                <span className="text-pio-base" style={{ fontWeight: 600, color: "var(--pio-ink)" }}>{run.name}</span>
+                <span className="pio-badge pio-badge-metadata text-pio-3xs" style={{ }}>
                   {SOURCE_LABEL[run.source] ?? run.source}
                 </span>
                 {run.hasConfidence && (
-                  <span className="pio-badge pio-badge-predicted" style={{ fontSize: 10 }}>pLDDT</span>
+                  <span className="pio-badge pio-badge-predicted text-pio-3xs" style={{ }}>pLDDT</span>
                 )}
                 {!run.hasStructureText && (
-                  <span className="pio-badge pio-badge-caution" style={{ fontSize: 10 }}>no 3D</span>
+                  <span className="pio-badge pio-badge-caution text-pio-3xs" style={{ }}>no 3D</span>
                 )}
               </div>
-              <div style={{ display: "flex", gap: 12, marginTop: 3, fontSize: 11, color: "var(--pio-graphite)" }}>
+              <div className="text-pio-xs" style={{ display: "flex", gap: 12, marginTop: 3, color: "var(--pio-graphite)" }}>
                 <span>{relativeTime(run.savedAt)}</span>
                 <span>{run.cutoff.toFixed(1)} Å cutoff</span>
                 <span>{run.summary.chain_count}ch · {run.summary.residue_count}res · {run.summary.contact_count}ct
@@ -2799,7 +2799,7 @@ function RunHistoryTimeline({
                 borderRadius: 8,
                 background: "var(--pio-highlight)",
                 color: "var(--pio-highlight-text)",
-                fontSize: 12,
+
                 fontWeight: 600,
                 border: "none",
                 cursor: "pointer",
@@ -2818,15 +2818,15 @@ function ProvenancePanel({ provenance, showExport = true }: { provenance: Proven
   if (!provenance) {
     return (
       <div>
-        <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)" }}>Methods And Provenance</h2>
-        <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>
+        <h2 className="text-pio-4xl" style={{ fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)" }}>Methods And Provenance</h2>
+        <p className="text-pio-md" style={{ color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>
           Run an analysis to generate reproducibility details for the current structure.
         </p>
       </div>
     );
   }
 
-  const MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 500 };
+  const MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)", fontWeight: 500 };
 
   type CardDef = { label: string; value: string; style?: React.CSSProperties; faded?: boolean; fullWidth?: boolean };
   const cards: CardDef[] = [
@@ -2848,7 +2848,7 @@ function ProvenancePanel({ provenance, showExport = true }: { provenance: Proven
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)", flex: 1, minWidth: 0 }}>
+        <h2 className="text-pio-4xl" style={{ fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)", flex: 1, minWidth: 0 }}>
           Methods And Provenance
         </h2>
         {showExport ? (
@@ -2863,11 +2863,11 @@ function ProvenancePanel({ provenance, showExport = true }: { provenance: Proven
         ) : null}
       </div>
 
-      <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>
+      <p className="text-pio-md" style={{ color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>
         Reproducibility details for the current analysis. These values describe how the displayed contacts,
         ligand summaries, confidence warnings, and quality checks were generated.
       </p>
-      <p style={{ fontSize: 13, color: "var(--pio-graphite)", marginTop: 10 }}>
+      <p className="text-pio-base" style={{ color: "var(--pio-graphite)", marginTop: 10 }}>
         Analysis generated with Gemmi parsing and distance-based contact search.
       </p>
 
@@ -2880,7 +2880,7 @@ function ProvenancePanel({ provenance, showExport = true }: { provenance: Proven
             overflow: "hidden",
             gridColumn: card.fullWidth ? "1 / -1" : undefined,
           }}>
-            <p style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)" }}>{card.label}</p>
+            <p className="text-pio-3xs" style={{ fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)" }}>{card.label}</p>
             <p style={{
               fontSize: card.style?.fontSize ?? 13,
               fontWeight: card.style?.fontWeight ?? 500,
@@ -2904,17 +2904,17 @@ function ProvenancePanel({ provenance, showExport = true }: { provenance: Proven
         borderRadius: 10,
         padding: "12px 14px",
       }}>
-        <p style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: hasWarnings ? "var(--pio-quality-amber-fg)" : "var(--pio-quality-green-fg)" }}>
+        <p className="text-pio-3xs" style={{ fontWeight: 600, letterSpacing: "0.07em", color: hasWarnings ? "var(--pio-quality-amber-fg)" : "var(--pio-quality-green-fg)" }}>
           RECORDED WARNINGS
         </p>
         {hasWarnings ? (
           <ul style={{ marginTop: 6, paddingLeft: 16 }}>
             {provenance.warnings.map((warning) => (
-              <li key={warning} style={{ fontSize: 12.5, color: "var(--pio-quality-amber-fg-soft)", lineHeight: 1.5 }}>{warning}</li>
+              <li key={warning} className="text-pio-sm" style={{ color: "var(--pio-quality-amber-fg-soft)", lineHeight: 1.5 }}>{warning}</li>
             ))}
           </ul>
         ) : (
-          <p style={{ fontSize: 12.5, color: "var(--pio-quality-green-fg-soft)", lineHeight: 1.5, marginTop: 6 }}>
+          <p className="text-pio-sm" style={{ color: "var(--pio-quality-green-fg-soft)", lineHeight: 1.5, marginTop: 6 }}>
             No parser, contact, confidence, or PAE warnings were recorded for this analysis.
           </p>
         )}
@@ -3032,17 +3032,17 @@ function SummaryCards({ analysis }: { analysis: AnalysisResponse | null }) {
 
   return (
     <div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+      <div className="grid grid-cols-3 gap-2">
         {items.map(([label, value, description]) => (
           <div
             key={label}
-            style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}
+            className="rounded-[10px] bg-[var(--pio-paper)] px-[14px] py-3"
           >
-            <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>{label}</p>
-            <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 22, fontWeight: 700, marginTop: 4, color: "var(--pio-ink)", lineHeight: 1 }}>
+            <p className="text-pio-2xs font-bold uppercase tracking-[0.08em] text-[var(--pio-graphite)]">{label}</p>
+            <p className="mt-1 font-[family-name:var(--font-pio-mono)] text-pio-4xl font-bold leading-none text-[var(--pio-ink)]">
               {value.toLocaleString()}
             </p>
-            <p style={{ fontSize: 10, color: "var(--pio-graphite)", marginTop: 6, lineHeight: 1.4, opacity: 0.8 }}>{description}</p>
+            <p className="mt-1.5 text-pio-2xs leading-[1.4] text-[var(--pio-graphite)] opacity-80">{description}</p>
           </div>
         ))}
       </div>
@@ -3146,16 +3146,16 @@ function ConfidencePanel({
       {/* Stat tiles */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 16 }}>
         <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
-          <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>Average pLDDT</p>
-          <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 22, fontWeight: 700, marginTop: 4, color: "var(--pio-lavender-deep)", lineHeight: 1 }}>{confidence.average_plddt.toFixed(2)}</p>
+          <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>Average pLDDT</p>
+          <p className="text-pio-4xl" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: 700, marginTop: 4, color: "var(--pio-lavender-deep)", lineHeight: 1 }}>{confidence.average_plddt.toFixed(2)}</p>
         </div>
         <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
-          <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>Residues</p>
-          <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 22, fontWeight: 700, marginTop: 4, color: "var(--pio-ink)", lineHeight: 1 }}>{confidence.residue_count}</p>
+          <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>Residues</p>
+          <p className="text-pio-4xl" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: 700, marginTop: 4, color: "var(--pio-ink)", lineHeight: 1 }}>{confidence.residue_count}</p>
         </div>
         <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
-          <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>Low confidence</p>
-          <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 22, fontWeight: 700, marginTop: 4, color: "var(--pio-amber-deep)", lineHeight: 1 }}>{confidence.low_confidence_count}</p>
+          <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>Low confidence</p>
+          <p className="text-pio-4xl" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: 700, marginTop: 4, color: "var(--pio-amber-deep)", lineHeight: 1 }}>{confidence.low_confidence_count}</p>
         </div>
       </div>
 
@@ -3165,9 +3165,9 @@ function ConfidencePanel({
           <div key={label} style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ width: 10, height: 10, borderRadius: "50%", background: color, flexShrink: 0 }} />
-              <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>{label}</p>
+              <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>{label}</p>
             </div>
-            <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 22, fontWeight: 700, marginTop: 4, color: "var(--pio-ink)", lineHeight: 1 }}>{count}</p>
+            <p className="text-pio-4xl" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: 700, marginTop: 4, color: "var(--pio-ink)", lineHeight: 1 }}>{count}</p>
           </div>
         ))}
       </div>
@@ -3181,7 +3181,7 @@ function ConfidencePanel({
               type="button"
               onClick={() => onColorModeChange(mode)}
               style={{
-                height: 32, borderRadius: 20, padding: "0 14px", fontSize: 12, fontWeight: 600,
+                height: 32, borderRadius: 20, padding: "0 14px", fontWeight: 600,
                 background: colorMode === mode ? "var(--pio-ink)" : "var(--pio-paper)",
                 color: colorMode === mode ? "var(--pio-white)" : "var(--pio-graphite)",
                 border: "none", cursor: "pointer", transition: "background 0.15s, color 0.15s",
@@ -3191,7 +3191,7 @@ function ConfidencePanel({
             </button>
           ))}
         </div>
-        <p style={{ fontSize: 11, color: "var(--pio-graphite)" }}>{residueConfidences.length} residues</p>
+        <p className="text-pio-xs" style={{ color: "var(--pio-graphite)" }}>{residueConfidences.length} residues</p>
       </div>
     </div>
   );
@@ -3243,8 +3243,8 @@ function InteractionSummaryPanel({ summary }: { summary: InteractionSummary | nu
 
   return (
     <div>
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--pio-ink)", letterSpacing: "-0.015em" }}>Ligand Interaction Summary</h2>
-      <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>
+      <h2 className="text-pio-2xl" style={{ fontWeight: 700, color: "var(--pio-ink)", letterSpacing: "-0.015em" }}>Ligand Interaction Summary</h2>
+      <p className="text-pio-md" style={{ color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>
         Distance-based contact categories and top contact participants.
       </p>
 
@@ -3255,8 +3255,8 @@ function InteractionSummaryPanel({ summary }: { summary: InteractionSummary | nu
             key={label}
             style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}
           >
-            <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>{label}</p>
-            <p style={{ ...MONO, fontSize: 26, fontWeight: 700, color: "var(--pio-ink)", marginTop: 4, lineHeight: 1 }}>
+            <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>{label}</p>
+            <p className="text-pio-5xl" style={{ ...MONO, fontWeight: 700, color: "var(--pio-ink)", marginTop: 4, lineHeight: 1 }}>
               {value.toLocaleString()}
             </p>
           </div>
@@ -3287,7 +3287,7 @@ function LigandInteractionPanel({
     <div>
       {/* Heading row */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: "var(--pio-ink)" }}>Ligand Interaction Summary</h3>
+        <h3 className="text-pio-xl" style={{ fontWeight: 700, color: "var(--pio-ink)" }}>Ligand Interaction Summary</h3>
         <button
           type="button"
           onClick={onExport}
@@ -3297,7 +3297,7 @@ function LigandInteractionPanel({
           <Download size={14} />
         </button>
       </div>
-      <p style={{ fontSize: 13, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>
+      <p className="text-pio-base" style={{ color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>
         Per-ligand contact counts, closest atom pair, contacting residues, and distance distribution.
       </p>
 
@@ -3307,31 +3307,31 @@ function LigandInteractionPanel({
           {/* Header */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", columnGap: 12, borderBottom: "1px solid var(--pio-line)", padding: "8px 0" }}>
             {["LIGAND","CONTACTS","PROTEIN","WATER","VERY CLOSE","CLOSEST","TOP RESIDUES","BUCKETS"].map((col) => (
-              <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)" }}>{col}</p>
+              <p key={col} className="text-pio-3xs" style={{ fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)" }}>{col}</p>
             ))}
           </div>
           {ligandInteractions.map((ligand, i) => (
             <div key={`${ligand.name}-${ligand.chain_id}-${ligand.residue_number}`}>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", columnGap: 12, padding: "10px 0", alignItems: "start" }}>
-                <p style={{ ...MONO, fontSize: 12, color: "var(--pio-ink)" }}>{ligand.name} {ligand.chain_id}:{ligand.residue_number}</p>
-                <p style={{ ...MONO, fontSize: 13, fontWeight: 500, color: "var(--pio-ink)" }}>{ligand.contact_count}</p>
-                <p style={{ ...MONO, fontSize: 13, fontWeight: 500, color: "var(--pio-ink)" }}>{ligand.protein_contact_count}</p>
-                <p style={{ ...MONO, fontSize: 13, fontWeight: 500, color: "var(--pio-ink)" }}>{ligand.water_contact_count}</p>
-                <p style={{ ...MONO, fontSize: 13, fontWeight: 500, color: "var(--pio-ink)" }}>{ligand.possible_clash_count}</p>
+                <p className="text-pio-sm" style={{ ...MONO, color: "var(--pio-ink)" }}>{ligand.name} {ligand.chain_id}:{ligand.residue_number}</p>
+                <p className="text-pio-base" style={{ ...MONO, fontWeight: 500, color: "var(--pio-ink)" }}>{ligand.contact_count}</p>
+                <p className="text-pio-base" style={{ ...MONO, fontWeight: 500, color: "var(--pio-ink)" }}>{ligand.protein_contact_count}</p>
+                <p className="text-pio-base" style={{ ...MONO, fontWeight: 500, color: "var(--pio-ink)" }}>{ligand.water_contact_count}</p>
+                <p className="text-pio-base" style={{ ...MONO, fontWeight: 500, color: "var(--pio-ink)" }}>{ligand.possible_clash_count}</p>
                 <div>
                   {ligand.closest_contact && ligand.closest_distance_angstrom !== null ? (
                     <>
-                      <p style={{ ...MONO, fontSize: 11, fontWeight: 700, color: "var(--pio-ink)" }}>{ligand.closest_distance_angstrom.toFixed(3)} Å</p>
-                      <p style={{ ...MONO, fontSize: 10, color: "var(--pio-graphite)", marginTop: 2 }}>{ligand.closest_contact.atom_a}–{ligand.closest_contact.atom_b}</p>
+                      <p className="text-pio-xs" style={{ ...MONO, fontWeight: 700, color: "var(--pio-ink)" }}>{ligand.closest_distance_angstrom.toFixed(3)} Å</p>
+                      <p className="text-pio-3xs" style={{ ...MONO, color: "var(--pio-graphite)", marginTop: 2 }}>{ligand.closest_contact.atom_a}–{ligand.closest_contact.atom_b}</p>
                     </>
-                  ) : <p style={{ fontSize: 12, color: "var(--pio-graphite)" }}>—</p>}
+                  ) : <p className="text-pio-sm" style={{ color: "var(--pio-graphite)" }}>—</p>}
                 </div>
-                <p style={{ ...MONO, fontSize: 11, color: "var(--pio-graphite)", maxWidth: 180, overflowWrap: "break-word" }}>
+                <p className="text-pio-xs" style={{ ...MONO, color: "var(--pio-graphite)", maxWidth: 180, overflowWrap: "break-word" }}>
                   {ligand.contacting_residues.length
                     ? ligand.contacting_residues.map(r => `${r.chain_id}:${r.residue_name}${r.residue_number}(${r.contact_count})`).join(", ")
                     : "—"}
                 </p>
-                <p style={{ ...MONO, fontSize: 11, color: "var(--pio-ink)" }}>
+                <p className="text-pio-xs" style={{ ...MONO, color: "var(--pio-ink)" }}>
                   {"<2:"}{ligand.distance_distribution.under_2_angstrom}{" / 2–3:"}{ligand.distance_distribution.two_to_3_angstrom}{" / 3–4:"}{ligand.distance_distribution.three_to_4_angstrom}{" / >4:"}{ligand.distance_distribution.over_4_angstrom}
                 </p>
               </div>
@@ -3348,14 +3348,14 @@ function TopContactList({ title, rows }: { title: string; rows: Array<[string, n
   const MONO: React.CSSProperties = { fontFamily: "var(--font-pio-mono)" };
   return (
     <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
-      <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase", marginBottom: 8 }}>{title}</p>
+      <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase", marginBottom: 8 }}>{title}</p>
       {rows.length ? rows.map(([label, count]) => (
         <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "3px 0" }}>
-          <span style={{ ...MONO, fontSize: 12.5, color: "var(--pio-ink)" }}>{label}</span>
-          <span style={{ ...MONO, fontSize: 12.5, fontWeight: 700, color: "var(--pio-ink)" }}>{count}</span>
+          <span className="text-pio-sm" style={{ ...MONO, color: "var(--pio-ink)" }}>{label}</span>
+          <span className="text-pio-sm" style={{ ...MONO, fontWeight: 700, color: "var(--pio-ink)" }}>{count}</span>
         </div>
       )) : (
-        <p style={{ fontSize: 12.5, color: "var(--pio-graphite)" }}>—</p>
+        <p className="text-pio-sm" style={{ color: "var(--pio-graphite)" }}>—</p>
       )}
     </div>
   );
@@ -3393,7 +3393,7 @@ function ContactCategoryFilter({
           style={{
             borderRadius: 10,
             padding: "8px 18px",
-            fontSize: 13,
+
             fontWeight: 500,
             lineHeight: 1,
             border: "none",
@@ -3420,9 +3420,9 @@ function ContactConfidenceSummary({
 
   return (
     <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: "6px 10px", background: "var(--pio-amber-pale)", borderRadius: 10, padding: "10px 14px", marginTop: 12 }}>
-      <span style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "var(--pio-amber-deep)", flexShrink: 0 }}>Low-confidence</span>
-      <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 18, fontWeight: 700, color: "var(--pio-amber-deep)", flexShrink: 0 }}>{lowConfidenceContactCount}</span>
-      <span style={{ fontSize: 12, color: "var(--pio-amber-deep)", opacity: 0.5 }}>of {totalContactCount} contacts ({percent}%) — either residue has low or very-low pLDDT. Treat as review targets.</span>
+      <span className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "var(--pio-amber-deep)", flexShrink: 0 }}>Low-confidence</span>
+      <span className="text-pio-2xl" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: 700, color: "var(--pio-amber-deep)", flexShrink: 0 }}>{lowConfidenceContactCount}</span>
+      <span className="text-pio-sm" style={{ color: "var(--pio-amber-deep)", opacity: 0.5 }}>of {totalContactCount} contacts ({percent}%) — either residue has low or very-low pLDDT. Treat as review targets.</span>
     </div>
   );
 }
@@ -3672,7 +3672,7 @@ function FloatingLigandPanel({
           cursor: "grab",
         }}
       >
-        <p style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.08em", ...TEXT }}>
+        <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.08em", ...TEXT }}>
           {minimized
             ? `LIGAND DETAILS — ${ligand.name} ${ligand.chain_id}:${ligand.residue_number}`
             : "LIGAND DETAILS"}
@@ -3736,14 +3736,14 @@ function FloatingLigandPanel({
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {/* Ligand name heading */}
           <div style={{ borderBottom: "1px solid rgba(26,64,106,0.12)", paddingBottom: 10 }}>
-            <p style={{ ...MONO, fontSize: 20, fontWeight: 700, letterSpacing: "-0.01em" }}>
+            <p className="text-pio-3xl" style={{ ...MONO, fontWeight: 700, letterSpacing: "-0.01em" }}>
               {ligand.name} {ligand.chain_id}:{ligand.residue_number}
             </p>
           </div>
 
           {/* Identity section */}
           <div>
-            <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 5 }}>IDENTITY</p>
+            <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 5 }}>IDENTITY</p>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
               {[
                 ["CHAIN", ligand.chain_id],
@@ -3754,8 +3754,8 @@ function FloatingLigandPanel({
                   key={label}
                   style={{ background: "rgba(255,255,255,0.7)", borderRadius: 2, padding: "8px 10px" }}
                 >
-                  <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", ...TEXT, opacity: 0.65 }}>{label}</p>
-                  <p style={{ ...MONO, fontSize: 14, fontWeight: 700, marginTop: 2 }}>{value}</p>
+                  <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.08em", ...TEXT, opacity: 0.65 }}>{label}</p>
+                  <p className="text-pio-lg" style={{ ...MONO, fontWeight: 700, marginTop: 2 }}>{value}</p>
                 </div>
               ))}
             </div>
@@ -3763,7 +3763,7 @@ function FloatingLigandPanel({
 
           {/* Contact count section */}
           <div>
-            <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 5 }}>CONTACT COUNTS</p>
+            <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 5 }}>CONTACT COUNTS</p>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
               {[
                 ["PROTEIN", String(interaction?.protein_contact_count ?? 0)],
@@ -3774,8 +3774,8 @@ function FloatingLigandPanel({
                   key={label}
                   style={{ background: "rgba(255,255,255,0.7)", borderRadius: 2, padding: "8px 10px" }}
                 >
-                  <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", ...TEXT, opacity: 0.65 }}>{label}</p>
-                  <p style={{ ...MONO, fontSize: 14, fontWeight: 700, marginTop: 2 }}>{value}</p>
+                  <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.08em", ...TEXT, opacity: 0.65 }}>{label}</p>
+                  <p className="text-pio-lg" style={{ ...MONO, fontWeight: 700, marginTop: 2 }}>{value}</p>
                 </div>
               ))}
             </div>
@@ -3783,27 +3783,27 @@ function FloatingLigandPanel({
 
           {/* Closest contact + distance buckets */}
           <div>
-          <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 5 }}>GEOMETRY</p>
+          <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 5 }}>GEOMETRY</p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
             {/* Closest */}
             <div style={{ background: "rgba(255,255,255,0.7)", borderRadius: 2, padding: "8px 10px" }}>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", ...TEXT, opacity: 0.65 }}>CLOSEST CONTACT</p>
+              <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.08em", ...TEXT, opacity: 0.65 }}>CLOSEST CONTACT</p>
               {interaction?.closest_contact && interaction.closest_distance_angstrom != null ? (
                 <>
-                  <p style={{ ...MONO, fontSize: 15, fontWeight: 700, marginTop: 2 }}>
+                  <p className="text-pio-xl" style={{ ...MONO, fontWeight: 700, marginTop: 2 }}>
                     {interaction.closest_distance_angstrom.toFixed(3)} Å
                   </p>
-                  <p style={{ ...MONO, fontSize: 10, opacity: 0.7, marginTop: 2 }}>
+                  <p className="text-pio-3xs" style={{ ...MONO, opacity: 0.7, marginTop: 2 }}>
                     {interaction.closest_contact.atom_a}–{interaction.closest_contact.atom_b}
                   </p>
                 </>
               ) : (
-                <p style={{ ...TEXT, fontSize: 13, marginTop: 2, opacity: 0.6 }}>—</p>
+                <p className="text-pio-base" style={{ ...TEXT, marginTop: 2, opacity: 0.6 }}>—</p>
               )}
             </div>
             {/* Distance buckets */}
             <div style={{ background: "rgba(255,255,255,0.7)", borderRadius: 2, padding: "8px 10px" }}>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", ...TEXT, opacity: 0.65 }}>DISTANCE BUCKETS</p>
+              <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.08em", ...TEXT, opacity: 0.65 }}>DISTANCE BUCKETS</p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 6px", marginTop: 4 }}>
                 {[
                   ["<2 Å", buckets.under_2_angstrom],
@@ -3812,8 +3812,8 @@ function FloatingLigandPanel({
                   [">4 Å", buckets.over_4_angstrom],
                 ].map(([label, val]) => (
                   <div key={String(label)} style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: 10, ...TEXT, opacity: 0.65 }}>{label}</span>
-                    <span style={{ ...MONO, fontSize: 10, fontWeight: 700 }}>{val}</span>
+                    <span className="text-pio-3xs" style={{ ...TEXT, opacity: 0.65 }}>{label}</span>
+                    <span className="text-pio-3xs" style={{ ...MONO, fontWeight: 700 }}>{val}</span>
                   </div>
                 ))}
               </div>
@@ -3824,7 +3824,7 @@ function FloatingLigandPanel({
           {/* Contacting residue chips */}
           {interaction?.contacting_residues && interaction.contacting_residues.length > 0 && (
             <div>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 5 }}>CONTACTING RESIDUES</p>
+              <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 5 }}>CONTACTING RESIDUES</p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                 {interaction.contacting_residues.map((r) => (
                   <span
@@ -3834,7 +3834,7 @@ function FloatingLigandPanel({
                       borderRadius: 9,
                       padding: "3px 8px",
                       fontFamily: "var(--font-pio-mono)",
-                      fontSize: 11,
+
                       fontWeight: 500,
                       color: "#1A406A",
                     }}
@@ -3852,7 +3852,7 @@ function FloatingLigandPanel({
             (interaction.water_bridge_count != null && interaction.water_bridge_count > 0)
           ) && (
             <div>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 5 }}>INTERACTION TYPES</p>
+              <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 5 }}>INTERACTION TYPES</p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                 {(["h-bond", "salt-bridge", "aromatic", "pi-cation", "hydrophobic", "halogen-bond"] as const).map((cls) => {
                   const count = interaction.interaction_class_breakdown?.[cls];
@@ -3860,13 +3860,13 @@ function FloatingLigandPanel({
                   const badge = INTERACTION_CLASS_BADGE[cls];
                   if (!badge) return null;
                   return (
-                    <span key={cls} className={`pio-badge ${badge.cls}`} style={{ padding: "3px 9px", fontSize: 10, whiteSpace: "nowrap" }}>
+                    <span key={cls} className={`pio-badge ${badge.cls}`} style={{ padding: "3px 9px", whiteSpace: "nowrap" }}>
                       {badge.label} <span style={{ opacity: 0.8, fontWeight: 700 }}>{count}</span>
                     </span>
                   );
                 })}
                 {interaction.water_bridge_count != null && interaction.water_bridge_count > 0 && (
-                  <span className="pio-badge pio-badge-warning" style={{ padding: "3px 9px", fontSize: 10, whiteSpace: "nowrap" }}>
+                  <span className="pio-badge pio-badge-warning text-pio-3xs" style={{ padding: "3px 9px", whiteSpace: "nowrap" }}>
                     water bridge <span style={{ opacity: 0.8, fontWeight: 700 }}>{interaction.water_bridge_count}</span>
                   </span>
                 )}
@@ -3877,7 +3877,7 @@ function FloatingLigandPanel({
           {/* Per-contact table */}
           {ligandContacts.length > 0 && (
             <div>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 5 }}>
+              <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 5 }}>
                 CONTACTS ({ligandContacts.length})
               </p>
               <div style={{ background: "rgba(255,255,255,0.6)", borderRadius: 6, overflow: "hidden" }}>
@@ -3889,7 +3889,7 @@ function FloatingLigandPanel({
                 }}>
                   {(["RESIDUE", "ATOMS", "DIST", "TYPE"] as const).map((h) => (
                     <span key={h} style={{
-                      fontSize: 8.5, fontWeight: 700, letterSpacing: "0.08em", ...TEXT, opacity: 0.55,
+ fontWeight: 700, letterSpacing: "0.08em", ...TEXT, opacity: 0.55,
                       textAlign: "left",
                     }}>{h}</span>
                   ))}
@@ -3915,22 +3915,22 @@ function FloatingLigandPanel({
                         background: i % 2 === 1 ? "rgba(199,217,236,0.15)" : "transparent",
                       }}
                     >
-                      <span style={{ ...MONO, fontSize: 10.5, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={`${protChain}:${protResN}${protResNum}`}>
+                      <span className="text-pio-3xs" style={{ ...MONO, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={`${protChain}:${protResN}${protResNum}`}>
                         {protChain}:{protResN}{protResNum}
                       </span>
-                      <span style={{ ...MONO, fontSize: 9.5, opacity: 0.7, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={`${protAtom}–${ligAtom}`}>
+                      <span className="text-pio-3xs" style={{ ...MONO, opacity: 0.7, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={`${protAtom}–${ligAtom}`}>
                         {protAtom}–{ligAtom}
                       </span>
-                      <span style={{ ...MONO, fontSize: 10, fontWeight: 600, whiteSpace: "nowrap", textAlign: "left" }}>
+                      <span className="text-pio-3xs" style={{ ...MONO, fontWeight: 600, whiteSpace: "nowrap", textAlign: "left" }}>
                         {c.distance_angstrom.toFixed(2)} Å
                       </span>
                       <div style={{ display: "flex", justifyContent: "flex-start" }}>
                         {badge ? (
-                          <span className={`pio-badge ${badge.cls}`} style={{ padding: "2px 6px", fontSize: 9, whiteSpace: "nowrap" }}>
+                          <span className={`pio-badge ${badge.cls}`} style={{ padding: "2px 6px", whiteSpace: "nowrap" }}>
                             {badge.label}
                           </span>
                         ) : (
-                          <span style={{ fontSize: 9, ...TEXT, opacity: 0.35 }}>—</span>
+                          <span className="text-pio-3xs" style={{ ...TEXT, opacity: 0.35 }}>—</span>
                         )}
                       </div>
                     </div>
@@ -3942,7 +3942,7 @@ function FloatingLigandPanel({
                   type="button"
                   onClick={() => setShowAllContacts((v) => !v)}
                   style={{
-                    marginTop: 4, width: "100%", fontSize: 10, fontWeight: 600,
+                    marginTop: 4, width: "100%", fontWeight: 600,
                     ...TEXT, opacity: 0.6, background: "none", border: "none",
                     cursor: "pointer", textAlign: "center", padding: "3px 0",
                   }}
@@ -3971,7 +3971,7 @@ function FloatingLigandPanel({
                   alignItems: "center",
                   justifyContent: "center",
                   gap: 6,
-                  fontSize: 12,
+
                   fontWeight: 600,
                   ...TEXT,
                   cursor: "pointer",
@@ -3995,7 +3995,7 @@ function FloatingLigandPanel({
                   alignItems: "center",
                   justifyContent: "center",
                   gap: 6,
-                  fontSize: 12,
+
                   fontWeight: 600,
                   ...TEXT,
                   cursor: "pointer",
@@ -4031,14 +4031,14 @@ function LigandTable({
 }) {
   return (
     <div className="min-w-0">
-      <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)" }}>Ligands</h2>
-      <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>Non-water hetero residues detected in the structure file.</p>
+      <h2 className="text-pio-4xl" style={{ fontWeight: 700, letterSpacing: "-0.015em", color: "var(--pio-ink)" }}>Ligands</h2>
+      <p className="text-pio-md" style={{ color: "var(--pio-graphite)", lineHeight: 1.5, marginTop: 4 }}>Non-water hetero residues detected in the structure file.</p>
 
       {ligands.length ? (
         <>
           <div style={{ display: "grid", gridTemplateColumns: LIGAND_GRID, borderBottom: "1px solid var(--pio-line)", padding: "8px 12px", marginTop: 16 }}>
             {["NAME", "CHAIN", "RESIDUE", "ATOMS"].map((col) => (
-              <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)" }}>{col}</p>
+              <p key={col} className="text-pio-3xs" style={{ fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)" }}>{col}</p>
             ))}
           </div>
           <div style={{ overflow: ligands.length > 6 ? undefined : undefined }}>
@@ -4068,10 +4068,10 @@ function LigandTable({
                     }}
                     className={selected ? "" : "hover:bg-[var(--pio-paper)]"}
                   >
-                    <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 13, fontWeight: 600, color: "var(--pio-ink)" }}>{ligand.name}</p>
-                    <p style={{ fontSize: 14, fontWeight: 600, color: "var(--pio-ink)" }}>{ligand.chain_id}</p>
-                    <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 13, fontWeight: 500, color: "var(--pio-ink)" }}>{ligand.residue_number}</p>
-                    <p style={{ fontFamily: "var(--font-pio-mono)", fontSize: 13, fontWeight: 500, color: "var(--pio-ink)" }}>{ligand.atom_count}</p>
+                    <p className="text-pio-base" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: 600, color: "var(--pio-ink)" }}>{ligand.name}</p>
+                    <p className="text-pio-lg" style={{ fontWeight: 600, color: "var(--pio-ink)" }}>{ligand.chain_id}</p>
+                    <p className="text-pio-base" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: 500, color: "var(--pio-ink)" }}>{ligand.residue_number}</p>
+                    <p className="text-pio-base" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: 500, color: "var(--pio-ink)" }}>{ligand.atom_count}</p>
                   </div>
                   {i < ligands.length - 1 && <div style={{ height: 1, background: "var(--pio-line)", margin: "0 12px" }} />}
                 </div>
@@ -4082,7 +4082,7 @@ function LigandTable({
       ) : (
         <div style={{ textAlign: "center", paddingTop: 32 }}>
           <ChainNodeIcon size={40} color="var(--pio-line-strong)" />
-          <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", marginTop: 12 }}>No ligands detected in this structure.</p>
+          <p className="text-pio-md" style={{ color: "var(--pio-graphite)", marginTop: 12 }}>No ligands detected in this structure.</p>
         </div>
       )}
     </div>
@@ -4123,7 +4123,7 @@ function ContactTable({
     return (
       <div style={{ textAlign: "center", paddingTop: 32 }}>
         <ChainNodeIcon size={40} color="rgba(17,22,16,0.15)" />
-        <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", marginTop: 12 }}>No contacts match this filter.</p>
+        <p className="text-pio-md" style={{ color: "var(--pio-graphite)", marginTop: 12 }}>No contacts match this filter.</p>
       </div>
     );
   }
@@ -4138,7 +4138,7 @@ function ContactTable({
       {/* Header */}
       <div style={{ display: "grid", gridTemplateColumns: grid, columnGap: 8, borderBottom: "1px solid var(--pio-line)", padding: "8px 12px" }}>
         {headers.map((col) => (
-          <p key={col} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)", textAlign: col === "RESIDUES" ? "right" : "left", paddingLeft: col === "CONFIDENCE" ? 16 : 0 }}>{col}</p>
+          <p key={col} className="text-pio-3xs" style={{ fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)", textAlign: col === "RESIDUES" ? "right" : "left", paddingLeft: col === "CONFIDENCE" ? 16 : 0 }}>{col}</p>
         ))}
       </div>
       {/* Rows */}
@@ -4168,23 +4168,23 @@ function ContactTable({
             >
               {/* TYPE */}
               <div>
-                <span style={{ ...chipBase, ...contactChipStyle(contact.contact_type), padding: "3px 10px", fontSize: 11.5 }}>
+                <span className="text-pio-sm" style={{ ...chipBase, ...contactChipStyle(contact.contact_type), padding: "3px 10px" }}>
                   {contact.contact_type}
                 </span>
               </div>
               {/* CATEGORIES */}
               <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                 {contact.contact_categories.length ? contact.contact_categories.map((cat) => (
-                  <span key={cat} style={{ ...chipBase, ...contactChipStyle(cat), padding: "3px 8px", fontSize: 11 }}>{cat}</span>
-                )) : <span style={{ fontSize: 12, color: "var(--pio-graphite)" }}>—</span>}
+                  <span key={cat} className="text-pio-xs" style={{ ...chipBase, ...contactChipStyle(cat), padding: "3px 8px" }}>{cat}</span>
+                )) : <span className="text-pio-sm" style={{ color: "var(--pio-graphite)" }}>—</span>}
                 <InteractionClassBadge contact={contact} />
               </div>
               {/* RESIDUES */}
               <div style={{ display: "flex", flexDirection: "column", gap: 2, alignItems: "flex-end" }}>
-                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 500, color: "var(--pio-ink)" }}>
+                <span className="text-pio-sm" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: 500, color: "var(--pio-ink)" }}>
                   {contact.chain_a}:{contact.residue_name_a}{contact.residue_a}
                 </span>
-                <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 12, fontWeight: 500, color: "var(--pio-ink)" }}>
+                <span className="text-pio-sm" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: 500, color: "var(--pio-ink)" }}>
                   {contact.chain_b}:{contact.residue_name_b}{contact.residue_b}
                 </span>
               </div>
@@ -4200,7 +4200,7 @@ function ContactTable({
         );
       })}
       {totalCount > contacts.length ? (
-        <p style={{ borderTop: "1px solid var(--pio-line)", paddingTop: 8, paddingBottom: 4, fontSize: 12, color: "var(--pio-graphite)", marginTop: 4 }}>
+        <p className="text-pio-sm" style={{ borderTop: "1px solid var(--pio-line)", paddingTop: 8, paddingBottom: 4, color: "var(--pio-graphite)", marginTop: 4 }}>
           Showing first {contacts.length} of {totalCount} contacts. CSV export includes all rows.
         </p>
       ) : null}
@@ -4225,7 +4225,7 @@ const TRUST_LABEL_SHORT: Record<string, string> = {
   "no-confidence-data": "no data",
 };
 
-const COMPACT_BADGE: React.CSSProperties = { padding: "2px 8px", fontSize: 10, whiteSpace: "nowrap" };
+const COMPACT_BADGE: React.CSSProperties = { padding: "2px 8px", whiteSpace: "nowrap" };
 
 function ContactConfidenceBadge({ contact }: { contact: ContactRecord }) {
   const confidences = [contact.source_residue_confidence, contact.target_residue_confidence].filter(
@@ -4288,7 +4288,7 @@ function LigandFingerprintMatrix({
 
   return (
     <div>
-      <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 5 }}>
+      <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 5 }}>
         INTERACTION FINGERPRINT
       </p>
       <div style={{ background: "rgba(255,255,255,0.6)", borderRadius: 6, overflow: "hidden" }}>
@@ -4301,11 +4301,11 @@ function LigandFingerprintMatrix({
           background: "rgba(199,217,236,0.25)",
           alignItems: "center",
         }}>
-          <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.06em", ...TEXT, opacity: 0.45 }}>RESIDUE</span>
+          <span className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.06em", ...TEXT, opacity: 0.45 }}>RESIDUE</span>
           {FP_CLASSES.map((cls) => (
             <div key={cls} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
               <div style={{ width: 7, height: 7, borderRadius: "50%", background: FP_DOT_COLOR[cls], opacity: 0.85 }} />
-              <span style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: "0.04em", ...TEXT, opacity: 0.55 }}>
+              <span className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.04em", ...TEXT, opacity: 0.55 }}>
                 {FP_ABBR[cls]}
               </span>
             </div>
@@ -4326,10 +4326,10 @@ function LigandFingerprintMatrix({
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 4, overflow: "hidden" }}>
-              <span style={{ ...MONO, fontSize: 9.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={row.key}>
+              <span className="text-pio-3xs" style={{ ...MONO, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={row.key}>
                 {row.key}
               </span>
-              <span style={{ fontSize: 8.5, ...TEXT, opacity: 0.4, flexShrink: 0 }}>({row.count})</span>
+              <span className="text-pio-3xs" style={{ ...TEXT, opacity: 0.4, flexShrink: 0 }}>({row.count})</span>
             </div>
             {FP_CLASSES.map((cls) => (
               <div key={cls} style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
@@ -4345,7 +4345,7 @@ function LigandFingerprintMatrix({
         {/* Legend footer */}
         <div style={{ padding: "4px 8px 5px", borderTop: "1px solid rgba(26,64,106,0.08)", display: "flex", flexWrap: "wrap", gap: "3px 10px" }}>
           {FP_CLASSES.map((cls) => (
-            <span key={cls} style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 8, ...TEXT, opacity: 0.55 }}>
+            <span key={cls} className="text-pio-3xs" style={{ display: "flex", alignItems: "center", gap: 3, ...TEXT, opacity: 0.55 }}>
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: FP_DOT_COLOR[cls], flexShrink: 0 }} />
               {FP_FULL_LABEL[cls]}
             </span>
