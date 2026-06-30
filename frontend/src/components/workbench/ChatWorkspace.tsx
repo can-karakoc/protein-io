@@ -20,9 +20,10 @@ type ChatWorkspaceProps = {
   analysis: AnalysisResponse | null;
   compareEntry: CompareSessionEntry | null;
   onFocusExplore: () => void;
+  embedded?: boolean; // when true: strips outer card/shadow + inner header
 };
 
-export function ChatWorkspace({ analysis, compareEntry, onFocusExplore }: ChatWorkspaceProps) {
+export function ChatWorkspace({ analysis, compareEntry, onFocusExplore, embedded = false }: ChatWorkspaceProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [live, setLive] = useState<LiveState | null>(null);
@@ -109,11 +110,10 @@ export function ChatWorkspace({ analysis, compareEntry, onFocusExplore }: ChatWo
     analysis.metadata?.uniprot_id ??
     "Loaded structure";
 
-  return (
-    <div className="h-full flex flex-col">
-      <div className="mx-auto w-full max-w-[800px] flex-1 min-h-0 flex flex-col rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)] overflow-clip">
-
-        {/* Header */}
+  const inner = (
+    <>
+      {/* Inner header — only shown when NOT embedded (standalone page mode) */}
+      {!embedded && (
         <div className="flex items-center justify-between border-b border-[var(--pio-line)] px-5 py-3 shrink-0">
           <div className="flex items-center gap-2 min-w-0">
             <Bot size={15} className="text-[var(--pio-highlight)] shrink-0" />
@@ -133,62 +133,93 @@ export function ChatWorkspace({ analysis, compareEntry, onFocusExplore }: ChatWo
             </button>
           )}
         </div>
+      )}
 
-        {/* Messages */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-5 py-5 space-y-5 scrollbar-thin-report">
-          {messages.length === 0 && !live && (
-            <div className="flex flex-col items-center justify-center h-full gap-3 py-12 text-center">
-              <Bot size={32} className="text-[var(--pio-highlight)] opacity-30" />
-              <p className="text-pio-base text-[var(--pio-graphite)] max-w-[340px] leading-relaxed">
-                Ask anything about the loaded structure — contacts, ligands, chains, confidence scores, interaction types.
-              </p>
-              <div className="flex flex-wrap gap-2 justify-center mt-2">
-                {[...STARTER_PROMPTS, ...(compareEntry ? COMPARE_PROMPTS : [])].map((p) => (
-                  <button key={p} type="button"
-                    onClick={() => { setInput(p); textareaRef.current?.focus(); }}
-                    className="rounded-[10px] border border-[var(--pio-line)] bg-[var(--pio-paper)] px-3 py-1.5 text-pio-xs text-[var(--pio-ink)] hover:bg-[var(--pio-sand)] transition-colors">
-                    {p}
-                  </button>
-                ))}
-              </div>
+      {/* Messages */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-5 space-y-4 scrollbar-thin-report">
+        {messages.length === 0 && !live && (
+          <div className="flex flex-col items-center justify-center h-full gap-4 py-10 text-center px-4">
+            <div
+              className="flex h-11 w-11 items-center justify-center rounded-full"
+              style={{ background: "rgba(199,217,236,0.35)" }}
+            >
+              <Bot size={20} style={{ color: "var(--pio-highlight)", opacity: 0.7 }} />
             </div>
-          )}
-
-          {messages.map((msg) => (
-            <MessageBubble key={msg.id} msg={msg} />
-          ))}
-
-          {live && <LiveIndicator live={live} />}
-          <div ref={bottomRef} />
-        </div>
-
-        {/* Input */}
-        <div className="border-t border-[var(--pio-line)] px-4 py-3 shrink-0">
-          <div className="flex items-end gap-2">
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Ask about contacts, ligands, residues, confidence…"
-              rows={1}
-              disabled={!!live}
-              className="flex-1 resize-none rounded-[12px] border border-[var(--pio-line)] bg-[var(--pio-paper)] px-3 py-2.5 text-pio-base text-[var(--pio-ink)] placeholder:text-[var(--pio-ink-muted)] focus:outline-none focus:border-[var(--pio-highlight)] disabled:opacity-40 transition-colors"
-              style={{ minHeight: 40, maxHeight: 120 }}
-            />
-            <button type="button" onClick={() => void handleSend()}
-              disabled={!input.trim() || !!live}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)] hover:opacity-90 disabled:opacity-35 transition-opacity">
-              <Send size={15} />
-            </button>
+            <p className="text-pio-sm leading-relaxed text-[var(--pio-graphite)] max-w-[300px]">
+              Ask anything about the loaded structure — contacts, ligands, chains, confidence scores, interaction types.
+            </p>
+            <div className="flex flex-col gap-2 w-full mt-1">
+              {[...STARTER_PROMPTS, ...(compareEntry ? COMPARE_PROMPTS : [])].map((p) => (
+                <button key={p} type="button"
+                  onClick={() => { setInput(p); textareaRef.current?.focus(); }}
+                  className="w-full rounded-[12px] border border-[var(--pio-line)] bg-[var(--pio-paper)] px-4 py-2.5 text-left text-pio-xs text-[var(--pio-ink)] hover:bg-[var(--pio-sky)] hover:border-[var(--pio-highlight)] transition-colors">
+                  {p}
+                </button>
+              ))}
+            </div>
           </div>
-          <p className="mt-1.5 text-pio-2xs text-[var(--pio-ink-muted)]">
-            Enter to send · Shift+Enter for newline · Answers are grounded in the loaded structure only
-          </p>
+        )}
+
+        {messages.length > 0 && embedded && (
+          <div className="flex justify-end mb-1">
+            {!live && (
+              <button type="button" onClick={() => setMessages([])}
+                className="flex items-center gap-1 text-pio-3xs text-[var(--pio-graphite)] opacity-50 hover:opacity-100 hover:text-[var(--pio-coral-deep)] transition-colors">
+                <Trash2 size={10} />
+                Clear
+              </button>
+            )}
+          </div>
+        )}
+
+        {messages.map((msg) => (
+          <MessageBubble key={msg.id} msg={msg} />
+        ))}
+
+        {live && <LiveIndicator live={live} />}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Input */}
+      <div className="border-t border-[var(--pio-line)] px-4 py-3 shrink-0">
+        <div className="flex items-end gap-2">
+          <textarea
+            ref={textareaRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask about contacts, ligands, residues…"
+            rows={1}
+            disabled={!!live}
+            className="flex-1 resize-none rounded-[12px] border border-[var(--pio-line)] bg-[var(--pio-paper)] px-3 py-2.5 text-pio-sm text-[var(--pio-ink)] placeholder:text-[var(--pio-graphite)] placeholder:opacity-50 focus:outline-none focus:border-[var(--pio-highlight)] disabled:opacity-40 transition-colors"
+            style={{ minHeight: 40, maxHeight: 120 }}
+          />
+          <button type="button" onClick={() => void handleSend()}
+            disabled={!input.trim() || !!live}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)] hover:opacity-90 disabled:opacity-35 transition-opacity">
+            <Send size={15} />
+          </button>
+        </div>
+        <p className="mt-1.5 text-pio-3xs text-[var(--pio-graphite)] opacity-50">
+          Enter to send · Shift+Enter for newline · Answers are grounded in the loaded structure only
+        </p>
+      </div>
+    </>
+  );
+
+  // Standalone mode: wrap in a card
+  if (!embedded) {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="mx-auto w-full max-w-[800px] flex-1 min-h-0 flex flex-col rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)] overflow-clip">
+          {inner}
         </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  // Embedded mode: fill the drawer directly
+  return <div className="h-full flex flex-col">{inner}</div>;
 }
 
 // ── Live indicator (thinking / tracing steps) ────────────────────────────────

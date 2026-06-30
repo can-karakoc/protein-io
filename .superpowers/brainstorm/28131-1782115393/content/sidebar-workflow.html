@@ -1,0 +1,109 @@
+<h2>Sidebar load workflow — how should source switching work?</h2>
+<p class="subtitle">Layout A is locked in. Now: how does a user pick between uploading a file, fetching by PDB ID, or fetching from AlphaFold?</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f8f8f5;padding:14px;font-family:system-ui;font-size:11px;color:#333;">
+      <div style="background:#fff;border-radius:12px;padding:12px;max-width:200px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#888;">Input</div>
+        <!-- Segment pills -->
+        <div style="display:flex;gap:3px;background:#f0eee7;border-radius:99px;padding:3px;">
+          <div style="flex:1;background:#14140f;color:#fff;border-radius:99px;padding:4px 0;text-align:center;font-size:9px;font-weight:600;">File</div>
+          <div style="flex:1;color:#888;padding:4px 0;text-align:center;font-size:9px;">PDB ID</div>
+          <div style="flex:1;color:#888;padding:4px 0;text-align:center;font-size:9px;">AlphaFold</div>
+        </div>
+        <!-- Active: File -->
+        <div style="border:1.5px dashed #ccc;border-radius:8px;padding:14px;text-align:center;color:#aaa;font-size:10px;line-height:1.5;">
+          <div style="font-size:16px;margin-bottom:4px;">↑</div>
+          Drop .pdb / .cif<br/>or click to browse
+        </div>
+        <div style="border-top:1px solid #ece9e2;padding-top:8px;">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#888;margin-bottom:4px;">Distance cutoff</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <input type="range" min="2" max="8" value="4" style="flex:1;accent-color:#14140f;height:3px;" disabled/>
+            <span style="font-family:monospace;font-size:10px;color:#333;white-space:nowrap;">4.0 Å</span>
+          </div>
+        </div>
+        <div style="background:#14140f;color:#fff;border-radius:8px;padding:8px;text-align:center;font-size:10px;font-weight:600;">▶ Analyze structure</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Segmented pill switcher</h3>
+      <p>Three-way toggle: File / PDB ID / AlphaFold. Switching the pill swaps the input below it. One action at a time, no scrolling, nothing hidden.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f8f8f5;padding:14px;font-family:system-ui;font-size:11px;color:#333;">
+      <div style="background:#fff;border-radius:12px;padding:12px;max-width:200px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#888;">Input</div>
+        <!-- Smart field -->
+        <div style="border:1px solid #d9e7f2;background:#f7fafd;border-radius:8px;padding:8px 10px;">
+          <div style="font-size:9px;color:#1f4d6e;margin-bottom:4px;font-weight:600;">PDB ID or UniProt accession</div>
+          <div style="font-family:monospace;font-size:11px;color:#333;border-bottom:1px solid #e0ebf4;padding-bottom:5px;margin-bottom:6px;">6VXX</div>
+          <div style="font-size:9px;color:#6fa3c9;">Detected: PDB ID · will fetch from RCSB</div>
+        </div>
+        <!-- Or divider -->
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div style="flex:1;height:1px;background:#e5e5e2;"></div>
+          <div style="font-size:9px;color:#aaa;">or</div>
+          <div style="flex:1;height:1px;background:#e5e5e2;"></div>
+        </div>
+        <!-- Drop zone -->
+        <div style="border:1.5px dashed #ccc;border-radius:8px;padding:10px;text-align:center;color:#aaa;font-size:9px;">Drop .pdb / .cif</div>
+        <div style="border-top:1px solid #ece9e2;padding-top:8px;">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#888;margin-bottom:4px;">Distance cutoff</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <input type="range" min="2" max="8" value="4" style="flex:1;accent-color:#14140f;height:3px;" disabled/>
+            <span style="font-family:monospace;font-size:10px;color:#333;">4.0 Å</span>
+          </div>
+        </div>
+        <div style="background:#14140f;color:#fff;border-radius:8px;padding:8px;text-align:center;font-size:10px;font-weight:600;">▶ Analyze structure</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Smart field + drop zone</h3>
+      <p>One text field that auto-detects PDB ID vs UniProt accession as you type, with a drop zone below it for file upload. No switching needed — the field figures it out and shows a hint. Fewest clicks for power users.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f8f8f5;padding:14px;font-family:system-ui;font-size:11px;color:#333;">
+      <div style="background:#fff;border-radius:12px;padding:12px;max-width:200px;display:flex;flex-direction:column;gap:7px;">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#888;">Load structure</div>
+        <!-- Drop zone -->
+        <div style="border:1.5px dashed #ccc;border-radius:8px;padding:12px;text-align:center;color:#aaa;font-size:9px;line-height:1.6;">
+          <div style="font-size:14px;margin-bottom:3px;">↑</div>
+          Drop .pdb / .cif / .mmcif
+        </div>
+        <!-- Two fetch buttons -->
+        <div style="display:flex;gap:5px;">
+          <div style="flex:1;border:1px solid #e5e5e5;border-radius:7px;padding:7px 5px;text-align:center;">
+            <div style="font-size:9px;font-weight:600;color:#333;margin-bottom:3px;">Fetch PDB</div>
+            <div style="border:1px solid #e5e5e5;border-radius:5px;padding:3px 5px;font-family:monospace;font-size:9px;color:#aaa;background:#fafaf8;">6VXX</div>
+          </div>
+          <div style="flex:1;border:1px solid #e5e5e5;border-radius:7px;padding:7px 5px;text-align:center;">
+            <div style="font-size:9px;font-weight:600;color:#333;margin-bottom:3px;">AlphaFold</div>
+            <div style="border:1px solid #e5e5e5;border-radius:5px;padding:3px 5px;font-family:monospace;font-size:9px;color:#aaa;background:#fafaf8;">P69905</div>
+          </div>
+        </div>
+        <div style="border-top:1px solid #ece9e2;padding-top:7px;">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#888;margin-bottom:4px;">Distance cutoff</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <input type="range" min="2" max="8" value="4" style="flex:1;accent-color:#14140f;height:3px;" disabled/>
+            <span style="font-family:monospace;font-size:10px;color:#333;">4.0 Å</span>
+          </div>
+        </div>
+        <div style="background:#14140f;color:#fff;border-radius:8px;padding:8px;text-align:center;font-size:10px;font-weight:600;">▶ Analyze structure</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Drop zone + two fetch cards</h3>
+      <p>Drop zone at the top for file upload, then two small fetch cards side-by-side (PDB / AlphaFold) each with their own inline input. Everything visible at once — no switching, no auto-detection needed.</p>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:16px;">Click to pick, or tell me in the terminal.</p>

@@ -69,6 +69,7 @@ export type WorkspaceState = {
   setFloatingLigandKey: (key: string | null) => void;
   setComparison: (c: StructureComparisonResponse | null, err?: string | null) => void;
   setCompareLoading: (v: boolean) => void;
+  setHasHydrated: (v: boolean) => void;
   getActive: () => StructureEntry | null;
 };
 
@@ -123,7 +124,7 @@ export const useWorkspace = create<WorkspaceState>()(
             s.compareIds[0] === id ? null : s.compareIds[0],
             s.compareIds[1] === id ? null : s.compareIds[1],
           ];
-          return { structures: remaining, activeId: newActive, compareIds: newCompare };
+          return { structures: remaining, activeId: newActive, compareIds: newCompare, comparison: null, compareError: null, compareIsLoading: false };
         });
       },
 
@@ -133,7 +134,7 @@ export const useWorkspace = create<WorkspaceState>()(
         set((s) => {
           const next: [string | null, string | null] = [...s.compareIds] as [string | null, string | null];
           next[slot] = id;
-          return { compareIds: next };
+          return { compareIds: next, comparison: null, compareError: null, compareIsLoading: false };
         }),
 
       setContextTab: (tab) => set({ contextTab: tab }),
@@ -150,6 +151,8 @@ export const useWorkspace = create<WorkspaceState>()(
 
       setCompareLoading: (v) => set({ compareIsLoading: v, compareError: null }),
 
+      setHasHydrated: (v) => set({ hasHydrated: v }),
+
       getActive: () => {
         const { structures, activeId } = get();
         return structures.find((e) => e.id === activeId) ?? null;
@@ -158,7 +161,8 @@ export const useWorkspace = create<WorkspaceState>()(
     {
       name: "pio_workspace_v1",
       onRehydrateStorage: () => (state) => {
-        if (state) state.hasHydrated = true;
+        // Must call set() via action — direct mutation doesn't notify Zustand v5 subscribers
+        state?.setHasHydrated(true);
       },
       // Quota-safe storage — swallows QuotaExceededError silently
       storage: createJSONStorage(() => ({
