@@ -920,7 +920,10 @@ export function WorkspaceShell() {
               inset: 0,
               pointerEvents: "none",
               zIndex: 0,
-              background: "radial-gradient(ellipse at 72% 18%, rgba(var(--pio-lavender-rgb), 0.13) 0%, rgba(var(--pio-lavender-rgb), 0.05) 45%, transparent 70%)",
+              background: [
+                "radial-gradient(ellipse 80% 60% at 85% 0%, rgba(var(--pio-lavender-rgb), 0.32) 0%, rgba(var(--pio-lavender-rgb), 0.14) 45%, transparent 70%)",
+                "radial-gradient(ellipse 60% 50% at 65% 90%, rgba(var(--pio-lavender-rgb), 0.16) 0%, transparent 60%)",
+              ].join(", "),
             }}
           />
         )}
