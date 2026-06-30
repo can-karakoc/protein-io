@@ -14,14 +14,27 @@ export function ChatDrawerToggle() {
       type="button"
       onClick={() => setChatOpen(!chatOpen)}
       aria-label={chatOpen ? "Close chat" : "Open AI chat"}
-      className={[
-        "flex h-[34px] items-center rounded-[12px] px-3 sm:px-5 text-pio-base sm:text-pio-md font-semibold transition-colors",
+      className="flex h-[34px] items-center gap-1.5 rounded-[12px] px-3 sm:px-4 text-pio-base sm:text-pio-md font-semibold transition-all duration-200"
+      style={
         chatOpen
-          ? "bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)]"
-          : "bg-[rgba(26,64,106,0.04)] text-[var(--pio-ink)] opacity-70 hover:opacity-100 hover:bg-[rgba(26,64,106,0.09)]",
-      ].join(" ")}
+          ? {
+              background: "var(--pio-lavender-deep)",
+              color: "#fff",
+              border: "1px solid transparent",
+              boxShadow:
+                "0 0 0 3px rgba(var(--pio-lavender-rgb), 0.18), 0 2px 14px rgba(var(--pio-lavender-rgb), 0.40)",
+            }
+          : {
+              background: "var(--pio-lavender-pale)",
+              color: "var(--pio-lavender-deep)",
+              border: "1px solid rgba(var(--pio-lavender-rgb), 0.28)",
+              boxShadow:
+                "0 0 0 3px rgba(var(--pio-lavender-rgb), 0.08), 0 2px 10px rgba(var(--pio-lavender-rgb), 0.18)",
+            }
+      }
     >
-      Chat
+      <Bot size={13} />
+      AI Chat
     </button>
   );
 }
