@@ -15,11 +15,13 @@
     "framer-motion": "^12.41.0",
     "lucide-react": "^1.20.0",
     "molstar": "^5.10.1",
+    "nanoid": "^5.1.16",
     "next": "16.2.6",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-markdown": "^10.1.0",
-    "remark-gfm": "^4.0.1"
+    "remark-gfm": "^4.0.1",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
