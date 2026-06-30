@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, Check, ChevronDown, MessageSquare, Search, Send, Trash2, Zap } from "lucide-react";
+import { ArrowUp, Check, ChevronDown, MessageSquare, Microscope, Search, Trash2, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -20,9 +20,10 @@ type ChatWorkspaceProps = {
   analysis: AnalysisResponse | null;
   compareEntry: CompareSessionEntry | null;
   onFocusExplore: () => void;
+  embedded?: boolean; // when true: strips outer card/shadow + inner header
 };
 
-export function ChatWorkspace({ analysis, compareEntry, onFocusExplore }: ChatWorkspaceProps) {
+export function ChatWorkspace({ analysis, compareEntry, onFocusExplore, embedded = false }: ChatWorkspaceProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [live, setLive] = useState<LiveState | null>(null);
@@ -90,8 +91,8 @@ export function ChatWorkspace({ analysis, compareEntry, onFocusExplore }: ChatWo
           <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(199,217,236,0.4)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <MessageSquare size={22} color="var(--pio-highlight)" />
           </div>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--pio-ink)" }}>No structure loaded</h2>
-          <p style={{ fontSize: 13.5, color: "var(--pio-graphite)", lineHeight: 1.6, marginTop: 8 }}>
+          <h2 className="text-pio-2xl" style={{ fontWeight: 700, color: "var(--pio-ink)" }}>No structure loaded</h2>
+          <p className="text-pio-md" style={{ color: "var(--pio-graphite)", lineHeight: 1.6, marginTop: 8 }}>
             Load and analyze a structure in Explore first, then ask questions about it here.
           </p>
           <button type="button" onClick={onFocusExplore}
@@ -109,15 +110,13 @@ export function ChatWorkspace({ analysis, compareEntry, onFocusExplore }: ChatWo
     analysis.metadata?.uniprot_id ??
     "Loaded structure";
 
-  return (
-    <div className="h-full flex flex-col">
-      <div className="mx-auto w-full max-w-[800px] flex-1 min-h-0 flex flex-col rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)] overflow-clip">
-
-        {/* Header */}
+  const inner = (
+    <>
+      {/* Inner header — only shown when NOT embedded (standalone page mode) */}
+      {!embedded && (
         <div className="flex items-center justify-between border-b border-[var(--pio-line)] px-5 py-3 shrink-0">
           <div className="flex items-center gap-2 min-w-0">
-            <Bot size={15} className="text-[var(--pio-highlight)] shrink-0" />
-            <span className="text-pio-base font-semibold text-[var(--pio-ink)] shrink-0">Structure Chat</span>
+            <span className="text-pio-base font-semibold text-[var(--pio-ink)] shrink-0">Chat</span>
             <span className="pio-badge pio-badge-metadata text-pio-2xs ml-1 truncate max-w-[200px]">{structureName}</span>
             {compareEntry && (
               <span className="pio-badge pio-badge-active text-pio-2xs ml-0.5 shrink-0">
@@ -133,62 +132,114 @@ export function ChatWorkspace({ analysis, compareEntry, onFocusExplore }: ChatWo
             </button>
           )}
         </div>
+      )}
 
-        {/* Messages */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-5 py-5 space-y-5 scrollbar-thin-report">
-          {messages.length === 0 && !live && (
-            <div className="flex flex-col items-center justify-center h-full gap-3 py-12 text-center">
-              <Bot size={32} className="text-[var(--pio-highlight)] opacity-30" />
-              <p className="text-pio-base text-[var(--pio-graphite)] max-w-[340px] leading-relaxed">
-                Ask anything about the loaded structure — contacts, ligands, chains, confidence scores, interaction types.
-              </p>
-              <div className="flex flex-wrap gap-2 justify-center mt-2">
-                {[...STARTER_PROMPTS, ...(compareEntry ? COMPARE_PROMPTS : [])].map((p) => (
-                  <button key={p} type="button"
-                    onClick={() => { setInput(p); textareaRef.current?.focus(); }}
-                    className="rounded-[10px] border border-[var(--pio-line)] bg-[var(--pio-paper)] px-3 py-1.5 text-pio-xs text-[var(--pio-ink)] hover:bg-[var(--pio-sand)] transition-colors">
-                    {p}
-                  </button>
-                ))}
-              </div>
+      {/* Messages */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-5 space-y-4 scrollbar-thin-report">
+        {messages.length === 0 && !live && (
+          <div className="flex flex-col items-center justify-center h-full gap-4 py-10 text-center px-4">
+            <div
+              className="flex h-11 w-11 items-center justify-center rounded-full"
+              style={{
+                background: "rgba(var(--pio-lavender-rgb), 0.22)",
+                boxShadow: "0 0 24px rgba(var(--pio-lavender-rgb), 0.32), 0 0 6px rgba(var(--pio-lavender-rgb), 0.20)",
+              }}
+            >
+              <Microscope size={20} style={{ color: "var(--pio-lavender-deep)" }} />
             </div>
-          )}
+            <p className="text-pio-sm leading-relaxed text-[var(--pio-graphite)] max-w-[300px]">
+              Ask anything about the loaded structure — contacts, ligands, chains, confidence scores, interaction types.
+            </p>
+            <div className="flex flex-col gap-2 w-full mt-1">
+              {[...STARTER_PROMPTS, ...(compareEntry ? COMPARE_PROMPTS : [])].map((p, idx) => (
+                <button key={p} type="button"
+                  onClick={() => { setInput(p); textareaRef.current?.focus(); }}
+                  className={`w-full rounded-[12px] border px-4 py-2.5 text-left text-pio-xs text-[var(--pio-ink)] ${idx === 0 ? "pio-chat-chip-featured" : "pio-chat-chip"}`}>
+                  {p}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
-          {messages.map((msg) => (
-            <MessageBubble key={msg.id} msg={msg} />
-          ))}
 
-          {live && <LiveIndicator live={live} />}
-          <div ref={bottomRef} />
-        </div>
+        {messages.map((msg) => (
+          <MessageBubble key={msg.id} msg={msg} />
+        ))}
 
-        {/* Input */}
-        <div className="border-t border-[var(--pio-line)] px-4 py-3 shrink-0">
-          <div className="flex items-end gap-2">
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Ask about contacts, ligands, residues, confidence…"
-              rows={1}
-              disabled={!!live}
-              className="flex-1 resize-none rounded-[12px] border border-[var(--pio-line)] bg-[var(--pio-paper)] px-3 py-2.5 text-pio-base text-[var(--pio-ink)] placeholder:text-[var(--pio-ink-muted)] focus:outline-none focus:border-[var(--pio-highlight)] disabled:opacity-40 transition-colors"
-              style={{ minHeight: 40, maxHeight: 120 }}
-            />
-            <button type="button" onClick={() => void handleSend()}
+        {live && <LiveIndicator live={live} />}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Input */}
+      <div className="px-4 pb-4 pt-1 shrink-0">
+        <div
+          className="pio-chat-input rounded-[20px] border transition-all"
+          style={{
+            borderColor: "var(--pio-line)",
+            background: "var(--pio-paper)",
+            boxShadow: "0 1px 4px rgba(17,22,16,0.06)",
+          }}
+        >
+          <textarea
+            ref={textareaRef}
+            value={input}
+            onChange={(e) => {
+              setInput(e.target.value);
+              e.target.style.height = "auto";
+              e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
+            }}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask about contacts, ligands, residues…"
+            disabled={!!live}
+            className="w-full resize-none bg-transparent px-4 pt-4 pb-2 text-pio-sm text-[var(--pio-ink)] placeholder:text-[var(--pio-graphite)] placeholder:opacity-40 focus:outline-none disabled:cursor-not-allowed"
+            style={{ minHeight: 76, maxHeight: 160, display: "block" }}
+          />
+          <div className="flex items-center justify-between px-3 pb-3">
+            {messages.length > 0 && !live ? (
+              <button
+                type="button"
+                onClick={() => setMessages([])}
+                className="flex items-center gap-1 rounded-[8px] px-2 py-1 text-pio-xs text-[var(--pio-graphite)] opacity-50 transition-colors hover:opacity-100 hover:text-[var(--pio-coral-deep)]"
+              >
+                <Trash2 size={10} />
+                Clear
+              </button>
+            ) : (
+              <div />
+            )}
+            <button
+              type="button"
+              onClick={() => void handleSend()}
               disabled={!input.trim() || !!live}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)] hover:opacity-90 disabled:opacity-35 transition-opacity">
-              <Send size={15} />
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all hover:opacity-90 disabled:opacity-25"
+              style={{
+                background: "var(--pio-lavender-deep)",
+                color: "#fff",
+                boxShadow: "0 0 16px rgba(var(--pio-lavender-rgb), 0.55)",
+              }}
+            >
+              <ArrowUp size={15} />
             </button>
           </div>
-          <p className="mt-1.5 text-pio-2xs text-[var(--pio-ink-muted)]">
-            Enter to send · Shift+Enter for newline · Answers are grounded in the loaded structure only
-          </p>
         </div>
       </div>
-    </div>
+    </>
   );
+
+  // Standalone mode: wrap in a card
+  if (!embedded) {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="mx-auto w-full max-w-[800px] flex-1 min-h-0 flex flex-col rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)] overflow-clip">
+          {inner}
+        </div>
+      </div>
+    );
+  }
+
+  // Embedded mode: fill the drawer directly
+  return <div className="h-full flex flex-col">{inner}</div>;
 }
 
 // ── Live indicator (thinking / tracing steps) ────────────────────────────────
@@ -200,9 +251,9 @@ function LiveIndicator({ live }: { live: LiveState }) {
       {live.toolSteps.map((step, i) => (
         <div key={i} className="flex items-center gap-2.5 text-pio-sm text-[var(--pio-graphite)]"
           style={{ animation: "chat-fade-in 0.25s ease-out both" }}>
-          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[var(--pio-line)] bg-[var(--pio-paper)]">
+          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border" style={{ borderColor: "rgba(var(--pio-lavender-rgb), 0.30)", background: "rgba(var(--pio-lavender-rgb), 0.09)" }}>
             {step.done
-              ? <Check size={10} className="text-[var(--pio-highlight)]" />
+              ? <Check size={10} style={{ color: "var(--pio-lavender-deep)" }} />
               : <Search size={10} className="text-[var(--pio-graphite)] opacity-50" style={{ animation: "thinking-dot 1s ease-in-out infinite" }} />
             }
           </div>
@@ -219,8 +270,8 @@ function LiveIndicator({ live }: { live: LiveState }) {
 
       {/* Thinking / generating pulse */}
       <div className="flex items-center gap-2.5" style={{ animation: "chat-fade-in 0.2s ease-out both" }}>
-        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[var(--pio-line)] bg-[var(--pio-paper)]">
-          <Zap size={10} className="text-[var(--pio-highlight)]" style={{ animation: "thinking-dot 1s ease-in-out infinite" }} />
+        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border" style={{ borderColor: "rgba(var(--pio-lavender-rgb), 0.30)", background: "rgba(var(--pio-lavender-rgb), 0.09)" }}>
+          <Zap size={10} style={{ color: "var(--pio-lavender-deep)", animation: "thinking-dot 1s ease-in-out infinite" }} />
         </div>
         <div className="flex items-center gap-1.5">
           <span className="text-pio-sm text-[var(--pio-graphite)]">
@@ -262,7 +313,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
       <div className={[
         "max-w-[88%] rounded-[16px] px-4 py-3 text-pio-md leading-relaxed",
         isUser
-          ? "bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)] rounded-br-[4px]"
+          ? "bg-[var(--pio-lavender-deep)] text-[var(--pio-highlight-text)] rounded-br-[4px]"
           : "bg-[var(--pio-paper)] border border-[var(--pio-line)] text-[var(--pio-ink)] rounded-bl-[4px] w-full",
       ].join(" ")}>
         {msg.error ? (
@@ -284,8 +335,8 @@ function ToolStep({ name, input }: { name: string; input: Record<string, unknown
 
   return (
     <div className="flex items-start gap-2 text-pio-xs text-[var(--pio-graphite)]">
-      <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[rgba(199,217,236,0.4)]">
-        <Check size={8} className="text-[var(--pio-highlight)]" />
+      <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full" style={{ background: "rgba(var(--pio-lavender-rgb), 0.20)" }}>
+        <Check size={8} style={{ color: "var(--pio-lavender-deep)" }} />
       </div>
       <div>
         <button type="button" onClick={() => setOpen((o) => !o)}

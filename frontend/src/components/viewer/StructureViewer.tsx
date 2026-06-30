@@ -239,6 +239,14 @@ function selectionExpression(selection: ViewerSelection): SelectionExpression {
     return (MS) => chainExpression(MS, selection.chainId);
   }
 
+  if (selection.kind === "interface") {
+    return (MS) =>
+      MS.struct.combinator.merge([
+        chainExpression(MS, selection.chainA),
+        chainExpression(MS, selection.chainB),
+      ]);
+  }
+
   if (selection.kind === "ligand") {
     return (MS) =>
       residueExpression(MS, {

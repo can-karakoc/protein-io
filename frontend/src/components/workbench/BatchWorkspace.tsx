@@ -222,7 +222,7 @@ export function BatchWorkspace() {
           gap: 16,
         }}
       >
-        <p style={{ fontSize: 20, fontWeight: 700, color: "var(--pio-ink)", marginBottom: 4 }}>
+        <p className="text-pio-3xl" style={{ fontWeight: 700, color: "var(--pio-ink)", marginBottom: 4 }}>
           Batch Analysis
         </p>
 
@@ -249,10 +249,10 @@ export function BatchWorkspace() {
           }}
         >
           <FileUp size={16} style={{ color: "var(--pio-graphite)" }} />
-          <span style={{ fontSize: 12, fontWeight: 600, color: "var(--pio-ink)" }}>
+          <span className="text-pio-sm" style={{ fontWeight: 600, color: "var(--pio-ink)" }}>
             Drop .pdb / .cif / .mmcif files
           </span>
-          <span style={{ fontSize: 11, color: "var(--pio-graphite)" }}>
+          <span className="text-pio-xs" style={{ color: "var(--pio-graphite)" }}>
             or click to browse (max 50)
           </span>
           <input
@@ -272,11 +272,11 @@ export function BatchWorkspace() {
           return (
             <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--pio-graphite)" }}>
+                <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--pio-graphite)" }}>
                   Files ({names.length})
                 </p>
                 {fromCache && (
-                  <span style={{ fontSize: 9, color: "var(--pio-graphite)", opacity: 0.6, fontStyle: "italic" }}>cached</span>
+                  <span className="text-pio-3xs" style={{ color: "var(--pio-graphite)", opacity: 0.6, fontStyle: "italic" }}>cached</span>
                 )}
               </div>
               <div style={{ maxHeight: 200, overflowY: "auto" }}>
@@ -294,7 +294,7 @@ export function BatchWorkspace() {
                       gap: 6,
                     }}
                   >
-                    <span style={{ fontSize: 10.5, color: "var(--pio-ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+                    <span className="text-pio-xs" style={{ color: "var(--pio-ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
                       {name}
                     </span>
                     {!fromCache && (
@@ -317,10 +317,10 @@ export function BatchWorkspace() {
         {/* Cutoff */}
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-            <label style={{ fontSize: 11, fontWeight: 600, color: "var(--pio-graphite)" }}>
+            <label className="text-pio-xs" style={{ fontWeight: 600, color: "var(--pio-graphite)" }}>
               Distance Cutoff
             </label>
-            <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 11, color: "var(--pio-ink)" }}>
+            <span className="text-pio-xs" style={{ fontFamily: "var(--font-pio-mono)", color: "var(--pio-ink)" }}>
               {cutoff.toFixed(1)} Å
             </span>
           </div>
@@ -331,8 +331,8 @@ export function BatchWorkspace() {
             step={0.1}
             value={cutoff}
             onChange={(e) => setCutoff(Number(e.target.value))}
-            className="pio-input"
-            style={{ width: "100%", height: 36, padding: "0 12px", fontFamily: "var(--font-pio-mono)", fontSize: 13 }}
+            className="pio-input text-pio-base"
+            style={{ width: "100%", height: 36, padding: "0 12px", fontFamily: "var(--font-pio-mono)" }}
           />
         </div>
 
@@ -348,7 +348,6 @@ export function BatchWorkspace() {
               background: "var(--pio-highlight)",
               color: "var(--pio-highlight-text)",
               border: "none",
-              fontSize: 13,
               fontWeight: 600,
               cursor: files.length === 0 || isLoading ? "not-allowed" : "pointer",
               opacity: files.length === 0 || isLoading ? 0.45 : 1,
@@ -371,7 +370,6 @@ export function BatchWorkspace() {
                 background: "var(--pio-white)",
                 color: "var(--pio-ink)",
                 border: "1px solid var(--pio-highlight)",
-                fontSize: 13,
                 fontWeight: 600,
                 cursor: "pointer",
                 display: "flex",
@@ -389,10 +387,10 @@ export function BatchWorkspace() {
         {/* Score legend */}
         {result && (
           <div style={{ borderRadius: 10, background: "var(--pio-paper)", padding: "10px 12px" }}>
-            <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--pio-graphite)", marginBottom: 6 }}>
+            <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--pio-graphite)", marginBottom: 6 }}>
               Score formula
             </p>
-            <p style={{ fontSize: 10.5, color: "var(--pio-graphite)", lineHeight: 1.6 }}>
+            <p className="text-pio-xs" style={{ color: "var(--pio-graphite)", lineHeight: 1.6 }}>
               70% pLDDT confidence + 30% contact density − clash penalty (0–100)
             </p>
           </div>
@@ -402,7 +400,7 @@ export function BatchWorkspace() {
         {error && (
           <div style={{ borderRadius: 10, background: "var(--pio-coral-pale)", padding: "10px 12px", display: "flex", gap: 8, alignItems: "flex-start" }}>
             <AlertCircle size={14} style={{ color: "var(--pio-coral-deep)", flexShrink: 0, marginTop: 1 }} />
-            <span style={{ fontSize: 11, color: "var(--pio-coral-deep)" }}>{error}</span>
+            <span className="text-pio-xs" style={{ color: "var(--pio-coral-deep)" }}>{error}</span>
           </div>
         )}
       </aside>
@@ -415,7 +413,7 @@ export function BatchWorkspace() {
         {isLoading && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", flexDirection: "column", gap: 14 }}>
             <Loader2 size={28} className="animate-spin" style={{ color: "var(--pio-highlight)" }} />
-            <p style={{ fontSize: 14, color: "var(--pio-graphite)" }}>
+            <p className="text-pio-lg" style={{ color: "var(--pio-graphite)" }}>
               Analyzing {files.length} structure{files.length !== 1 ? "s" : ""}…
             </p>
           </div>
@@ -494,7 +492,6 @@ function BatchResultsView({
               border: "1px solid var(--pio-line-strong)",
               background: "var(--pio-white)",
               color: "var(--pio-ink)",
-              fontSize: 12,
               fontWeight: 600,
               cursor: "pointer",
             }}
@@ -529,7 +526,7 @@ function BatchResultsView({
           ).map(([key, label]) => (
             <SortableHeader key={key} label={label} sortKey={key} active={sortKey === key} dir={sortDir} onSort={onSort} />
           ))}
-          <div style={{ padding: "8px 0", fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>
+          <div className="text-pio-3xs" style={{ padding: "8px 0", fontWeight: 700, letterSpacing: "0.08em", color: "var(--pio-graphite)", textTransform: "uppercase" }}>
             Status
           </div>
         </div>
@@ -540,7 +537,7 @@ function BatchResultsView({
         ))}
       </div>
 
-      <p style={{ fontSize: 10.5, color: "var(--pio-graphite)", opacity: 0.7 }}>
+      <p className="text-pio-xs" style={{ color: "var(--pio-graphite)", opacity: 0.7 }}>
         Score = 70% pLDDT + 30% contact density (relative to batch) − clash penalty. Cutoff: {cutoff.toFixed(1)} Å.
       </p>
     </div>
@@ -573,8 +570,8 @@ function SummaryChip({
       }}
     >
       {icon}
-      <span style={{ fontSize: 12, fontWeight: 600 }}>{label}</span>
-      <span style={{ fontFamily: "var(--font-pio-mono)", fontSize: 14, fontWeight: 700 }}>{value}</span>
+      <span className="text-pio-sm" style={{ fontWeight: 600 }}>{label}</span>
+      <span className="text-pio-lg" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: 700 }}>{value}</span>
     </div>
   );
 }
@@ -604,16 +601,16 @@ function SortableHeader({
         display: "flex",
         alignItems: "center",
         gap: 4,
-        fontSize: 9.5,
         fontWeight: 700,
         letterSpacing: "0.08em",
         color: active ? "var(--pio-highlight)" : "var(--pio-graphite)",
         textTransform: "uppercase",
         textAlign: "left",
       }}
+      className="text-pio-3xs"
     >
       {label}
-      {active && <span style={{ fontSize: 9, opacity: 0.8 }}>{dir === "asc" ? "↑" : "↓"}</span>}
+      {active && <span className="text-pio-3xs" style={{ opacity: 0.8 }}>{dir === "asc" ? "↑" : "↓"}</span>}
     </button>
   );
 }
@@ -651,7 +648,6 @@ function DesignRow({ entry, isLast }: { entry: RankedEntry; isLast: boolean }) {
           <span
             style={{
               flexShrink: 0,
-              fontSize: 9,
               fontWeight: 700,
               fontFamily: "var(--font-pio-mono)",
               color: rankStyle?.color ?? "var(--pio-graphite)",
@@ -667,9 +663,9 @@ function DesignRow({ entry, isLast }: { entry: RankedEntry; isLast: boolean }) {
         )}
         <div style={{ overflow: "hidden", flex: 1 }}>
           <span
+            className="text-pio-xs"
             style={{
               fontFamily: "var(--font-pio-mono)",
-              fontSize: 11,
               color: "var(--pio-ink)",
               display: "block",
               overflow: "hidden",
@@ -681,7 +677,7 @@ function DesignRow({ entry, isLast }: { entry: RankedEntry; isLast: boolean }) {
             {entry.filename}
           </span>
           {entry.error && (
-            <span style={{ fontSize: 10, color: "var(--pio-coral-deep)", display: "block", marginTop: 1 }}>
+            <span className="text-pio-3xs" style={{ color: "var(--pio-coral-deep)", display: "block", marginTop: 1 }}>
               {entry.error}
             </span>
           )}
@@ -695,22 +691,22 @@ function DesignRow({ entry, isLast }: { entry: RankedEntry; isLast: boolean }) {
       {/* Contacts */}
       <Cell value={a?.summary.contact_count?.toLocaleString() ?? null} mono />
       {/* pLDDT */}
-      <div style={{ fontSize: 11, fontFamily: "var(--font-pio-mono)", fontWeight: 600, color: plddt != null ? plddtColor : "var(--pio-graphite)", opacity: plddt != null ? 1 : 0.4 }}>
+      <div className="text-pio-xs" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: 600, color: plddt != null ? plddtColor : "var(--pio-graphite)", opacity: plddt != null ? 1 : 0.4 }}>
         {plddt != null ? plddt.toFixed(1) : "—"}
       </div>
       {/* Score */}
-      <div style={{ fontSize: 11, fontFamily: "var(--font-pio-mono)", fontWeight: entry.rank === 1 ? 700 : 600, color: entry.score != null ? "var(--pio-ink)" : "var(--pio-graphite)", opacity: entry.score != null ? 1 : 0.4 }}>
+      <div className="text-pio-xs" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: entry.rank === 1 ? 700 : 600, color: entry.score != null ? "var(--pio-ink)" : "var(--pio-graphite)", opacity: entry.score != null ? 1 : 0.4 }}>
         {entry.score != null ? entry.score.toFixed(1) : "—"}
       </div>
 
       {/* Status */}
       <div>
         {entry.error ? (
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 600, color: "var(--pio-coral-deep)", background: "var(--pio-coral-pale)", borderRadius: 6, padding: "2px 7px" }}>
+          <span className="text-pio-3xs" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 600, color: "var(--pio-coral-deep)", background: "var(--pio-coral-pale)", borderRadius: 6, padding: "2px 7px" }}>
             <XCircle size={10} /> Error
           </span>
         ) : (
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 600, color: "var(--pio-green-deep)", background: "var(--pio-green-pale)", borderRadius: 6, padding: "2px 7px" }}>
+          <span className="text-pio-3xs" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 600, color: "var(--pio-green-deep)", background: "var(--pio-green-pale)", borderRadius: 6, padding: "2px 7px" }}>
             <CheckCircle2 size={10} /> OK
           </span>
         )}
@@ -722,8 +718,8 @@ function DesignRow({ entry, isLast }: { entry: RankedEntry; isLast: boolean }) {
 function Cell({ value, mono }: { value: string | number | null; mono?: boolean }) {
   return (
     <div
+      className="text-pio-xs"
       style={{
-        fontSize: 11,
         fontFamily: mono ? "var(--font-pio-mono)" : undefined,
         color: value != null ? "var(--pio-ink)" : "var(--pio-graphite)",
         opacity: value != null ? 1 : 0.4,
@@ -749,10 +745,10 @@ function EmptyState({ hasFiles }: { hasFiles: boolean }) {
     >
       <FileUp size={32} style={{ color: "var(--pio-graphite)" }} />
       <div style={{ textAlign: "center" }}>
-        <p style={{ fontSize: 15, fontWeight: 600, color: "var(--pio-ink)" }}>
+        <p className="text-pio-xl" style={{ fontWeight: 600, color: "var(--pio-ink)" }}>
           {hasFiles ? "Ready to analyze" : "Upload structures to get started"}
         </p>
-        <p style={{ fontSize: 12, color: "var(--pio-graphite)", marginTop: 4 }}>
+        <p className="text-pio-sm" style={{ color: "var(--pio-graphite)", marginTop: 4 }}>
           {hasFiles
             ? "Click Analyze to run batch analysis."
             : "Drop up to 50 .pdb or .cif files in the sidebar."}

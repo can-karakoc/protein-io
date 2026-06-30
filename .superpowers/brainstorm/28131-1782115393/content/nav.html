@@ -1,0 +1,77 @@
+<h2>Top nav — what stays?</h2>
+<p class="subtitle">The heading "Structure upload and contact analysis" disappears in all options — the nav carries context. The question is what weight each action gets.</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f8f8f5;padding:14px 14px 20px;font-family:system-ui;">
+      <div style="background:rgba(251,251,248,0.92);border:1px solid rgba(20,20,15,0.08);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;font-size:11px;">
+        <span style="font-weight:700;font-size:13px;letter-spacing:-0.01em;">Protein I/O</span>
+        <div style="display:flex;gap:3px;margin-left:8px;">
+          <span style="background:#14140f;color:#fff;padding:4px 12px;border-radius:99px;font-size:10px;font-weight:600;">Explore</span>
+          <span style="border:1px solid rgba(20,20,15,0.14);padding:4px 12px;border-radius:99px;font-size:10px;color:#555;">Compare</span>
+          <span style="border:1px solid rgba(20,20,15,0.14);padding:4px 12px;border-radius:99px;font-size:10px;color:#555;">Report</span>
+        </div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+          <span style="font-size:10px;color:#888;">Docs</span>
+          <span style="font-size:10px;color:#888;">GitHub</span>
+          <span style="background:#14140f;color:#fff;padding:4px 12px;border-radius:99px;font-size:10px;font-weight:600;">Export CSV ↗</span>
+        </div>
+      </div>
+      <div style="margin-top:10px;font-size:10px;color:#aaa;text-align:center;">↓ workbench (no page heading)</div>
+    </div>
+    <div class="card-body">
+      <h3>A — Brand · Modes · Links · Export</h3>
+      <p>Logo left, mode tabs center-left, Docs + GitHub as plain text links, Export CSV as the single prominent right-side CTA. Reset moves into the sidebar (next to Analyze). Clean hierarchy — one action in the nav.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f8f8f5;padding:14px 14px 20px;font-family:system-ui;">
+      <div style="background:rgba(251,251,248,0.92);border:1px solid rgba(20,20,15,0.08);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;font-size:11px;">
+        <span style="font-weight:700;font-size:13px;letter-spacing:-0.01em;">Protein I/O</span>
+        <div style="display:flex;gap:3px;margin-left:8px;">
+          <span style="background:#14140f;color:#fff;padding:4px 12px;border-radius:99px;font-size:10px;font-weight:600;">Explore</span>
+          <span style="border:1px solid rgba(20,20,15,0.14);padding:4px 12px;border-radius:99px;font-size:10px;color:#555;">Compare</span>
+          <span style="border:1px solid rgba(20,20,15,0.14);padding:4px 12px;border-radius:99px;font-size:10px;color:#555;">Report</span>
+        </div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+          <span style="border:1px solid rgba(20,20,15,0.14);padding:4px 10px;border-radius:99px;font-size:10px;color:#555;">↗ Docs</span>
+          <span style="border:1px solid rgba(20,20,15,0.14);padding:4px 10px;border-radius:99px;font-size:10px;color:#555;">GitHub</span>
+        </div>
+      </div>
+      <div style="margin-top:10px;font-size:10px;color:#aaa;text-align:center;">↓ workbench · Export lives in sidebar only</div>
+    </div>
+    <div class="card-body">
+      <h3>B — Brand · Modes · Links only</h3>
+      <p>Nav carries nothing actionable except mode switching. Export, Reset, and Load sample all move into the sidebar/results panel where they're contextually relevant. Minimal nav, maximum focus on the workbench.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f8f8f5;padding:14px 14px 20px;font-family:system-ui;">
+      <div style="background:rgba(251,251,248,0.92);border:1px solid rgba(20,20,15,0.08);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;font-size:11px;">
+        <span style="font-weight:700;font-size:13px;letter-spacing:-0.01em;">Protein I/O</span>
+        <div style="display:flex;gap:3px;margin-left:8px;">
+          <span style="background:#14140f;color:#fff;padding:4px 12px;border-radius:99px;font-size:10px;font-weight:600;">Explore</span>
+          <span style="border:1px solid rgba(20,20,15,0.14);padding:4px 12px;border-radius:99px;font-size:10px;color:#555;">Compare</span>
+          <span style="border:1px solid rgba(20,20,15,0.14);padding:4px 12px;border-radius:99px;font-size:10px;color:#555;">Report</span>
+        </div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+          <span style="font-size:10px;color:#888;">Docs</span>
+          <span style="font-size:10px;color:#888;">GitHub</span>
+          <span style="border:1px solid rgba(20,20,15,0.14);padding:4px 10px;border-radius:99px;font-size:10px;color:#555;">↺ Reset</span>
+          <span style="background:#14140f;color:#fff;padding:4px 12px;border-radius:99px;font-size:10px;font-weight:600;">Export CSV ↗</span>
+        </div>
+      </div>
+      <div style="margin-top:10px;font-size:10px;color:#aaa;text-align:center;">↓ workbench · Load sample moves to sidebar gallery</div>
+    </div>
+    <div class="card-body">
+      <h3>C — Brand · Modes · Reset · Export</h3>
+      <p>Like A but keeps Reset in the nav (as a quiet outlined pill) so it's always reachable regardless of scroll position. Export stays prominent. Load sample moves to the sidebar gallery. A small step up from A in utility.</p>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:16px;">Click to pick, or let me know in the terminal.</p>

@@ -1,5 +1,5 @@
-import { ProteinWorkbench } from "@/components/workbench/ProteinWorkbench";
+import { WorkspaceShell } from "@/components/workspace/WorkspaceShell";
 
 export default function Home() {
-  return <ProteinWorkbench />;
+  return <WorkspaceShell />;
 }
