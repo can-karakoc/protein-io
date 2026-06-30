@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Bot, MessageSquare, X } from "lucide-react";
+import { MessageSquare, X } from "lucide-react";
 
 import { ChatWorkspace } from "@/components/workbench/ChatWorkspace";
 import { useWorkspace } from "@/lib/workspaceStore";
@@ -14,15 +14,15 @@ export function ChatDrawerToggle() {
       type="button"
       onClick={() => setChatOpen(!chatOpen)}
       aria-label={chatOpen ? "Close chat" : "Open AI chat"}
-      className="flex h-[34px] items-center gap-1.5 rounded-[12px] px-3 sm:px-4 text-pio-base sm:text-pio-md font-semibold transition-all duration-200"
+      className="flex h-[34px] items-center rounded-[12px] px-3 sm:px-5 text-pio-base sm:text-pio-md font-semibold transition-all duration-200"
       style={
         chatOpen
           ? {
-              background: "var(--pio-lavender-deep)",
-              color: "#fff",
-              border: "1px solid transparent",
+              background: "var(--pio-white)",
+              color: "var(--pio-lavender-deep)",
+              border: "1px solid rgba(var(--pio-lavender-rgb), 0.35)",
               boxShadow:
-                "0 0 0 3px rgba(var(--pio-lavender-rgb), 0.18), 0 2px 14px rgba(var(--pio-lavender-rgb), 0.40)",
+                "0 0 0 3px rgba(var(--pio-lavender-rgb), 0.15), 0 2px 16px rgba(var(--pio-lavender-rgb), 0.35)",
             }
           : {
               background: "var(--pio-lavender-pale)",
@@ -33,8 +33,7 @@ export function ChatDrawerToggle() {
             }
       }
     >
-      <Bot size={13} />
-      AI Chat
+      Chat
     </button>
   );
 }
