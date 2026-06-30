@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeftRight, Bot, ChevronsLeft, Download, Menu, Moon, Sun, X } from "lucide-react";
+import { ArrowLeftRight, ChevronsLeft, Download, Menu, Moon, Sun, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { BatchWorkspace } from "@/components/workbench/BatchWorkspace";
@@ -917,32 +917,28 @@ export function WorkspaceShell() {
             transition={{ duration: 0.6, ease: "easeInOut" }}
             style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}
           >
-            {/* Radial gradient base */}
+            {/* Base gradient blob — always visible */}
             <div style={{
               position: "absolute",
               inset: 0,
               background: [
-                "radial-gradient(ellipse 80% 60% at 85% 0%, rgba(var(--pio-lavender-rgb), 0.40) 0%, rgba(var(--pio-lavender-rgb), 0.18) 45%, transparent 70%)",
-                "radial-gradient(ellipse 60% 50% at 65% 90%, rgba(var(--pio-lavender-rgb), 0.22) 0%, transparent 60%)",
+                "radial-gradient(ellipse 80% 60% at 85% 0%, rgba(var(--pio-lavender-rgb), 0.28) 0%, rgba(var(--pio-lavender-rgb), 0.12) 45%, transparent 70%)",
+                "radial-gradient(ellipse 60% 50% at 65% 90%, rgba(var(--pio-lavender-rgb), 0.16) 0%, transparent 60%)",
               ].join(", "),
             }} />
-            {/* Sonar pulse rings emanating from the chat panel area */}
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                style={{
-                  position: "absolute",
-                  width: 150,
-                  height: 150,
-                  borderRadius: "50%",
-                  border: "1.5px solid rgba(var(--pio-lavender-rgb), 0.45)",
-                  top: "calc(12% - 75px)",
-                  right: "calc(20% - 75px)",
-                  animation: `pio-ring-pulse 4.5s ${i * 1.5}s ease-out infinite`,
-                  transformOrigin: "center center",
-                }}
-              />
-            ))}
+            {/* Energy pulse — brighter layer that fades in and out */}
+            <motion.div
+              animate={{ opacity: [0, 0.85, 0, 0.6, 0] }}
+              transition={{ duration: 7, ease: "easeInOut", repeat: Infinity, times: [0, 0.3, 0.55, 0.75, 1] }}
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: [
+                  "radial-gradient(ellipse 80% 60% at 85% 0%, rgba(var(--pio-lavender-rgb), 0.55) 0%, rgba(var(--pio-lavender-rgb), 0.28) 40%, transparent 70%)",
+                  "radial-gradient(ellipse 60% 50% at 65% 90%, rgba(var(--pio-lavender-rgb), 0.30) 0%, transparent 60%)",
+                ].join(", "),
+              }}
+            />
           </motion.div>
         )}
       </AnimatePresence>
@@ -1009,10 +1005,7 @@ export function WorkspaceShell() {
               {/* Chat header */}
               <div className="flex items-center justify-between px-4 flex-shrink-0 border-b border-[var(--pio-line)]" style={{ height: 52 }}>
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full" style={{ background: "rgba(199,217,236,0.4)" }}>
-                    <Bot size={13} style={{ color: "var(--pio-highlight)" }} />
-                  </div>
-                  <p className="text-pio-sm font-bold text-[var(--pio-ink)] shrink-0">AI Chat</p>
+                  <p className="text-pio-sm font-bold text-[var(--pio-ink)] shrink-0">Chat</p>
                   {active && (
                     <span className="text-pio-3xs font-semibold text-[var(--pio-graphite)] truncate" style={{ background: "var(--pio-sky)", borderRadius: 6, padding: "2px 8px", maxWidth: 140 }}>
                       {active.pdbId || active.uniprotId || active.name}

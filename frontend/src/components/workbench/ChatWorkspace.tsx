@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUp, Bot, Check, ChevronDown, MessageSquare, Search, Trash2, Zap } from "lucide-react";
+import { ArrowUp, Check, ChevronDown, MessageSquare, Microscope, Search, Trash2, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -116,8 +116,7 @@ export function ChatWorkspace({ analysis, compareEntry, onFocusExplore, embedded
       {!embedded && (
         <div className="flex items-center justify-between border-b border-[var(--pio-line)] px-5 py-3 shrink-0">
           <div className="flex items-center gap-2 min-w-0">
-            <Bot size={15} className="text-[var(--pio-highlight)] shrink-0" />
-            <span className="text-pio-base font-semibold text-[var(--pio-ink)] shrink-0">Structure Chat</span>
+            <span className="text-pio-base font-semibold text-[var(--pio-ink)] shrink-0">Chat</span>
             <span className="pio-badge pio-badge-metadata text-pio-2xs ml-1 truncate max-w-[200px]">{structureName}</span>
             {compareEntry && (
               <span className="pio-badge pio-badge-active text-pio-2xs ml-0.5 shrink-0">
@@ -146,7 +145,7 @@ export function ChatWorkspace({ analysis, compareEntry, onFocusExplore, embedded
                 boxShadow: "0 0 24px rgba(var(--pio-lavender-rgb), 0.32), 0 0 6px rgba(var(--pio-lavender-rgb), 0.20)",
               }}
             >
-              <Bot size={20} style={{ color: "var(--pio-lavender-deep)" }} />
+              <Microscope size={20} style={{ color: "var(--pio-lavender-deep)" }} />
             </div>
             <p className="text-pio-sm leading-relaxed text-[var(--pio-graphite)] max-w-[300px]">
               Ask anything about the loaded structure — contacts, ligands, chains, confidence scores, interaction types.

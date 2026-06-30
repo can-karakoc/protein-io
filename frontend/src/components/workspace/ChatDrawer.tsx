@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Bot, MessageSquare, X } from "lucide-react";
+import { MessageSquare, X } from "lucide-react";
 
 import { ChatWorkspace } from "@/components/workbench/ChatWorkspace";
 import { useWorkspace } from "@/lib/workspaceStore";
@@ -78,13 +78,7 @@ export function ChatDrawer() {
               }}
             >
               <div className="flex items-center gap-2 min-w-0">
-                <div
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
-                  style={{ background: "rgba(199,217,236,0.4)" }}
-                >
-                  <Bot size={13} style={{ color: "var(--pio-highlight)" }} />
-                </div>
-                <p className="text-pio-sm font-bold text-[var(--pio-ink)] shrink-0">AI Chat</p>
+                <p className="text-pio-sm font-bold text-[var(--pio-ink)] shrink-0">Chat</p>
                 {active && (
                   <span
                     className="truncate text-pio-3xs font-semibold text-[var(--pio-graphite)]"

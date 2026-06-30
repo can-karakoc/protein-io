@@ -707,13 +707,6 @@ button:not(:disabled),
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-/* ── Chat background sonar rings ────────────────────────── */
-@keyframes pio-ring-pulse {
-  0%   { transform: scale(0.3); opacity: 0.55; }
-  75%  { opacity: 0.10; }
-  100% { transform: scale(5.5); opacity: 0; }
-}
-
 /* ── Chat starter prompt chips ─────────────────────────── */
 .pio-chat-chip {
   border-color: var(--pio-line);
