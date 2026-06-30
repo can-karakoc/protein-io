@@ -918,7 +918,7 @@ export function WorkspaceShell() {
           )}
         </div>
 
-        {/* Gap strip — full height draggable, swap button centred */}
+        {/* Thin draggable gap — swap button floats at centre */}
         <AnimatePresence>
           {chatOpen && (
             <motion.div
@@ -927,37 +927,22 @@ export function WorkspaceShell() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className="flex-shrink-0 flex flex-col items-center justify-center cursor-col-resize"
-              style={{ order: 2, width: 28, userSelect: "none" }}
+              className="flex-shrink-0 relative flex items-center justify-center cursor-col-resize"
+              style={{ order: 2, width: 8, userSelect: "none" }}
               onPointerDown={startResize}
               onPointerMove={onResizeDrag}
               onPointerUp={stopResize}
               onPointerCancel={stopResize}
             >
-              {/* Drag indicator dots — upper */}
-              <div className="flex flex-col items-center gap-[4px] opacity-20 mb-3">
-                <div className="w-[3px] h-[3px] rounded-full bg-[var(--pio-graphite)]" />
-                <div className="w-[3px] h-[3px] rounded-full bg-[var(--pio-graphite)]" />
-                <div className="w-[3px] h-[3px] rounded-full bg-[var(--pio-graphite)]" />
-              </div>
-
-              {/* Swap button — click only, does not start drag */}
               <button
                 type="button"
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={() => setChatSwapped(s => !s)}
                 title={chatSwapped ? "Move chat to right" : "Move chat to left"}
-                className="flex h-7 w-7 flex-shrink-0 cursor-pointer items-center justify-center rounded-[8px] border border-[var(--pio-line)] bg-[var(--pio-white)] text-[var(--pio-graphite)] shadow-[0_1px_2px_rgba(17,22,16,0.06)] transition-all hover:border-[var(--pio-highlight)] hover:bg-[var(--pio-sky)] hover:text-[var(--pio-ink)]"
+                className="absolute z-10 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-[var(--pio-line)] bg-[var(--pio-white)] text-[var(--pio-graphite)] shadow-[0_1px_4px_rgba(17,22,16,0.12)] transition-all hover:border-[var(--pio-highlight)] hover:bg-[var(--pio-sky)] hover:text-[var(--pio-ink)]"
               >
-                <ArrowLeftRight size={11} />
+                <ArrowLeftRight size={10} />
               </button>
-
-              {/* Drag indicator dots — lower */}
-              <div className="flex flex-col items-center gap-[4px] opacity-20 mt-3">
-                <div className="w-[3px] h-[3px] rounded-full bg-[var(--pio-graphite)]" />
-                <div className="w-[3px] h-[3px] rounded-full bg-[var(--pio-graphite)]" />
-                <div className="w-[3px] h-[3px] rounded-full bg-[var(--pio-graphite)]" />
-              </div>
             </motion.div>
           )}
         </AnimatePresence>
