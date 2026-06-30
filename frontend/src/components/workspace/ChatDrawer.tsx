@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { MessageSquare, X } from "lucide-react";
+import { Bot, MessageSquare, X } from "lucide-react";
 
 import { ChatWorkspace } from "@/components/workbench/ChatWorkspace";
 import { useWorkspace } from "@/lib/workspaceStore";

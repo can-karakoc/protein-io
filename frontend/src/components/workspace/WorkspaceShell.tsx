@@ -915,17 +915,35 @@ export function WorkspaceShell() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.6, ease: "easeInOut" }}
-            style={{
+            style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}
+          >
+            {/* Radial gradient base */}
+            <div style={{
               position: "absolute",
               inset: 0,
-              pointerEvents: "none",
-              zIndex: 0,
               background: [
-                "radial-gradient(ellipse 80% 60% at 85% 0%, rgba(var(--pio-lavender-rgb), 0.32) 0%, rgba(var(--pio-lavender-rgb), 0.14) 45%, transparent 70%)",
-                "radial-gradient(ellipse 60% 50% at 65% 90%, rgba(var(--pio-lavender-rgb), 0.16) 0%, transparent 60%)",
+                "radial-gradient(ellipse 80% 60% at 85% 0%, rgba(var(--pio-lavender-rgb), 0.40) 0%, rgba(var(--pio-lavender-rgb), 0.18) 45%, transparent 70%)",
+                "radial-gradient(ellipse 60% 50% at 65% 90%, rgba(var(--pio-lavender-rgb), 0.22) 0%, transparent 60%)",
               ].join(", "),
-            }}
-          />
+            }} />
+            {/* Sonar pulse rings emanating from the chat panel area */}
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                style={{
+                  position: "absolute",
+                  width: 150,
+                  height: 150,
+                  borderRadius: "50%",
+                  border: "1.5px solid rgba(var(--pio-lavender-rgb), 0.45)",
+                  top: "calc(12% - 75px)",
+                  right: "calc(20% - 75px)",
+                  animation: `pio-ring-pulse 4.5s ${i * 1.5}s ease-out infinite`,
+                  transformOrigin: "center center",
+                }}
+              />
+            ))}
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -964,12 +982,10 @@ export function WorkspaceShell() {
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={() => setChatSwapped(s => !s)}
                 title={chatSwapped ? "Move chat to right" : "Move chat to left"}
-                className="absolute z-10 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-[rgba(20,20,15,0.10)] text-[var(--pio-graphite)] transition-all hover:text-[var(--pio-ink)]"
+                className="pio-swap-btn absolute z-10 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-[rgba(20,20,15,0.10)] text-[var(--pio-graphite)] transition-all hover:text-[var(--pio-ink)]"
                 style={{
-                  background: "rgba(255,255,255,0.55)",
                   backdropFilter: "blur(10px)",
                   WebkitBackdropFilter: "blur(10px)",
-                  boxShadow: "0 1px 6px rgba(17,22,16,0.10)",
                 }}
               >
                 <ArrowLeftRight size={10} />

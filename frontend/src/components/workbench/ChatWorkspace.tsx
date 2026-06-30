@@ -141,18 +141,21 @@ export function ChatWorkspace({ analysis, compareEntry, onFocusExplore, embedded
           <div className="flex flex-col items-center justify-center h-full gap-4 py-10 text-center px-4">
             <div
               className="flex h-11 w-11 items-center justify-center rounded-full"
-              style={{ background: "rgba(199,217,236,0.35)" }}
+              style={{
+                background: "rgba(var(--pio-lavender-rgb), 0.22)",
+                boxShadow: "0 0 24px rgba(var(--pio-lavender-rgb), 0.32), 0 0 6px rgba(var(--pio-lavender-rgb), 0.20)",
+              }}
             >
-              <Bot size={20} style={{ color: "var(--pio-highlight)", opacity: 0.7 }} />
+              <Bot size={20} style={{ color: "var(--pio-lavender-deep)" }} />
             </div>
             <p className="text-pio-sm leading-relaxed text-[var(--pio-graphite)] max-w-[300px]">
               Ask anything about the loaded structure — contacts, ligands, chains, confidence scores, interaction types.
             </p>
             <div className="flex flex-col gap-2 w-full mt-1">
-              {[...STARTER_PROMPTS, ...(compareEntry ? COMPARE_PROMPTS : [])].map((p) => (
+              {[...STARTER_PROMPTS, ...(compareEntry ? COMPARE_PROMPTS : [])].map((p, idx) => (
                 <button key={p} type="button"
                   onClick={() => { setInput(p); textareaRef.current?.focus(); }}
-                  className="w-full rounded-[12px] border border-[var(--pio-line)] bg-[var(--pio-paper)] px-4 py-2.5 text-left text-pio-xs text-[var(--pio-ink)] hover:bg-[var(--pio-sky)] hover:border-[var(--pio-highlight)] transition-colors">
+                  className={`w-full rounded-[12px] border px-4 py-2.5 text-left text-pio-xs text-[var(--pio-ink)] ${idx === 0 ? "pio-chat-chip-featured" : "pio-chat-chip"}`}>
                   {p}
                 </button>
               ))}
@@ -172,7 +175,7 @@ export function ChatWorkspace({ analysis, compareEntry, onFocusExplore, embedded
       {/* Input */}
       <div className="px-4 pb-4 pt-1 shrink-0">
         <div
-          className="rounded-[20px] border transition-colors focus-within:border-[var(--pio-highlight)]"
+          className="pio-chat-input rounded-[20px] border transition-all"
           style={{
             borderColor: "var(--pio-line)",
             background: "var(--pio-paper)",
@@ -210,7 +213,12 @@ export function ChatWorkspace({ analysis, compareEntry, onFocusExplore, embedded
               type="button"
               onClick={() => void handleSend()}
               disabled={!input.trim() || !!live}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)] transition-opacity hover:opacity-90 disabled:opacity-25"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all hover:opacity-90 disabled:opacity-25"
+              style={{
+                background: "var(--pio-lavender-deep)",
+                color: "#fff",
+                boxShadow: "0 0 16px rgba(var(--pio-lavender-rgb), 0.55)",
+              }}
             >
               <ArrowUp size={15} />
             </button>
@@ -244,9 +252,9 @@ function LiveIndicator({ live }: { live: LiveState }) {
       {live.toolSteps.map((step, i) => (
         <div key={i} className="flex items-center gap-2.5 text-pio-sm text-[var(--pio-graphite)]"
           style={{ animation: "chat-fade-in 0.25s ease-out both" }}>
-          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[var(--pio-line)] bg-[var(--pio-paper)]">
+          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border" style={{ borderColor: "rgba(var(--pio-lavender-rgb), 0.30)", background: "rgba(var(--pio-lavender-rgb), 0.09)" }}>
             {step.done
-              ? <Check size={10} className="text-[var(--pio-highlight)]" />
+              ? <Check size={10} style={{ color: "var(--pio-lavender-deep)" }} />
               : <Search size={10} className="text-[var(--pio-graphite)] opacity-50" style={{ animation: "thinking-dot 1s ease-in-out infinite" }} />
             }
           </div>
@@ -263,8 +271,8 @@ function LiveIndicator({ live }: { live: LiveState }) {
 
       {/* Thinking / generating pulse */}
       <div className="flex items-center gap-2.5" style={{ animation: "chat-fade-in 0.2s ease-out both" }}>
-        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[var(--pio-line)] bg-[var(--pio-paper)]">
-          <Zap size={10} className="text-[var(--pio-highlight)]" style={{ animation: "thinking-dot 1s ease-in-out infinite" }} />
+        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border" style={{ borderColor: "rgba(var(--pio-lavender-rgb), 0.30)", background: "rgba(var(--pio-lavender-rgb), 0.09)" }}>
+          <Zap size={10} style={{ color: "var(--pio-lavender-deep)", animation: "thinking-dot 1s ease-in-out infinite" }} />
         </div>
         <div className="flex items-center gap-1.5">
           <span className="text-pio-sm text-[var(--pio-graphite)]">
@@ -306,7 +314,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
       <div className={[
         "max-w-[88%] rounded-[16px] px-4 py-3 text-pio-md leading-relaxed",
         isUser
-          ? "bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)] rounded-br-[4px]"
+          ? "bg-[var(--pio-lavender-deep)] text-[var(--pio-highlight-text)] rounded-br-[4px]"
           : "bg-[var(--pio-paper)] border border-[var(--pio-line)] text-[var(--pio-ink)] rounded-bl-[4px] w-full",
       ].join(" ")}>
         {msg.error ? (
@@ -328,8 +336,8 @@ function ToolStep({ name, input }: { name: string; input: Record<string, unknown
 
   return (
     <div className="flex items-start gap-2 text-pio-xs text-[var(--pio-graphite)]">
-      <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[rgba(199,217,236,0.4)]">
-        <Check size={8} className="text-[var(--pio-highlight)]" />
+      <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full" style={{ background: "rgba(var(--pio-lavender-rgb), 0.20)" }}>
+        <Check size={8} style={{ color: "var(--pio-lavender-deep)" }} />
       </div>
       <div>
         <button type="button" onClick={() => setOpen((o) => !o)}

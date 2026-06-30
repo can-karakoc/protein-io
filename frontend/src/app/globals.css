@@ -696,3 +696,49 @@ button:not(:disabled),
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ── Resize-gap swap button — theme-aware frosted glass ──── */
+.pio-swap-btn {
+  background: rgba(255, 255, 255, 0.65);
+  box-shadow: 0 1px 6px rgba(17, 22, 16, 0.10);
+}
+[data-theme="dark"] .pio-swap-btn {
+  background: rgba(28, 28, 34, 0.88);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* ── Chat background sonar rings ────────────────────────── */
+@keyframes pio-ring-pulse {
+  0%   { transform: scale(0.3); opacity: 0.55; }
+  75%  { opacity: 0.10; }
+  100% { transform: scale(5.5); opacity: 0; }
+}
+
+/* ── Chat starter prompt chips ─────────────────────────── */
+.pio-chat-chip {
+  border-color: var(--pio-line);
+  background: var(--pio-paper);
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.pio-chat-chip:hover {
+  background: rgba(var(--pio-lavender-rgb), 0.10);
+  border-color: var(--pio-lavender);
+  box-shadow: 0 0 10px rgba(var(--pio-lavender-rgb), 0.18);
+}
+.pio-chat-chip-featured {
+  border-color: var(--pio-lavender);
+  background: rgba(var(--pio-lavender-rgb), 0.09);
+  box-shadow: 0 0 16px rgba(var(--pio-lavender-rgb), 0.24);
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.pio-chat-chip-featured:hover {
+  background: rgba(var(--pio-lavender-rgb), 0.16);
+  box-shadow: 0 0 24px rgba(var(--pio-lavender-rgb), 0.34);
+}
+
+/* ── Chat input — lavender focus ring ──────────────────── */
+.pio-chat-input:focus-within {
+  border-color: var(--pio-lavender) !important;
+  box-shadow: 0 0 0 3px rgba(var(--pio-lavender-rgb), 0.18),
+              0 1px 4px rgba(17, 22, 16, 0.06) !important;
+}
