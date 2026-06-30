@@ -883,7 +883,8 @@ export function WorkspaceShell() {
   const active = getActive();
 
   // Chat panel state
-  const [chatWidth, setChatWidth] = useState(380);
+  const DEFAULT_CHAT_WIDTH = 380;
+  const [chatWidth, setChatWidth] = useState(DEFAULT_CHAT_WIDTH);
   const [chatSwapped, setChatSwapped] = useState(false);
   const dragRef = useRef<{ startX: number; startW: number } | null>(null);
 
@@ -933,6 +934,7 @@ export function WorkspaceShell() {
               onPointerMove={onResizeDrag}
               onPointerUp={stopResize}
               onPointerCancel={stopResize}
+              onDoubleClick={() => setChatWidth(DEFAULT_CHAT_WIDTH)}
             >
               <button
                 type="button"
@@ -961,7 +963,7 @@ export function WorkspaceShell() {
               initial={{ opacity: 0, width: 0 }}
               animate={{ opacity: 1, width: chatWidth }}
               exit={{ opacity: 0, width: 0 }}
-              transition={{ type: "spring", stiffness: 460, damping: 38, mass: 0.8 }}
+              transition={{ type: "spring", stiffness: 380, damping: 30, mass: 0.9 }}
               className={`h-full flex-shrink-0 flex flex-col ${CARD_CLS}`}
               style={{ order: chatSwapped ? 1 : 3 }}
             >
