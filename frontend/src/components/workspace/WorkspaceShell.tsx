@@ -148,7 +148,7 @@ export function WorkspaceShell() {
   const { mode } = useWorkspace();
 
   return (
-    <div className="flex flex-col h-[100svh] bg-[var(--pio-bg)]">
+    <div className="flex flex-col h-[100svh] bg-[var(--pio-bg-page)]">
       <WorkspaceTopNav />
 
       <main className="flex-1 min-h-0 overflow-hidden">

@@ -464,7 +464,7 @@ export function StructureTray() {
         </span>
       </div>
 
-      <div className="flex flex-1 min-h-0 flex-col overflow-y-auto px-3 py-3 gap-2 scrollbar-thin-panel">
+      <div className="flex flex-1 min-h-0 flex-col overflow-y-auto px-3 py-3 gap-2 scrollbar-thin-report">
         {/* Structure list */}
         {structures.length > 0 && (
           <div className="flex flex-col gap-1.5">
