@@ -311,7 +311,7 @@ function ChainsTab({ entry }: { entry: StructureEntry }) {
       <h2 className="pio-section-title">Chains</h2>
       <p className="pio-section-copy mt-1">Protein residue and atom counts grouped by chain.</p>
 
-      <div className="mt-4">
+      <div>
         {/* Header row */}
         <div
           className="border-b border-[var(--pio-line)] px-3 pb-2"
@@ -382,7 +382,7 @@ function LigandsTab({ entry }: { entry: StructureEntry }) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <div>
         <h2 className="pio-section-title">Ligands</h2>
         <p className="pio-section-copy mt-1">
@@ -618,7 +618,7 @@ function ContactsTab({ entry }: { entry: StructureEntry }) {
   const chipBase: React.CSSProperties = { borderRadius: 999, fontWeight: 500, display: "inline-block", whiteSpace: "nowrap", fontFamily: "var(--font-pio-mono)", fontSize: "var(--text-pio-xs)" };
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-5">
       {/* Section header */}
       <div>
         <h2 className="pio-section-title">Contacts</h2>
@@ -806,7 +806,7 @@ function InterfacesTab({ entry }: { entry: StructureEntry }) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       {/* Section header */}
       <div>
         <h2 className="pio-section-title">Interfaces</h2>
@@ -1079,7 +1079,7 @@ function QualityTab({ entry }: { entry: StructureEntry }) {
     .slice(0, 6);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <div>
         <h2 className="pio-section-title">Quality</h2>
         <p className="pio-section-copy mt-1">
@@ -1365,7 +1365,7 @@ function MethodsTab({ entry }: { entry: StructureEntry }) {
   ];
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <div>
         <h2 className="pio-section-title">Methods And Provenance</h2>
         <p className="pio-section-copy mt-1">

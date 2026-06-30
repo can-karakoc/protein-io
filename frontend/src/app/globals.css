@@ -589,6 +589,7 @@ button:not(:disabled),
   color: var(--pio-graphite);
   font-size: var(--text-pio-base);
   line-height: 1.5;
+  margin-bottom: 1.25rem;
 }
 
 .pio-field-card {
