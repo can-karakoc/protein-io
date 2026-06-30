@@ -928,7 +928,7 @@ export function WorkspaceShell() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
               className="flex-shrink-0 relative flex items-center justify-center cursor-col-resize"
-              style={{ order: 2, width: 8, userSelect: "none" }}
+              style={{ order: 2, width: 6, userSelect: "none" }}
               onPointerDown={startResize}
               onPointerMove={onResizeDrag}
               onPointerUp={stopResize}
@@ -939,7 +939,13 @@ export function WorkspaceShell() {
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={() => setChatSwapped(s => !s)}
                 title={chatSwapped ? "Move chat to right" : "Move chat to left"}
-                className="absolute z-10 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-[var(--pio-line)] bg-[var(--pio-white)] text-[var(--pio-graphite)] shadow-[0_1px_4px_rgba(17,22,16,0.12)] transition-all hover:border-[var(--pio-highlight)] hover:bg-[var(--pio-sky)] hover:text-[var(--pio-ink)]"
+                className="absolute z-10 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-[rgba(20,20,15,0.10)] text-[var(--pio-graphite)] transition-all hover:text-[var(--pio-ink)]"
+                style={{
+                  background: "rgba(255,255,255,0.55)",
+                  backdropFilter: "blur(10px)",
+                  WebkitBackdropFilter: "blur(10px)",
+                  boxShadow: "0 1px 6px rgba(17,22,16,0.10)",
+                }}
               >
                 <ArrowLeftRight size={10} />
               </button>
