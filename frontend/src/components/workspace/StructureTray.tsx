@@ -7,8 +7,6 @@ import { buildApiUrl } from "@/lib/api";
 import type { AnalysisResponse } from "@/lib/types";
 import { type StructureEntry, type StructureFormat, useWorkspace } from "@/lib/workspaceStore";
 
-const EXAMPLE_FILE = "/sample.pdb";
-const TIMING_HEADER = "X-Processing-Ms";
 
 type LoadTab = "file" | "pdb" | "alphafold";
 
@@ -175,20 +173,7 @@ function StructureLoader({ onLoaded }: { onLoaded: () => void }) {
     }
   }
 
-  async function loadSample() {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(EXAMPLE_FILE);
-      if (!res.ok) throw new Error(`Sample returned ${res.status}`);
-      const text = await res.text();
-      setPendingFile({ name: "sample.pdb", text, format: "pdb" });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not load sample");
-    } finally {
-      setIsLoading(false);
-    }
-  }
+
 
   async function fetchRcsb() {
     const id = pdbId.trim().toUpperCase();
@@ -312,14 +297,6 @@ function StructureLoader({ onLoaded }: { onLoaded: () => void }) {
               onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); }}
             />
           </label>
-          <button
-            type="button"
-            onClick={loadSample}
-            className="text-center text-pio-3xs text-[var(--pio-graphite)] transition-colors hover:text-[var(--pio-ink)] hover:underline"
-          >
-            or load bundled sample →
-          </button>
-
           {/* PAE sidecar */}
           <button
             type="button"
@@ -449,60 +426,65 @@ export function StructureTray() {
 
   return (
     <aside className="flex h-full flex-col bg-[var(--pio-white)]">
-      {/* Header */}
-      <div className="flex items-center gap-2 border-b border-[var(--pio-line)] px-4 py-3">
-        <Layers size={14} className="text-[var(--pio-highlight)] opacity-70" />
-        <p className="text-pio-sm font-bold text-[var(--pio-ink)]">Structures</p>
-        <span className="ml-auto rounded-full bg-[var(--pio-sky)] px-2 py-0.5 text-pio-3xs font-semibold text-[var(--pio-blue-deep)]">
-          {structures.length}
-        </span>
-      </div>
+      {/* Header — only visible when structures are loaded */}
+      {structures.length > 0 && (
+        <div className="flex items-center gap-2 border-b border-[var(--pio-line)] px-4 py-3 flex-shrink-0">
+          <Layers size={14} className="text-[var(--pio-highlight)] opacity-70" />
+          <p className="text-pio-sm font-bold text-[var(--pio-ink)]">Structures</p>
+          <span className="ml-auto rounded-full bg-[var(--pio-sky)] px-2 py-0.5 text-pio-3xs font-semibold text-[var(--pio-blue-deep)]">
+            {structures.length}
+          </span>
+        </div>
+      )}
 
-      <div className="flex flex-1 min-h-0 flex-col overflow-y-auto px-3 py-3 gap-2 scrollbar-thin-report">
-        {/* Structure list */}
+      <div className="flex flex-1 min-h-0 flex-col overflow-y-auto scrollbar-thin-report">
+        {/* Empty state: loader fills full width with sidebar-matching padding */}
+        {structures.length === 0 && (
+          <div className="px-6 py-5">
+            <p className="mb-4 text-pio-3xl font-bold text-[var(--pio-ink)]">Load Structure</p>
+            <StructureLoader onLoaded={() => {}} />
+          </div>
+        )}
+
+        {/* Loaded state: list + collapsible "Load another" */}
         {structures.length > 0 && (
-          <div className="flex flex-col gap-1.5">
-            {structures.map((e) => (
-              <StructureCard
-                key={e.id}
-                entry={e}
-                isActive={e.id === activeId}
-                onSelect={() => {
-                  setActiveId(e.id);
-                  setContextTab("overview");
-                }}
-                onRemove={() => removeStructure(e.id)}
+          <>
+            <div className="flex flex-col gap-1.5 px-3 py-3">
+              {structures.map((e) => (
+                <StructureCard
+                  key={e.id}
+                  entry={e}
+                  isActive={e.id === activeId}
+                  onSelect={() => {
+                    setActiveId(e.id);
+                    setContextTab("overview");
+                  }}
+                  onRemove={() => removeStructure(e.id)}
+                />
+              ))}
+            </div>
+
+            {/* Load another toggle */}
+            <div className="border-t border-[var(--pio-line)] mx-3" />
+            <button
+              type="button"
+              onClick={() => setLoaderOpen((o) => !o)}
+              className="flex items-center gap-2 px-4 py-2.5 text-pio-xs font-semibold text-[var(--pio-graphite)] hover:text-[var(--pio-ink)] transition-colors"
+            >
+              <FileUp size={12} />
+              {loaderOpen ? "Hide loader" : "Load another"}
+              <ChevronDown
+                size={11}
+                className={["ml-auto transition-transform", loaderOpen ? "rotate-180" : ""].join(" ")}
               />
-            ))}
-          </div>
-        )}
+            </button>
 
-        {/* Empty state */}
-        {structures.length === 0 && !loaderOpen && (
-          <div className="flex flex-col items-center justify-center py-8 text-center gap-2 opacity-50">
-            <Layers size={24} className="text-[var(--pio-graphite)]" />
-            <p className="text-pio-xs text-[var(--pio-graphite)]">No structures loaded</p>
-          </div>
-        )}
-
-        {/* Loader toggle */}
-        <button
-          type="button"
-          onClick={() => setLoaderOpen((o) => !o)}
-          className="flex items-center gap-2 rounded-[10px] border border-dashed border-[var(--pio-line-strong)] bg-[var(--pio-paper)] px-3 py-2 text-pio-xs font-semibold text-[var(--pio-graphite)] transition-colors hover:bg-[var(--pio-sand)] hover:text-[var(--pio-ink)]"
-        >
-          <FileUp size={12} />
-          {loaderOpen ? "Hide loader" : structures.length === 0 ? "Load structure" : "Load another"}
-          <ChevronDown
-            size={11}
-            className={["ml-auto transition-transform", loaderOpen ? "rotate-180" : ""].join(" ")}
-          />
-        </button>
-
-        {loaderOpen && (
-          <div className="rounded-[10px] border border-[var(--pio-line)] bg-[var(--pio-paper)] p-3">
-            <StructureLoader onLoaded={() => { if (structures.length > 0) setLoaderOpen(false); }} />
-          </div>
+            {loaderOpen && (
+              <div className="px-6 pb-5">
+                <StructureLoader onLoaded={() => setLoaderOpen(false)} />
+              </div>
+            )}
+          </>
         )}
       </div>
     </aside>

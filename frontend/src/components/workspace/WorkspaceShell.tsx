@@ -1,6 +1,6 @@
 "use client";
 
-import { Layers3, Moon, Sun } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 
 import { BatchWorkspace } from "@/components/workbench/BatchWorkspace";
 import { StructureViewer } from "@/components/viewer/StructureViewer";
@@ -92,42 +92,29 @@ function WorkspaceLayout() {
 
   return (
     <div className="relative flex h-full w-full overflow-hidden rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
-      {/* Left: structure tray */}
-      <div className="w-[260px] flex-shrink-0 h-full overflow-hidden border-r border-[var(--pio-line)]">
+      {/* Left: structure tray — right shadow separates from center */}
+      <div className="relative z-[1] w-[260px] flex-shrink-0 h-full overflow-hidden shadow-[8px_0_24px_rgba(17,22,16,0.07)]">
         <StructureTray />
       </div>
 
-      {/* Center: persistent Mol* viewer */}
+      {/* Center: always-mounted Mol* viewer — shows built-in wireframe when empty */}
       <div className="flex-1 min-w-0 h-full relative bg-[var(--pio-paper)]">
-        {active?.structureText ? (
-          <StructureViewer
-            structureText={active.structureText}
-            structureFormat={active.structureFormat}
-            selection={null}
-            residueConfidences={residueConfidences}
-            colorMode={colorMode}
-          />
-        ) : (
-          <ViewerPlaceholder />
-        )}
+        <StructureViewer
+          structureText={active?.structureText ?? ""}
+          structureFormat={active?.structureFormat ?? "pdb"}
+          selection={null}
+          residueConfidences={residueConfidences}
+          colorMode={colorMode}
+        />
       </div>
 
-      {/* Right: context panel */}
-      <div className="w-[380px] flex-shrink-0 h-full overflow-hidden border-l border-[var(--pio-line)]">
+      {/* Right: context panel — left shadow separates from center */}
+      <div className="relative z-[1] w-[380px] flex-shrink-0 h-full overflow-hidden shadow-[-8px_0_24px_rgba(17,22,16,0.07)]">
         <ContextPanel />
       </div>
 
       {/* Chat drawer (slide-over) */}
       <ChatDrawer />
-    </div>
-  );
-}
-
-function ViewerPlaceholder() {
-  return (
-    <div className="flex h-full flex-col items-center justify-center gap-4 opacity-30">
-      <Layers3 size={40} className="text-[var(--pio-graphite)]" />
-      <p className="text-pio-md text-[var(--pio-graphite)]">Load a structure to visualize</p>
     </div>
   );
 }
