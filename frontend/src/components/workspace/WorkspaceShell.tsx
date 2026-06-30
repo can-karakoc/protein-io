@@ -905,10 +905,30 @@ export function WorkspaceShell() {
   const stopResize = useCallback(() => { dragRef.current = null; }, []);
 
   return (
-    <main className="pio-shell pt-6">
+    <main className="pio-shell pt-6" style={{ position: "relative" }}>
+      {/* Lavender background tint when chat is open */}
+      <AnimatePresence>
+        {chatOpen && (
+          <motion.div
+            key="chat-bg-tint"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.6, ease: "easeInOut" }}
+            style={{
+              position: "absolute",
+              inset: 0,
+              pointerEvents: "none",
+              zIndex: 0,
+              background: "radial-gradient(ellipse at 72% 18%, rgba(var(--pio-lavender-rgb), 0.13) 0%, rgba(var(--pio-lavender-rgb), 0.05) 45%, transparent 70%)",
+            }}
+          />
+        )}
+      </AnimatePresence>
+
       <WorkspaceTopNav />
 
-      <div className="mx-auto w-full max-w-[1600px] px-4 pb-4 pt-6 h-[calc(100svh-92px)] flex gap-3">
+      <div className="mx-auto w-full max-w-[1600px] px-4 pb-4 pt-6 h-[calc(100svh-92px)] flex gap-3" style={{ position: "relative", zIndex: 1 }}>
 
         {/* Workspace card */}
         <div className={`flex-1 min-w-0 h-full ${CARD_CLS}`} style={{ order: chatSwapped ? 3 : 1 }}>

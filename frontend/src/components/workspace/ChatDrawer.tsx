@@ -18,18 +18,16 @@ export function ChatDrawerToggle() {
       style={
         chatOpen
           ? {
-              background: "var(--pio-white)",
-              color: "var(--pio-lavender-deep)",
-              border: "1px solid rgba(var(--pio-lavender-rgb), 0.35)",
-              boxShadow:
-                "0 0 0 3px rgba(var(--pio-lavender-rgb), 0.15), 0 2px 16px rgba(var(--pio-lavender-rgb), 0.35)",
+              background: "var(--pio-lavender-deep)",
+              color: "#fff",
+              border: "1px solid transparent",
+              boxShadow: "0 0 0 3px rgba(var(--pio-lavender-rgb), 0.18), 0 2px 14px rgba(var(--pio-lavender-rgb), 0.40)",
             }
           : {
               background: "var(--pio-lavender-pale)",
               color: "var(--pio-lavender-deep)",
               border: "1px solid rgba(var(--pio-lavender-rgb), 0.28)",
-              boxShadow:
-                "0 0 0 3px rgba(var(--pio-lavender-rgb), 0.08), 0 2px 10px rgba(var(--pio-lavender-rgb), 0.18)",
+              boxShadow: "0 0 0 3px rgba(var(--pio-lavender-rgb), 0.08), 0 2px 10px rgba(var(--pio-lavender-rgb), 0.18)",
             }
       }
     >
