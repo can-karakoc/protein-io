@@ -1,7 +1,6 @@
 "use client";
 
 import { Layers3, Moon, Sun } from "lucide-react";
-import { useState } from "react";
 
 import { BatchWorkspace } from "@/components/workbench/BatchWorkspace";
 import { StructureViewer } from "@/components/viewer/StructureViewer";
@@ -16,7 +15,7 @@ import { StructureTray } from "./StructureTray";
 // ── Top navigation ────────────────────────────────────────────────────────────
 
 const APP_MODES: Array<{ id: AppMode; label: string }> = [
-  { id: "workspace", label: "Workspace" },
+  { id: "workspace", label: "Explore" },
   { id: "batch", label: "Batch" },
 ];
 
@@ -26,15 +25,8 @@ function WorkspaceTopNav() {
 
   return (
     <header className="pio-topnav sticky top-0 z-50">
-      <div className="mx-auto flex h-[44px] w-full items-center px-4 gap-3">
-        {/* Logo */}
-        <div className="flex items-center gap-2 mr-4">
-          <Layers3 size={16} className="text-[var(--pio-highlight)]" />
-          <span className="text-pio-md font-bold text-[var(--pio-ink)]">Protein I/O</span>
-        </div>
-
-        {/* Mode tabs */}
-        <nav className="flex items-center gap-1" aria-label="App mode">
+      <div className="mx-auto flex h-[44px] w-full max-w-[1500px] items-center px-4 sm:px-8">
+        <nav className="flex h-full items-center gap-1 sm:gap-6" aria-label="App mode">
           {APP_MODES.map((m) => {
             const isActive = mode === m.id;
             return (
@@ -43,7 +35,7 @@ function WorkspaceTopNav() {
                 type="button"
                 onClick={() => setMode(m.id)}
                 className={[
-                  "flex h-[34px] items-center rounded-[12px] px-4 text-pio-base font-semibold transition-colors",
+                  "flex h-[34px] items-center rounded-[12px] px-3 sm:px-5 text-pio-base sm:text-pio-md font-semibold transition-colors",
                   isActive
                     ? "bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)]"
                     : "bg-[rgba(26,64,106,0.04)] text-[var(--pio-ink)] opacity-70 hover:opacity-100 hover:bg-[rgba(26,64,106,0.09)]",
@@ -55,15 +47,13 @@ function WorkspaceTopNav() {
           })}
         </nav>
 
-        {/* Right side */}
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-3 sm:gap-6">
           {mode === "workspace" && <ChatDrawerToggle />}
-
           <a
             href="https://github.com/can-karakoc/protein-io/tree/main/docs"
             target="_blank"
             rel="noreferrer"
-            className="text-pio-xs font-medium text-[var(--pio-ink)] opacity-50 transition-opacity hover:opacity-80"
+            className="text-pio-xs sm:text-pio-md font-medium text-[var(--pio-ink)] opacity-50 transition-opacity hover:opacity-80"
           >
             Docs
           </a>
@@ -71,7 +61,7 @@ function WorkspaceTopNav() {
             href="https://github.com/can-karakoc/protein-io"
             target="_blank"
             rel="noreferrer"
-            className="text-pio-xs font-medium text-[var(--pio-ink)] opacity-50 transition-opacity hover:opacity-80"
+            className="text-pio-xs sm:text-pio-md font-medium text-[var(--pio-ink)] opacity-50 transition-opacity hover:opacity-80"
           >
             GitHub
           </a>
@@ -101,9 +91,10 @@ function WorkspaceLayout() {
   const residueConfidences = active?.analysis?.residue_confidences ?? [];
 
   return (
-    <div className="relative flex h-full overflow-hidden">
+    // pio-panel gives the white/dark card bg + 24px radius + shadow
+    <div className="pio-panel relative flex h-full w-full overflow-hidden">
       {/* Left: structure tray */}
-      <div className="w-[260px] flex-shrink-0 h-full overflow-hidden">
+      <div className="w-[260px] flex-shrink-0 h-full overflow-hidden border-r border-[var(--pio-line)]">
         <StructureTray />
       </div>
 
@@ -123,11 +114,11 @@ function WorkspaceLayout() {
       </div>
 
       {/* Right: context panel */}
-      <div className="w-[380px] flex-shrink-0 h-full overflow-hidden">
+      <div className="w-[380px] flex-shrink-0 h-full overflow-hidden border-l border-[var(--pio-line)]">
         <ContextPanel />
       </div>
 
-      {/* Chat drawer (slide-over from right, overlays context panel on mobile) */}
+      {/* Chat drawer (slide-over) */}
       <ChatDrawer />
     </div>
   );
@@ -148,12 +139,20 @@ export function WorkspaceShell() {
   const { mode } = useWorkspace();
 
   return (
-    <div className="flex flex-col h-[100svh] bg-[var(--pio-bg-page)]">
+    <main className="pio-shell pt-6">
       <WorkspaceTopNav />
 
-      <main className="flex-1 min-h-0 overflow-hidden">
-        {mode === "workspace" ? <WorkspaceLayout /> : <BatchWorkspace />}
-      </main>
-    </div>
+      {/* Padded content area — same geometry as the original WorkbenchShell */}
+      <div className="mx-auto w-full max-w-[1500px] px-4 pb-4 pt-6 h-[calc(100svh-92px)]">
+        {mode === "workspace" ? (
+          <WorkspaceLayout />
+        ) : (
+          // Batch mode wrapped in the same card treatment
+          <div className="pio-panel h-full w-full overflow-hidden">
+            <BatchWorkspace />
+          </div>
+        )}
+      </div>
+    </main>
   );
 }

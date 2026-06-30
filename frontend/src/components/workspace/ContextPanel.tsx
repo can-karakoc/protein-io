@@ -821,7 +821,7 @@ export function ContextPanel() {
   const analysis = active.analysis;
 
   return (
-    <aside className="flex h-full min-h-0 flex-col bg-[var(--pio-white)] border-l border-[var(--pio-line)] shadow-[-8px_0_24px_rgba(17,22,16,0.05)]">
+    <aside className="flex h-full min-h-0 flex-col bg-[var(--pio-white)]">
       {/* Tab strip */}
       <div
         ref={tabStripRef}

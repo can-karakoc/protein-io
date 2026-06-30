@@ -454,7 +454,7 @@ export function StructureTray() {
   const [loaderOpen, setLoaderOpen] = useState(structures.length === 0);
 
   return (
-    <aside className="relative z-[1] flex h-full flex-col bg-[var(--pio-white)] shadow-[8px_0_24px_rgba(17,22,16,0.07)]">
+    <aside className="flex h-full flex-col bg-[var(--pio-white)]">
       {/* Header */}
       <div className="flex items-center gap-2 border-b border-[var(--pio-line)] px-4 py-3">
         <Layers size={14} className="text-[var(--pio-highlight)] opacity-70" />
