@@ -91,8 +91,7 @@ function WorkspaceLayout() {
   const residueConfidences = active?.analysis?.residue_confidences ?? [];
 
   return (
-    // pio-panel gives the white/dark card bg + 24px radius + shadow
-    <div className="pio-panel relative flex h-full w-full overflow-hidden">
+    <div className="relative flex h-full w-full overflow-hidden rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
       {/* Left: structure tray */}
       <div className="w-[260px] flex-shrink-0 h-full overflow-hidden border-r border-[var(--pio-line)]">
         <StructureTray />
@@ -147,8 +146,7 @@ export function WorkspaceShell() {
         {mode === "workspace" ? (
           <WorkspaceLayout />
         ) : (
-          // Batch mode wrapped in the same card treatment
-          <div className="pio-panel h-full w-full overflow-hidden">
+          <div className="h-full w-full overflow-hidden rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
             <BatchWorkspace />
           </div>
         )}
