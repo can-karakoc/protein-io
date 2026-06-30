@@ -904,44 +904,87 @@ export function WorkspaceShell() {
 
   const stopResize = useCallback(() => { dragRef.current = null; }, []);
 
+  // Canvas glow — lerps progress toward 1 when chat opens, back to 0 on close
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const chatOpenRef = useRef(chatOpen);
+  useEffect(() => { chatOpenRef.current = chatOpen; }, [chatOpen]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let W = 0, H = 0;
+    let rafId: number;
+    const progress = { value: 0 };
+
+    const cv = canvas as HTMLCanvasElement;
+    const cx = ctx as CanvasRenderingContext2D;
+
+    function resize() {
+      const parent = cv.parentElement;
+      if (!parent) return;
+      const rect = parent.getBoundingClientRect();
+      W = cv.width  = rect.width;
+      H = cv.height = rect.height;
+    }
+    resize();
+    const ro = new ResizeObserver(resize);
+    if (cv.parentElement) ro.observe(cv.parentElement);
+
+    function tick(t: number) {
+      rafId = requestAnimationFrame(tick);
+      const target = chatOpenRef.current ? 1 : 0;
+      progress.value += (target - progress.value) * 0.025;
+      const p = progress.value;
+
+      cx.clearRect(0, 0, W, H);
+      if (p < 0.002) return;
+
+      const ox = W, oy = 0;
+      const maxR = Math.sqrt(W * W + H * H) * 1.05;
+
+      // Outer bloom
+      const r = maxR * p * (1 + 0.02 * Math.sin(t * 0.001));
+      const g1 = cx.createRadialGradient(ox, oy, 0, ox, oy, r);
+      g1.addColorStop(0,   `rgba(124, 58, 237, ${0.28 * p})`);
+      g1.addColorStop(0.3, `rgba(139, 92, 246, ${0.20 * p})`);
+      g1.addColorStop(0.6, `rgba(167,139, 250, ${0.12 * p})`);
+      g1.addColorStop(1,   `rgba(233,213, 255, 0)`);
+      cx.beginPath(); cx.arc(ox, oy, r, 0, Math.PI * 2);
+      cx.fillStyle = g1; cx.fill();
+
+      // Inner core pulse
+      const core = r * 0.38 * (1 + 0.05 * Math.sin(t * 0.0008 + 1));
+      const g2 = cx.createRadialGradient(ox, oy, 0, ox, oy, core);
+      g2.addColorStop(0,   `rgba( 91, 33, 182, ${0.35 * p})`);
+      g2.addColorStop(0.6, `rgba(124, 58, 237, ${0.18 * p})`);
+      g2.addColorStop(1,   `rgba(139, 92, 246, 0)`);
+      cx.beginPath(); cx.arc(ox, oy, core, 0, Math.PI * 2);
+      cx.fillStyle = g2; cx.fill();
+
+      // Soft sheen ring
+      const ring   = r * (0.55 + 0.04 * Math.sin(t * 0.0006));
+      const sheenA = 0.07 * p * (0.6 + 0.4 * Math.sin(t * 0.0011));
+      const g3 = cx.createRadialGradient(ox, oy, ring * 0.82, ox, oy, ring);
+      g3.addColorStop(0,   `rgba(221,214,254, 0)`);
+      g3.addColorStop(0.5, `rgba(221,214,254, ${sheenA})`);
+      g3.addColorStop(1,   `rgba(221,214,254, 0)`);
+      cx.beginPath(); cx.arc(ox, oy, ring, 0, Math.PI * 2);
+      cx.fillStyle = g3; cx.fill();
+    }
+    rafId = requestAnimationFrame(tick);
+    return () => { cancelAnimationFrame(rafId); ro.disconnect(); };
+  }, []);
+
   return (
     <main className="pio-shell pt-6" style={{ position: "relative" }}>
-      {/* Lavender background tint when chat is open */}
-      <AnimatePresence>
-        {chatOpen && (
-          <motion.div
-            key="chat-bg-tint"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.6, ease: "easeInOut" }}
-            style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}
-          >
-            {/* Base gradient blob — always visible */}
-            <div style={{
-              position: "absolute",
-              inset: 0,
-              background: [
-                "radial-gradient(ellipse 80% 60% at 85% 0%, rgba(var(--pio-lavender-rgb), 0.28) 0%, rgba(var(--pio-lavender-rgb), 0.12) 45%, transparent 70%)",
-                "radial-gradient(ellipse 60% 50% at 65% 90%, rgba(var(--pio-lavender-rgb), 0.16) 0%, transparent 60%)",
-              ].join(", "),
-            }} />
-            {/* Energy pulse — brighter layer that fades in and out */}
-            <motion.div
-              animate={{ opacity: [0, 0.85, 0, 0.6, 0] }}
-              transition={{ duration: 7, ease: "easeInOut", repeat: Infinity, times: [0, 0.3, 0.55, 0.75, 1] }}
-              style={{
-                position: "absolute",
-                inset: 0,
-                background: [
-                  "radial-gradient(ellipse 80% 60% at 85% 0%, rgba(var(--pio-lavender-rgb), 0.55) 0%, rgba(var(--pio-lavender-rgb), 0.28) 40%, transparent 70%)",
-                  "radial-gradient(ellipse 60% 50% at 65% 90%, rgba(var(--pio-lavender-rgb), 0.30) 0%, transparent 60%)",
-                ].join(", "),
-              }}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Canvas lavender glow — top-right origin, lerps in/out with chat state */}
+      <canvas
+        ref={canvasRef}
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 0 }}
+      />
 
       <WorkspaceTopNav />
 
