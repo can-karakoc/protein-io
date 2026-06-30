@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeftRight, Bot, Download, Moon, Sun, X } from "lucide-react";
+import { ArrowLeftRight, Bot, ChevronsLeft, Download, Menu, Moon, Sun, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { BatchWorkspace } from "@/components/workbench/BatchWorkspace";
@@ -600,15 +600,59 @@ function WorkspaceTopNav() {
   );
 }
 
-// ── Collapsed tray (shown when chat is open) ──────────────────────────────────
+// ── Collapsed tray mini-strip ─────────────────────────────────────────────────
+
+function TrayMini({ onExpand }: { onExpand: () => void }) {
+  const { structures } = useWorkspace();
+  return (
+    <div
+      className="flex flex-col items-center h-full py-3 gap-3"
+      style={{ borderRight: "1px solid var(--pio-line)", background: "var(--pio-white)" }}
+    >
+      <button
+        type="button"
+        onClick={onExpand}
+        className="flex h-9 w-9 items-center justify-center rounded-[10px] text-[var(--pio-graphite)] hover:bg-[var(--pio-sky)] hover:text-[var(--pio-ink)] transition-colors"
+        title="Expand structure panel"
+      >
+        <Menu size={15} />
+      </button>
+      <div className="flex flex-col items-center gap-2">
+        {structures.slice(0, 6).map((s) => (
+          <div
+            key={s.id}
+            title={s.pdbId || s.uniprotId || s.name || "Structure"}
+            className="flex h-8 w-8 items-center justify-center rounded-[8px]"
+            style={{
+              background: "rgba(199,217,236,0.5)",
+              color: "var(--pio-highlight)",
+              fontFamily: "var(--font-pio-mono)",
+              fontSize: 8,
+              fontWeight: 700,
+              letterSpacing: "0.02em",
+            }}
+          >
+            {(s.pdbId || s.uniprotId || s.name || "?").slice(0, 4).toUpperCase()}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 // ── Workspace 3-column layout ─────────────────────────────────────────────────
 
 function WorkspaceLayout() {
-  const { getActive, updateStructure, selection, setSelection, floatingLigandKey, setFloatingLigandKey, hasHydrated } = useWorkspace();
+  const { getActive, updateStructure, selection, setSelection, floatingLigandKey, setFloatingLigandKey, hasHydrated, chatOpen } = useWorkspace();
   const active = getActive();
   const viewerColRef = useRef<HTMLDivElement>(null);
   const [viewerColorMode, setViewerColorMode] = useState<"structure" | "plddt">("structure");
+  const [trayExpanded, setTrayExpanded] = useState(true);
+
+  // Auto-collapse when chat opens; re-expand when chat closes
+  useEffect(() => {
+    setTrayExpanded(!chatOpen);
+  }, [chatOpen]);
 
   // Case A: no analysis cached → run full analysis
   useEffect(() => {
@@ -696,10 +740,40 @@ function WorkspaceLayout() {
 
   return (
     <div className="relative flex h-full w-full overflow-hidden">
-      {/* Left: structure tray */}
-      <div className="relative z-[1] w-[280px] flex-shrink-0 h-full overflow-hidden shadow-[8px_0_24px_rgba(17,22,16,0.07)]">
-        <StructureTray />
-      </div>
+      {/* Left: structure tray — collapses to mini-strip when chat is open */}
+      <motion.div
+        animate={{ width: trayExpanded ? 280 : 60 }}
+        transition={{ type: "spring", stiffness: 500, damping: 40, mass: 0.8 }}
+        className="relative z-[1] flex-shrink-0 h-full overflow-hidden shadow-[8px_0_24px_rgba(17,22,16,0.07)]"
+      >
+        <AnimatePresence mode="wait">
+          {trayExpanded ? (
+            <motion.div
+              key="tray-full"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.1 }}
+              className="h-full"
+              style={{ width: 280 }}
+            >
+              <StructureTray onCollapse={chatOpen ? () => setTrayExpanded(false) : undefined} />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="tray-mini"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.1 }}
+              className="h-full"
+              style={{ width: 60 }}
+            >
+              <TrayMini onExpand={() => setTrayExpanded(true)} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
       {/* Center: Mol* viewer */}
       <div ref={viewerColRef} className="flex-1 min-w-0 h-full relative bg-[var(--pio-paper)]">
@@ -844,27 +918,37 @@ export function WorkspaceShell() {
           )}
         </div>
 
-        {/* Resize handle — only visible when chat is open */}
+        {/* Resize handle + swap button — unified grip strip */}
         <AnimatePresence>
           {chatOpen && (
             <motion.div
               key="resize-gap"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
+              initial={{ opacity: 0, scaleY: 0.6 }}
+              animate={{ opacity: 1, scaleY: 1 }}
+              exit={{ opacity: 0, scaleY: 0.6 }}
+              transition={{ type: "spring", stiffness: 500, damping: 38, mass: 0.6 }}
+              className="group flex-shrink-0 flex items-center justify-center cursor-col-resize"
+              style={{ order: 2, width: 20, userSelect: "none" }}
               onPointerDown={startResize}
               onPointerMove={onResizeDrag}
               onPointerUp={stopResize}
               onPointerCancel={stopResize}
-              className="group flex-shrink-0 flex items-center justify-center cursor-col-resize rounded-full"
-              style={{ order: 2, width: 8, userSelect: "none" }}
-              title="Drag to resize"
             >
-              <div className="flex flex-col gap-[3px]">
-                {[0,1,2].map(i => (
-                  <div key={i} className="w-1 h-1 rounded-full bg-[var(--pio-graphite)] opacity-20 group-hover:opacity-60 transition-opacity" />
-                ))}
+              {/* Unified pill: dots + swap icon all share one opacity */}
+              <div className="flex flex-col items-center gap-[5px] rounded-[12px] py-3 px-[5px] transition-all opacity-30 group-hover:opacity-80 bg-transparent group-hover:bg-[var(--pio-sky)]">
+                <div className="w-[4px] h-[4px] rounded-full bg-[var(--pio-graphite)]" />
+                <div className="w-[4px] h-[4px] rounded-full bg-[var(--pio-graphite)]" />
+                <button
+                  type="button"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => setChatSwapped(s => !s)}
+                  title={chatSwapped ? "Move chat to right" : "Move chat to left"}
+                  className="flex items-center justify-center text-[var(--pio-graphite)] cursor-pointer my-[1px]"
+                >
+                  <ArrowLeftRight size={10} />
+                </button>
+                <div className="w-[4px] h-[4px] rounded-full bg-[var(--pio-graphite)]" />
+                <div className="w-[4px] h-[4px] rounded-full bg-[var(--pio-graphite)]" />
               </div>
             </motion.div>
           )}
@@ -878,7 +962,7 @@ export function WorkspaceShell() {
               initial={{ opacity: 0, width: 0 }}
               animate={{ opacity: 1, width: chatWidth }}
               exit={{ opacity: 0, width: 0 }}
-              transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1] }}
+              transition={{ type: "spring", stiffness: 460, damping: 38, mass: 0.8 }}
               className={`h-full flex-shrink-0 flex flex-col ${CARD_CLS}`}
               style={{ order: chatSwapped ? 1 : 3 }}
             >
@@ -895,23 +979,13 @@ export function WorkspaceShell() {
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-0.5 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setChatSwapped(s => !s)}
-                    title={chatSwapped ? "Move chat to right" : "Move chat to left"}
-                    className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--pio-graphite)] hover:bg-[var(--pio-line)] hover:text-[var(--pio-ink)] transition-colors"
-                  >
-                    <ArrowLeftRight size={12} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setChatOpen(false)}
-                    className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--pio-graphite)] hover:bg-[var(--pio-line)] hover:text-[var(--pio-ink)] transition-colors"
-                  >
-                    <X size={13} />
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setChatOpen(false)}
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--pio-graphite)] hover:bg-[var(--pio-line)] hover:text-[var(--pio-ink)] transition-colors"
+                >
+                  <X size={13} />
+                </button>
               </div>
 
               {/* Chat content */}

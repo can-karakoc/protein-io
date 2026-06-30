@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, Check, ChevronDown, MessageSquare, Search, Send, Trash2, Zap } from "lucide-react";
+import { ArrowUp, Bot, Check, ChevronDown, MessageSquare, Search, Trash2, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -160,17 +160,6 @@ export function ChatWorkspace({ analysis, compareEntry, onFocusExplore, embedded
           </div>
         )}
 
-        {messages.length > 0 && embedded && (
-          <div className="flex justify-end mb-1">
-            {!live && (
-              <button type="button" onClick={() => setMessages([])}
-                className="flex items-center gap-1 text-pio-3xs text-[var(--pio-graphite)] opacity-50 hover:opacity-100 hover:text-[var(--pio-coral-deep)] transition-colors">
-                <Trash2 size={10} />
-                Clear
-              </button>
-            )}
-          </div>
-        )}
 
         {messages.map((msg) => (
           <MessageBubble key={msg.id} msg={msg} />
@@ -181,28 +170,52 @@ export function ChatWorkspace({ analysis, compareEntry, onFocusExplore, embedded
       </div>
 
       {/* Input */}
-      <div className="border-t border-[var(--pio-line)] px-4 py-3 shrink-0">
-        <div className="flex items-end gap-2">
+      <div className="px-4 pb-4 pt-1 shrink-0">
+        <div
+          className="rounded-[20px] border transition-colors focus-within:border-[var(--pio-highlight)]"
+          style={{
+            borderColor: "var(--pio-line)",
+            background: "var(--pio-paper)",
+            boxShadow: "0 1px 4px rgba(17,22,16,0.06)",
+          }}
+        >
           <textarea
             ref={textareaRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              e.target.style.height = "auto";
+              e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
+            }}
             onKeyDown={handleKeyDown}
             placeholder="Ask about contacts, ligands, residues…"
-            rows={1}
             disabled={!!live}
-            className="flex-1 resize-none rounded-[12px] border border-[var(--pio-line)] bg-[var(--pio-paper)] px-3 py-2.5 text-pio-sm text-[var(--pio-ink)] placeholder:text-[var(--pio-graphite)] placeholder:opacity-50 focus:outline-none focus:border-[var(--pio-highlight)] disabled:opacity-40 transition-colors"
-            style={{ minHeight: 40, maxHeight: 120 }}
+            className="w-full resize-none bg-transparent px-4 pt-4 pb-2 text-pio-sm text-[var(--pio-ink)] placeholder:text-[var(--pio-graphite)] placeholder:opacity-40 focus:outline-none disabled:cursor-not-allowed"
+            style={{ minHeight: 76, maxHeight: 160, display: "block" }}
           />
-          <button type="button" onClick={() => void handleSend()}
-            disabled={!input.trim() || !!live}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)] hover:opacity-90 disabled:opacity-35 transition-opacity">
-            <Send size={15} />
-          </button>
+          <div className="flex items-center justify-between px-3 pb-3">
+            {messages.length > 0 && !live ? (
+              <button
+                type="button"
+                onClick={() => setMessages([])}
+                className="flex items-center gap-1 rounded-[8px] px-2 py-1 text-pio-xs text-[var(--pio-graphite)] opacity-50 transition-colors hover:opacity-100 hover:text-[var(--pio-coral-deep)]"
+              >
+                <Trash2 size={10} />
+                Clear
+              </button>
+            ) : (
+              <div />
+            )}
+            <button
+              type="button"
+              onClick={() => void handleSend()}
+              disabled={!input.trim() || !!live}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)] transition-opacity hover:opacity-90 disabled:opacity-25"
+            >
+              <ArrowUp size={15} />
+            </button>
+          </div>
         </div>
-        <p className="mt-1.5 text-pio-3xs text-[var(--pio-graphite)] opacity-50">
-          Enter to send · Shift+Enter for newline · Answers are grounded in the loaded structure only
-        </p>
       </div>
     </>
   );

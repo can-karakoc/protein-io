@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, ChevronDown, FileUp, GitCompare, Layers, Loader2, Play, Search, Trash2, X } from "lucide-react";
+import { AlertCircle, ChevronDown, ChevronsLeft, FileUp, GitCompare, Layers, Loader2, Play, Search, Trash2, X } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { buildApiUrl } from "@/lib/api";
@@ -527,7 +527,7 @@ function ComparePanel() {
 
 // ── Main StructureTray ────────────────────────────────────────────────────────
 
-export function StructureTray() {
+export function StructureTray({ onCollapse }: { onCollapse?: () => void } = {}) {
   const { structures, activeId, setActiveId, removeStructure, setContextTab } = useWorkspace();
   const [loaderOpen, setLoaderOpen] = useState(structures.length === 0);
 
@@ -536,11 +536,21 @@ export function StructureTray() {
       {/* Header — only visible when structures are loaded */}
       {structures.length > 0 && (
         <div className="flex items-center gap-2 border-b border-[var(--pio-line)] px-4 py-3 flex-shrink-0">
-          <Layers size={14} className="text-[var(--pio-highlight)] opacity-70" />
+          <Layers size={14} className="text-[var(--pio-highlight)] opacity-70 shrink-0" />
           <p className="text-pio-sm font-bold text-[var(--pio-ink)]">Structures</p>
-          <span className="ml-auto rounded-full bg-[var(--pio-sky)] px-2 py-0.5 text-pio-3xs font-semibold text-[var(--pio-blue-deep)]">
+          <span className="ml-auto rounded-full bg-[var(--pio-sky)] px-2 py-0.5 text-pio-3xs font-semibold text-[var(--pio-blue-deep)] shrink-0">
             {structures.length}
           </span>
+          {onCollapse && (
+            <button
+              type="button"
+              onClick={onCollapse}
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[7px] text-[var(--pio-graphite)] hover:bg-[var(--pio-sky)] hover:text-[var(--pio-ink)] transition-colors"
+              title="Collapse panel"
+            >
+              <ChevronsLeft size={12} />
+            </button>
+          )}
         </div>
       )}
 
