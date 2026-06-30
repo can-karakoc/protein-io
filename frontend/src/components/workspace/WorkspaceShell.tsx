@@ -934,19 +934,18 @@ export function WorkspaceShell() {
               onPointerUp={stopResize}
               onPointerCancel={stopResize}
             >
-              {/* Unified pill: dots + swap icon all share one opacity */}
+              {/* Unified pill: swap icon + 3 grip dots */}
               <div className="flex flex-col items-center gap-[5px] rounded-[12px] py-3 px-[5px] transition-all opacity-30 group-hover:opacity-80 bg-transparent group-hover:bg-[var(--pio-sky)]">
-                <div className="w-[4px] h-[4px] rounded-full bg-[var(--pio-graphite)]" />
-                <div className="w-[4px] h-[4px] rounded-full bg-[var(--pio-graphite)]" />
                 <button
                   type="button"
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={() => setChatSwapped(s => !s)}
                   title={chatSwapped ? "Move chat to right" : "Move chat to left"}
-                  className="flex items-center justify-center text-[var(--pio-graphite)] cursor-pointer my-[1px]"
+                  className="flex items-center justify-center text-[var(--pio-graphite)] cursor-pointer mb-[2px]"
                 >
                   <ArrowLeftRight size={10} />
                 </button>
+                <div className="w-[4px] h-[4px] rounded-full bg-[var(--pio-graphite)]" />
                 <div className="w-[4px] h-[4px] rounded-full bg-[var(--pio-graphite)]" />
                 <div className="w-[4px] h-[4px] rounded-full bg-[var(--pio-graphite)]" />
               </div>
