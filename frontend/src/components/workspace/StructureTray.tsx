@@ -1,10 +1,10 @@
 "use client";
 
-import { AlertCircle, ChevronDown, FileUp, Layers, Loader2, Play, Search, Trash2, X } from "lucide-react";
+import { AlertCircle, ChevronDown, FileUp, GitCompare, Layers, Loader2, Play, Search, Trash2, X } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { buildApiUrl } from "@/lib/api";
-import type { AnalysisResponse } from "@/lib/types";
+import type { AnalysisResponse, StructureComparisonResponse } from "@/lib/types";
 import { type StructureEntry, type StructureFormat, useWorkspace } from "@/lib/workspaceStore";
 
 
@@ -44,11 +44,13 @@ function StructureCard({
   onRemove: () => void;
 }) {
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onSelect}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
       className={[
-        "group relative w-full rounded-[10px] border px-3 py-2.5 text-left transition-all",
+        "group relative w-full cursor-pointer rounded-[10px] border px-3 py-2.5 text-left transition-all",
         isActive
           ? "border-[var(--pio-highlight)] bg-[rgba(199,217,236,0.18)] shadow-[inset_0_0_0_1.5px_var(--pio-highlight)]"
           : "border-[var(--pio-line)] bg-[var(--pio-paper)] hover:border-[var(--pio-line-strong)] hover:bg-[var(--pio-sky)]",
@@ -62,18 +64,17 @@ function StructureCard({
           >
             {displayName(entry)}
           </p>
-          <div className="mt-0.5 flex items-center gap-2">
-            <span className="text-pio-3xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-70">
+          <div className="mt-0.5 flex items-center gap-1.5 min-w-0">
+            <span className="shrink-0 text-pio-3xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-70">
               {sourceLabel(entry)}
             </span>
-            {entry.analysis && (
-              <span className="text-pio-3xs text-[var(--pio-graphite)] opacity-60">
-                {entry.analysis.summary.residue_count.toLocaleString()} res ·{" "}
-                {entry.analysis.summary.contact_count.toLocaleString()} contacts
-              </span>
-            )}
             {entry.isAnalyzing && (
-              <Loader2 size={9} className="animate-spin text-[var(--pio-highlight)]" />
+              <Loader2 size={9} className="shrink-0 animate-spin text-[var(--pio-highlight)]" />
+            )}
+            {entry.analysis && (
+              <span className="truncate text-pio-3xs text-[var(--pio-graphite)] opacity-60">
+                · {entry.analysis.summary.residue_count.toLocaleString()} res · {entry.analysis.summary.contact_count.toLocaleString()} ct
+              </span>
             )}
           </div>
         </div>
@@ -94,7 +95,7 @@ function StructureCard({
           {entry.error}
         </p>
       )}
-    </button>
+    </div>
   );
 }
 
@@ -301,7 +302,7 @@ function StructureLoader({ onLoaded }: { onLoaded: () => void }) {
           <button
             type="button"
             onClick={() => setPaeOpen((o) => !o)}
-            className="flex items-center gap-1 text-pio-3xs text-[var(--pio-graphite)] opacity-70 hover:opacity-100"
+            className="flex items-center gap-1 text-pio-xs text-[var(--pio-graphite)] opacity-70 hover:opacity-100"
           >
             <ChevronDown size={10} className={paeOpen ? "rotate-180" : ""} />
             PAE sidecar (optional)
@@ -309,7 +310,7 @@ function StructureLoader({ onLoaded }: { onLoaded: () => void }) {
           {paeOpen && (
             <label className="flex cursor-pointer items-center gap-2 rounded-[8px] border border-dashed border-[var(--pio-line)] bg-[var(--pio-paper)] px-3 py-2">
               <FileUp size={11} className="text-[var(--pio-graphite)]" />
-              <span className="text-pio-3xs text-[var(--pio-graphite)]">
+              <span className="text-pio-xs text-[var(--pio-graphite)]">
                 {paeText ? "PAE JSON loaded" : "Upload PAE .json"}
               </span>
               <input
@@ -354,7 +355,7 @@ function StructureLoader({ onLoaded }: { onLoaded: () => void }) {
             type="button"
             onClick={fetchRcsb}
             disabled={isLoading || !pdbId.trim()}
-            className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[var(--pio-line)] py-2 text-pio-base font-semibold text-[var(--pio-ink)] transition-colors hover:bg-[var(--pio-line-strong)] disabled:cursor-not-allowed disabled:opacity-45"
+            className="flex w-full items-center justify-center gap-1.5 rounded-[10px] bg-[var(--pio-line)] py-2 text-pio-base font-semibold text-[var(--pio-ink)] transition-colors hover:bg-[var(--pio-line-strong)] disabled:cursor-not-allowed disabled:opacity-45"
           >
             {isLoading ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
             Fetch
@@ -381,7 +382,7 @@ function StructureLoader({ onLoaded }: { onLoaded: () => void }) {
             type="button"
             onClick={fetchAlphaFold}
             disabled={isLoading || !uniprotId.trim()}
-            className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[var(--pio-line)] py-2 text-pio-base font-semibold text-[var(--pio-ink)] transition-colors hover:bg-[var(--pio-line-strong)] disabled:cursor-not-allowed disabled:opacity-45"
+            className="flex w-full items-center justify-center gap-1.5 rounded-[10px] bg-[var(--pio-line)] py-2 text-pio-base font-semibold text-[var(--pio-ink)] transition-colors hover:bg-[var(--pio-line-strong)] disabled:cursor-not-allowed disabled:opacity-45"
           >
             {isLoading ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
             Fetch
@@ -412,6 +413,112 @@ function StructureLoader({ onLoaded }: { onLoaded: () => void }) {
         <div className="flex items-start gap-2 rounded-[8px] bg-[var(--pio-coral-pale)] p-2">
           <AlertCircle size={12} className="mt-0.5 shrink-0 text-[var(--pio-coral-deep)]" />
           <p className="text-pio-3xs text-[var(--pio-coral-deep)]">{error}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Compare panel (shown when ≥2 structures loaded) ───────────────────────────
+
+function displayLabel(e: StructureEntry) {
+  return e.pdbId || e.uniprotId || e.name || "Untitled";
+}
+
+function ComparePanel() {
+  const {
+    structures, compareIds, setCompareId,
+    compareIsLoading, compareError, setComparison, setCompareLoading, setContextTab,
+  } = useWorkspace();
+
+  const [open, setOpen] = useState(false);
+
+  const idA = compareIds[0];
+  const idB = compareIds[1];
+  const ready = idA && idB && idA !== idB;
+  const entA = structures.find((s) => s.id === idA);
+  const entB = structures.find((s) => s.id === idB);
+
+  async function runCompare() {
+    if (!entA || !entB) return;
+    if (!entA.structureText || !entB.structureText) {
+      setComparison(null, "3D structure data is still loading — please wait a moment and try again.");
+      return;
+    }
+    setCompareLoading(true);
+    setContextTab("compare");
+    const ext = (e: StructureEntry) => e.structureFormat === "cif" ? ".cif" : ".pdb";
+    const toFile = (e: StructureEntry) =>
+      new File([e.structureText], `${displayLabel(e)}${ext(e)}`, { type: "text/plain" });
+
+    const fd = new FormData();
+    fd.append("file_a", toFile(entA));
+    fd.append("file_b", toFile(entB));
+    fd.append("cutoff_angstrom", String(Math.max(entA.cutoff ?? 4, entB.cutoff ?? 4)));
+
+    try {
+      const res = await fetch(buildApiUrl("/api/compare"), { method: "POST", body: fd });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null) as { detail?: string } | null;
+        throw new Error(body?.detail ?? `Compare failed (${res.status})`);
+      }
+      const data = (await res.json()) as StructureComparisonResponse;
+      setComparison(data);
+    } catch (e) {
+      setComparison(null, e instanceof Error ? e.message : "Comparison failed");
+    }
+  }
+
+  return (
+    <div className="border-t border-[var(--pio-line)] mx-3" >
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center gap-2 px-1 py-2.5 text-pio-xs font-semibold text-[var(--pio-graphite)] hover:text-[var(--pio-ink)] transition-colors"
+      >
+        <GitCompare size={12} />
+        Compare
+        <ChevronDown size={11} className={["ml-auto transition-transform", open ? "rotate-180" : ""].join(" ")} />
+      </button>
+
+      {open && (
+        <div className="flex flex-col gap-2 pb-4 px-1">
+          {([0, 1] as const).map((slot) => (
+            <div key={slot}>
+              <p className="mb-1 text-pio-3xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-60">
+                Structure {slot === 0 ? "A" : "B"}
+              </p>
+              <select
+                value={compareIds[slot] ?? ""}
+                onChange={(e) => setCompareId(slot, e.target.value || null)}
+                className="pio-input w-full text-pio-xs"
+                style={{ height: 32, padding: "0 8px" }}
+              >
+                <option value="">— select —</option>
+                {structures.map((s) => (
+                  <option key={s.id} value={s.id}>{displayLabel(s)}</option>
+                ))}
+              </select>
+            </div>
+          ))}
+
+          <button
+            type="button"
+            disabled={!ready || compareIsLoading}
+            onClick={runCompare}
+            className="mt-1 flex items-center justify-center gap-2 rounded-[8px] bg-[var(--pio-highlight)] py-2 text-pio-xs font-semibold text-[var(--pio-highlight-text)] disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+          >
+            {compareIsLoading
+              ? <><Loader2 size={12} className="animate-spin" /> Running…</>
+              : <><GitCompare size={12} /> Run comparison</>}
+          </button>
+
+          {compareError && (
+            <div className="flex items-start gap-2 rounded-[8px] bg-[var(--pio-coral-pale)] p-2">
+              <AlertCircle size={11} className="mt-0.5 shrink-0 text-[var(--pio-coral-deep)]" />
+              <p className="text-pio-3xs text-[var(--pio-coral-deep)]">{compareError}</p>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -484,6 +591,9 @@ export function StructureTray() {
                 <StructureLoader onLoaded={() => setLoaderOpen(false)} />
               </div>
             )}
+
+            {/* Compare panel — only when ≥2 structures are loaded */}
+            {structures.length >= 2 && <ComparePanel />}
           </>
         )}
       </div>

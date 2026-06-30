@@ -48,6 +48,12 @@ export type ViewerSelection =
       label: string;
     }
   | {
+      kind: "interface";
+      chainA: string;
+      chainB: string;
+      label: string;
+    }
+  | {
       kind: "ligand";
       chainId: string;
       residueName: string;

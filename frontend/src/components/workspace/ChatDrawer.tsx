@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { MessageSquare, X } from "lucide-react";
 
+
 import { ChatWorkspace } from "@/components/workbench/ChatWorkspace";
 import { useWorkspace } from "@/lib/workspaceStore";
 
@@ -15,13 +16,12 @@ export function ChatDrawerToggle() {
       onClick={() => setChatOpen(!chatOpen)}
       aria-label={chatOpen ? "Close chat" : "Open AI chat"}
       className={[
-        "flex items-center gap-1.5 rounded-[12px] border px-3 py-1.5 text-pio-xs font-semibold transition-colors",
+        "flex h-[34px] items-center rounded-[12px] px-3 sm:px-5 text-pio-base sm:text-pio-md font-semibold transition-colors",
         chatOpen
-          ? "border-[var(--pio-highlight)] bg-[rgba(199,217,236,0.2)] text-[var(--pio-highlight)]"
-          : "border-[var(--pio-line)] bg-transparent text-[var(--pio-graphite)] hover:border-[var(--pio-line-strong)] hover:text-[var(--pio-ink)]",
+          ? "bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)]"
+          : "bg-[rgba(26,64,106,0.04)] text-[var(--pio-ink)] opacity-70 hover:opacity-100 hover:bg-[rgba(26,64,106,0.09)]",
       ].join(" ")}
     >
-      <MessageSquare size={13} />
       Chat
     </button>
   );

@@ -2,9 +2,9 @@
 
 import { nanoid } from "nanoid";
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 
-import type { AnalysisResponse } from "./types";
+import type { AnalysisResponse, StructureComparisonResponse, ViewerSelection } from "./types";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -49,6 +49,12 @@ export type WorkspaceState = {
   contextTab: ContextTab;
   chatOpen: boolean;
   mode: AppMode;
+  selection: ViewerSelection | null;
+  floatingLigandKey: string | null; // `${chain_id}:${residue_number}`
+  hasHydrated: boolean; // true once persist middleware finishes reading localStorage
+  comparison: StructureComparisonResponse | null;
+  compareIsLoading: boolean;
+  compareError: string | null;
 
   // Actions
   addStructure: (entry: Omit<StructureEntry, "id" | "savedAt">) => string;
@@ -59,6 +65,10 @@ export type WorkspaceState = {
   setContextTab: (tab: ContextTab) => void;
   setChatOpen: (open: boolean) => void;
   setMode: (mode: AppMode) => void;
+  setSelection: (s: ViewerSelection | null) => void;
+  setFloatingLigandKey: (key: string | null) => void;
+  setComparison: (c: StructureComparisonResponse | null, err?: string | null) => void;
+  setCompareLoading: (v: boolean) => void;
   getActive: () => StructureEntry | null;
 };
 
@@ -73,6 +83,12 @@ export const useWorkspace = create<WorkspaceState>()(
       contextTab: "overview",
       chatOpen: false,
       mode: "workspace",
+      selection: null,
+      floatingLigandKey: null,
+      hasHydrated: false,
+      comparison: null,
+      compareIsLoading: false,
+      compareError: null,
 
       addStructure: (entry) => {
         const id = nanoid(10);
@@ -84,6 +100,8 @@ export const useWorkspace = create<WorkspaceState>()(
         set((s) => ({
           structures: [...s.structures, newEntry],
           activeId: id,
+          selection: null,
+          floatingLigandKey: null,
         }));
         return id;
       },
@@ -109,7 +127,7 @@ export const useWorkspace = create<WorkspaceState>()(
         });
       },
 
-      setActiveId: (id) => set({ activeId: id }),
+      setActiveId: (id) => set({ activeId: id, selection: null, floatingLigandKey: null }),
 
       setCompareId: (slot, id) =>
         set((s) => {
@@ -124,6 +142,14 @@ export const useWorkspace = create<WorkspaceState>()(
 
       setMode: (mode) => set({ mode }),
 
+      setSelection: (s) => set({ selection: s }),
+
+      setFloatingLigandKey: (key) => set({ floatingLigandKey: key }),
+
+      setComparison: (c, err = null) => set({ comparison: c, compareError: err, compareIsLoading: false }),
+
+      setCompareLoading: (v) => set({ compareIsLoading: v, compareError: null }),
+
       getActive: () => {
         const { structures, activeId } = get();
         return structures.find((e) => e.id === activeId) ?? null;
@@ -131,11 +157,29 @@ export const useWorkspace = create<WorkspaceState>()(
     }),
     {
       name: "pio_workspace_v1",
-      // Don't persist structureText (large) or isAnalyzing state
+      onRehydrateStorage: () => (state) => {
+        if (state) state.hasHydrated = true;
+      },
+      // Quota-safe storage — swallows QuotaExceededError silently
+      storage: createJSONStorage(() => ({
+        getItem: (name: string) => {
+          try { return localStorage.getItem(name); } catch { return null; }
+        },
+        setItem: (name: string, value: string) => {
+          try { localStorage.setItem(name, value); } catch { /* quota exceeded */ }
+        },
+        removeItem: (name: string) => {
+          try { localStorage.removeItem(name); } catch { /* ok */ }
+        },
+      })),
+      // Strip structureText from ALL sources — CIF/PDB files are 200KB-2MB and
+      // push the serialised store over the 5 MB localStorage quota, causing a
+      // silent write failure that wipes the analysis too.
+      // On reload the 3D viewer re-fetches structure text via a separate effect.
       partialize: (s) => ({
         structures: s.structures.map((e) => ({
           ...e,
-          structureText: "",       // don't bloat localStorage
+          structureText: "",
           isAnalyzing: false,
           error: null,
         })),
