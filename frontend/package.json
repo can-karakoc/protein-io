@@ -12,6 +12,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "framer-motion": "^12.41.0",
     "lucide-react": "^1.20.0",
     "molstar": "^5.10.1",
