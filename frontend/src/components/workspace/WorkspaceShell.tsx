@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeftRight, Bot, Download, Menu, Moon, Sun, X } from "lucide-react";
+import { ArrowLeftRight, Bot, Download, Moon, Sun, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { BatchWorkspace } from "@/components/workbench/BatchWorkspace";
@@ -602,68 +602,13 @@ function WorkspaceTopNav() {
 
 // ── Collapsed tray (shown when chat is open) ──────────────────────────────────
 
-function TrayMini({ onExpand }: { onExpand: () => void }) {
-  const { structures, activeId, setActiveId, setContextTab } = useWorkspace();
-  return (
-    <div className="flex flex-col items-center gap-2 py-3 h-full overflow-y-auto bg-[var(--pio-white)]" style={{ borderRight: "1px solid var(--pio-line)" }}>
-      <button
-        type="button"
-        onClick={onExpand}
-        title="Expand structure list"
-        className="flex h-8 w-8 items-center justify-center rounded-[10px] text-[var(--pio-graphite)] hover:bg-[var(--pio-line)] hover:text-[var(--pio-ink)] transition-colors"
-      >
-        <Menu size={15} />
-      </button>
-      <div className="w-6 border-t border-[var(--pio-line)]" />
-      {structures.map((s) => {
-        const label = (s.pdbId || s.uniprotId || s.name || "?").slice(0, 4);
-        const isActive = s.id === activeId;
-        return (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => { setActiveId(s.id); setContextTab("overview"); }}
-            title={s.pdbId || s.uniprotId || s.name}
-            className={[
-              "flex h-9 w-9 items-center justify-center rounded-[10px] transition-colors",
-              isActive
-                ? "bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)]"
-                : "bg-[var(--pio-sky)] text-[var(--pio-highlight)] hover:bg-[rgba(199,217,236,0.6)]",
-            ].join(" ")}
-          >
-            <span className="font-[family-name:var(--font-pio-mono)] text-[9px] font-bold leading-none">{label}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 // ── Workspace 3-column layout ─────────────────────────────────────────────────
 
 function WorkspaceLayout() {
-  const { getActive, updateStructure, selection, setSelection, floatingLigandKey, setFloatingLigandKey, hasHydrated, chatOpen, setChatOpen } = useWorkspace();
+  const { getActive, updateStructure, selection, setSelection, floatingLigandKey, setFloatingLigandKey, hasHydrated } = useWorkspace();
   const active = getActive();
   const viewerColRef = useRef<HTMLDivElement>(null);
   const [viewerColorMode, setViewerColorMode] = useState<"structure" | "plddt">("structure");
-  const [chatWidth, setChatWidth] = useState(320);
-  const [chatSwapped, setChatSwapped] = useState(false);
-  const dragRef = useRef<{ startX: number; startW: number } | null>(null);
-
-  const startResize = useCallback((e: React.PointerEvent) => {
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    dragRef.current = { startX: e.clientX, startW: chatWidth };
-  }, [chatWidth]);
-
-  const onResizeDrag = useCallback((e: React.PointerEvent) => {
-    if (!dragRef.current) return;
-    const delta = e.clientX - dragRef.current.startX;
-    // Normal [V][H][C]: right = chat shrinks. Swapped [C][H][V]: right = chat grows.
-    const sign = chatSwapped ? 1 : -1;
-    setChatWidth(Math.max(240, Math.min(520, dragRef.current.startW + sign * delta)));
-  }, [chatSwapped]);
-
-  const stopResize = useCallback(() => { dragRef.current = null; }, []);
 
   // Case A: no analysis cached → run full analysis
   useEffect(() => {
@@ -750,25 +695,14 @@ function WorkspaceLayout() {
   }, [floatingLigandKey, active]);
 
   return (
-    <div className="relative flex h-full w-full overflow-hidden rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
-      {/* Left: structure tray — collapses to mini when chat is open */}
-      <motion.div
-        animate={{ width: chatOpen ? 48 : 280 }}
-        transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-        className="relative z-[1] flex-shrink-0 h-full overflow-hidden shadow-[8px_0_24px_rgba(17,22,16,0.07)]"
-      >
-        {chatOpen ? (
-          <TrayMini onExpand={() => setChatOpen(false)} />
-        ) : (
-          <StructureTray />
-        )}
-      </motion.div>
+    <div className="relative flex h-full w-full overflow-hidden">
+      {/* Left: structure tray */}
+      <div className="relative z-[1] w-[280px] flex-shrink-0 h-full overflow-hidden shadow-[8px_0_24px_rgba(17,22,16,0.07)]">
+        <StructureTray />
+      </div>
 
-      {/* Center: viewer + side-by-side chat */}
-      <div className="flex-1 min-w-0 h-full flex overflow-hidden">
-
-      {/* Mol* viewer — always mounted, CSS order handles swap */}
-      <div ref={viewerColRef} className="flex-1 min-w-0 h-full relative bg-[var(--pio-paper)]" style={{ order: chatSwapped ? 3 : 1 }}>
+      {/* Center: Mol* viewer */}
+      <div ref={viewerColRef} className="flex-1 min-w-0 h-full relative bg-[var(--pio-paper)]">
         <StructureViewer
           structureText={active?.structureText ?? ""}
           structureFormat={active?.structureFormat ?? "pdb"}
@@ -858,89 +792,6 @@ function WorkspaceLayout() {
         </AnimatePresence>
       </div>{/* end viewer */}
 
-        {/* Chat panel — side-by-side, with resize handle */}
-        <AnimatePresence>
-          {chatOpen && (
-            <motion.div
-              key="chat-section"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              className="h-full flex-shrink-0 flex"
-              style={{
-                order: chatSwapped ? 1 : 3,
-                width: chatWidth + 5,
-                flexDirection: chatSwapped ? "row-reverse" : "row",
-              }}
-            >
-              {/* Resize handle */}
-              <div
-                onPointerDown={startResize}
-                onPointerMove={onResizeDrag}
-                onPointerUp={stopResize}
-                onPointerCancel={stopResize}
-                className="group flex-shrink-0 cursor-col-resize flex items-center justify-center hover:bg-[rgba(26,64,106,0.06)] transition-colors"
-                style={{ width: 5, background: "var(--pio-line)", userSelect: "none" }}
-                title="Drag to resize"
-              >
-                <div className="flex flex-col gap-[3px]">
-                  {[0,1,2].map(i => (
-                    <div key={i} className="w-[3px] h-[3px] rounded-full bg-[var(--pio-graphite)] opacity-30 group-hover:opacity-60 transition-opacity" />
-                  ))}
-                </div>
-              </div>
-
-              {/* Chat content */}
-              <div className="flex-1 min-w-0 h-full flex flex-col bg-[var(--pio-white)]" style={{ borderLeft: chatSwapped ? "none" : "1px solid var(--pio-line)", borderRight: chatSwapped ? "1px solid var(--pio-line)" : "none" }}>
-                {/* Chat header */}
-                <div className="flex items-center justify-between px-4 flex-shrink-0 border-b border-[var(--pio-line)]" style={{ height: 52 }}>
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full" style={{ background: "rgba(199,217,236,0.4)" }}>
-                      <Bot size={13} style={{ color: "var(--pio-highlight)" }} />
-                    </div>
-                    <p className="text-pio-sm font-bold text-[var(--pio-ink)] shrink-0">AI Chat</p>
-                    {active && (
-                      <span className="text-pio-3xs font-semibold text-[var(--pio-graphite)] truncate" style={{ background: "var(--pio-sky)", borderRadius: 6, padding: "2px 8px", maxWidth: 120 }}>
-                        {active.pdbId || active.uniprotId || active.name}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-0.5 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setChatSwapped(s => !s)}
-                      title={chatSwapped ? "Move chat to right" : "Move chat to left"}
-                      className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--pio-graphite)] hover:bg-[var(--pio-line)] hover:text-[var(--pio-ink)] transition-colors"
-                    >
-                      <ArrowLeftRight size={12} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setChatOpen(false)}
-                      className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--pio-graphite)] hover:bg-[var(--pio-line)] hover:text-[var(--pio-ink)] transition-colors"
-                    >
-                      <X size={13} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Chat workspace */}
-                <div className="flex-1 min-h-0 overflow-hidden">
-                  <ChatWorkspace
-                    analysis={active?.analysis ?? null}
-                    compareEntry={null}
-                    onFocusExplore={() => setChatOpen(false)}
-                    embedded
-                  />
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-      </div>{/* end center flex */}
-
       {/* Right: context panel */}
       <div className="relative z-[1] w-[400px] flex-shrink-0 h-full overflow-hidden shadow-[-8px_0_24px_rgba(17,22,16,0.07)]">
         <ContextPanel />
@@ -951,21 +802,131 @@ function WorkspaceLayout() {
 
 // ── Shell entry point ─────────────────────────────────────────────────────────
 
+const CARD_CLS = "overflow-hidden rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]";
+
 export function WorkspaceShell() {
-  const { mode } = useWorkspace();
+  const { mode, chatOpen, setChatOpen, getActive } = useWorkspace();
+  const active = getActive();
+
+  // Chat panel state
+  const [chatWidth, setChatWidth] = useState(380);
+  const [chatSwapped, setChatSwapped] = useState(false);
+  const dragRef = useRef<{ startX: number; startW: number } | null>(null);
+
+  const startResize = useCallback((e: React.PointerEvent) => {
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    dragRef.current = { startX: e.clientX, startW: chatWidth };
+  }, [chatWidth]);
+
+  const onResizeDrag = useCallback((e: React.PointerEvent) => {
+    if (!dragRef.current) return;
+    const delta = e.clientX - dragRef.current.startX;
+    // Normal [Workspace][gap][Chat]: drag right → chat shrinks
+    // Swapped [Chat][gap][Workspace]: drag right → chat grows
+    const sign = chatSwapped ? 1 : -1;
+    setChatWidth(Math.max(280, Math.min(600, dragRef.current.startW + sign * delta)));
+  }, [chatSwapped]);
+
+  const stopResize = useCallback(() => { dragRef.current = null; }, []);
 
   return (
     <main className="pio-shell pt-6">
       <WorkspaceTopNav />
 
-      <div className="mx-auto w-full max-w-[1500px] px-4 pb-4 pt-6 h-[calc(100svh-92px)]">
-        {mode === "workspace" ? (
-          <WorkspaceLayout />
-        ) : (
-          <div className="h-full w-full overflow-hidden rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]">
+      <div className="mx-auto w-full max-w-[1600px] px-4 pb-4 pt-6 h-[calc(100svh-92px)] flex gap-3">
+
+        {/* Workspace card */}
+        <div className={`flex-1 min-w-0 h-full ${CARD_CLS}`} style={{ order: chatSwapped ? 3 : 1 }}>
+          {mode === "workspace" ? (
+            <WorkspaceLayout />
+          ) : (
             <BatchWorkspace />
-          </div>
-        )}
+          )}
+        </div>
+
+        {/* Resize handle — only visible when chat is open */}
+        <AnimatePresence>
+          {chatOpen && (
+            <motion.div
+              key="resize-gap"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              onPointerDown={startResize}
+              onPointerMove={onResizeDrag}
+              onPointerUp={stopResize}
+              onPointerCancel={stopResize}
+              className="group flex-shrink-0 flex items-center justify-center cursor-col-resize rounded-full"
+              style={{ order: 2, width: 8, userSelect: "none" }}
+              title="Drag to resize"
+            >
+              <div className="flex flex-col gap-[3px]">
+                {[0,1,2].map(i => (
+                  <div key={i} className="w-1 h-1 rounded-full bg-[var(--pio-graphite)] opacity-20 group-hover:opacity-60 transition-opacity" />
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Chat card — same styling as workspace card */}
+        <AnimatePresence>
+          {chatOpen && (
+            <motion.div
+              key="chat-card"
+              initial={{ opacity: 0, width: 0 }}
+              animate={{ opacity: 1, width: chatWidth }}
+              exit={{ opacity: 0, width: 0 }}
+              transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1] }}
+              className={`h-full flex-shrink-0 flex flex-col ${CARD_CLS}`}
+              style={{ order: chatSwapped ? 1 : 3 }}
+            >
+              {/* Chat header */}
+              <div className="flex items-center justify-between px-4 flex-shrink-0 border-b border-[var(--pio-line)]" style={{ height: 52 }}>
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full" style={{ background: "rgba(199,217,236,0.4)" }}>
+                    <Bot size={13} style={{ color: "var(--pio-highlight)" }} />
+                  </div>
+                  <p className="text-pio-sm font-bold text-[var(--pio-ink)] shrink-0">AI Chat</p>
+                  {active && (
+                    <span className="text-pio-3xs font-semibold text-[var(--pio-graphite)] truncate" style={{ background: "var(--pio-sky)", borderRadius: 6, padding: "2px 8px", maxWidth: 140 }}>
+                      {active.pdbId || active.uniprotId || active.name}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setChatSwapped(s => !s)}
+                    title={chatSwapped ? "Move chat to right" : "Move chat to left"}
+                    className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--pio-graphite)] hover:bg-[var(--pio-line)] hover:text-[var(--pio-ink)] transition-colors"
+                  >
+                    <ArrowLeftRight size={12} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setChatOpen(false)}
+                    className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--pio-graphite)] hover:bg-[var(--pio-line)] hover:text-[var(--pio-ink)] transition-colors"
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Chat content */}
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <ChatWorkspace
+                  analysis={active?.analysis ?? null}
+                  compareEntry={null}
+                  onFocusExplore={() => setChatOpen(false)}
+                  embedded
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
       </div>
     </main>
   );
