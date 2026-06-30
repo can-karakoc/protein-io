@@ -19,7 +19,8 @@ import {
 } from "lucide-react";
 import { useRef, useState } from "react";
 
-import type { AnalysisResponse, ContactRecord, LigandInteractionSummary } from "@/lib/types";
+import { buildApiUrl } from "@/lib/api";
+import type { AnalysisResponse, ContactRecord, RcsbAnalysisResponse } from "@/lib/types";
 import type { ContextTab, StructureEntry } from "@/lib/workspaceStore";
 import { useWorkspace } from "@/lib/workspaceStore";
 
@@ -757,6 +758,177 @@ const TABS: TabDef[] = [
   { id: "methods", label: "Methods", icon: Microscope, needsAnalysis: true },
 ];
 
+// ── Example Gallery (empty state) ────────────────────────────────────────────
+
+type GalleryEntry = {
+  id: string;
+  title: string;
+  source: string;
+  description: string;
+  tags: string[];
+  type: "rcsb" | "alphafold";
+  accession: string;
+};
+
+const GALLERY: GalleryEntry[] = [
+  {
+    id: "hemoglobin",
+    title: "Hemoglobin",
+    source: "RCSB  2HHB",
+    description: "Classic multi-chain experimental structure for chain metadata and inter-chain contacts.",
+    tags: ["RCSB", "experimental", "multi-chain"],
+    type: "rcsb",
+    accession: "2HHB",
+  },
+  {
+    id: "ligand-bound",
+    title: "Ligand-bound protein",
+    source: "RCSB  1A3N",
+    description: "Experimental structure useful for ligand interaction summaries and residue contact review.",
+    tags: ["RCSB", "ligand", "contacts"],
+    type: "rcsb",
+    accession: "1A3N",
+  },
+  {
+    id: "binder-target",
+    title: "Binder–target interface",
+    source: "RCSB  1PPE",
+    description: "Trypsin bound to BPTI — a textbook 2-chain protease–inhibitor complex with a tight, well-characterised interface.",
+    tags: ["RCSB", "interface", "protein-protein"],
+    type: "rcsb",
+    accession: "1PPE",
+  },
+  {
+    id: "alphafold",
+    title: "AlphaFold prediction",
+    source: "AlphaFold DB  P69905",
+    description: "Predicted hemoglobin alpha-chain model with pLDDT confidence coloring and contact warnings.",
+    tags: ["AlphaFold", "pLDDT", "predicted"],
+    type: "alphafold",
+    accession: "P69905",
+  },
+];
+
+function tagBg(tag: string) {
+  const t = tag.toLowerCase();
+  const green = ["ligand", "contacts", "experimental", "multi-chain", "predicted", "plddt", "interface", "protein-protein"];
+  return green.includes(t) ? "var(--pio-green-pale)" : "var(--pio-blue-pale)";
+}
+function tagFg(tag: string) {
+  const t = tag.toLowerCase();
+  const green = ["ligand", "contacts", "experimental", "multi-chain", "predicted", "plddt", "interface", "protein-protein"];
+  return green.includes(t) ? "var(--pio-green-deep)" : "var(--pio-blue-deep)";
+}
+
+function EmptyGallery() {
+  const { addStructure, updateStructure, setActiveId } = useWorkspace();
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+
+  async function loadEntry(entry: GalleryEntry) {
+    if (loadingId) return;
+    setLoadingId(entry.id);
+    const entryId = addStructure({
+      name: entry.accession,
+      source: entry.type,
+      pdbId: entry.type === "rcsb" ? entry.accession : "",
+      uniprotId: entry.type === "alphafold" ? entry.accession : "",
+      structureText: "",
+      structureFormat: "cif",
+      cutoff: 4.0,
+      analysis: null,
+      isAnalyzing: true,
+      error: null,
+    });
+    setActiveId(entryId);
+    try {
+      const path = entry.type === "rcsb"
+        ? `/api/rcsb/${encodeURIComponent(entry.accession)}/analyze?cutoff_angstrom=4`
+        : `/api/alphafold/${encodeURIComponent(entry.accession)}/analyze?cutoff_angstrom=4`;
+      const res = await fetch(buildApiUrl(path));
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { detail?: string } | null;
+        throw new Error(body?.detail ?? `Fetch failed (${res.status})`);
+      }
+      const payload = (await res.json()) as RcsbAnalysisResponse;
+      updateStructure(entryId, {
+        structureText: payload.structure_text,
+        structureFormat: payload.structure_format,
+        analysis: payload.analysis,
+        isAnalyzing: false,
+      });
+    } catch (e) {
+      updateStructure(entryId, {
+        isAnalyzing: false,
+        error: e instanceof Error ? e.message : "Load failed",
+      });
+    } finally {
+      setLoadingId(null);
+    }
+  }
+
+  return (
+    <aside className="flex h-full flex-col bg-[var(--pio-white)]">
+      <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6 scrollbar-thin-report">
+        <h2 className="text-pio-4xl font-bold tracking-[-0.01em] text-[var(--pio-ink)]">
+          Start a structure analysis
+        </h2>
+        <p className="mt-2 text-pio-lg leading-relaxed text-[var(--pio-graphite)]">
+          Explore protein structures, contacts, ligands, and confidence in one browser workspace.
+          Start with a structure file, PDB ID, AlphaFold accession, or sample structure.
+        </p>
+
+        <div className="mt-5 border-t border-[var(--pio-line)] pt-5">
+          <h3 className="text-pio-2xl font-bold tracking-[-0.01em] text-[var(--pio-ink)]">
+            Example Gallery
+          </h3>
+          <div className="mt-4 flex flex-col gap-3">
+            {GALLERY.map((entry) => (
+              <article
+                key={entry.id}
+                className="pio-gallery-card flex min-w-0 flex-col gap-3 rounded-[8px] bg-[#F5F5F5] p-4"
+              >
+                <div className="min-w-0">
+                  <h4 className="text-pio-xl font-bold leading-snug text-[var(--pio-ink)]">
+                    {entry.title}
+                  </h4>
+                  <p className="mt-0.5 font-[family-name:var(--font-pio-mono)] text-pio-sm text-[var(--pio-graphite)]">
+                    {entry.source}
+                  </p>
+                  <p className="mt-1.5 text-pio-md leading-[1.5] text-[var(--pio-graphite)]"
+                    style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}
+                  >
+                    {entry.description}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {entry.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-full px-[10px] py-[3px] text-pio-xs font-semibold"
+                        style={{ background: tagBg(tag), color: tagFg(tag) }}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => loadEntry(entry)}
+                  disabled={!!loadingId}
+                  className="flex w-full items-center justify-center gap-2 rounded-[12px] bg-[var(--pio-highlight)] py-[6px] text-pio-base font-semibold text-[var(--pio-highlight-text)] transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {loadingId === entry.id ? <Loader2 size={13} className="animate-spin" /> : null}
+                  {loadingId === entry.id ? "Loading…" : "Load"}
+                </button>
+              </article>
+            ))}
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
 // ── Main ContextPanel ─────────────────────────────────────────────────────────
 
 export function ContextPanel() {
@@ -765,16 +937,7 @@ export function ContextPanel() {
   const tabStripRef = useRef<HTMLDivElement>(null);
 
   if (!active) {
-    return (
-      <aside className="flex h-full flex-col bg-[var(--pio-white)] border-l border-[var(--pio-line)]">
-        <div className="flex flex-col items-center justify-center flex-1 gap-3 px-6 text-center opacity-50">
-          <Layers size={28} className="text-[var(--pio-graphite)]" />
-          <p className="text-pio-xs text-[var(--pio-graphite)]">
-            Load a structure to explore its analysis
-          </p>
-        </div>
-      </aside>
-    );
+    return <EmptyGallery />;
   }
 
   function renderTab() {

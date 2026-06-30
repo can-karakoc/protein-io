@@ -362,79 +362,73 @@ function StructureLoader({ onLoaded }: { onLoaded: () => void }) {
       {/* PDB ID tab */}
       {tab === "pdb" && (
         <div className="flex flex-col gap-2">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={pdbId}
-              onChange={(e) => setPdbId(e.target.value.toUpperCase())}
-              onKeyDown={(e) => e.key === "Enter" && fetchRcsb()}
-              placeholder="e.g. 1HSG"
-              className="pio-input flex-1 text-pio-sm font-mono"
-              style={{ height: 34, padding: "0 10px" }}
-            />
-            <button
-              type="button"
-              onClick={fetchRcsb}
-              disabled={isLoading}
-              className="flex items-center gap-1.5 rounded-[10px] bg-[var(--pio-highlight)] px-3 py-1.5 text-pio-xs font-semibold text-[var(--pio-highlight-text)] transition-opacity disabled:opacity-40"
-            >
-              {isLoading ? <Loader2 size={12} className="animate-spin" /> : <Search size={12} />}
-              Fetch
-            </button>
-          </div>
-          <p className="text-pio-3xs text-[var(--pio-graphite)] opacity-70">
-            Fetches from RCSB PDB and analyzes immediately.
-          </p>
+          <label className="pio-label" htmlFor="tray-pdb-id">PDB ID</label>
+          <input
+            id="tray-pdb-id"
+            type="text"
+            value={pdbId}
+            maxLength={4}
+            onChange={(e) => setPdbId(e.target.value.toUpperCase())}
+            onKeyDown={(e) => e.key === "Enter" && fetchRcsb()}
+            placeholder="e.g. 2HHB"
+            className="pio-input h-9 w-full bg-[var(--pio-paper)] px-3 font-mono text-pio-sm uppercase"
+          />
+          <button
+            type="button"
+            onClick={fetchRcsb}
+            disabled={isLoading || !pdbId.trim()}
+            className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[var(--pio-line)] py-2 text-pio-base font-semibold text-[var(--pio-ink)] transition-colors hover:bg-[var(--pio-line-strong)] disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            {isLoading ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
+            Fetch
+          </button>
+          <p className="text-pio-xs text-[var(--pio-graphite)]">Fetches mmCIF from RCSB.</p>
         </div>
       )}
 
       {/* AlphaFold tab */}
       {tab === "alphafold" && (
         <div className="flex flex-col gap-2">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={uniprotId}
-              onChange={(e) => setUniprotId(e.target.value.toUpperCase())}
-              onKeyDown={(e) => e.key === "Enter" && fetchAlphaFold()}
-              placeholder="e.g. P69905"
-              className="pio-input flex-1 text-pio-sm font-mono"
-              style={{ height: 34, padding: "0 10px" }}
-            />
-            <button
-              type="button"
-              onClick={fetchAlphaFold}
-              disabled={isLoading}
-              className="flex items-center gap-1.5 rounded-[10px] bg-[var(--pio-highlight)] px-3 py-1.5 text-pio-xs font-semibold text-[var(--pio-highlight-text)] transition-opacity disabled:opacity-40"
-            >
-              {isLoading ? <Loader2 size={12} className="animate-spin" /> : <Search size={12} />}
-              Fetch
-            </button>
-          </div>
-          <p className="text-pio-3xs text-[var(--pio-graphite)] opacity-70">
-            Fetches the AlphaFold DB model and includes pLDDT confidence.
-          </p>
+          <label className="pio-label" htmlFor="tray-uniprot-id">UniProt accession</label>
+          <input
+            id="tray-uniprot-id"
+            type="text"
+            value={uniprotId}
+            maxLength={10}
+            onChange={(e) => setUniprotId(e.target.value.toUpperCase())}
+            onKeyDown={(e) => e.key === "Enter" && fetchAlphaFold()}
+            placeholder="e.g. P69905"
+            className="pio-input h-9 w-full bg-[var(--pio-paper)] px-3 font-mono text-pio-sm uppercase"
+          />
+          <button
+            type="button"
+            onClick={fetchAlphaFold}
+            disabled={isLoading || !uniprotId.trim()}
+            className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[var(--pio-line)] py-2 text-pio-base font-semibold text-[var(--pio-ink)] transition-colors hover:bg-[var(--pio-line-strong)] disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            {isLoading ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
+            Fetch
+          </button>
+          <p className="text-pio-xs text-[var(--pio-graphite)]">Fetches AlphaFold predicted model via UniProt accession.</p>
         </div>
       )}
 
-      {/* Cutoff */}
-      <div className="flex items-center justify-between gap-2">
-        <label className="text-pio-3xs font-semibold text-[var(--pio-graphite)]">
-          Cutoff
-        </label>
-        <div className="flex items-center gap-1">
-          <input
-            type="number"
-            min={1}
-            max={12}
-            step={0.1}
-            value={cutoff}
-            onChange={(e) => setCutoff(Number(e.target.value))}
-            className="pio-input w-16 text-center font-mono text-pio-xs"
-            style={{ height: 26, padding: "0 6px" }}
-          />
-          <span className="text-pio-3xs text-[var(--pio-graphite)]">Å</span>
+      {/* Cutoff — matches original ExploreSidebar design */}
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center justify-between">
+          <label className="pio-label" htmlFor="tray-cutoff">Distance Cutoff</label>
+          <span className="font-mono text-xs text-[var(--pio-ink)]">{cutoff.toFixed(1)} Å</span>
         </div>
+        <input
+          id="tray-cutoff"
+          type="number"
+          min={1}
+          max={12}
+          step={0.1}
+          value={cutoff}
+          onChange={(e) => setCutoff(Number(e.target.value))}
+          className="pio-input h-9 w-full bg-[var(--pio-paper)] px-3 font-mono text-pio-sm"
+        />
       </div>
 
       {error && (
