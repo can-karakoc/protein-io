@@ -582,6 +582,7 @@ button:not(:disabled),
   color: var(--pio-ink);
   font-size: var(--text-pio-2xl);
   font-weight: 700;
+  line-height: 1.15;
 }
 
 .pio-section-copy {

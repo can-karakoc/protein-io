@@ -918,38 +918,40 @@ export function WorkspaceShell() {
           )}
         </div>
 
-        {/* Resize handle + swap button — unified grip strip */}
+        {/* Vertical toolbar between panels */}
         <AnimatePresence>
           {chatOpen && (
             <motion.div
-              key="resize-gap"
-              initial={{ opacity: 0, scaleY: 0.6 }}
-              animate={{ opacity: 1, scaleY: 1 }}
-              exit={{ opacity: 0, scaleY: 0.6 }}
+              key="panel-toolbar"
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.85 }}
               transition={{ type: "spring", stiffness: 500, damping: 38, mass: 0.6 }}
-              className="group flex-shrink-0 flex items-center justify-center cursor-col-resize"
-              style={{ order: 2, width: 20, userSelect: "none" }}
-              onPointerDown={startResize}
-              onPointerMove={onResizeDrag}
-              onPointerUp={stopResize}
-              onPointerCancel={stopResize}
+              className="flex-shrink-0 flex flex-col items-center justify-center gap-1.5"
+              style={{ order: 2, width: 32, userSelect: "none" }}
             >
-              {/* Swap button — distinct clickable action */}
+              {/* Swap panels */}
               <button
                 type="button"
-                onPointerDown={(e) => e.stopPropagation()}
                 onClick={() => setChatSwapped(s => !s)}
                 title={chatSwapped ? "Move chat to right" : "Move chat to left"}
-                className="flex h-7 w-7 items-center justify-center rounded-[8px] text-[var(--pio-graphite)] opacity-40 hover:opacity-100 hover:bg-[var(--pio-sky)] hover:text-[var(--pio-ink)] transition-all cursor-pointer"
+                className="flex h-7 w-7 items-center justify-center rounded-[8px] border border-[var(--pio-line)] bg-[var(--pio-white)] text-[var(--pio-graphite)] shadow-[0_1px_2px_rgba(17,22,16,0.06)] hover:border-[var(--pio-highlight)] hover:bg-[var(--pio-sky)] hover:text-[var(--pio-ink)] transition-all"
               >
                 <ArrowLeftRight size={11} />
               </button>
 
-              {/* Drag grip — visual indicator only */}
-              <div className="flex flex-col items-center gap-[4px] opacity-20 group-hover:opacity-50 transition-opacity">
-                <div className="w-[4px] h-[4px] rounded-full bg-[var(--pio-graphite)]" />
-                <div className="w-[4px] h-[4px] rounded-full bg-[var(--pio-graphite)]" />
-                <div className="w-[4px] h-[4px] rounded-full bg-[var(--pio-graphite)]" />
+              {/* Resize drag handle */}
+              <div
+                onPointerDown={startResize}
+                onPointerMove={onResizeDrag}
+                onPointerUp={stopResize}
+                onPointerCancel={stopResize}
+                title="Drag to resize"
+                className="flex h-7 w-7 flex-col items-center justify-center gap-[3px] rounded-[8px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_1px_2px_rgba(17,22,16,0.06)] hover:border-[var(--pio-highlight)] hover:bg-[var(--pio-sky)] transition-all cursor-col-resize"
+              >
+                <div className="w-[3px] h-[3px] rounded-full bg-[var(--pio-graphite)] opacity-40" />
+                <div className="w-[3px] h-[3px] rounded-full bg-[var(--pio-graphite)] opacity-40" />
+                <div className="w-[3px] h-[3px] rounded-full bg-[var(--pio-graphite)] opacity-40" />
               </div>
             </motion.div>
           )}

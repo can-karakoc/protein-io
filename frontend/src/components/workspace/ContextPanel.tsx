@@ -101,7 +101,7 @@ function InteractionSummaryPanel({ summary }: { summary: NonNullable<AnalysisRes
 
   return (
     <div>
-      <h2 className="text-pio-2xl font-bold text-[var(--pio-ink)] tracking-[-0.015em]">Ligand Interaction Summary</h2>
+      <h2 className="text-pio-2xl font-bold text-[var(--pio-ink)] tracking-[-0.015em] leading-[1.15]">Ligand Interaction Summary</h2>
       <p className="mt-1 text-pio-md leading-[1.5] text-[var(--pio-graphite)]">
         Distance-based contact categories and top contact participants.
       </p>
@@ -921,7 +921,7 @@ function ConfidenceTab({ entry }: { entry: StructureEntry }) {
             Average pLDDT
           </span>
           <span
-            className="text-pio-4xl font-bold"
+            className="text-pio-4xl font-bold leading-[1.1]"
             style={{ color: plddtColor(conf.average_plddt) }}
           >
             {conf.average_plddt.toFixed(1)}
@@ -1099,7 +1099,7 @@ function QualityTab({ entry }: { entry: StructureEntry }) {
 
       {/* Close-contact examples */}
       <div>
-        <h3 className="text-pio-2xl font-bold" style={{ letterSpacing: "-0.01em", color: "var(--pio-ink)" }}>Close-Contact Examples</h3>
+        <h3 className="text-pio-2xl font-bold leading-[1.15]" style={{ letterSpacing: "-0.01em", color: "var(--pio-ink)" }}>Close-Contact Examples</h3>
         <p className="text-pio-md mt-1" style={{ color: "var(--pio-graphite)" }}>
           Representative atom pairs under 2 Å. Review them in context before drawing a chemical conclusion.
         </p>
@@ -1562,7 +1562,7 @@ function EmptyGallery() {
         </p>
 
         <div className="mt-5 border-t border-[var(--pio-line)] pt-5">
-          <h3 className="text-pio-2xl font-bold tracking-[-0.01em] text-[var(--pio-ink)]">
+          <h3 className="text-pio-2xl font-bold leading-[1.15] tracking-[-0.01em] text-[var(--pio-ink)]">
             Example Gallery
           </h3>
           <div className="mt-4 flex flex-col gap-3">
