@@ -934,17 +934,19 @@ export function WorkspaceShell() {
               onPointerUp={stopResize}
               onPointerCancel={stopResize}
             >
-              {/* Unified pill: swap icon + 3 grip dots */}
-              <div className="flex flex-col items-center gap-[5px] rounded-[12px] py-3 px-[5px] transition-all opacity-30 group-hover:opacity-80 bg-transparent group-hover:bg-[var(--pio-sky)]">
-                <button
-                  type="button"
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={() => setChatSwapped(s => !s)}
-                  title={chatSwapped ? "Move chat to right" : "Move chat to left"}
-                  className="flex items-center justify-center text-[var(--pio-graphite)] cursor-pointer mb-[2px]"
-                >
-                  <ArrowLeftRight size={10} />
-                </button>
+              {/* Swap button — distinct clickable action */}
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => setChatSwapped(s => !s)}
+                title={chatSwapped ? "Move chat to right" : "Move chat to left"}
+                className="flex h-7 w-7 items-center justify-center rounded-[8px] text-[var(--pio-graphite)] opacity-40 hover:opacity-100 hover:bg-[var(--pio-sky)] hover:text-[var(--pio-ink)] transition-all cursor-pointer"
+              >
+                <ArrowLeftRight size={11} />
+              </button>
+
+              {/* Drag grip — visual indicator only */}
+              <div className="flex flex-col items-center gap-[4px] opacity-20 group-hover:opacity-50 transition-opacity">
                 <div className="w-[4px] h-[4px] rounded-full bg-[var(--pio-graphite)]" />
                 <div className="w-[4px] h-[4px] rounded-full bg-[var(--pio-graphite)]" />
                 <div className="w-[4px] h-[4px] rounded-full bg-[var(--pio-graphite)]" />
