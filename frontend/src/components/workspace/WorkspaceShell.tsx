@@ -277,9 +277,11 @@ function FloatingLigandPanel({
     if (!container) return;
     const rect = container.getBoundingClientRect();
     const pw = Math.min(MAX_PANEL_W, rect.width - 2 * SIDE_PAD);
+    // Use actual rendered height: header only when minimized
+    const ph = PANEL_HEADER_H + (minimized ? 0 : PANEL_BODY_H);
     setPos({
       x: clamp(e.clientX - dragOffset.current.dx, SIDE_PAD, rect.width - pw - SIDE_PAD),
-      y: clamp(e.clientY - dragOffset.current.dy, SIDE_PAD, rect.height - PANEL_HEADER_H - PANEL_BODY_H - SIDE_PAD),
+      y: clamp(e.clientY - dragOffset.current.dy, SIDE_PAD, rect.height - ph - SIDE_PAD),
     });
   }
 
@@ -297,15 +299,14 @@ function FloatingLigandPanel({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Re-clamp on expand / resize using stable fixed panel height
+  // Re-clamp on minimize/expand or resize to keep panel fully in-bounds
   useEffect(() => {
-    if (minimized) return;
     const container = viewerRef.current;
     if (!container) return;
-    const panelH = PANEL_HEADER_H + PANEL_BODY_H;
+    const ph = PANEL_HEADER_H + (minimized ? 0 : PANEL_BODY_H);
     setPos((p) => ({
       x: clamp(p.x, SIDE_PAD, container.offsetWidth - PANEL_W - SIDE_PAD),
-      y: clamp(p.y, SIDE_PAD, container.offsetHeight - panelH - SIDE_PAD),
+      y: clamp(p.y, SIDE_PAD, container.offsetHeight - ph - SIDE_PAD),
     }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [minimized, containerW, containerH]);
