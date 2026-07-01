@@ -257,7 +257,7 @@ function OverviewTab({ entry }: { entry: StructureEntry }) {
       {!isUpload && metaRows.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 24px" }}>
           {metaRows.map((row) => (
-            <div key={row.label} className="rounded-[6px] px-2 py-1.5 transition-colors hover:bg-[var(--pio-sky)]">
+            <div key={row.label} className="rounded-[6px] px-2 py-1.5 transition-colors hover:bg-[var(--pio-sky)] cursor-pointer">
               <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">{row.label}</p>
               {row.mono ? (
                 <p className="mt-0.5 font-mono text-pio-sm font-medium text-[var(--pio-ink)]">{row.value}</p>
@@ -2200,7 +2200,7 @@ export function ContextPanel() {
                   aria-selected={isActive}
                   onClick={() => setContextTab(tab.id)}
                   className={[
-                    "flex-1 min-w-max whitespace-nowrap text-center rounded-[12px] px-2 sm:px-3.5 py-2 text-pio-base font-semibold transition-colors",
+                    "flex-1 min-w-max whitespace-nowrap text-center rounded-[12px] px-2 sm:px-3.5 py-2 text-pio-base font-semibold transition-colors cursor-pointer",
                     isActive
                       ? "bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)]"
                       : "text-[var(--pio-graphite)] hover:opacity-100 hover:bg-[var(--pio-paper)]",
