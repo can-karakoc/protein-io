@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeftRight, ChevronsLeft, Download, Menu, Moon, Sun, X } from "lucide-react";
+import { ease, spring } from "@/lib/motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { BatchWorkspace } from "@/components/workbench/BatchWorkspace";
@@ -19,11 +20,12 @@ import type {
   ContactRecord,
   LigandInteractionSummary,
   LigandSummary,
+  StructureComparisonResponse,
 } from "@/lib/types";
 import { buildApiUrl } from "@/lib/api";
 import { ligandInteractionsToCsv, ligandMedchemReportToCsv } from "@/lib/csv";
 import type { RcsbAnalysisResponse } from "@/lib/types";
-import type { AppMode } from "@/lib/workspaceStore";
+import type { AppMode, StructureEntry } from "@/lib/workspaceStore";
 import { useWorkspace } from "@/lib/workspaceStore";
 
 import { ChatDrawer, ChatDrawerToggle } from "./ChatDrawer";
@@ -256,7 +258,7 @@ function FloatingLigandPanel({
       initial={{ opacity: 0, scale: 0.94, y: 8 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.94, y: 8 }}
-      transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
+      transition={spring.soft}
       style={{
         position: "absolute",
         left: pos.x,
@@ -282,19 +284,21 @@ function FloatingLigandPanel({
           {minimized ? `LIGAND DETAILS — ${ligand.name} ${ligand.chain_id}:${ligand.residue_number}` : "LIGAND DETAILS"}
         </p>
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-          <button
+          <motion.button
             type="button"
             onMouseDown={(e) => e.stopPropagation()}
-            onClick={() => {
-              setMinimized((m) => !m);
-            }}
+            onClick={() => setMinimized((m) => !m)}
+            whileTap={{ scale: 0.8 }}
+            transition={spring.press}
             style={{ width: 14, height: 14, borderRadius: "50%", background: minimized ? "#4A724C" : "#C09040", border: "none", cursor: "pointer" }}
             title={minimized ? "Expand" : "Minimize"}
           />
-          <button
+          <motion.button
             type="button"
             onMouseDown={(e) => e.stopPropagation()}
             onClick={onClose}
+            whileTap={{ scale: 0.8 }}
+            transition={spring.press}
             style={{ width: 14, height: 14, borderRadius: "50%", background: "#6E2A1C", border: "none", cursor: "pointer" }}
             title="Close"
           />
@@ -309,7 +313,7 @@ function FloatingLigandPanel({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: PANEL_BODY_H, opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+            transition={{ duration: 0.22, ease: ease.inOut }}
             style={{ overflow: "clip", paddingTop: 8, paddingBottom: 8, display: "flex", flexDirection: "column" }}
           >
             <div className="scrollbar-thin-panel" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "4px 14px" }}>
@@ -643,7 +647,11 @@ function TrayMini({ onExpand }: { onExpand: () => void }) {
 // ── Workspace 3-column layout ─────────────────────────────────────────────────
 
 function WorkspaceLayout() {
-  const { getActive, updateStructure, selection, setSelection, floatingLigandKey, setFloatingLigandKey, hasHydrated, chatOpen } = useWorkspace();
+  const {
+    getActive, updateStructure, selection, setSelection,
+    floatingLigandKey, setFloatingLigandKey, hasHydrated, chatOpen,
+    structures, compareIds, setCompareId, setComparison, setCompareLoading, comparison,
+  } = useWorkspace();
   const active = getActive();
   const viewerColRef = useRef<HTMLDivElement>(null);
   const [viewerColorMode, setViewerColorMode] = useState<"structure" | "plddt">("structure");
@@ -720,6 +728,36 @@ function WorkspaceLayout() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active?.id, active?.analysis, hasHydrated]);
 
+  // Auto-compare: when 2+ structures are ready, auto-set compareIds and run comparison.
+  // When >2 structures exist, preserve the first two ready ones (don't overwrite an existing comparison).
+  useEffect(() => {
+    if (!hasHydrated) return;
+    const ready = structures.filter(
+      (e) => e.analysis && e.structureText && !e.isAnalyzing,
+    );
+    if (ready.length < 2) return;
+    const [a, b] = ready;
+    // If comparison already exists for the same pair, don't re-run.
+    if (compareIds[0] === a.id && compareIds[1] === b.id && comparison) return;
+    // Set the compare IDs then fetch.
+    setCompareId(0, a.id);
+    setCompareId(1, b.id);
+    setCompareLoading(true);
+    fetch(buildApiUrl("/api/compare"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        structure_a: { structure_text: a.structureText, structure_format: a.structureFormat, name: a.name },
+        structure_b: { structure_text: b.structureText, structure_format: b.structureFormat, name: b.name },
+      }),
+    })
+      .then((res) => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json() as Promise<StructureComparisonResponse>; })
+      .then((result) => setComparison(result))
+      .catch((e) => setComparison(null, e instanceof Error ? e.message : "Comparison failed"));
+  // Only re-run when structure readiness changes or hydration completes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasHydrated, structures.map((s) => `${s.id}:${!!s.analysis}:${!!s.structureText}:${s.isAnalyzing}`).join(",")]);
+
   const residueConfidences = active?.analysis?.residue_confidences ?? [];
   const effectiveColorMode: "structure" | "plddt" = residueConfidences.length > 0 ? viewerColorMode : "structure";
 
@@ -743,7 +781,7 @@ function WorkspaceLayout() {
       {/* Left: structure tray — collapses to mini-strip when chat is open */}
       <motion.div
         animate={{ width: trayExpanded ? 280 : 60 }}
-        transition={{ type: "spring", stiffness: 500, damping: 40, mass: 0.8 }}
+        transition={spring.snappy}
         className="relative z-[1] flex-shrink-0 h-full overflow-hidden shadow-[8px_0_24px_rgba(17,22,16,0.07)]"
       >
         <AnimatePresence mode="wait">
@@ -753,7 +791,7 @@ function WorkspaceLayout() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.1 }}
+              transition={{ duration: 0.12, ease: ease.out }}
               className="h-full"
               style={{ width: 280 }}
             >
@@ -765,7 +803,7 @@ function WorkspaceLayout() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.1 }}
+              transition={{ duration: 0.12, ease: ease.out }}
               className="h-full"
               style={{ width: 60 }}
             >
@@ -814,7 +852,7 @@ function WorkspaceLayout() {
               initial={{ y: 12, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 12, opacity: 0 }}
-              transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
+              transition={{ duration: 0.2, ease: ease.out }}
               className="absolute right-3 pointer-events-none z-10"
               style={{ top: residueConfidences.length > 0 ? 52 : 12 }}
             >
@@ -834,7 +872,7 @@ function WorkspaceLayout() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setSelection(null)}
+                  onClick={() => { setSelection(null); setFloatingLigandKey(null); }}
                   style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, flexShrink: 0, background: "rgba(255,255,255,0.12)", borderRadius: "50%", color: "rgba(255,255,255,0.70)", transition: "background 0.15s" }}
                   onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.22)"; }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.12)"; }}
@@ -991,12 +1029,22 @@ export function WorkspaceShell() {
       <div className="mx-auto w-full max-w-[1600px] px-4 pb-4 pt-6 h-[calc(100svh-92px)] flex gap-3" style={{ position: "relative", zIndex: 1 }}>
 
         {/* Workspace card */}
-        <div className={`flex-1 min-w-0 h-full ${CARD_CLS}`} style={{ order: chatSwapped ? 3 : 1 }}>
-          {mode === "workspace" ? (
-            <WorkspaceLayout />
-          ) : (
-            <BatchWorkspace />
-          )}
+        <div className={`relative flex-1 min-w-0 h-full ${CARD_CLS}`} style={{ order: chatSwapped ? 3 : 1 }}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={mode}
+              initial={{ opacity: 0, filter: "blur(4px)" }}
+              animate={{ opacity: 1, filter: "blur(0px)", transition: { duration: 0.28, ease: ease.out } }}
+              exit={{ opacity: 0, filter: "blur(4px)", transition: { duration: 0.15, ease: ease.inOut } }}
+              className="absolute inset-0"
+            >
+              {mode === "workspace" ? (
+                <WorkspaceLayout />
+              ) : (
+                <BatchWorkspace />
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         {/* Thin draggable gap — swap button floats at centre */}
@@ -1007,7 +1055,7 @@ export function WorkspaceShell() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
+              transition={{ duration: 0.15, ease: ease.out }}
               className="flex-shrink-0 relative flex items-center justify-center cursor-col-resize"
               style={{ order: 2, width: 6, userSelect: "none" }}
               onPointerDown={startResize}
@@ -1041,7 +1089,7 @@ export function WorkspaceShell() {
               initial={{ opacity: 0, width: 0 }}
               animate={{ opacity: 1, width: chatWidth }}
               exit={{ opacity: 0, width: 0 }}
-              transition={{ type: "spring", stiffness: 380, damping: 30, mass: 0.9 }}
+              transition={spring.snappy}
               className={`h-full flex-shrink-0 flex flex-col ${CARD_CLS}`}
               style={{ order: chatSwapped ? 1 : 3 }}
             >

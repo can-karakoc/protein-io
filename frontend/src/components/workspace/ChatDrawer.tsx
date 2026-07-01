@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { MessageSquare, X } from "lucide-react";
 
 import { ChatWorkspace } from "@/components/workbench/ChatWorkspace";
+import { ease } from "@/lib/motion";
 import { useWorkspace } from "@/lib/workspaceStore";
 
 export function ChatDrawerToggle() {
@@ -61,7 +62,7 @@ export function ChatDrawer() {
             initial={{ opacity: 0, x: 24 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 24 }}
-            transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+            transition={{ duration: 0.2, ease: ease.out }}
             className="absolute right-0 top-0 bottom-0 z-50 flex w-[min(440px,100vw)] flex-col"
             style={{
               background: "var(--pio-white)",
