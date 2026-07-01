@@ -182,7 +182,7 @@ export function StructureViewer({
   }
 
   return (
-    <div className="pio-viewer-exempt relative h-full min-w-0 overflow-hidden bg-white">
+    <div className="pio-viewer-exempt relative h-full min-w-0 overflow-hidden bg-white" style={{ isolation: "isolate" }}>
       <div ref={containerRef} className="absolute inset-0" />
       {colorMode === "plddt" && residueConfidences.length ? (
         <div className="pointer-events-none absolute left-5 top-5 max-w-[260px] rounded-[var(--pio-radius-sm)] bg-[var(--pio-white)] px-3 py-2 text-xs leading-5 text-[var(--pio-graphite)] shadow-[var(--pio-shadow-sm)]">

@@ -271,7 +271,7 @@ function FloatingLigandPanel({
 
   function startDrag(e: React.MouseEvent) {
     const now = Date.now();
-    if (now - lastMouseDownAt.current < 300) {
+if (now - lastMouseDownAt.current < 300) {
       lastMouseDownAt.current = 0;
       setMinimized((m) => !m);
       return;
