@@ -238,6 +238,7 @@ function FloatingLigandPanel({
   const dragging = useRef(false);
   const dragOffset = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const lastMouseDownAt = useRef(0);
   // Stable handlers stored in refs so addEventListener/removeEventListener always
   // get the same function reference while the implementation stays up-to-date.
   const moveImplRef = useRef<(e: MouseEvent) => void>(() => {});
@@ -299,6 +300,15 @@ function FloatingLigandPanel({
   };
 
   function startDrag(e: React.MouseEvent) {
+    const now = Date.now();
+    if (now - lastMouseDownAt.current < 300) {
+      // Double-click: e.preventDefault() would suppress the native dblclick event,
+      // so we detect it manually here and toggle minimize instead of dragging.
+      lastMouseDownAt.current = 0;
+      setMinimized((m) => !m);
+      return;
+    }
+    lastMouseDownAt.current = now;
     e.preventDefault();
     dragging.current = true;
     dragOffset.current = { dx: e.clientX - pos.x, dy: e.clientY - pos.y };
@@ -371,7 +381,6 @@ function FloatingLigandPanel({
       {/* Drag handle header */}
       <div
         onMouseDown={startDrag}
-        onDoubleClick={() => setMinimized((m) => !m)}
         style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", cursor: "grab" }}
       >
         <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.08em", ...TEXT }}>
