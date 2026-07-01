@@ -403,7 +403,7 @@ export function CompareWorkspace() {
         {error ? (
           <div className="mt-5 rounded-[12px] border border-[var(--pio-coral)] bg-[var(--pio-coral-pale)] px-4 py-3">
             <p className="font-semibold text-[var(--pio-coral-deep)]">{error.title}</p>
-            <p className="mt-1 text-sm text-[var(--pio-coral-deep)]">{error.message}</p>
+            <p className="mt-1 text-pio-sm text-[var(--pio-coral-deep)]">{error.message}</p>
           </div>
         ) : null}
 
@@ -469,7 +469,7 @@ function ComparisonStructureInput({
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="pio-label">Structure {side}</p>
-          <p className="mt-1 text-sm font-semibold text-[var(--pio-ink)]">
+          <p className="mt-1 text-pio-sm font-semibold text-[var(--pio-ink)]">
             {side === "A" ? "Reference structure" : "Comparison structure"}
           </p>
         </div>
@@ -742,7 +742,7 @@ function DeltaCard({ label, value }: { label: string; value: number }) {
       <p className="pio-label">{label}</p>
       <div className={`mt-1.5 flex items-center gap-1.5 ${tone}`}>
         {Icon && <Icon className="h-4 w-4 shrink-0" />}
-        <p className="font-mono text-lg font-bold">{isPos ? `+${value}` : value}</p>
+        <p className="font-mono text-pio-xl font-bold">{isPos ? `+${value}` : value}</p>
       </div>
       <p className="mt-0.5 text-pio-2xs text-[var(--pio-graphite)]">B − A</p>
     </div>
@@ -766,7 +766,7 @@ function categoryBadgeClass(cat: string) {
 function ContactDifferenceTable({ rows }: { rows: ContactDifference[] }) {
   if (!rows.length) {
     return (
-      <div className="mt-4 rounded-[12px] border border-dashed border-[var(--pio-line-strong)] px-5 py-9 text-center text-sm text-[var(--pio-graphite)]">
+      <div className="mt-4 rounded-[12px] border border-dashed border-[var(--pio-line-strong)] px-5 py-9 text-center text-pio-sm text-[var(--pio-graphite)]">
         No representative contacts in this category.
       </div>
     );
