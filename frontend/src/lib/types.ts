@@ -22,6 +22,8 @@ export type LigandSummary = {
   atom_count: number;
 };
 
+export type HbondStrength = "strong" | "moderate" | "weak";
+
 export type ContactRecord = {
   chain_a: string;
   residue_a: string;
@@ -35,6 +37,7 @@ export type ContactRecord = {
   contact_type: ContactType;
   contact_categories: ContactCategory[];
   interaction_class?: "h-bond" | "salt-bridge" | "aromatic" | "pi-cation" | "hydrophobic" | "halogen-bond" | "unclassified" | null;
+  hbond_strength?: HbondStrength | null;
   source_residue_confidence?: ResidueConfidence | null;
   target_residue_confidence?: ResidueConfidence | null;
   confidence_warning?: boolean;
@@ -156,6 +159,8 @@ export type LigandInteractionSummary = {
   distance_distribution: DistanceDistribution;
   interaction_class_breakdown?: Record<string, number>;
   water_bridge_count?: number;
+  contact_efficiency?: number | null;
+  hbond_strength_breakdown?: Record<string, number>;
 };
 
 export type InteractionSummary = {

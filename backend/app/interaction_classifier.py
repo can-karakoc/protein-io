@@ -125,3 +125,29 @@ def classify_interaction_class(atom_a: AtomRecord, atom_b: AtomRecord, distance:
             return "hydrophobic"
 
     return "unclassified"
+
+
+def classify_hbond_strength(
+    atom_a: AtomRecord,
+    atom_b: AtomRecord,
+    distance: float,
+) -> str | None:
+    """
+    Return h-bond strength tier for a polar heavy-atom contact, or None if not an h-bond.
+
+    Tiers based on donor–acceptor distance (N/O/S heavy atoms only):
+        strong   < 2.5 Å  — short, well-formed H-bond
+        moderate 2.5–3.2 Å — typical H-bond range
+        weak     3.2–3.5 Å — long-range / marginal H-bond
+    """
+    elem_a = atom_a.element.strip().upper()
+    elem_b = atom_b.element.strip().upper()
+    if elem_a not in _POLAR_ELEMENTS or elem_b not in _POLAR_ELEMENTS:
+        return None
+    if distance > _HBOND_CUTOFF:
+        return None
+    if distance < 2.5:
+        return "strong"
+    if distance < 3.2:
+        return "moderate"
+    return "weak"

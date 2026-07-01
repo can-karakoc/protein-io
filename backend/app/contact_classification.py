@@ -10,6 +10,7 @@ from app.models import (
     DistanceDistribution,
     InteractionSummary,
     LigandInteractionSummary,
+    LigandSummary,
     TopContactLigand,
     TopContactResidue,
     WaterBridgeRecord,
@@ -106,6 +107,7 @@ def summarize_ligand_interactions(
     contacts: list[ContactRecord],
     water_bridges: list[WaterBridgeRecord] | None = None,
     max_residues: int = 5,
+    ligands: list[LigandSummary] | None = None,
 ) -> list[LigandInteractionSummary]:
     ligand_contacts: dict[tuple[str, str, str], list[ContactRecord]] = {}
 
@@ -114,6 +116,11 @@ def summarize_ligand_interactions(
         if ligand_key is None:
             continue
         ligand_contacts.setdefault(ligand_key, []).append(contact)
+
+    # Build atom_count lookup from the optional ligand list
+    atom_count_by_key: dict[tuple[str, str, str], int] = {}
+    for lig in (ligands or []):
+        atom_count_by_key[(lig.chain_id, lig.residue_number, lig.name)] = lig.atom_count
 
     # ligand key = (chain_id, residue_id, residue_name) — mirrors ligand_residue_key()
     # key mirrors ligand_residue_key(): (chain_id, residue_number, residue_name)
@@ -133,13 +140,19 @@ def summarize_ligand_interactions(
         class_counts: Counter[str] = Counter(
             c.interaction_class for c in ligand_contact_rows if c.interaction_class != "unclassified"
         )
+        hbond_strength_counts: Counter[str] = Counter(
+            c.hbond_strength for c in ligand_contact_rows if c.hbond_strength is not None
+        )
+        protein_contacts = sum(1 for c in ligand_contact_rows if "protein-ligand" in c.contact_categories)
+        atom_count = atom_count_by_key.get((chain_id, residue_number, name))
+        efficiency = round(protein_contacts / atom_count, 3) if atom_count else None
         summaries.append(
             LigandInteractionSummary(
                 chain_id=chain_id,
                 residue_number=residue_number,
                 name=name,
                 contact_count=len(ligand_contact_rows),
-                protein_contact_count=sum(1 for contact in ligand_contact_rows if "protein-ligand" in contact.contact_categories),
+                protein_contact_count=protein_contacts,
                 water_contact_count=sum(1 for contact in ligand_contact_rows if "ligand-water" in contact.contact_categories),
                 possible_clash_count=sum(
                     1 for contact in ligand_contact_rows if "possible-clash" in contact.contact_categories
@@ -158,6 +171,8 @@ def summarize_ligand_interactions(
                 distance_distribution=ligand_distance_distribution(ligand_contact_rows),
                 interaction_class_breakdown=dict(class_counts),
                 water_bridge_count=bridge_by_ligand.get((chain_id, residue_number, name), 0),
+                contact_efficiency=efficiency,
+                hbond_strength_breakdown=dict(hbond_strength_counts),
             )
         )
 

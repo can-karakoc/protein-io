@@ -205,3 +205,45 @@ def test_unclassified_non_hydrophobic_residue():
     a = make_atom("GLY", "C", "CA")
     b = make_atom("SER", "C", "CB")
     assert classify_interaction_class(a, b, 3.8) == "unclassified"
+
+
+# ── hbond_strength ────────────────────────────────────────────────────────────
+
+from app.interaction_classifier import classify_hbond_strength
+
+def test_hbond_strength_strong():
+    a = make_atom("ASN", "N", "ND2")
+    b = make_atom("GLU", "O", "OE1")
+    assert classify_hbond_strength(a, b, 2.3) == "strong"
+
+def test_hbond_strength_moderate():
+    a = make_atom("ASN", "N", "ND2")
+    b = make_atom("GLU", "O", "OE1")
+    assert classify_hbond_strength(a, b, 2.8) == "moderate"
+
+def test_hbond_strength_weak():
+    a = make_atom("ASN", "N", "ND2")
+    b = make_atom("GLU", "O", "OE1")
+    assert classify_hbond_strength(a, b, 3.4) == "weak"
+
+def test_hbond_strength_none_beyond_cutoff():
+    a = make_atom("ASN", "N", "ND2")
+    b = make_atom("GLU", "O", "OE1")
+    assert classify_hbond_strength(a, b, 3.6) is None
+
+def test_hbond_strength_none_for_non_polar():
+    a = make_atom("ALA", "C", "CA")
+    b = make_atom("GLU", "O", "OE1")
+    assert classify_hbond_strength(a, b, 2.0) is None
+
+def test_hbond_strength_boundary_strong_moderate():
+    # exactly 2.5 → moderate (not strong, boundary is exclusive)
+    a = make_atom("SER", "O", "OG")
+    b = make_atom("ASP", "O", "OD1")
+    assert classify_hbond_strength(a, b, 2.5) == "moderate"
+
+def test_hbond_strength_boundary_moderate_weak():
+    # exactly 3.2 → weak (not moderate)
+    a = make_atom("SER", "O", "OG")
+    b = make_atom("ASP", "O", "OD1")
+    assert classify_hbond_strength(a, b, 3.2) == "weak"

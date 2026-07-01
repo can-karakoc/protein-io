@@ -136,6 +136,83 @@ function LigandFingerprintMatrix({
   );
 }
 
+// ── Drug-discovery micro-components ──────────────────────────────────────────
+
+const HBOND_STRENGTH_STYLE: Record<string, { label: string; color: string; bg: string }> = {
+  strong:   { label: "strong",   color: "var(--pio-green-deep)",  bg: "var(--pio-green-pale)" },
+  moderate: { label: "moderate", color: "var(--pio-amber-deep)",  bg: "rgba(217,119,6,0.10)" },
+  weak:     { label: "weak",     color: "var(--pio-graphite)",    bg: "var(--pio-paper)" },
+};
+
+function HbondStrengthBadge({ strength }: { strength: string }) {
+  const s = HBOND_STRENGTH_STYLE[strength];
+  if (!s) return null;
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center",
+      padding: "1px 5px", borderRadius: 4,
+      fontFamily: "var(--font-pio-mono)", fontSize: "9px", fontWeight: 700,
+      color: s.color, background: s.bg, whiteSpace: "nowrap",
+    }}>
+      {s.label}
+    </span>
+  );
+}
+
+const CLASS_COLORS: Record<string, string> = {
+  "h-bond":       "var(--pio-lavender-deep)",
+  "hydrophobic":  "var(--pio-highlight)",
+  "aromatic":     "var(--pio-amber-deep)",
+  "salt-bridge":  "var(--pio-coral-deep)",
+  "pi-cation":    "var(--pio-green-deep)",
+  "halogen-bond": "var(--pio-blue-deep)",
+};
+
+function InteractionBreakdownBar({
+  breakdown,
+  text,
+  mono,
+}: {
+  breakdown: Record<string, number>;
+  text: React.CSSProperties;
+  mono: React.CSSProperties;
+}) {
+  const total = Object.values(breakdown).reduce((s, n) => s + n, 0);
+  if (total === 0) return null;
+  const ordered = Object.entries(breakdown).sort((a, b) => b[1] - a[1]);
+  return (
+    <div>
+      <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.1em", ...text, opacity: 0.5, marginBottom: 6 }}>
+        INTERACTION BREAKDOWN
+      </p>
+      {/* Stacked bar */}
+      <div style={{ display: "flex", height: 8, borderRadius: 4, overflow: "hidden", gap: 1, marginBottom: 7 }}>
+        {ordered.map(([cls, count]) => (
+          <div
+            key={cls}
+            title={`${cls}: ${count}`}
+            style={{
+              flex: count,
+              background: CLASS_COLORS[cls] ?? "var(--pio-graphite)",
+              opacity: 0.85,
+            }}
+          />
+        ))}
+      </div>
+      {/* Legend */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "3px 10px" }}>
+        {ordered.map(([cls, count]) => (
+          <span key={cls} className="text-pio-3xs" style={{ display: "flex", alignItems: "center", gap: 3, ...mono, opacity: 0.65 }}>
+            <span style={{ width: 6, height: 6, borderRadius: 2, flexShrink: 0, background: CLASS_COLORS[cls] ?? "var(--pio-graphite)", display: "inline-block" }} />
+            {cls} <span style={{ fontWeight: 700, opacity: 0.9 }}>{count}</span>
+            <span style={{ opacity: 0.5 }}>({Math.round(count / total * 100)}%)</span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Floating Ligand Panel ─────────────────────────────────────────────────────
 
 function FloatingLigandPanel({
@@ -328,8 +405,13 @@ function FloatingLigandPanel({
                 {/* Identity */}
                 <div>
                   <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 5 }}>IDENTITY</p>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
-                    {[["CHAIN", ligand.chain_id], ["RESIDUE", ligand.residue_number], ["ATOMS", String(ligand.atom_count)]].map(([label, value]) => (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 6 }}>
+                    {[
+                      ["CHAIN", ligand.chain_id],
+                      ["RESIDUE", ligand.residue_number],
+                      ["ATOMS", String(ligand.atom_count)],
+                      ["EFFICIENCY", interaction?.contact_efficiency != null ? interaction.contact_efficiency.toFixed(2) : "—"],
+                    ].map(([label, value]) => (
                       <div key={label} style={{ background: "var(--pio-fp-card-bg)", borderRadius: 2, padding: "8px 10px" }}>
                         <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.08em", ...TEXT, opacity: 0.65 }}>{label}</p>
                         <p className="text-pio-lg" style={{ ...MONO, fontWeight: 700, marginTop: 2 }}>{value}</p>
@@ -337,6 +419,11 @@ function FloatingLigandPanel({
                     ))}
                   </div>
                 </div>
+
+                {/* Interaction breakdown bar */}
+                {interaction?.interaction_class_breakdown && Object.keys(interaction.interaction_class_breakdown).length > 0 && (
+                  <InteractionBreakdownBar breakdown={interaction.interaction_class_breakdown} text={TEXT} mono={MONO} />
+                )}
 
                 {/* Contact counts */}
                 <div>
@@ -474,7 +561,7 @@ function FloatingLigandPanel({
                               {c.distance_angstrom.toFixed(2)} Å
                             </span>
                             {/* justifySelf:start stops the grid item from blockifying to full cell width */}
-                            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "flex-start", justifySelf: "start" }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 3, justifyContent: "flex-start", justifySelf: "start", flexWrap: "wrap" }}>
                               {badge ? (
                                 <span className={`pio-badge ${badge.cls}`} style={{ padding: "1px 6px", whiteSpace: "nowrap", fontFamily: "var(--font-pio-mono)", fontSize: "10px" }}>
                                   {badge.label}
@@ -482,6 +569,7 @@ function FloatingLigandPanel({
                               ) : (
                                 <span className="text-pio-3xs" style={{ ...TEXT, opacity: 0.35 }}>—</span>
                               )}
+                              {c.hbond_strength && <HbondStrengthBadge strength={c.hbond_strength} />}
                             </span>
                           </div>
                         );

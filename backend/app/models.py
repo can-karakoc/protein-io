@@ -72,6 +72,7 @@ class ContactRecord(BaseModel):
     contact_type: ContactType
     contact_categories: list[ContactCategory] = Field(default_factory=list)
     interaction_class: InteractionClass = "unclassified"
+    hbond_strength: Literal["strong", "moderate", "weak"] | None = None
     source_residue_confidence: ResidueConfidence | None = None
     target_residue_confidence: ResidueConfidence | None = None
     confidence_warning: bool = False
@@ -113,6 +114,8 @@ class LigandInteractionSummary(BaseModel):
     distance_distribution: DistanceDistribution = Field(default_factory=DistanceDistribution)
     interaction_class_breakdown: dict[str, int] = Field(default_factory=dict)
     water_bridge_count: int = 0
+    contact_efficiency: float | None = None
+    hbond_strength_breakdown: dict[str, int] = Field(default_factory=dict)
 
 
 class InteractionSummary(BaseModel):

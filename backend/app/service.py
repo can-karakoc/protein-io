@@ -157,7 +157,7 @@ def analyze_pdb_content_with_timing(
         residue_confidences=residue_confidences,
         pae=pae,
         interaction_summary=summarize_interactions(contacts),
-        ligand_interactions=summarize_ligand_interactions(contacts, water_bridges=water_bridges),
+        ligand_interactions=summarize_ligand_interactions(contacts, water_bridges=water_bridges, ligands=structure.ligands),
         water_bridges=water_bridges,
         chains=structure.chains,
         ligands=structure.ligands,
