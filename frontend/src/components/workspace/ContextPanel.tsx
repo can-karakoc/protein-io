@@ -1159,38 +1159,71 @@ const DIFF_CHIP_BASE: React.CSSProperties = {
   padding: "2px 8px",
 };
 
+const DIFF_PAGE_SIZE = 10;
+
 function ContactDiffTable({ rows, emptyLabel }: { rows: ContactDifference[]; emptyLabel: string }) {
+  const [page, setPage] = useState(0);
+
   if (rows.length === 0) {
     return <p className="py-3 text-center text-pio-3xs text-[var(--pio-graphite)] opacity-50">{emptyLabel}</p>;
   }
+
+  const totalPages = Math.ceil(rows.length / DIFF_PAGE_SIZE);
+  const pageRows = rows.slice(page * DIFF_PAGE_SIZE, (page + 1) * DIFF_PAGE_SIZE);
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left border-collapse">
-        <thead>
-          <tr className="border-b border-[var(--pio-line)]">
-            <th className="py-1.5 pr-3 text-pio-3xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-60">Contact</th>
-            <th className="py-1.5 pr-3 text-pio-3xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-60">Type</th>
-            <th className="py-1.5 text-pio-3xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-60">Dist A / B</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => (
-            <tr key={i} className="border-b border-[var(--pio-line)] last:border-0">
-              <td className="py-2 pr-3 text-pio-xs text-[var(--pio-ink)] font-mono">{r.label}</td>
-              <td className="py-2 pr-3">
-                <span style={{ ...DIFF_CHIP_BASE, ...contactChipStyle(r.contact_type) }}>
-                  {r.contact_type}
-                </span>
-              </td>
-              <td className="py-2 text-pio-3xs font-mono text-[var(--pio-graphite)]">
-                {r.distance_a_angstrom != null ? r.distance_a_angstrom.toFixed(2) : "—"}
-                {" / "}
-                {r.distance_b_angstrom != null ? r.distance_b_angstrom.toFixed(2) : "—"} Å
-              </td>
+    <div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="border-b border-[var(--pio-line)]">
+              <th className="py-1.5 pr-3 text-pio-3xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-60">Contact</th>
+              <th className="py-1.5 pr-3 text-pio-3xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-60">Type</th>
+              <th className="py-1.5 text-pio-3xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-60">Dist A / B</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {pageRows.map((r, i) => (
+              <tr key={page * DIFF_PAGE_SIZE + i} className="border-b border-[var(--pio-line)] last:border-0">
+                <td className="py-2 pr-3 text-pio-xs text-[var(--pio-ink)] font-mono">{r.label}</td>
+                <td className="py-2 pr-3">
+                  <span style={{ ...DIFF_CHIP_BASE, ...contactChipStyle(r.contact_type) }}>
+                    {r.contact_type}
+                  </span>
+                </td>
+                <td className="py-2 text-pio-3xs font-mono text-[var(--pio-graphite)]">
+                  {r.distance_a_angstrom != null ? r.distance_a_angstrom.toFixed(2) : "—"}
+                  {" / "}
+                  {r.distance_b_angstrom != null ? r.distance_b_angstrom.toFixed(2) : "—"} Å
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {totalPages > 1 && (
+        <div className="mt-2 flex items-center justify-between border-t border-[var(--pio-line)] pt-2">
+          <button
+            type="button"
+            disabled={page === 0}
+            onClick={() => setPage((p) => p - 1)}
+            className="rounded-[8px] px-2.5 py-1 text-pio-3xs font-semibold text-[var(--pio-graphite)] hover:bg-[var(--pio-paper)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            ← Prev
+          </button>
+          <span className="text-pio-3xs text-[var(--pio-graphite)] opacity-60">
+            {page + 1} / {totalPages}
+          </span>
+          <button
+            type="button"
+            disabled={page >= totalPages - 1}
+            onClick={() => setPage((p) => p + 1)}
+            className="rounded-[8px] px-2.5 py-1 text-pio-3xs font-semibold text-[var(--pio-graphite)] hover:bg-[var(--pio-paper)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            Next →
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -1329,6 +1362,7 @@ function CompareTab() {
           ))}
         </div>
         <ContactDiffTable
+          key={diffTab}
           rows={diffRows}
           emptyLabel={diffTab === "shared" ? "No shared contacts" : diffTab === "gained" ? "No gained contacts" : "No lost contacts"}
         />
