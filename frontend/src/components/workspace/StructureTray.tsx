@@ -1,7 +1,10 @@
 "use client";
 
+import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, ChevronDown, ChevronsLeft, FileUp, GitCompare, Layers, Loader2, Play, Search, Trash2, X } from "lucide-react";
 import { useRef, useState } from "react";
+
+import { ease, listItem, spring, stagger } from "@/lib/motion";
 
 import { buildApiUrl } from "@/lib/api";
 import type { AnalysisResponse, StructureComparisonResponse } from "@/lib/types";
@@ -307,33 +310,46 @@ function StructureLoader({ onLoaded }: { onLoaded: () => void }) {
             <ChevronDown size={10} className={paeOpen ? "rotate-180" : ""} />
             PAE sidecar (optional)
           </button>
-          {paeOpen && (
-            <label className="flex cursor-pointer items-center gap-2 rounded-[8px] border border-dashed border-[var(--pio-line)] bg-[var(--pio-paper)] px-3 py-2">
-              <FileUp size={11} className="text-[var(--pio-graphite)]" />
-              <span className="text-pio-xs text-[var(--pio-graphite)]">
-                {paeText ? "PAE JSON loaded" : "Upload PAE .json"}
-              </span>
-              <input
-                type="file"
-                accept=".json"
-                className="sr-only"
-                onChange={async (e) => {
-                  const f = e.target.files?.[0];
-                  if (f) setPaeText(await f.text());
-                }}
-              />
-            </label>
-          )}
+          <AnimatePresence initial={false}>
+            {paeOpen && (
+              <motion.div
+                key="pae-body"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.22, ease: ease.inOut }}
+                style={{ overflow: "hidden" }}
+              >
+                <label className="flex cursor-pointer items-center gap-2 rounded-[8px] border border-dashed border-[var(--pio-line)] bg-[var(--pio-paper)] px-3 py-2">
+                  <FileUp size={11} className="text-[var(--pio-graphite)]" />
+                  <span className="text-pio-xs text-[var(--pio-graphite)]">
+                    {paeText ? "PAE JSON loaded" : "Upload PAE .json"}
+                  </span>
+                  <input
+                    type="file"
+                    accept=".json"
+                    className="sr-only"
+                    onChange={async (e) => {
+                      const f = e.target.files?.[0];
+                      if (f) setPaeText(await f.text());
+                    }}
+                  />
+                </label>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          <button
+          <motion.button
             type="button"
             onClick={analyzeUpload}
             disabled={!pendingFile || isLoading}
+            whileTap={!pendingFile || isLoading ? undefined : { scale: 0.97 }}
+            transition={spring.press}
             className="flex items-center justify-center gap-2 rounded-[10px] bg-[var(--pio-highlight)] py-2 text-pio-sm font-semibold text-[var(--pio-highlight-text)] transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
           >
             {isLoading ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />}
             Analyze
-          </button>
+          </motion.button>
         </div>
       )}
 
@@ -351,15 +367,17 @@ function StructureLoader({ onLoaded }: { onLoaded: () => void }) {
             placeholder="e.g. 2HHB"
             className="pio-input h-9 w-full bg-[var(--pio-paper)] px-3 font-mono text-pio-sm uppercase"
           />
-          <button
+          <motion.button
             type="button"
             onClick={fetchRcsb}
             disabled={isLoading || !pdbId.trim()}
+            whileTap={isLoading || !pdbId.trim() ? undefined : { scale: 0.97 }}
+            transition={spring.press}
             className="flex w-full items-center justify-center gap-1.5 rounded-[10px] bg-[var(--pio-line)] py-2 text-pio-base font-semibold text-[var(--pio-ink)] transition-colors hover:bg-[var(--pio-line-strong)] disabled:cursor-not-allowed disabled:opacity-45"
           >
             {isLoading ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
             Fetch
-          </button>
+          </motion.button>
           <p className="text-pio-xs text-[var(--pio-graphite)]">Fetches mmCIF from RCSB.</p>
         </div>
       )}
@@ -378,15 +396,17 @@ function StructureLoader({ onLoaded }: { onLoaded: () => void }) {
             placeholder="e.g. P69905"
             className="pio-input h-9 w-full bg-[var(--pio-paper)] px-3 font-mono text-pio-sm uppercase"
           />
-          <button
+          <motion.button
             type="button"
             onClick={fetchAlphaFold}
             disabled={isLoading || !uniprotId.trim()}
+            whileTap={isLoading || !uniprotId.trim() ? undefined : { scale: 0.97 }}
+            transition={spring.press}
             className="flex w-full items-center justify-center gap-1.5 rounded-[10px] bg-[var(--pio-line)] py-2 text-pio-base font-semibold text-[var(--pio-ink)] transition-colors hover:bg-[var(--pio-line-strong)] disabled:cursor-not-allowed disabled:opacity-45"
           >
             {isLoading ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
             Fetch
-          </button>
+          </motion.button>
           <p className="text-pio-xs text-[var(--pio-graphite)]">Fetches AlphaFold predicted model via UniProt accession.</p>
         </div>
       )}
@@ -481,47 +501,57 @@ function ComparePanel() {
         <ChevronDown size={11} className={["ml-auto transition-transform", open ? "rotate-180" : ""].join(" ")} />
       </button>
 
-      {open && (
-        <div className="flex flex-col gap-2 pb-4 px-1">
-          {([0, 1] as const).map((slot) => (
-            <div key={slot}>
-              <p className="mb-1 text-pio-3xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-60">
-                Structure {slot === 0 ? "A" : "B"}
-              </p>
-              <select
-                value={compareIds[slot] ?? ""}
-                onChange={(e) => {
-                  const newId = e.target.value || null;
-                  setCompareId(slot, newId);
-                  // auto-run when both slots are filled with different structures
-                  const otherId = slot === 0 ? compareIds[1] : compareIds[0];
-                  if (newId && otherId && newId !== otherId) void runCompare();
-                }}
-                className="pio-input w-full text-pio-xs"
-                style={{ height: 32, padding: "0 8px" }}
-              >
-                <option value="">— select —</option>
-                {structures.map((s) => (
-                  <option key={s.id} value={s.id}>{displayLabel(s)}</option>
-                ))}
-              </select>
-            </div>
-          ))}
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="compare-body"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.24, ease: ease.inOut }}
+            style={{ overflow: "hidden" }}
+          >
+            <div className="flex flex-col gap-2 pb-4 px-1">
+              {([0, 1] as const).map((slot) => (
+                <div key={slot}>
+                  <p className="mb-1 text-pio-3xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-60">
+                    Structure {slot === 0 ? "A" : "B"}
+                  </p>
+                  <select
+                    value={compareIds[slot] ?? ""}
+                    onChange={(e) => {
+                      const newId = e.target.value || null;
+                      setCompareId(slot, newId);
+                      const otherId = slot === 0 ? compareIds[1] : compareIds[0];
+                      if (newId && otherId && newId !== otherId) void runCompare();
+                    }}
+                    className="pio-input w-full text-pio-xs"
+                    style={{ height: 32, padding: "0 8px" }}
+                  >
+                    <option value="">— select —</option>
+                    {structures.map((s) => (
+                      <option key={s.id} value={s.id}>{displayLabel(s)}</option>
+                    ))}
+                  </select>
+                </div>
+              ))}
 
-          {compareIsLoading && (
-            <div className="flex items-center justify-center gap-2 py-1 text-pio-3xs text-[var(--pio-graphite)]">
-              <Loader2 size={11} className="animate-spin" /> Comparing…
-            </div>
-          )}
+              {compareIsLoading && (
+                <div className="flex items-center justify-center gap-2 py-1 text-pio-3xs text-[var(--pio-graphite)]">
+                  <Loader2 size={11} className="animate-spin" /> Comparing…
+                </div>
+              )}
 
-          {compareError && (
-            <div className="flex items-start gap-2 rounded-[8px] bg-[var(--pio-coral-pale)] p-2">
-              <AlertCircle size={11} className="mt-0.5 shrink-0 text-[var(--pio-coral-deep)]" />
-              <p className="text-pio-3xs text-[var(--pio-coral-deep)]">{compareError}</p>
+              {compareError && (
+                <div className="flex items-start gap-2 rounded-[8px] bg-[var(--pio-coral-pale)] p-2">
+                  <AlertCircle size={11} className="mt-0.5 shrink-0 text-[var(--pio-coral-deep)]" />
+                  <p className="text-pio-3xs text-[var(--pio-coral-deep)]">{compareError}</p>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -567,20 +597,33 @@ export function StructureTray({ onCollapse }: { onCollapse?: () => void } = {}) 
         {/* Loaded state: list + collapsible "Load another" */}
         {structures.length > 0 && (
           <>
-            <div className="flex flex-col gap-1.5 px-3 py-3">
-              {structures.map((e) => (
-                <StructureCard
-                  key={e.id}
-                  entry={e}
-                  isActive={e.id === activeId}
-                  onSelect={() => {
-                    setActiveId(e.id);
-                    setContextTab("overview");
-                  }}
-                  onRemove={() => removeStructure(e.id)}
-                />
-              ))}
-            </div>
+            <motion.div
+              className="flex flex-col gap-1.5 px-3 py-3"
+              initial="hidden"
+              animate="show"
+              variants={stagger}
+            >
+              <AnimatePresence>
+                {structures.map((e) => (
+                  <motion.div
+                    key={e.id}
+                    variants={listItem}
+                    exit={{ opacity: 0, y: -6, transition: { duration: 0.15, ease: ease.inOut } }}
+                    layout
+                  >
+                    <StructureCard
+                      entry={e}
+                      isActive={e.id === activeId}
+                      onSelect={() => {
+                        setActiveId(e.id);
+                        setContextTab("overview");
+                      }}
+                      onRemove={() => removeStructure(e.id)}
+                    />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
 
             {/* Load another toggle */}
             <div className="border-t border-[var(--pio-line)] mx-3" />
@@ -597,11 +640,22 @@ export function StructureTray({ onCollapse }: { onCollapse?: () => void } = {}) 
               />
             </button>
 
-            {loaderOpen && (
-              <div className="px-6 pb-5">
-                <StructureLoader onLoaded={() => setLoaderOpen(false)} />
-              </div>
-            )}
+            <AnimatePresence initial={false}>
+              {loaderOpen && (
+                <motion.div
+                  key="loader-body"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.28, ease: ease.inOut }}
+                  style={{ overflow: "hidden" }}
+                >
+                  <div className="px-6 pb-5">
+                    <StructureLoader onLoaded={() => setLoaderOpen(false)} />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Compare panel — only when ≥2 structures are loaded */}
             {structures.length >= 2 && <ComparePanel />}

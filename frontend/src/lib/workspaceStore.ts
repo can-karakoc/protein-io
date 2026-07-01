@@ -2,8 +2,9 @@
 
 import { nanoid } from "nanoid";
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
+import { persist } from "zustand/middleware";
 
+import { createDebouncedIdbStorage } from "./idbStorage";
 import type { AnalysisResponse, StructureComparisonResponse, ViewerSelection } from "./types";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -159,38 +160,28 @@ export const useWorkspace = create<WorkspaceState>()(
       },
     }),
     {
-      name: "pio_workspace_v1",
+      // v2: uses IndexedDB so structureText (~200KB-2MB) and comparison results
+      // can be persisted without hitting the 5 MB localStorage quota.
+      name: "pio_workspace_v2",
+      storage: createDebouncedIdbStorage(400),
       onRehydrateStorage: () => (state) => {
-        // Must call set() via action — direct mutation doesn't notify Zustand v5 subscribers
         state?.setHasHydrated(true);
       },
-      // Quota-safe storage — swallows QuotaExceededError silently
-      storage: createJSONStorage(() => ({
-        getItem: (name: string) => {
-          try { return localStorage.getItem(name); } catch { return null; }
-        },
-        setItem: (name: string, value: string) => {
-          try { localStorage.setItem(name, value); } catch { /* quota exceeded */ }
-        },
-        removeItem: (name: string) => {
-          try { localStorage.removeItem(name); } catch { /* ok */ }
-        },
-      })),
-      // Strip structureText from ALL sources — CIF/PDB files are 200KB-2MB and
-      // push the serialised store over the 5 MB localStorage quota, causing a
-      // silent write failure that wipes the analysis too.
-      // On reload the 3D viewer re-fetches structure text via a separate effect.
       partialize: (s) => ({
         structures: s.structures.map((e) => ({
           ...e,
-          structureText: "",
+          // Always reset mid-analysis flag — the analysis process does not
+          // survive a page refresh, so we'd be stuck in a spinner forever.
           isAnalyzing: false,
-          error: null,
         })),
         activeId: s.activeId,
         compareIds: s.compareIds,
         contextTab: s.contextTab,
         mode: s.mode,
+        // Persist comparison result so the Compare tab is immediately ready
+        // after a page refresh without re-running the API call.
+        comparison: s.comparison,
+        compareError: s.compareError,
       }),
     },
   ),

@@ -1,5 +1,6 @@
 "use client";
 
+import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertCircle,
   AlertTriangle,
@@ -12,6 +13,8 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+
+import { listItem, stagger, tabContent } from "@/lib/motion";
 
 import { buildApiUrl } from "@/lib/api";
 import type { AnalysisResponse, ContactDifference, ContactRecord, RcsbAnalysisResponse, ResidueConfidence } from "@/lib/types";
@@ -324,11 +327,11 @@ function ChainsTab({ entry }: { entry: StructureEntry }) {
         </div>
 
         {/* Data rows — thin dividers between rows, no box wrappers */}
-        <div className="flex flex-col">
+        <motion.div className="flex flex-col" initial="hidden" animate="show" variants={stagger}>
           {analysis.chains.map((c, i) => {
             const isSelected = selection?.kind === "chain" && selection.chainId === c.id;
             return (
-              <div key={c.id}>
+              <motion.div key={c.id} variants={listItem}>
                 <div
                   role="button"
                   tabIndex={0}
@@ -358,10 +361,10 @@ function ChainsTab({ entry }: { entry: StructureEntry }) {
                 {i < analysis.chains.length - 1 && (
                   <div className="mx-3 h-px bg-[var(--pio-line)]" />
                 )}
-              </div>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       </div>
     </div>
   );
@@ -390,7 +393,7 @@ function LigandsTab({ entry }: { entry: StructureEntry }) {
           Per-ligand contact counts, closest atom pair, and contacting residues.
         </p>
       </div>
-      <div className="flex flex-col gap-3">
+      <motion.div className="flex flex-col gap-3" initial="hidden" animate="show" variants={stagger}>
       {analysis.ligands.map((lig) => {
         const key = `${lig.chain_id}:${lig.residue_number}`;
         const isFloating = floatingLigandKey === key;
@@ -427,8 +430,9 @@ function LigandsTab({ entry }: { entry: StructureEntry }) {
         const RESIDUE_CAP = 8;
 
         return (
-          <div
+          <motion.div
             key={`${lig.name}-${lig.chain_id}-${lig.residue_number}`}
+            variants={listItem}
             className={[
               "rounded-[14px] border p-4 transition-colors",
               isSelected
@@ -495,10 +499,10 @@ function LigandsTab({ entry }: { entry: StructureEntry }) {
                 <p className="text-pio-sm text-[var(--pio-graphite)] opacity-50">—</p>
               )}
             </div>
-          </div>
+          </motion.div>
         );
       })}
-      </div>
+      </motion.div>
     </div>
   );
 }
@@ -1309,30 +1313,39 @@ function CompareTab() {
       const isOpen = openSlot === slot;
       return (
         <div className="relative min-w-0 flex-1" ref={isOpen ? dropdownRef : undefined}>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setOpenSlot(isOpen ? null : slot)}
-              className="flex min-w-0 flex-1 items-center gap-1 rounded-[8px] bg-[var(--pio-sky)] px-3 py-1 text-pio-sm font-bold text-[var(--pio-highlight)] transition-colors hover:brightness-95"
-            >
-              <span className="truncate">{label}</span>
-              <ChevronRight size={11} className={["ml-auto shrink-0 transition-transform", isOpen ? "rotate-90" : "rotate-0"].join(" ")} />
-            </button>
-            {ent && (
-              <button
-                type="button"
-                onClick={() => handleSlotClear(slot)}
-                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[var(--pio-graphite)] hover:bg-[var(--pio-line)] hover:text-[var(--pio-ink)] transition-colors"
-                aria-label={`Remove structure ${slot === 0 ? "A" : "B"}`}
-              >
-                <X size={11} />
-              </button>
-            )}
-          </div>
+          {/* Single pill button — equal width regardless of loaded state */}
+          <button
+            type="button"
+            onClick={() => setOpenSlot(isOpen ? null : slot)}
+            className="group relative flex w-full min-w-0 items-center gap-1 rounded-[8px] bg-[var(--pio-sky)] px-3 py-1 text-pio-sm font-bold text-[var(--pio-highlight)] transition-colors hover:brightness-95"
+          >
+            <span className="truncate">{label}</span>
+            {/* Trailing icon area: fixed 18×18 box so width never shifts */}
+            <span className="relative ml-auto h-[18px] w-[18px] shrink-0">
+              {/* Chevron — fades out on hover when a structure is loaded */}
+              <ChevronRight
+                size={11}
+                className={[
+                  "absolute inset-0 m-auto transition-opacity",
+                  ent ? "group-hover:opacity-0" : "",
+                  isOpen ? "rotate-90" : "rotate-0",
+                ].join(" ")}
+              />
+              {/* X — fades in on hover, only when a structure is loaded */}
+              {ent && (
+                <span
+                  role="button"
+                  aria-label={`Remove structure ${slot === 0 ? "A" : "B"}`}
+                  className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100"
+                  onClick={(e) => { e.stopPropagation(); handleSlotClear(slot); }}
+                >
+                  <X size={10} />
+                </span>
+              )}
+            </span>
+          </button>
           {isOpen && (
-            <div
-              className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-[10px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_4px_16px_rgba(17,22,16,0.12)]"
-            >
+            <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-[10px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_4px_16px_rgba(17,22,16,0.12)]">
               {structures.map((s) => {
                 const isCurrent = compareIds[slot] === s.id;
                 return (
@@ -1394,11 +1407,16 @@ function CompareTab() {
     return (
       <div className="flex flex-col gap-5">
         {pillHeader()}
-        <div className="flex flex-col items-center gap-2 py-8 text-center">
-          <GitCompare size={22} className="text-[var(--pio-graphite)] opacity-25" />
-          <p className="text-pio-3xs text-[var(--pio-graphite)] opacity-60">
-            Select two structures above — comparison runs automatically.
-          </p>
+        <div className="flex flex-col items-center justify-center gap-4 py-14 px-6 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--pio-sky)]">
+            <GitCompare size={24} className="text-[var(--pio-highlight)]" />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <p className="text-pio-xl font-bold leading-[1.15] tracking-[-0.01em] text-[var(--pio-ink)]">Ready to compare</p>
+            <p className="text-pio-sm leading-relaxed text-[var(--pio-graphite)]">
+              Select two structures using the pills above — comparison runs automatically.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -1783,10 +1801,27 @@ function EmptyGallery() {
 
 // ── Main ContextPanel ─────────────────────────────────────────────────────────
 
+const TAB_ORDER: ContextTab[] = [
+  "overview", "chains", "ligands", "contacts", "interfaces",
+  "confidence", "pae", "quality", "compare", "report", "methods",
+];
+
 export function ContextPanel() {
   const { getActive, contextTab, setContextTab } = useWorkspace();
   const active = getActive();
   const tabStripRef = useRef<HTMLDivElement>(null);
+  const prevTabIdxRef = useRef(0);
+
+  // All hooks must be called unconditionally — before any early return.
+  const analysis = active?.analysis ?? null;
+  const visibleTabs = TABS.filter((tab) => {
+    if (tab.visible) return tab.visible(analysis);
+    return true;
+  });
+  const selectedTab = visibleTabs.some((t) => t.id === contextTab) ? contextTab : "overview";
+  const currentTabIdx = TAB_ORDER.indexOf(selectedTab);
+  const dir = currentTabIdx >= prevTabIdxRef.current ? 1 : -1;
+  useEffect(() => { prevTabIdxRef.current = currentTabIdx; }, [currentTabIdx]);
 
   if (!active) {
     return <EmptyGallery />;
@@ -1832,17 +1867,6 @@ export function ContextPanel() {
       default: return null;
     }
   }
-
-  const analysis = active.analysis;
-
-  // Filter tabs: hide confidence/pae/interfaces when not applicable
-  const visibleTabs = TABS.filter((tab) => {
-    if (tab.visible) return tab.visible(analysis);
-    return true;
-  });
-
-  // If active tab was hidden (e.g. switched structure), fall back to overview
-  const selectedTab = visibleTabs.some((t) => t.id === contextTab) ? contextTab : "overview";
 
   return (
     <aside className="flex h-full min-h-0 flex-col bg-[var(--pio-white)]">
@@ -1893,9 +1917,19 @@ export function ContextPanel() {
 
       {/* Tab content — padding on inner wrapper so scrollbar gets its own lane */}
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin-panel">
-        <div className="px-5 pb-6 pt-4">
-          {renderTab()}
-        </div>
+        <AnimatePresence mode="wait" custom={dir}>
+          <motion.div
+            key={selectedTab}
+            custom={dir}
+            variants={tabContent}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            className="px-5 pb-6 pt-4"
+          >
+            {renderTab()}
+          </motion.div>
+        </AnimatePresence>
       </div>
       {/* Bottom spacer keeps scrollbar thumb away from panel bottom edge */}
       <div className="shrink-0 h-5" />
