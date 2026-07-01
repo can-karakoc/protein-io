@@ -1155,7 +1155,7 @@ const DIFF_CHIP_BASE: React.CSSProperties = {
   display: "inline-block",
   whiteSpace: "nowrap",
   fontFamily: "var(--font-pio-mono)",
-  fontSize: "10px",
+  fontSize: "var(--text-pio-2xs)",
   padding: "2px 8px",
 };
 
@@ -1284,9 +1284,9 @@ function CompareTab() {
     <div className="flex flex-col gap-5">
       {/* Header */}
       <div className="flex items-center gap-2">
-        <span className="rounded-[6px] bg-[var(--pio-sky)] px-2 py-0.5 text-pio-3xs font-bold text-[var(--pio-highlight)]">{labelA}</span>
-        <GitCompare size={12} className="text-[var(--pio-graphite)] opacity-40" />
-        <span className="rounded-[6px] bg-[var(--pio-sky)] px-2 py-0.5 text-pio-3xs font-bold text-[var(--pio-highlight)]">{labelB}</span>
+        <span className="rounded-[8px] bg-[var(--pio-sky)] px-3 py-1 text-pio-sm font-bold text-[var(--pio-highlight)]">{labelA}</span>
+        <GitCompare size={14} className="text-[var(--pio-graphite)] opacity-40" />
+        <span className="rounded-[8px] bg-[var(--pio-sky)] px-3 py-1 text-pio-sm font-bold text-[var(--pio-highlight)]">{labelB}</span>
       </div>
 
       {/* Delta summary */}
