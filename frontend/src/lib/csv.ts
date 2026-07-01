@@ -71,10 +71,11 @@ export function ligandMedchemReportToCsv(
     ["Water contacts", String(ligand.water_contact_count)],
     ["Possible clashes", String(ligand.possible_clash_count)],
     ["Closest distance (Å)", String(ligand.closest_distance_angstrom ?? "")],
-    ...Object.entries(ligand.interaction_class_breakdown ?? {}).map(([cls, n]) => [
-      `  ${cls}`,
-      String(n),
-    ]),
+    ["Contact efficiency", ligand.contact_efficiency != null ? String(ligand.contact_efficiency) : ""],
+    ...(Object.keys(ligand.interaction_class_breakdown ?? {}).length > 0 ? [["# Interaction classes"]] : []),
+    ...Object.entries(ligand.interaction_class_breakdown ?? {}).map(([cls, n]) => [`  ${cls}`, String(n)]),
+    ...(Object.keys(ligand.hbond_strength_breakdown ?? {}).length > 0 ? [["# H-bond strength"]] : []),
+    ...Object.entries(ligand.hbond_strength_breakdown ?? {}).map(([tier, n]) => [`  ${tier}`, String(n)]),
     [],
   ];
 
@@ -103,7 +104,7 @@ export function ligandMedchemReportToCsv(
     ]);
 
   // Section 3: all contacts
-  const contactHeader = ["# CONTACTS — protein_residue, protein_atom, ligand_atom, distance_Å, interaction_type"];
+  const contactHeader = ["# CONTACTS — protein_residue, protein_atom, ligand_atom, distance_Å, interaction_type, hbond_strength"];
   const contactRows = ligandContacts.map((c) => {
     const ligIsA = c.chain_a === ligand.chain_id && c.residue_a === ligand.residue_number;
     return [
@@ -112,6 +113,7 @@ export function ligandMedchemReportToCsv(
       ligIsA ? c.atom_a : c.atom_b,
       c.distance_angstrom.toFixed(3),
       c.interaction_class ?? "",
+      c.hbond_strength ?? "",
     ];
   });
 
@@ -125,7 +127,7 @@ export function ligandMedchemReportToCsv(
     ...fpRows.map(toLine),
     "",
     ...contactHeader,
-    toLine(["protein_residue", "protein_atom", "ligand_atom", "distance_Å", "interaction_type"]),
+    toLine(["protein_residue", "protein_atom", "ligand_atom", "distance_Å", "interaction_type", "hbond_strength"]),
     ...contactRows.map(toLine),
   ].join("\n");
 }

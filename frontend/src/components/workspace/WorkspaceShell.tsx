@@ -525,6 +525,25 @@ function FloatingLigandPanel({
                   </div>
                 )}
 
+                {/* H-bond strength pharmacophore tiers */}
+                {interaction?.hbond_strength_breakdown && Object.keys(interaction.hbond_strength_breakdown).length > 0 && (
+                  <div>
+                    <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.1em", ...TEXT, opacity: 0.5, marginBottom: 5 }}>PHARMACOPHORE — H-BOND QUALITY</p>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+                      {(["strong", "moderate", "weak"] as const).map((tier) => {
+                        const count = interaction.hbond_strength_breakdown?.[tier] ?? 0;
+                        const style = HBOND_STRENGTH_STYLE[tier];
+                        return (
+                          <div key={tier} style={{ background: style.bg, borderRadius: 4, padding: "6px 8px", borderLeft: `2px solid ${style.color}` }}>
+                            <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.06em", color: style.color }}>{tier.toUpperCase()}</p>
+                            <p className="text-pio-xl" style={{ ...MONO, fontWeight: 700, color: style.color, marginTop: 1 }}>{count}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* Per-contact table */}
                 {ligandContacts.length > 0 && (
                   <div>
