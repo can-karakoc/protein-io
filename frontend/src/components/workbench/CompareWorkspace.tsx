@@ -1,7 +1,7 @@
 "use client";
 
-import { ArrowLeftRight, Database, Download, FileUp, LoaderCircle, Play, RotateCcw, Search, Sparkles, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ArrowLeftRight, Database, Download, FileUp, LoaderCircle, Play, RotateCcw, Search, Sparkles, TrendingDown, TrendingUp, X } from "lucide-react";
+import { type CSSProperties, useEffect, useMemo, useState } from "react";
 
 import { buildApiUrl } from "@/lib/api";
 import { comparisonContactsToCsv } from "@/lib/csv";
@@ -596,10 +596,16 @@ function ComparisonResults({
   onTabChange: (tab: ComparisonTab) => void;
   onExport: () => void;
 }) {
-  const tabs: Array<{ id: ComparisonTab; label: string; count: number }> = [
+  const tabs: Array<{ id: ComparisonTab; label: string; count: number; activeStyle?: CSSProperties }> = [
     { id: "shared", label: "Shared", count: comparison.contacts.shared_contact_count },
-    { id: "gained", label: "Gained in B", count: comparison.contacts.gained_contact_count },
-    { id: "lost", label: "Lost from A", count: comparison.contacts.lost_contact_count },
+    {
+      id: "gained", label: "Gained in B", count: comparison.contacts.gained_contact_count,
+      activeStyle: { background: "var(--pio-green-deep)", color: "#fff" },
+    },
+    {
+      id: "lost", label: "Lost from A", count: comparison.contacts.lost_contact_count,
+      activeStyle: { background: "var(--pio-coral-deep)", color: "#fff" },
+    },
   ];
 
   return (
@@ -631,23 +637,26 @@ function ComparisonResults({
       </div>
 
       <div className="mt-4 flex gap-1 overflow-x-auto rounded-[12px] bg-[var(--pio-paper)] p-1" role="tablist" aria-label="Contact difference category">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            aria-selected={activeTab === tab.id}
-            onClick={() => onTabChange(tab.id)}
-            className={[
-              "min-w-max flex-1 rounded-[9px] px-4 py-2 text-pio-base font-semibold transition-colors",
-              activeTab === tab.id
-                ? "bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)]"
-                : "text-[var(--pio-graphite)] hover:bg-[var(--pio-line)]",
-            ].join(" ")}
-          >
-            {tab.label} <span className="ml-1 font-mono text-pio-xs opacity-75">{tab.count}</span>
-          </button>
-        ))}
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => onTabChange(tab.id)}
+              className={[
+                "min-w-max flex-1 rounded-[9px] px-4 py-2 text-pio-base font-semibold transition-colors",
+                isActive && !tab.activeStyle ? "bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)]" : "",
+                !isActive ? "text-[var(--pio-graphite)] hover:bg-[var(--pio-line)]" : "",
+              ].join(" ")}
+              style={isActive && tab.activeStyle ? tab.activeStyle : undefined}
+            >
+              {tab.label} <span className="ml-1 font-mono text-pio-xs opacity-75">{tab.count}</span>
+            </button>
+          );
+        })}
       </div>
 
       <ContactDifferenceTable rows={activeRows} />
@@ -724,14 +733,34 @@ function StructureSummaryCard({
 }
 
 function DeltaCard({ label, value }: { label: string; value: number }) {
-  const tone = value > 0 ? "text-[var(--pio-green-deep)]" : value < 0 ? "text-[var(--pio-coral-deep)]" : "text-[var(--pio-ink)]";
+  const isPos = value > 0;
+  const isNeg = value < 0;
+  const tone = isPos ? "text-[var(--pio-green-deep)]" : isNeg ? "text-[var(--pio-coral-deep)]" : "text-[var(--pio-graphite)]";
+  const Icon = isPos ? TrendingUp : isNeg ? TrendingDown : null;
   return (
     <div className="rounded-[10px] border border-[var(--pio-line)] px-3 py-3">
-      <p className="pio-label">Δ {label}</p>
-      <p className={`mt-1 font-mono text-lg font-bold ${tone}`}>{value > 0 ? `+${value}` : value}</p>
-      <p className="mt-1 text-pio-2xs text-[var(--pio-graphite)]">B minus A</p>
+      <p className="pio-label">{label}</p>
+      <div className={`mt-1.5 flex items-center gap-1.5 ${tone}`}>
+        {Icon && <Icon className="h-4 w-4 shrink-0" />}
+        <p className="font-mono text-lg font-bold">{isPos ? `+${value}` : value}</p>
+      </div>
+      <p className="mt-0.5 text-pio-2xs text-[var(--pio-graphite)]">B − A</p>
     </div>
   );
+}
+
+const CATEGORY_BADGE: Record<string, string> = {
+  "protein-ligand":   "pio-badge-predicted",
+  "protein-protein":  "pio-badge-metadata",
+  "inter-chain":      "pio-badge-active",
+  "intra-chain":      "pio-badge-neutral",
+  "protein-water":    "pio-badge-neutral",
+  "ligand-water":     "pio-badge-neutral",
+  "very-close-contact": "pio-badge-warning",
+};
+
+function categoryBadgeClass(cat: string) {
+  return CATEGORY_BADGE[cat] ?? "pio-badge-neutral";
 }
 
 function ContactDifferenceTable({ rows }: { rows: ContactDifference[] }) {
@@ -745,18 +774,15 @@ function ContactDifferenceTable({ rows }: { rows: ContactDifference[] }) {
   return (
     <div className="mt-4 overflow-x-auto rounded-[12px] border border-[var(--pio-line)]">
       <div className="min-w-[680px]">
-        <div className="grid grid-cols-[minmax(220px,2fr)_minmax(120px,1fr)_90px_90px] gap-3 border-b border-[var(--pio-line)] bg-[var(--pio-paper)] px-4 py-2.5">
-          {["Contact identity", "Categories", "Dist A", "Dist B"].map((label) => (
+        <div className="grid grid-cols-[minmax(220px,2fr)_minmax(120px,1fr)_80px_80px] gap-3 border-b border-[var(--pio-line)] bg-[var(--pio-paper)] px-4 py-2.5">
+          {["Contact identity", "Categories", "Dist A (Å)", "Dist B (Å)"].map((label) => (
             <p key={label} className="pio-label">{label}</p>
           ))}
         </div>
-        {rows.map((row, i) => (
+        {rows.map((row) => (
           <div
             key={`${row.label}-${row.contact_type}-${row.distance_a_angstrom ?? "none"}-${row.distance_b_angstrom ?? "none"}`}
-            className={[
-              "grid grid-cols-[minmax(220px,2fr)_minmax(120px,1fr)_90px_90px] gap-3 border-b border-[var(--pio-line)] px-4 py-3 last:border-b-0",
-              i % 2 === 1 ? "bg-[var(--pio-paper)]" : "",
-            ].join(" ")}
+            className="grid grid-cols-[minmax(220px,2fr)_minmax(120px,1fr)_80px_80px] gap-3 border-b border-[var(--pio-line)] px-4 py-3 last:border-b-0 hover:bg-[var(--pio-paper)] transition-colors"
           >
             <div className="min-w-0">
               <p className="truncate font-mono text-pio-sm font-semibold text-[var(--pio-ink)]" title={row.label}>{row.label}</p>
@@ -764,7 +790,7 @@ function ContactDifferenceTable({ rows }: { rows: ContactDifference[] }) {
             </div>
             <div className="flex flex-wrap content-start gap-1">
               {row.contact_categories.length ? row.contact_categories.map((category) => (
-                <span key={category} className="pio-badge pio-badge-neutral">{category}</span>
+                <span key={category} className={`pio-badge ${categoryBadgeClass(category)}`}>{category}</span>
               )) : <span className="text-pio-xs text-[var(--pio-graphite)]">—</span>}
             </div>
             <p className="font-mono text-pio-sm text-[var(--pio-ink)]">{formatDistance(row.distance_a_angstrom)}</p>
@@ -777,7 +803,7 @@ function ContactDifferenceTable({ rows }: { rows: ContactDifference[] }) {
 }
 
 function formatDistance(value: number | null) {
-  return value == null ? "—" : `${value.toFixed(3)} Å`;
+  return value == null ? "—" : value.toFixed(2);
 }
 
 // ─── Ligand Pose Comparison ───────────────────────────────────────────────────
