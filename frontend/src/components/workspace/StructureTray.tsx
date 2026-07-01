@@ -490,7 +490,13 @@ function ComparePanel() {
               </p>
               <select
                 value={compareIds[slot] ?? ""}
-                onChange={(e) => setCompareId(slot, e.target.value || null)}
+                onChange={(e) => {
+                  const newId = e.target.value || null;
+                  setCompareId(slot, newId);
+                  // auto-run when both slots are filled with different structures
+                  const otherId = slot === 0 ? compareIds[1] : compareIds[0];
+                  if (newId && otherId && newId !== otherId) void runCompare();
+                }}
                 className="pio-input w-full text-pio-xs"
                 style={{ height: 32, padding: "0 8px" }}
               >
@@ -502,16 +508,11 @@ function ComparePanel() {
             </div>
           ))}
 
-          <button
-            type="button"
-            disabled={!ready || compareIsLoading}
-            onClick={runCompare}
-            className="mt-1 flex items-center justify-center gap-2 rounded-[8px] bg-[var(--pio-highlight)] py-2 text-pio-xs font-semibold text-[var(--pio-highlight-text)] disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
-          >
-            {compareIsLoading
-              ? <><Loader2 size={12} className="animate-spin" /> Running…</>
-              : <><GitCompare size={12} /> Run comparison</>}
-          </button>
+          {compareIsLoading && (
+            <div className="flex items-center justify-center gap-2 py-1 text-pio-3xs text-[var(--pio-graphite)]">
+              <Loader2 size={11} className="animate-spin" /> Comparing…
+            </div>
+          )}
 
           {compareError && (
             <div className="flex items-start gap-2 rounded-[8px] bg-[var(--pio-coral-pale)] p-2">

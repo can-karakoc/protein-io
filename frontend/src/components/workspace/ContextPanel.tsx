@@ -8,11 +8,10 @@ import {
   FlaskConical,
   GitCompare,
   Loader2,
-  Play,
   Shield,
   X,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { buildApiUrl } from "@/lib/api";
 import type { AnalysisResponse, ContactDifference, ContactRecord, RcsbAnalysisResponse, ResidueConfidence } from "@/lib/types";
@@ -1240,14 +1239,28 @@ function CompareTab() {
     setCompareId, setComparison, setCompareLoading, setContextTab,
   } = useWorkspace();
   const [diffTab, setDiffTab] = useState<"shared" | "gained" | "lost">("shared");
+  const [openSlot, setOpenSlot] = useState<0 | 1 | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const entA = structures.find((s) => s.id === compareIds[0]);
   const entB = structures.find((s) => s.id === compareIds[1]);
-  const ready = !!compareIds[0] && !!compareIds[1] && compareIds[0] !== compareIds[1];
 
-  async function runCompare() {
-    if (!entA || !entB) return;
-    if (!entA.structureText || !entB.structureText) {
+  // Close dropdown on outside click
+  useEffect(() => {
+    function onPointerDown(e: PointerEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpenSlot(null);
+      }
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, []);
+
+  async function runCompareWith(idA: string | null, idB: string | null) {
+    const a = structures.find((s) => s.id === idA);
+    const b = structures.find((s) => s.id === idB);
+    if (!a || !b || idA === idB) return;
+    if (!a.structureText || !b.structureText) {
       setComparison(null, "Structure data is still loading — please wait a moment and try again.");
       return;
     }
@@ -1257,9 +1270,9 @@ function CompareTab() {
     const toFile = (e: StructureEntry) =>
       new File([e.structureText!], `${compareDisplayLabel(e)}${ext(e)}`, { type: "text/plain" });
     const fd = new FormData();
-    fd.append("file_a", toFile(entA));
-    fd.append("file_b", toFile(entB));
-    fd.append("cutoff_angstrom", String(Math.max(entA.cutoff ?? 4, entB.cutoff ?? 4)));
+    fd.append("file_a", toFile(a));
+    fd.append("file_b", toFile(b));
+    fd.append("cutoff_angstrom", String(Math.max(a.cutoff ?? 4, b.cutoff ?? 4)));
     try {
       const res = await fetch(buildApiUrl("/api/compare"), { method: "POST", body: fd });
       if (!res.ok) {
@@ -1272,55 +1285,86 @@ function CompareTab() {
     }
   }
 
-  // ── Slot picker — always visible ─────────────────────────────────────────
-  const slotPicker = (
-    <div className="flex flex-col gap-2">
-      {([0, 1] as const).map((slot) => {
-        const ent = slot === 0 ? entA : entB;
-        const slotLabel = slot === 0 ? "A" : "B";
-        return (
-          <div key={slot} className="flex items-center gap-1.5">
-            <span className="w-4 shrink-0 text-pio-3xs font-bold text-[var(--pio-graphite)] opacity-50">{slotLabel}</span>
-            <select
-              value={compareIds[slot] ?? ""}
-              onChange={(e) => setCompareId(slot, e.target.value || null)}
-              className="pio-input min-w-0 flex-1 text-pio-xs font-semibold"
-              style={{ height: 30, padding: "0 6px", borderRadius: 8 }}
+  function handleSlotSelect(slot: 0 | 1, id: string) {
+    setOpenSlot(null);
+    setCompareId(slot, id);
+    // auto-run: use the newly selected id alongside the OTHER slot's current id
+    const otherId = slot === 0 ? compareIds[1] : compareIds[0];
+    const newIdA = slot === 0 ? id : compareIds[0];
+    const newIdB = slot === 1 ? id : compareIds[1];
+    if (otherId && id !== otherId) void runCompareWith(newIdA, newIdB);
+  }
+
+  function handleSlotClear(slot: 0 | 1) {
+    setOpenSlot(null);
+    setCompareId(slot, null);
+  }
+
+  // ── Pill header — always visible when ≥2 structures ──────────────────────
+  function pillHeader() {
+    const labelA = entA ? compareDisplayLabel(entA) : "—";
+    const labelB = entB ? compareDisplayLabel(entB) : "—";
+
+    function Pill({ slot, label, ent }: { slot: 0 | 1; label: string; ent: StructureEntry | undefined }) {
+      const isOpen = openSlot === slot;
+      return (
+        <div className="relative min-w-0 flex-1" ref={isOpen ? dropdownRef : undefined}>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setOpenSlot(isOpen ? null : slot)}
+              className="flex min-w-0 flex-1 items-center gap-1 rounded-[8px] bg-[var(--pio-sky)] px-3 py-1 text-pio-sm font-bold text-[var(--pio-highlight)] transition-colors hover:brightness-95"
             >
-              <option value="">— select structure —</option>
-              {structures.map((s) => (
-                <option key={s.id} value={s.id}>{compareDisplayLabel(s)}</option>
-              ))}
-            </select>
+              <span className="truncate">{label}</span>
+              <ChevronRight size={11} className={["ml-auto shrink-0 transition-transform", isOpen ? "rotate-90" : "rotate-0"].join(" ")} />
+            </button>
             {ent && (
               <button
                 type="button"
-                onClick={() => setCompareId(slot, null)}
+                onClick={() => handleSlotClear(slot)}
                 className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[var(--pio-graphite)] hover:bg-[var(--pio-line)] hover:text-[var(--pio-ink)] transition-colors"
-                aria-label={`Remove structure ${slotLabel}`}
+                aria-label={`Remove structure ${slot === 0 ? "A" : "B"}`}
               >
                 <X size={11} />
               </button>
             )}
           </div>
-        );
-      })}
+          {isOpen && (
+            <div
+              className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-[10px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_4px_16px_rgba(17,22,16,0.12)]"
+            >
+              {structures.map((s) => {
+                const isCurrent = compareIds[slot] === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => handleSlotSelect(slot, s.id)}
+                    className={[
+                      "flex w-full items-center px-3 py-2 text-left text-pio-xs font-semibold transition-colors",
+                      isCurrent
+                        ? "bg-[var(--pio-sky)] text-[var(--pio-highlight)]"
+                        : "text-[var(--pio-ink)] hover:bg-[var(--pio-paper)]",
+                    ].join(" ")}
+                  >
+                    {compareDisplayLabel(s)}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      );
+    }
 
-      {ready && (
-        <button
-          type="button"
-          onClick={() => void runCompare()}
-          disabled={compareIsLoading}
-          className="mt-0.5 flex w-full items-center justify-center gap-1.5 rounded-[8px] bg-[var(--pio-highlight)] py-1.5 text-pio-xs font-semibold text-[var(--pio-highlight-text)] transition-opacity hover:opacity-90 disabled:opacity-50"
-        >
-          {compareIsLoading
-            ? <Loader2 className="h-3 w-3 animate-spin" />
-            : <Play className="h-3 w-3" />}
-          {compareIsLoading ? "Comparing…" : comparison ? "Re-run comparison" : "Run comparison"}
-        </button>
-      )}
-    </div>
-  );
+    return (
+      <div className="flex items-center gap-2">
+        <Pill slot={0} label={labelA} ent={entA} />
+        <GitCompare size={14} className="shrink-0 text-[var(--pio-graphite)] opacity-40" />
+        <Pill slot={1} label={labelB} ent={entB} />
+      </div>
+    );
+  }
 
   // ── Not enough structures ─────────────────────────────────────────────────
   if (structures.length < 2) {
@@ -1349,11 +1393,11 @@ function CompareTab() {
   if (!comparison && !compareIsLoading && !compareError) {
     return (
       <div className="flex flex-col gap-5">
-        {slotPicker}
+        {pillHeader()}
         <div className="flex flex-col items-center gap-2 py-8 text-center">
           <GitCompare size={22} className="text-[var(--pio-graphite)] opacity-25" />
           <p className="text-pio-3xs text-[var(--pio-graphite)] opacity-60">
-            Select two structures above and run the comparison.
+            Select two structures above — comparison runs automatically.
           </p>
         </div>
       </div>
@@ -1364,7 +1408,7 @@ function CompareTab() {
   if (compareIsLoading) {
     return (
       <div className="flex flex-col gap-5">
-        {slotPicker}
+        {pillHeader()}
         <div className="flex flex-col items-center gap-3 py-10">
           <Loader2 size={22} className="animate-spin text-[var(--pio-highlight)]" />
           <p className="text-pio-xs text-[var(--pio-graphite)]">Comparing structures…</p>
@@ -1377,7 +1421,7 @@ function CompareTab() {
   if (compareError) {
     return (
       <div className="flex flex-col gap-4">
-        {slotPicker}
+        {pillHeader()}
         <div className="flex items-start gap-2.5 rounded-[10px] bg-[var(--pio-coral-pale)] p-4">
           <AlertCircle size={14} className="mt-0.5 shrink-0 text-[var(--pio-coral-deep)]" />
           <div>
@@ -1410,7 +1454,7 @@ function CompareTab() {
 
   return (
     <div className="flex flex-col gap-5">
-      {slotPicker}
+      {pillHeader()}
 
       {/* Delta summary */}
       <div>
