@@ -8,7 +8,9 @@ import {
   FlaskConical,
   GitCompare,
   Loader2,
+  Play,
   Shield,
+  X,
 } from "lucide-react";
 import { useRef, useState } from "react";
 
@@ -1228,16 +1230,99 @@ function ContactDiffTable({ rows, emptyLabel }: { rows: ContactDifference[]; emp
   );
 }
 
+function compareDisplayLabel(e: StructureEntry) {
+  return e.pdbId || e.uniprotId || e.name || "Untitled";
+}
+
 function CompareTab() {
-  const { comparison, compareIsLoading, compareError, compareIds, structures } = useWorkspace();
+  const {
+    comparison, compareIsLoading, compareError, compareIds, structures,
+    setCompareId, setComparison, setCompareLoading, setContextTab,
+  } = useWorkspace();
   const [diffTab, setDiffTab] = useState<"shared" | "gained" | "lost">("shared");
 
   const entA = structures.find((s) => s.id === compareIds[0]);
   const entB = structures.find((s) => s.id === compareIds[1]);
-  const labelA = entA ? (entA.pdbId || entA.uniprotId || entA.name) : "A";
-  const labelB = entB ? (entB.pdbId || entB.uniprotId || entB.name) : "B";
+  const ready = !!compareIds[0] && !!compareIds[1] && compareIds[0] !== compareIds[1];
 
-  // Not enough structures loaded yet — show an instructional placeholder
+  async function runCompare() {
+    if (!entA || !entB) return;
+    if (!entA.structureText || !entB.structureText) {
+      setComparison(null, "Structure data is still loading — please wait a moment and try again.");
+      return;
+    }
+    setCompareLoading(true);
+    setContextTab("compare");
+    const ext = (e: StructureEntry) => e.structureFormat === "cif" ? ".cif" : ".pdb";
+    const toFile = (e: StructureEntry) =>
+      new File([e.structureText!], `${compareDisplayLabel(e)}${ext(e)}`, { type: "text/plain" });
+    const fd = new FormData();
+    fd.append("file_a", toFile(entA));
+    fd.append("file_b", toFile(entB));
+    fd.append("cutoff_angstrom", String(Math.max(entA.cutoff ?? 4, entB.cutoff ?? 4)));
+    try {
+      const res = await fetch(buildApiUrl("/api/compare"), { method: "POST", body: fd });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null) as { detail?: string } | null;
+        throw new Error(body?.detail ?? `Compare failed (${res.status})`);
+      }
+      setComparison(await res.json());
+    } catch (e) {
+      setComparison(null, e instanceof Error ? e.message : "Comparison failed");
+    }
+  }
+
+  // ── Slot picker — always visible ─────────────────────────────────────────
+  const slotPicker = (
+    <div className="flex flex-col gap-2">
+      {([0, 1] as const).map((slot) => {
+        const ent = slot === 0 ? entA : entB;
+        const slotLabel = slot === 0 ? "A" : "B";
+        return (
+          <div key={slot} className="flex items-center gap-1.5">
+            <span className="w-4 shrink-0 text-pio-3xs font-bold text-[var(--pio-graphite)] opacity-50">{slotLabel}</span>
+            <select
+              value={compareIds[slot] ?? ""}
+              onChange={(e) => setCompareId(slot, e.target.value || null)}
+              className="pio-input min-w-0 flex-1 text-pio-xs font-semibold"
+              style={{ height: 30, padding: "0 6px", borderRadius: 8 }}
+            >
+              <option value="">— select structure —</option>
+              {structures.map((s) => (
+                <option key={s.id} value={s.id}>{compareDisplayLabel(s)}</option>
+              ))}
+            </select>
+            {ent && (
+              <button
+                type="button"
+                onClick={() => setCompareId(slot, null)}
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[var(--pio-graphite)] hover:bg-[var(--pio-line)] hover:text-[var(--pio-ink)] transition-colors"
+                aria-label={`Remove structure ${slotLabel}`}
+              >
+                <X size={11} />
+              </button>
+            )}
+          </div>
+        );
+      })}
+
+      {ready && (
+        <button
+          type="button"
+          onClick={() => void runCompare()}
+          disabled={compareIsLoading}
+          className="mt-0.5 flex w-full items-center justify-center gap-1.5 rounded-[8px] bg-[var(--pio-highlight)] py-1.5 text-pio-xs font-semibold text-[var(--pio-highlight-text)] transition-opacity hover:opacity-90 disabled:opacity-50"
+        >
+          {compareIsLoading
+            ? <Loader2 className="h-3 w-3 animate-spin" />
+            : <Play className="h-3 w-3" />}
+          {compareIsLoading ? "Comparing…" : comparison ? "Re-run comparison" : "Run comparison"}
+        </button>
+      )}
+    </div>
+  );
+
+  // ── Not enough structures ─────────────────────────────────────────────────
   if (structures.length < 2) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-16 px-6 text-center">
@@ -1251,9 +1336,7 @@ function CompareTab() {
           </div>
         </div>
         <div className="flex flex-col gap-1">
-          <p className="text-pio-xl font-bold leading-[1.15] tracking-[-0.01em] text-[var(--pio-ink)]">
-            Load a second structure
-          </p>
+          <p className="text-pio-xl font-bold leading-[1.15] tracking-[-0.01em] text-[var(--pio-ink)]">Load a second structure</p>
           <p className="text-pio-sm leading-relaxed text-[var(--pio-graphite)]">
             Use the <strong>Load another</strong> panel on the left to add a second structure, then run a comparison.
           </p>
@@ -1262,40 +1345,52 @@ function CompareTab() {
     );
   }
 
-  if (compareIsLoading) {
+  // ── No comparison result yet ──────────────────────────────────────────────
+  if (!comparison && !compareIsLoading && !compareError) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 py-16">
-        <Loader2 size={22} className="animate-spin text-[var(--pio-highlight)]" />
-        <p className="text-pio-xs text-[var(--pio-graphite)]">Comparing structures…</p>
-      </div>
-    );
-  }
-
-  if (compareError) {
-    return (
-      <div className="flex items-start gap-2.5 rounded-[10px] bg-[var(--pio-coral-pale)] p-4">
-        <AlertCircle size={14} className="mt-0.5 shrink-0 text-[var(--pio-coral-deep)]" />
-        <div>
-          <p className="text-pio-xs font-semibold text-[var(--pio-coral-deep)]">Comparison failed</p>
-          <p className="mt-1 text-pio-3xs text-[var(--pio-coral-deep)] opacity-80">{compareError}</p>
+      <div className="flex flex-col gap-5">
+        {slotPicker}
+        <div className="flex flex-col items-center gap-2 py-8 text-center">
+          <GitCompare size={22} className="text-[var(--pio-graphite)] opacity-25" />
+          <p className="text-pio-3xs text-[var(--pio-graphite)] opacity-60">
+            Select two structures above and run the comparison.
+          </p>
         </div>
       </div>
     );
   }
 
-  if (!comparison) {
+  // ── Loading ───────────────────────────────────────────────────────────────
+  if (compareIsLoading) {
     return (
-      <div className="flex flex-col items-center justify-center gap-2 py-16 px-4 text-center">
-        <GitCompare size={24} className="text-[var(--pio-graphite)] opacity-30" />
-        <p className="text-pio-xs font-semibold text-[var(--pio-ink)]">No comparison yet</p>
-        <p className="text-pio-3xs text-[var(--pio-graphite)] leading-relaxed opacity-70">
-          Load ≥ 2 structures, then use the <strong>Compare</strong> panel in the left sidebar to select and run a comparison.
-        </p>
+      <div className="flex flex-col gap-5">
+        {slotPicker}
+        <div className="flex flex-col items-center gap-3 py-10">
+          <Loader2 size={22} className="animate-spin text-[var(--pio-highlight)]" />
+          <p className="text-pio-xs text-[var(--pio-graphite)]">Comparing structures…</p>
+        </div>
       </div>
     );
   }
 
-  const { delta, contacts } = comparison;
+  // ── Error ─────────────────────────────────────────────────────────────────
+  if (compareError) {
+    return (
+      <div className="flex flex-col gap-4">
+        {slotPicker}
+        <div className="flex items-start gap-2.5 rounded-[10px] bg-[var(--pio-coral-pale)] p-4">
+          <AlertCircle size={14} className="mt-0.5 shrink-0 text-[var(--pio-coral-deep)]" />
+          <div>
+            <p className="text-pio-xs font-semibold text-[var(--pio-coral-deep)]">Comparison failed</p>
+            <p className="mt-1 text-pio-3xs text-[var(--pio-coral-deep)] opacity-80">{compareError}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Results ───────────────────────────────────────────────────────────────
+  const { delta, contacts } = comparison!;
   const DELTA_ROWS: Array<{ label: string; value: number }> = [
     { label: "Residues", value: delta.residue_count_delta },
     { label: "Chains",   value: delta.chain_count_delta },
@@ -1315,12 +1410,7 @@ function CompareTab() {
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Header */}
-      <div className="flex items-center gap-2">
-        <span className="rounded-[8px] bg-[var(--pio-sky)] px-3 py-1 text-pio-sm font-bold text-[var(--pio-highlight)]">{labelA}</span>
-        <GitCompare size={14} className="text-[var(--pio-graphite)] opacity-40" />
-        <span className="rounded-[8px] bg-[var(--pio-sky)] px-3 py-1 text-pio-sm font-bold text-[var(--pio-highlight)]">{labelB}</span>
-      </div>
+      {slotPicker}
 
       {/* Delta summary */}
       <div>
