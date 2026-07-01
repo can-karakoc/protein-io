@@ -277,8 +277,8 @@ function FloatingLigandPanel({
     if (!container) return;
     const rect = container.getBoundingClientRect();
     const pw = Math.min(MAX_PANEL_W, rect.width - 2 * SIDE_PAD);
-    // Use actual rendered height: header only when minimized
-    const ph = PANEL_HEADER_H + (minimized ? 0 : PANEL_BODY_H);
+    // Read actual rendered height so clamping is correct in all animate states
+    const ph = panelRef.current?.offsetHeight ?? PANEL_HEADER_H;
     setPos({
       x: clamp(e.clientX - dragOffset.current.dx, SIDE_PAD, rect.width - pw - SIDE_PAD),
       y: clamp(e.clientY - dragOffset.current.dy, SIDE_PAD, rect.height - ph - SIDE_PAD),
@@ -299,15 +299,23 @@ function FloatingLigandPanel({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Re-clamp on minimize/expand or resize to keep panel fully in-bounds
+  // RAF loop during expand: re-clamp every frame while height animates (220ms transition)
   useEffect(() => {
+    if (minimized) return;
     const container = viewerRef.current;
     if (!container) return;
-    const ph = PANEL_HEADER_H + (minimized ? 0 : PANEL_BODY_H);
-    setPos((p) => ({
-      x: clamp(p.x, SIDE_PAD, container.offsetWidth - PANEL_W - SIDE_PAD),
-      y: clamp(p.y, SIDE_PAD, container.offsetHeight - ph - SIDE_PAD),
-    }));
+    let raf: number;
+    const loop = () => {
+      const ph = panelRef.current?.offsetHeight ?? PANEL_HEADER_H;
+      setPos((p) => ({
+        x: clamp(p.x, SIDE_PAD, container.offsetWidth - PANEL_W - SIDE_PAD),
+        y: clamp(p.y, SIDE_PAD, container.offsetHeight - ph - SIDE_PAD),
+      }));
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    const stop = setTimeout(() => cancelAnimationFrame(raf), 260);
+    return () => { cancelAnimationFrame(raf); clearTimeout(stop); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [minimized, containerW, containerH]);
 
