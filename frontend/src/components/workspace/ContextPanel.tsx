@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import { listItem, stagger, tabContent } from "@/lib/motion";
+import { ease, listItem, spring, stagger, tabContent } from "@/lib/motion";
 
 import { buildApiUrl } from "@/lib/api";
 import type { AnalysisResponse, ContactDifference, ContactRecord, RcsbAnalysisResponse, ResidueConfidence } from "@/lib/types";
@@ -332,7 +332,7 @@ function ChainsTab({ entry }: { entry: StructureEntry }) {
             const isSelected = selection?.kind === "chain" && selection.chainId === c.id;
             return (
               <motion.div key={c.id} variants={listItem}>
-                <div
+                <motion.div
                   role="button"
                   tabIndex={0}
                   aria-pressed={isSelected}
@@ -342,6 +342,8 @@ function ChainsTab({ entry }: { entry: StructureEntry }) {
                     )
                   }
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelection(isSelected ? null : { kind: "chain", chainId: c.id, label: `Chain ${c.id}` }); } }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={spring.snappy}
                   className={`cursor-pointer rounded-[8px] transition-colors duration-150 ${isSelected ? "" : "hover:bg-[var(--pio-paper)]"}`}
                   style={{
                     display: "grid",
@@ -357,7 +359,7 @@ function ChainsTab({ entry }: { entry: StructureEntry }) {
                   </div>
                   <p className="font-mono text-pio-lg font-medium text-[var(--pio-ink)]">{c.residue_count.toLocaleString()}</p>
                   <p className="font-mono text-pio-lg font-medium text-[var(--pio-ink)]">{c.atom_count.toLocaleString()}</p>
-                </div>
+                </motion.div>
                 {i < analysis.chains.length - 1 && (
                   <div className="mx-3 h-px bg-[var(--pio-line)]" />
                 )}
@@ -433,12 +435,21 @@ function LigandsTab({ entry }: { entry: StructureEntry }) {
           <motion.div
             key={`${lig.name}-${lig.chain_id}-${lig.residue_number}`}
             variants={listItem}
+            role="button"
+            tabIndex={0}
+            onClick={toggleFloating}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleFloating(); } }}
+            whileHover={!isSelected ? { y: -2 } : undefined}
+            whileTap={{ scale: 0.98 }}
+            transition={spring.snappy}
             className={[
-              "rounded-[14px] border p-4 transition-colors",
-              isSelected
-                ? "border-[var(--pio-highlight)] bg-[var(--pio-row-selection-bg)]"
-                : "border-transparent bg-[var(--pio-paper)]",
+              "rounded-[14px] p-4 transition-colors cursor-pointer",
+              isSelected ? "" : "bg-[var(--pio-paper)] hover:bg-[var(--pio-sky)]",
             ].join(" ")}
+            style={{
+              border: `2px solid ${isSelected ? "var(--pio-highlight)" : "transparent"}`,
+              background: isSelected ? "var(--pio-row-selection-bg)" : undefined,
+            }}
           >
             {/* ── Header ── */}
             <div className="flex items-center justify-between gap-2 mb-4">
@@ -453,9 +464,11 @@ function LigandsTab({ entry }: { entry: StructureEntry }) {
                   </span>
                 )}
               </div>
-              <button
+              <motion.button
                 type="button"
-                onClick={toggleFloating}
+                onClick={(e) => { e.stopPropagation(); toggleFloating(); }}
+                whileTap={{ scale: 0.90 }}
+                transition={spring.press}
                 className={[
                   "shrink-0 rounded-[8px] px-2.5 py-1 text-pio-xs font-semibold transition-colors",
                   isFloating
@@ -464,7 +477,7 @@ function LigandsTab({ entry }: { entry: StructureEntry }) {
                 ].join(" ")}
               >
                 {isFloating ? "Close" : "View"}
-              </button>
+              </motion.button>
             </div>
 
             {/* ── Stats — always 4 columns, uniform across all cards ── */}
@@ -684,12 +697,14 @@ function ContactsTab({ entry }: { entry: StructureEntry }) {
             return (
               /* outline (not border) so the indicator is drawn outside the box — doesn't affect grid column widths */
               <div key={contactKey(c)}>
-                <div
+                <motion.div
                   role="button"
                   tabIndex={0}
                   aria-pressed={isSelected}
                   onClick={() => setSelection(isSelected ? null : { kind: "contact", contact: c, label })}
                   onKeyDown={(e) => handleSelectableRowKeyDown(e, () => setSelection(isSelected ? null : { kind: "contact", contact: c, label }))}
+                  whileTap={{ scale: 0.98 }}
+                  transition={spring.snappy}
                   style={{
                     display: "grid",
                     gridTemplateColumns: GRID,
@@ -735,7 +750,7 @@ function ContactsTab({ entry }: { entry: StructureEntry }) {
                       <ContactConfidencePill contact={c} />
                     </div>
                   )}
-                </div>
+                </motion.div>
                 {i < paginated.length - 1 && <div style={{ height: 1, background: "var(--pio-line)" }} />}
               </div>
             );
@@ -751,10 +766,12 @@ function ContactsTab({ entry }: { entry: StructureEntry }) {
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between pt-1">
-          <button
+          <motion.button
             type="button"
             disabled={page === 0}
             onClick={() => setPage((p) => p - 1)}
+            whileTap={page !== 0 ? { scale: 0.92 } : undefined}
+            transition={spring.press}
             style={{
               borderRadius: 8,
               padding: "7px 14px",
@@ -767,12 +784,14 @@ function ContactsTab({ entry }: { entry: StructureEntry }) {
               opacity: page === 0 ? 0.35 : 1,
               transition: "opacity 150ms",
             }}
-          >← Prev</button>
+          >← Prev</motion.button>
           <span className="text-pio-xs text-[var(--pio-graphite)]">{page + 1} / {totalPages}</span>
-          <button
+          <motion.button
             type="button"
             disabled={page >= totalPages - 1}
             onClick={() => setPage((p) => p + 1)}
+            whileTap={page < totalPages - 1 ? { scale: 0.92 } : undefined}
+            transition={spring.press}
             style={{
               borderRadius: 8,
               padding: "7px 14px",
@@ -785,7 +804,7 @@ function ContactsTab({ entry }: { entry: StructureEntry }) {
               opacity: page >= totalPages - 1 ? 0.35 : 1,
               transition: "opacity 150ms",
             }}
-          >Next →</button>
+          >Next →</motion.button>
         </div>
       )}
     </div>
@@ -794,9 +813,180 @@ function ContactsTab({ entry }: { entry: StructureEntry }) {
 
 // ── Tab: Interfaces ───────────────────────────────────────────────────────────
 
+// ── Interface contact map ─────────────────────────────────────────────────────
+
+const IMAP_CELL = 12;
+const IMAP_LABEL_W = 46;
+const IMAP_LABEL_H = 44;
+const IMAP_MAX = 24; // max residues per axis
+
+const IMAP_CLASS_COLOR: Record<string, string> = {
+  "h-bond":      "var(--pio-lavender-deep, #6B5FCF)",
+  "salt-bridge": "var(--pio-amber, #E08C18)",
+  "aromatic":    "var(--pio-highlight, #1A406A)",
+  "pi-cation":   "var(--pio-highlight, #1A406A)",
+  "hydrophobic": "var(--pio-green-deep, #276945)",
+  "halogen-bond":"var(--pio-coral, #C94F3A)",
+};
+
+function InterfaceContactMap({
+  contacts,
+  residuesA,
+  residuesB,
+  chainA,
+  chainB,
+}: {
+  contacts: ContactRecord[];
+  residuesA: { chain_id: string; residue_number: string; residue_name: string }[];
+  residuesB: { chain_id: string; residue_number: string; residue_name: string }[];
+  chainA: string;
+  chainB: string;
+}) {
+  // Spatial order: sort by residue number numerically
+  const rowRes = [...residuesA]
+    .sort((a, b) => parseInt(a.residue_number) - parseInt(b.residue_number))
+    .slice(0, IMAP_MAX);
+  const colRes = [...residuesB]
+    .sort((a, b) => parseInt(a.residue_number) - parseInt(b.residue_number))
+    .slice(0, IMAP_MAX);
+
+  if (!rowRes.length || !colRes.length) return null;
+
+  const rowIdx = new Map(rowRes.map((r, i) => [r.residue_number, i]));
+  const colIdx = new Map(colRes.map((r, i) => [r.residue_number, i]));
+
+  // Collect dots: one per residue-pair (pick closest contact for color)
+  const dots = new Map<string, { ri: number; ci: number; cls: string; dist: number }>();
+  for (const c of contacts) {
+    const aIsA = c.chain_a === chainA;
+    const rNumA = aIsA ? c.residue_a : c.residue_b;
+    const rNumB = aIsA ? c.residue_b : c.residue_a;
+    const ri = rowIdx.get(rNumA);
+    const ci = colIdx.get(rNumB);
+    if (ri === undefined || ci === undefined) continue;
+    const key = `${ri}-${ci}`;
+    const existing = dots.get(key);
+    if (!existing || c.distance_angstrom < existing.dist) {
+      dots.set(key, { ri, ci, cls: c.interaction_class ?? "", dist: c.distance_angstrom });
+    }
+  }
+
+  const svgW = IMAP_LABEL_W + colRes.length * IMAP_CELL;
+  const svgH = IMAP_LABEL_H + rowRes.length * IMAP_CELL;
+
+  return (
+    <div className="mt-4">
+      <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] mb-2">Contact map</p>
+      <div className="overflow-x-auto">
+        <svg width={svgW} height={svgH} style={{ display: "block", minWidth: svgW }}>
+          {/* Column labels (chain B residues — rotated) */}
+          {colRes.map((r, ci) => (
+            <text
+              key={r.residue_number}
+              x={IMAP_LABEL_W + ci * IMAP_CELL + IMAP_CELL / 2}
+              y={IMAP_LABEL_H - 4}
+              textAnchor="start"
+              fontSize={8}
+              fontFamily="var(--font-pio-mono)"
+              fill="var(--pio-graphite)"
+              transform={`rotate(-55, ${IMAP_LABEL_W + ci * IMAP_CELL + IMAP_CELL / 2}, ${IMAP_LABEL_H - 4})`}
+            >
+              {r.residue_name}{r.residue_number}
+            </text>
+          ))}
+
+          {/* Row labels (chain A residues) */}
+          {rowRes.map((r, ri) => (
+            <text
+              key={r.residue_number}
+              x={IMAP_LABEL_W - 4}
+              y={IMAP_LABEL_H + ri * IMAP_CELL + IMAP_CELL / 2 + 3}
+              textAnchor="end"
+              fontSize={8}
+              fontFamily="var(--font-pio-mono)"
+              fill="var(--pio-graphite)"
+            >
+              {r.residue_name}{r.residue_number}
+            </text>
+          ))}
+
+          {/* Grid background cells */}
+          {rowRes.map((_, ri) =>
+            colRes.map((_, ci) => (
+              <rect
+                key={`cell-${ri}-${ci}`}
+                x={IMAP_LABEL_W + ci * IMAP_CELL}
+                y={IMAP_LABEL_H + ri * IMAP_CELL}
+                width={IMAP_CELL}
+                height={IMAP_CELL}
+                fill={ri % 2 === 0 ? "var(--pio-paper)" : "transparent"}
+                stroke="var(--pio-line)"
+                strokeWidth={0.4}
+              />
+            ))
+          )}
+
+          {/* Contact dots */}
+          {[...dots.values()].map(({ ri, ci, cls }) => {
+            const color = IMAP_CLASS_COLOR[cls] ?? "var(--pio-graphite)";
+            const rowR = rowRes[ri];
+            const colR = colRes[ci];
+            return (
+              <circle
+                key={`dot-${ri}-${ci}`}
+                cx={IMAP_LABEL_W + ci * IMAP_CELL + IMAP_CELL / 2}
+                cy={IMAP_LABEL_H + ri * IMAP_CELL + IMAP_CELL / 2}
+                r={IMAP_CELL / 2 - 1.5}
+                fill={color}
+                opacity={0.85}
+              >
+                <title>{rowR?.residue_name}{rowR?.residue_number} – {colR?.residue_name}{colR?.residue_number}{cls ? ` (${cls})` : ""}</title>
+              </circle>
+            );
+          })}
+
+          {/* Axis chain labels */}
+          <text x={IMAP_LABEL_W - 4} y={12} textAnchor="end" fontSize={9} fontWeight={700} fill="var(--pio-highlight)" fontFamily="var(--font-pio-mono)">
+            {chainA}
+          </text>
+          <text
+            x={IMAP_LABEL_W + colRes.length * IMAP_CELL / 2}
+            y={8}
+            textAnchor="middle"
+            fontSize={9}
+            fontWeight={700}
+            fill="var(--pio-highlight)"
+            fontFamily="var(--font-pio-mono)"
+          >
+            {chainB}
+          </text>
+        </svg>
+      </div>
+
+      {/* Legend */}
+      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+        {Object.entries(IMAP_CLASS_COLOR).map(([cls, color]) => (
+          <span key={cls} className="flex items-center gap-1 text-pio-3xs text-[var(--pio-graphite)]">
+            <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }} />
+            {cls}
+          </span>
+        ))}
+        <span className="flex items-center gap-1 text-pio-3xs text-[var(--pio-graphite)]">
+          <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: "var(--pio-graphite)", opacity: 0.45, flexShrink: 0 }} />
+          other
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ── InterfacesTab ─────────────────────────────────────────────────────────────
+
 function InterfacesTab({ entry }: { entry: StructureEntry }) {
   const { analysis } = entry;
   const { selection, setSelection } = useWorkspace();
+  const [expandedPairs, setExpandedPairs] = useState<Set<string>>(new Set());
+
   if (!analysis) return null;
   const ia = analysis.interface_analysis;
 
@@ -810,9 +1000,17 @@ function InterfacesTab({ entry }: { entry: StructureEntry }) {
     );
   }
 
+  function toggleExpand(pairKey: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    setExpandedPairs((prev) => {
+      const next = new Set(prev);
+      if (next.has(pairKey)) next.delete(pairKey); else next.add(pairKey);
+      return next;
+    });
+  }
+
   return (
     <div className="flex flex-col gap-6">
-      {/* Section header */}
       <div>
         <h2 className="pio-section-title">Interfaces</h2>
         <p className="pio-section-copy mt-1">
@@ -820,7 +1018,6 @@ function InterfacesTab({ entry }: { entry: StructureEntry }) {
         </p>
       </div>
 
-      {/* Summary stats — full-width 1fr 1fr */}
       <div className="grid grid-cols-2 gap-2">
         {[
           { label: "Inter-chain contacts", value: ia.inter_chain_contact_count },
@@ -835,59 +1032,168 @@ function InterfacesTab({ entry }: { entry: StructureEntry }) {
         ))}
       </div>
 
-      {/* Chain pair cards — same style as Ligands cards */}
       <div className="flex flex-col gap-3">
         {ia.chain_pairs.map((cp) => {
           const pairKey = `${cp.chain_a}-${cp.chain_b}`;
           const isSelected = selection?.kind === "interface" && selection.chainA === cp.chain_a && selection.chainB === cp.chain_b;
-          return (
-          <div
-            key={pairKey}
-            role="button"
-            tabIndex={0}
-            onClick={() => setSelection(isSelected ? null : { kind: "interface", chainA: cp.chain_a, chainB: cp.chain_b, label: `Chain ${cp.chain_a}–${cp.chain_b}` })}
-            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelection(isSelected ? null : { kind: "interface", chainA: cp.chain_a, chainB: cp.chain_b, label: `Chain ${cp.chain_a}–${cp.chain_b}` }); } }}
-            className={["rounded-[14px] border p-4 transition-colors cursor-pointer", isSelected ? "border-[var(--pio-highlight)] bg-[var(--pio-row-selection-bg)]" : "border-transparent bg-[var(--pio-paper)] hover:bg-[var(--pio-sky)]"].join(" ")}
-          >
-            {/* Card header: badges + contact count */}
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex items-center gap-1.5">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[rgba(199,217,236,0.4)] text-pio-sm font-bold text-[var(--pio-highlight)]">
-                  {cp.chain_a}
-                </div>
-                <ChevronRight size={11} className="text-[var(--pio-graphite)]" />
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[rgba(199,217,236,0.4)] text-pio-sm font-bold text-[var(--pio-highlight)]">
-                  {cp.chain_b}
-                </div>
-              </div>
-              <span className="text-pio-xs text-[var(--pio-graphite)]">
-                {cp.contact_count.toLocaleString()} contacts
-              </span>
-            </div>
+          const isExpanded = expandedPairs.has(pairKey);
 
-            {/* Interface details */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] mb-1">Chain {cp.chain_a} interface</p>
-                <p className="text-pio-sm text-[var(--pio-ink)]">{cp.interface_residue_count_a} residues</p>
-                {cp.mean_plddt_a != null && (
-                  <p className="text-pio-xs mt-0.5" style={{ color: plddtColor(cp.mean_plddt_a) }}>
-                    mean pLDDT {cp.mean_plddt_a.toFixed(1)}
-                  </p>
-                )}
+          // Contacts for this pair (both orientations)
+          const pairContacts = analysis.contacts.filter((c) =>
+            (c.chain_a === cp.chain_a && c.chain_b === cp.chain_b) ||
+            (c.chain_a === cp.chain_b && c.chain_b === cp.chain_a),
+          );
+
+          return (
+            <motion.div
+              key={pairKey}
+              role="button"
+              tabIndex={0}
+              onClick={() => setSelection(isSelected ? null : { kind: "interface", chainA: cp.chain_a, chainB: cp.chain_b, label: `Chain ${cp.chain_a}–${cp.chain_b}` })}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelection(isSelected ? null : { kind: "interface", chainA: cp.chain_a, chainB: cp.chain_b, label: `Chain ${cp.chain_a}–${cp.chain_b}` }); } }}
+              whileHover={!isSelected ? { y: -2 } : undefined}
+              whileTap={{ scale: 0.98 }}
+              transition={spring.snappy}
+              className={[
+                "rounded-[14px] overflow-hidden cursor-pointer transition-colors",
+                isSelected ? "" : "bg-[#FBFBF8] hover:bg-[var(--pio-sky)]",
+              ].join(" ")}
+              style={{
+                border: `2px solid ${isSelected ? "var(--pio-highlight)" : "transparent"}`,
+                background: isSelected ? "var(--pio-row-selection-bg)" : undefined,
+              }}
+            >
+              {/* Header row — layout only, click handled by card wrapper */}
+              <div className="flex items-center gap-2 p-4">
+                <div className="flex items-center gap-1.5">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[rgba(199,217,236,0.4)] text-pio-sm font-bold text-[var(--pio-highlight)]">
+                    {cp.chain_a}
+                  </div>
+                  <ChevronRight size={11} className="text-[var(--pio-graphite)]" />
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[rgba(199,217,236,0.4)] text-pio-sm font-bold text-[var(--pio-highlight)]">
+                    {cp.chain_b}
+                  </div>
+                </div>
+                <span className="text-pio-xs text-[var(--pio-graphite)]">
+                  {cp.contact_count.toLocaleString()} contacts
+                </span>
+                {/* Expand toggle — stops propagation so it doesn't trigger 3D selection */}
+                <motion.button
+                  type="button"
+                  onClick={(e) => toggleExpand(pairKey, e)}
+                  whileTap={{ scale: 0.85 }}
+                  transition={spring.press}
+                  className="ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--pio-graphite)] hover:bg-[var(--pio-line)] transition-colors"
+                  aria-label={isExpanded ? "Collapse details" : "Expand details"}
+                >
+                  <ChevronRight size={14} className={["transition-transform", isExpanded ? "rotate-90" : "rotate-0"].join(" ")} />
+                </motion.button>
               </div>
-              <div>
-                <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] mb-1">Chain {cp.chain_b} interface</p>
-                <p className="text-pio-sm text-[var(--pio-ink)]">{cp.interface_residue_count_b} residues</p>
-                {cp.mean_plddt_b != null && (
-                  <p className="text-pio-xs mt-0.5" style={{ color: plddtColor(cp.mean_plddt_b) }}>
-                    mean pLDDT {cp.mean_plddt_b.toFixed(1)}
-                  </p>
-                )}
+
+              {/* Per-chain summary row */}
+              <div className="grid grid-cols-2 gap-3 px-4 pb-4">
+                {[
+                  { chain: cp.chain_a, count: cp.interface_residue_count_a, plddt: cp.mean_plddt_a },
+                  { chain: cp.chain_b, count: cp.interface_residue_count_b, plddt: cp.mean_plddt_b },
+                ].map(({ chain, count, plddt }) => (
+                  <div key={chain}>
+                    <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] mb-1">Chain {chain}</p>
+                    <p className="text-pio-sm text-[var(--pio-ink)]">{count} residues</p>
+                    {plddt != null && (
+                      <p className="text-pio-xs mt-0.5" style={{ color: plddtColor(plddt) }}>
+                        mean pLDDT {plddt.toFixed(1)}
+                      </p>
+                    )}
+                  </div>
+                ))}
               </div>
-            </div>
-          </div>
-        );
+
+              {/* Expandable: per-residue confidence + contact map */}
+              <AnimatePresence initial={false}>
+                {isExpanded && (
+                  <motion.div
+                    key="details"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.24, ease: ease.inOut }}
+                    style={{ overflow: "hidden" }}
+                  >
+                    <div className="border-t border-[var(--pio-line)] px-4 pb-5 pt-4">
+
+                      {/* Per-residue confidence — two columns */}
+                      <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] mb-2">Interface residues</p>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                        {/* Chain A column */}
+                        <div className="flex flex-col gap-1">
+                          <p className="text-pio-3xs font-bold uppercase tracking-[0.08em] text-[var(--pio-highlight)] mb-1 opacity-60">Chain {cp.chain_a}</p>
+                          {cp.interface_residues_a.map((r) => (
+                            <div key={`${r.chain_id}-${r.residue_number}`} className="flex items-center gap-1.5">
+                              <span className="text-pio-3xs font-[family-name:var(--font-pio-mono)] text-[var(--pio-ink)] min-w-0 truncate" title={`${r.residue_name}${r.residue_number}`}>
+                                {r.residue_name}{r.residue_number}
+                              </span>
+                              <span className="ml-auto shrink-0 text-pio-3xs font-[family-name:var(--font-pio-mono)] text-[var(--pio-graphite)]">
+                                {r.contact_count}×
+                              </span>
+                              {r.plddt != null && (
+                                <span
+                                  className="shrink-0 rounded-[4px] px-1 text-pio-3xs font-bold leading-none"
+                                  style={{
+                                    color: plddtColor(r.plddt),
+                                    background: plddtColor(r.plddt) + "22",
+                                    padding: "2px 4px",
+                                  }}
+                                >
+                                  {r.plddt.toFixed(0)}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        {/* Chain B column */}
+                        <div className="flex flex-col gap-1">
+                          <p className="text-pio-3xs font-bold uppercase tracking-[0.08em] text-[var(--pio-highlight)] mb-1 opacity-60">Chain {cp.chain_b}</p>
+                          {cp.interface_residues_b.map((r) => (
+                            <div key={`${r.chain_id}-${r.residue_number}`} className="flex items-center gap-1.5">
+                              <span className="text-pio-3xs font-[family-name:var(--font-pio-mono)] text-[var(--pio-ink)] min-w-0 truncate" title={`${r.residue_name}${r.residue_number}`}>
+                                {r.residue_name}{r.residue_number}
+                              </span>
+                              <span className="ml-auto shrink-0 text-pio-3xs font-[family-name:var(--font-pio-mono)] text-[var(--pio-graphite)]">
+                                {r.contact_count}×
+                              </span>
+                              {r.plddt != null && (
+                                <span
+                                  className="shrink-0 rounded-[4px] px-1 text-pio-3xs font-bold leading-none"
+                                  style={{
+                                    color: plddtColor(r.plddt),
+                                    background: plddtColor(r.plddt) + "22",
+                                    padding: "2px 4px",
+                                  }}
+                                >
+                                  {r.plddt.toFixed(0)}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Contact map */}
+                      {pairContacts.length > 0 && (
+                        <InterfaceContactMap
+                          contacts={pairContacts}
+                          residuesA={cp.interface_residues_a}
+                          residuesB={cp.interface_residues_b}
+                          chainA={cp.chain_a}
+                          chainB={cp.chain_b}
+                        />
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          );
         })}
       </div>
     </div>
@@ -1314,9 +1620,11 @@ function CompareTab() {
       return (
         <div className="relative min-w-0 flex-1" ref={isOpen ? dropdownRef : undefined}>
           {/* Single pill button — equal width regardless of loaded state */}
-          <button
+          <motion.button
             type="button"
             onClick={() => setOpenSlot(isOpen ? null : slot)}
+            whileTap={{ scale: 0.95 }}
+            transition={spring.press}
             className="group relative flex w-full min-w-0 items-center gap-1 rounded-[8px] bg-[var(--pio-sky)] px-3 py-1 text-pio-sm font-bold text-[var(--pio-highlight)] transition-colors hover:brightness-95"
           >
             <span className="truncate">{label}</span>
@@ -1343,7 +1651,7 @@ function CompareTab() {
                 </span>
               )}
             </span>
-          </button>
+          </motion.button>
           {isOpen && (
             <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-[10px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_4px_16px_rgba(17,22,16,0.12)]">
               {structures.map((s) => {
