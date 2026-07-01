@@ -238,12 +238,20 @@ function FloatingLigandPanel({
   const dragging = useRef(false);
   const dragOffset = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
   const panelRef = useRef<HTMLDivElement | null>(null);
+  // Stable handlers stored in refs so addEventListener/removeEventListener always
+  // get the same function reference while the implementation stays up-to-date.
+  const moveImplRef = useRef<(e: MouseEvent) => void>(() => {});
+  const upImplRef   = useRef<() => void>(() => {});
 
   const MAX_PANEL_W = 327;
   const SIDE_PAD = 6;
   const PANEL_BODY_H = 420;
   const PANEL_HEADER_H = 40;
   const PANEL_W = Math.min(MAX_PANEL_W, containerW - 2 * SIDE_PAD);
+
+  // Stable wrappers — registered once per mount, never changed
+  const stableMove = useCallback((e: MouseEvent) => moveImplRef.current(e), []);
+  const stableUp   = useCallback(() => upImplRef.current(), []);
 
   useEffect(() => {
     const container = viewerRef.current;
@@ -259,45 +267,44 @@ function FloatingLigandPanel({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    return () => {
+      window.removeEventListener("mousemove", stableMove);
+      window.removeEventListener("mouseup", stableUp);
+    };
+  }, [stableMove, stableUp]);
+
   function clamp(value: number, min: number, max: number) {
     return Math.max(min, Math.min(max, value));
   }
 
-  function startDrag(e: React.MouseEvent) {
-    e.preventDefault();
-    dragging.current = true;
-    dragOffset.current = { dx: e.clientX - pos.x, dy: e.clientY - pos.y };
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
-  }
-
-  function onMouseMove(e: MouseEvent) {
+  // Update impl refs every render — always captures fresh pos/state/refs
+  moveImplRef.current = (e: MouseEvent) => {
     if (!dragging.current) return;
     const container = viewerRef.current;
     if (!container) return;
     const rect = container.getBoundingClientRect();
     const pw = Math.min(MAX_PANEL_W, rect.width - 2 * SIDE_PAD);
-    // Read actual rendered height so clamping is correct in all animate states
     const ph = panelRef.current?.offsetHeight ?? PANEL_HEADER_H;
     setPos({
       x: clamp(e.clientX - dragOffset.current.dx, SIDE_PAD, rect.width - pw - SIDE_PAD),
       y: clamp(e.clientY - dragOffset.current.dy, SIDE_PAD, rect.height - ph - SIDE_PAD),
     });
-  }
+  };
 
-  function onMouseUp() {
+  upImplRef.current = () => {
     dragging.current = false;
-    window.removeEventListener("mousemove", onMouseMove);
-    window.removeEventListener("mouseup", onMouseUp);
-  }
+    window.removeEventListener("mousemove", stableMove);
+    window.removeEventListener("mouseup", stableUp);
+  };
 
-  useEffect(() => {
-    return () => {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  function startDrag(e: React.MouseEvent) {
+    e.preventDefault();
+    dragging.current = true;
+    dragOffset.current = { dx: e.clientX - pos.x, dy: e.clientY - pos.y };
+    window.addEventListener("mousemove", stableMove);
+    window.addEventListener("mouseup", stableUp);
+  }
 
   // RAF loop during expand: re-clamp every frame while height animates (220ms transition)
   useEffect(() => {
@@ -364,6 +371,7 @@ function FloatingLigandPanel({
       {/* Drag handle header */}
       <div
         onMouseDown={startDrag}
+        onDoubleClick={() => setMinimized((m) => !m)}
         style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", cursor: "grab" }}
       >
         <p className="text-pio-3xs" style={{ fontWeight: 700, letterSpacing: "0.08em", ...TEXT }}>
