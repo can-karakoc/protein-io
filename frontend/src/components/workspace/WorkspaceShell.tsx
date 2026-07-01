@@ -239,20 +239,13 @@ function FloatingLigandPanel({
   const dragOffset = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
   const panelRef = useRef<HTMLDivElement | null>(null);
   const lastMouseDownAt = useRef(0);
-  // Stable handlers stored in refs so addEventListener/removeEventListener always
-  // get the same function reference while the implementation stays up-to-date.
-  const moveImplRef = useRef<(e: MouseEvent) => void>(() => {});
-  const upImplRef   = useRef<() => void>(() => {});
+  const cleanupDragRef = useRef<() => void>(() => {});
 
   const MAX_PANEL_W = 327;
   const SIDE_PAD = 6;
   const PANEL_BODY_H = 420;
   const PANEL_HEADER_H = 40;
   const PANEL_W = Math.min(MAX_PANEL_W, containerW - 2 * SIDE_PAD);
-
-  // Stable wrappers — registered once per mount, never changed
-  const stableMove = useCallback((e: MouseEvent) => moveImplRef.current(e), []);
-  const stableUp   = useCallback(() => upImplRef.current(), []);
 
   useEffect(() => {
     const container = viewerRef.current;
@@ -269,41 +262,16 @@ function FloatingLigandPanel({
   }, []);
 
   useEffect(() => {
-    return () => {
-      window.removeEventListener("mousemove", stableMove);
-      window.removeEventListener("mouseup", stableUp);
-    };
-  }, [stableMove, stableUp]);
+    return () => cleanupDragRef.current();
+  }, []);
 
   function clamp(value: number, min: number, max: number) {
     return Math.max(min, Math.min(max, value));
   }
 
-  // Update impl refs every render — always captures fresh pos/state/refs
-  moveImplRef.current = (e: MouseEvent) => {
-    if (!dragging.current) return;
-    const container = viewerRef.current;
-    if (!container) return;
-    const rect = container.getBoundingClientRect();
-    const pw = Math.min(MAX_PANEL_W, rect.width - 2 * SIDE_PAD);
-    const ph = panelRef.current?.offsetHeight ?? PANEL_HEADER_H;
-    setPos({
-      x: clamp(e.clientX - dragOffset.current.dx, SIDE_PAD, rect.width - pw - SIDE_PAD),
-      y: clamp(e.clientY - dragOffset.current.dy, SIDE_PAD, rect.height - ph - SIDE_PAD),
-    });
-  };
-
-  upImplRef.current = () => {
-    dragging.current = false;
-    window.removeEventListener("mousemove", stableMove);
-    window.removeEventListener("mouseup", stableUp);
-  };
-
   function startDrag(e: React.MouseEvent) {
     const now = Date.now();
     if (now - lastMouseDownAt.current < 300) {
-      // Double-click: e.preventDefault() would suppress the native dblclick event,
-      // so we detect it manually here and toggle minimize instead of dragging.
       lastMouseDownAt.current = 0;
       setMinimized((m) => !m);
       return;
@@ -312,8 +280,35 @@ function FloatingLigandPanel({
     e.preventDefault();
     dragging.current = true;
     dragOffset.current = { dx: e.clientX - pos.x, dy: e.clientY - pos.y };
-    window.addEventListener("mousemove", stableMove);
-    window.addEventListener("mouseup", stableUp);
+
+    function onMove(ev: MouseEvent) {
+      if (!dragging.current) return;
+      const container = viewerRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const panelH = panelRef.current?.offsetHeight ?? PANEL_HEADER_H;
+      const pw = Math.min(MAX_PANEL_W, rect.width - 2 * SIDE_PAD);
+      setPos({
+        x: clamp(ev.clientX - dragOffset.current.dx, SIDE_PAD, rect.width - pw - SIDE_PAD),
+        y: clamp(ev.clientY - dragOffset.current.dy, SIDE_PAD, rect.height - panelH - SIDE_PAD),
+      });
+    }
+
+    function onUp() {
+      dragging.current = false;
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      cleanupDragRef.current = () => {};
+    }
+
+    cleanupDragRef.current = () => {
+      dragging.current = false;
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
   }
 
   // RAF loop during expand: re-clamp every frame while height animates (220ms transition)
