@@ -9,6 +9,14 @@ dependencies = [
     "pydantic>=2.8.0",
     "python-multipart>=0.0.9",
     "uvicorn[standard]>=0.30.0",
+    # Runtime deps imported by app modules (were relied on transitively/locally and
+    # broke the Render deploy — declare them explicitly).
+    "httpx>=0.27.0",            # integrations/foldseek
+    "numpy>=1.26",             # chai, tmalign, lddt, sasa, dockq, interface_confidence
+    "scipy>=1.11",             # lddt, sasa, dockq
+    "tmtools>=0.0.3",          # integrations/tmalign
+    "anthropic>=0.40.0",       # chat
+    "python-dotenv>=1.0.0",    # main
     # Physical-validity layer (Phase 9): CPU-only cheminformatics. Heavier than the
     # rest, but mandatory for drug-discovery credibility. See docs/ROADMAP-2026.md.
     "rdkit>=2024.9.1",
@@ -17,7 +25,6 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "httpx>=0.27.0",
     "pytest>=8.0.0",
 ]
 
