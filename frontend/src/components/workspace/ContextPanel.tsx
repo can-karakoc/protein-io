@@ -5,6 +5,7 @@ import {
   AlertCircle,
   AlertTriangle,
   ChevronRight,
+  Download,
   ExternalLink,
   FlaskConical,
   GitCompare,
@@ -17,6 +18,7 @@ import { useEffect, useRef, useState } from "react";
 import { ease, listItem, spring, stagger, tabContent } from "@/lib/motion";
 
 import { buildApiUrl } from "@/lib/api";
+import { downloadComparisonReportPdf } from "@/lib/comparisonReport";
 import type { AnalysisResponse, ContactDifference, ContactRecord, FoldseekHit, FoldseekSearchResult, RcsbAnalysisResponse, ResidueConfidence } from "@/lib/types";
 import type { ContextTab, StructureEntry } from "@/lib/workspaceStore";
 import { useWorkspace } from "@/lib/workspaceStore";
@@ -1890,9 +1892,27 @@ function CompareTab() {
     );
   }
 
+  function exportRow() {
+    const labelA = entA ? compareDisplayLabel(entA) : "A";
+    const labelB = entB ? compareDisplayLabel(entB) : "B";
+    return (
+      <motion.button
+        type="button"
+        whileTap={{ scale: 0.96 }}
+        transition={spring.press}
+        onClick={() => downloadComparisonReportPdf(comparison!, labelA, labelB)}
+        className="w-full flex items-center justify-center gap-1.5 rounded-[12px] px-3 py-2.5 text-pio-xs font-semibold bg-[var(--pio-sky)] text-[var(--pio-highlight)] hover:bg-[var(--pio-highlight)] hover:text-[var(--pio-highlight-text)] transition-colors cursor-pointer"
+      >
+        <Download size={12} />
+        Download PDF report
+      </motion.button>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-5">
       {pillHeader()}
+      {exportRow()}
       {tmAlignPanel()}
 
       {/* Delta summary */}
