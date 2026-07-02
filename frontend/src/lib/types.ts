@@ -132,6 +132,22 @@ export type PaeSummary = {
   high_error_threshold: number;
 };
 
+export type PaeChainBlock = {
+  chain_id: string;
+  start: number;
+  end: number;
+};
+
+export type PaeMatrix = {
+  size: number;
+  down_size: number;
+  values: number[][];
+  max_error: number;
+  chain_blocks: PaeChainBlock[];
+};
+
+export type InterfaceConfidence = "high" | "moderate" | "low";
+
 export type TopContactResidue = {
   chain_id: string;
   residue_number: string;
@@ -239,6 +255,9 @@ export type ChainPairSummary = {
   interface_residue_count_b: number;
   interface_residues_a: InterfaceResidue[];
   interface_residues_b: InterfaceResidue[];
+  interface_pae: number | null;
+  cross_pae_mean: number | null;
+  interface_confidence: InterfaceConfidence | null;
 };
 
 export type InterfaceAnalysis = {
@@ -271,6 +290,7 @@ export type AnalysisResponse = {
   confidence: ConfidenceSummary | null;
   residue_confidences: ResidueConfidence[];
   pae: PaeSummary | null;
+  pae_matrix?: PaeMatrix | null;
   interaction_summary: InteractionSummary | null;
   ligand_interactions: LigandInteractionSummary[];
   ligand_validity: LigandValidity[];

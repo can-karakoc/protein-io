@@ -203,6 +203,11 @@ def analyze_pdb_content_with_timing(
     summary = structure.summary.model_copy(update={"contact_count": len(contacts)})
     interface_analysis = analyze_interfaces(contacts, residue_confidences)
 
+    pae_matrix = None
+    if pae is not None and pae.matrix:
+        from app.interface_confidence import enrich_interface_confidence
+        interface_analysis, pae_matrix = enrich_interface_confidence(interface_analysis, pae, structure)
+
     ligand_validity: list = []
     if include_validity and structure.ligands:
         ligand_validity = compute_ligand_validity(content, filename)
@@ -214,6 +219,7 @@ def analyze_pdb_content_with_timing(
         confidence=confidence,
         residue_confidences=residue_confidences,
         pae=pae,
+        pae_matrix=pae_matrix,
         interaction_summary=summarize_interactions(contacts),
         ligand_interactions=summarize_ligand_interactions(contacts, water_bridges=water_bridges, ligands=structure.ligands),
         ligand_validity=ligand_validity,

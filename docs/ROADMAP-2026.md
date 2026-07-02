@@ -77,14 +77,20 @@ The signature "we understand co-folding failure modes" feature.
   failing-check list, theme-neutral depiction, drug-likeness grid.
 - `[x]` 5 new backend tests (172 total pass); RDKit + PoseBusters added as deps.
 
-### Phase 10 — Interface-aware confidence
+### Phase 10 — Interface-aware confidence  ✅ DONE (`feat/interface-confidence`)
 
 Global pLDDT/PAE correlate poorly with quality; interface-specific metrics are the fix.
 
-- `[ ]` Expose the raw PAE matrix from the sidecar (currently only summarised).
-- `[ ]` Compute **iPAE**, **interface-pLDDT**, and an **ipTM-proxy** per chain pair.
-- `[ ]` PAE heatmap tile per chain pair; honest per-interface "trust" verdict.
-- `[ ]` Add `cross_pae_mean` to `ChainPairSummary`.
+- `[x]` Retain the raw PAE matrix (on `PaeSummary`, excluded from API), aligned to
+  protein residues by parse order (guarded on exact count match).
+- `[x]` Compute **iPAE** (mean over interface-residue pairs) and **cross-PAE** (all
+  inter-chain pairs) per chain pair; interface-pLDDT already on `ChainPairSummary`.
+- `[x]` PAE heatmap (downsampled ≤80×80, canvas, chain-block delineation) in the PAE
+  tab; per-interface **confidence verdict** (high/moderate/low) in the Interfaces tab.
+- `[x]` `interface_pae`, `cross_pae_mean`, `interface_confidence` on `ChainPairSummary`;
+  new `PaeMatrix`/`PaeChainBlock` models; `AnalysisResponse.pae_matrix`.
+- `[x]` Degrades gracefully when tokens can't be aligned (ligand tokens). 6 new tests
+  (184 total pass). Uses real sidecar ipTM/pTM where available (already in `global_scores`).
 
 ### Phase 11 — Reference-based benchmarking (Compare)
 
