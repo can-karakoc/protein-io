@@ -458,6 +458,8 @@ function LigandsTab({ entry }: { entry: StructureEntry }) {
     );
   }
 
+  const hasCofactorNote = (analysis.ligand_validity ?? []).some((v) => v.note);
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -504,6 +506,14 @@ function LigandsTab({ entry }: { entry: StructureEntry }) {
           );
         })}
       </motion.div>
+
+      {hasCofactorNote && (
+        <p className="text-pio-xs text-[var(--pio-graphite)] opacity-70">
+          Pose-validity (PoseBusters) checks apply only to organic small-molecule ligands.
+          Ions, small cofactors, and metal-containing groups such as heme show chemistry from
+          the PDB Chemical Component Dictionary where available.
+        </p>
+      )}
     </div>
   );
 }
@@ -704,11 +714,6 @@ function LigandCard({
         </div>
       )}
 
-      {checkCount === 0 && validity?.note && (
-        <p className="mt-4 border-t border-[var(--pio-line)] pt-3 text-pio-xs text-[var(--pio-graphite)] opacity-70">
-          {validity.note}
-        </p>
-      )}
     </motion.div>
   );
 }
@@ -2668,7 +2673,7 @@ const TAB_ORDER: ContextTab[] = [
 ];
 
 export function ContextPanel() {
-  const { getActive, contextTab, setContextTab } = useWorkspace();
+  const { getActive, contextTab, setContextTab, floatingLigandKey, setFloatingLigandKey, selection, setSelection } = useWorkspace();
   const active = getActive();
   const tabStripRef = useRef<HTMLDivElement>(null);
   const prevTabIdxRef = useRef(0);
@@ -2683,6 +2688,15 @@ export function ContextPanel() {
   const currentTabIdx = TAB_ORDER.indexOf(selectedTab);
   const dir = currentTabIdx >= prevTabIdxRef.current ? 1 : -1;
   useEffect(() => { prevTabIdxRef.current = currentTabIdx; }, [currentTabIdx]);
+
+  // The floating ligand viewer + its selection belong to the Ligands tab. When the
+  // user navigates away, close the panel and drop the ligand highlight.
+  useEffect(() => {
+    if (selectedTab !== "ligands") {
+      if (floatingLigandKey !== null) setFloatingLigandKey(null);
+      if (selection?.kind === "ligand") setSelection(null);
+    }
+  }, [selectedTab, floatingLigandKey, selection, setFloatingLigandKey, setSelection]);
 
   if (!active) {
     return <EmptyGallery />;
