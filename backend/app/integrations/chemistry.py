@@ -361,7 +361,16 @@ def _depiction_svg(mol) -> str | None:
         svg = drawer.GetDrawingText()
         # Drop the XML prolog so the markup embeds cleanly as inline HTML.
         idx = svg.find("<svg")
-        return svg[idx:] if idx != -1 else svg
+        svg = svg[idx:] if idx != -1 else svg
+        # Map the baked CPK colours to theme-adaptive CSS variables so the depiction
+        # recolours with light/dark mode (carbon goes white on dark). See globals.css.
+        for baked, token in (
+            ("#6B6B6B", "var(--pio-mol-c)"),   # carbon / bonds
+            ("#FF0000", "var(--pio-mol-o)"),   # oxygen
+            ("#0000FF", "var(--pio-mol-n)"),   # nitrogen
+        ):
+            svg = svg.replace(baked, token).replace(baked.lower(), token)
+        return svg
     except Exception:
         return None
 
