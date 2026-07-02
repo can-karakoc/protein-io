@@ -19,7 +19,7 @@ import { ease, listItem, spring, stagger, tabContent } from "@/lib/motion";
 
 import { buildApiUrl } from "@/lib/api";
 import { downloadComparisonReportPdf } from "@/lib/comparisonReport";
-import type { AnalysisResponse, ContactDifference, ContactRecord, FoldseekHit, FoldseekSearchResult, RcsbAnalysisResponse, ResidueConfidence } from "@/lib/types";
+import type { AnalysisResponse, ContactDifference, ContactRecord, FoldseekHit, FoldseekSearchResult, LigandValidity, RcsbAnalysisResponse, ResidueConfidence } from "@/lib/types";
 import type { ContextTab, StructureEntry } from "@/lib/workspaceStore";
 import { useWorkspace } from "@/lib/workspaceStore";
 
@@ -450,6 +450,8 @@ function LigandsTab({ entry }: { entry: StructureEntry }) {
   const { selection, setSelection, floatingLigandKey, setFloatingLigandKey } = useWorkspace();
   if (!analysis) return null;
 
+  const validity = analysis.ligand_validity ?? [];
+
   if (!analysis.ligands.length) {
     return (
       <p className="text-pio-sm text-[var(--pio-graphite)] opacity-60">
@@ -587,7 +589,152 @@ function LigandsTab({ entry }: { entry: StructureEntry }) {
         );
       })}
       </motion.div>
+
+      {validity.length > 0 && (
+        <div>
+          <h2 className="pio-section-title">Physical validity &amp; chemistry</h2>
+          <p className="pio-section-copy mt-1">
+            RDKit chemistry and PoseBusters physical-validity checks for bound small molecules —
+            flags poses that are chemically or geometrically implausible.
+          </p>
+          <motion.div className="mt-3 flex flex-col gap-3" initial="hidden" animate="show" variants={stagger}>
+            {validity.map((v) => (
+              <LigandValidityCard key={`${v.name}-${v.chain_id}-${v.residue_number}`} v={v} />
+            ))}
+          </motion.div>
+        </div>
+      )}
     </div>
+  );
+}
+
+function LigandValidityCard({ v }: { v: LigandValidity }) {
+  const idTag = (
+    <span className="shrink-0 font-[family-name:var(--font-pio-mono)] text-pio-xs text-[var(--pio-graphite)]">
+      {v.chain_id}:{v.residue_number}
+    </span>
+  );
+
+  // Ions / cofactors below the small-molecule threshold: compact muted row.
+  if (!v.is_small_molecule || !v.chemistry) {
+    return (
+      <motion.div
+        variants={listItem}
+        className="rounded-[14px] bg-[var(--pio-paper)] p-4"
+        style={{ border: "2px solid transparent" }}
+      >
+        <div className="flex items-center gap-2">
+          <p className="text-pio-md font-bold text-[var(--pio-ink)] truncate">{v.name}</p>
+          {idTag}
+          <span className="pio-badge pio-badge-neutral text-pio-xs shrink-0">ion / cofactor</span>
+        </div>
+        {v.note && (
+          <p className="mt-1.5 text-pio-xs text-[var(--pio-graphite)] opacity-70">{v.note}</p>
+        )}
+      </motion.div>
+    );
+  }
+
+  const c = v.chemistry;
+  const pbBadge =
+    v.pb_valid === true
+      ? { cls: "pio-badge-active", label: "PB-valid" }
+      : v.pb_valid === false
+        ? { cls: "pio-badge-warning", label: "invalid pose" }
+        : { cls: "pio-badge-neutral", label: "not checked" };
+
+  const failing = v.checks.filter((ch) => !ch.passed);
+  const passCount = v.checks.length - failing.length;
+
+  const STATS: { label: string; value: string | number | null }[] = [
+    { label: "MW", value: c.molecular_weight != null ? `${c.molecular_weight}` : null },
+    { label: "LogP", value: c.logp },
+    { label: "HBD", value: c.h_bond_donors },
+    { label: "HBA", value: c.h_bond_acceptors },
+    { label: "TPSA", value: c.tpsa },
+    { label: "Rot", value: c.rotatable_bonds },
+    { label: "Rings", value: c.ring_count },
+    { label: "QED", value: c.qed },
+  ];
+
+  return (
+    <motion.div
+      variants={listItem}
+      className="rounded-[14px] bg-[var(--pio-paper)] p-4"
+      style={{ border: "2px solid transparent" }}
+    >
+      {/* Header */}
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <p className="text-pio-md font-bold text-[var(--pio-ink)] truncate">{v.name}</p>
+        {idTag}
+        <span className={`pio-badge ${pbBadge.cls} text-pio-xs shrink-0`}>{pbBadge.label}</span>
+        {c.formula && (
+          <span className="font-[family-name:var(--font-pio-mono)] text-pio-xs text-[var(--pio-graphite)] shrink-0">
+            {c.formula}
+          </span>
+        )}
+      </div>
+
+      <div className="flex gap-4">
+        {/* 2D depiction */}
+        {c.depiction_svg && (
+          <div
+            className="w-[150px] shrink-0 self-start rounded-[10px] [&>svg]:h-auto [&>svg]:w-full"
+            dangerouslySetInnerHTML={{ __html: c.depiction_svg }}
+          />
+        )}
+
+        {/* Properties + flags */}
+        <div className="min-w-0 flex-1">
+          <div className="grid grid-cols-4 gap-x-2 gap-y-3">
+            {STATS.map((s) => (
+              <div key={s.label}>
+                <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] mb-0.5">{s.label}</p>
+                <p className="font-[family-name:var(--font-pio-mono)] text-pio-md font-bold text-[var(--pio-ink)] truncate">
+                  {s.value == null ? "—" : s.value}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-1.5">
+            <span className={`pio-badge text-pio-xs ${c.lipinski_pass ? "pio-badge-active" : "pio-badge-caution"}`}>
+              {c.lipinski_pass ? "Lipinski ✓" : `Lipinski ${c.lipinski_violations ?? 0} viol.`}
+            </span>
+            {c.pains_alerts != null && (
+              <span className={`pio-badge text-pio-xs ${c.pains_alerts > 0 ? "pio-badge-warning" : "pio-badge-active"}`}>
+                {c.pains_alerts > 0 ? `${c.pains_alerts} PAINS` : "no PAINS"}
+              </span>
+            )}
+            {v.strain_energy != null && (
+              <span className={`pio-badge text-pio-xs ${v.strain_energy > 10 ? "pio-badge-caution" : "pio-badge-neutral"}`}>
+                strain {v.strain_energy} kcal/mol
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Validity checks */}
+      {v.checks.length > 0 && (
+        <div className="mt-3 border-t border-[var(--pio-line)] pt-3">
+          <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] mb-1.5">
+            PoseBusters {passCount}/{v.checks.length} checks passed
+          </p>
+          {failing.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {failing.map((ch) => (
+                <span key={ch.name} className="pio-badge pio-badge-warning text-pio-xs" title={ch.description}>
+                  ✗ {ch.description}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span className="pio-badge pio-badge-active text-pio-xs">✓ All checks passed</span>
+          )}
+        </div>
+      )}
+    </motion.div>
   );
 }
 

@@ -171,6 +171,42 @@ export type LigandInteractionSummary = {
   hbond_strength_breakdown?: Record<string, number>;
 };
 
+export type LigandChemistry = {
+  smiles: string | null;
+  formula: string | null;
+  molecular_weight: number | null;
+  logp: number | null;
+  h_bond_donors: number | null;
+  h_bond_acceptors: number | null;
+  tpsa: number | null;
+  rotatable_bonds: number | null;
+  ring_count: number | null;
+  qed: number | null;
+  lipinski_pass: boolean | null;
+  lipinski_violations: number | null;
+  pains_alerts: number | null;
+  depiction_svg: string | null;
+};
+
+export type PoseValidityCheck = {
+  name: string;
+  passed: boolean;
+  description: string;
+};
+
+export type LigandValidity = {
+  name: string;
+  chain_id: string;
+  residue_number: string;
+  atom_count: number;
+  is_small_molecule: boolean;
+  pb_valid: boolean | null;
+  checks: PoseValidityCheck[];
+  strain_energy: number | null;
+  chemistry: LigandChemistry | null;
+  note: string | null;
+};
+
 export type InteractionSummary = {
   protein_protein_count: number;
   protein_ligand_count: number;
@@ -237,6 +273,7 @@ export type AnalysisResponse = {
   pae: PaeSummary | null;
   interaction_summary: InteractionSummary | null;
   ligand_interactions: LigandInteractionSummary[];
+  ligand_validity: LigandValidity[];
   chains: ChainSummary[];
   ligands: LigandSummary[];
   contacts: ContactRecord[];

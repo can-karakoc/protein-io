@@ -331,9 +331,15 @@ def _depiction_svg(mol) -> str | None:
         drawer = rdMolDraw2D.MolDraw2DSVG(300, 220)
         opts = drawer.drawOptions()
         opts.clearBackground = False
+        # Neutral carbon/bond colour so the depiction reads on both light and dark themes
+        # (heteroatoms keep their conventional colours, which are visible on both).
+        opts.updateAtomPalette({6: (0.42, 0.42, 0.42)})
         drawer.DrawMolecule(flat)
         drawer.FinishDrawing()
-        return drawer.GetDrawingText()
+        svg = drawer.GetDrawingText()
+        # Drop the XML prolog so the markup embeds cleanly as inline HTML.
+        idx = svg.find("<svg")
+        return svg[idx:] if idx != -1 else svg
     except Exception:
         return None
 
