@@ -118,6 +118,44 @@ class LigandInteractionSummary(BaseModel):
     hbond_strength_breakdown: dict[str, int] = Field(default_factory=dict)
 
 
+class LigandChemistry(BaseModel):
+    """RDKit-derived cheminformatics for a bound ligand."""
+    smiles: str | None = None
+    formula: str | None = None
+    molecular_weight: float | None = None
+    logp: float | None = None
+    h_bond_donors: int | None = None
+    h_bond_acceptors: int | None = None
+    tpsa: float | None = None
+    rotatable_bonds: int | None = None
+    ring_count: int | None = None
+    qed: float | None = None
+    lipinski_pass: bool | None = None
+    lipinski_violations: int | None = None
+    pains_alerts: int | None = None
+    depiction_svg: str | None = None
+
+
+class PoseValidityCheck(BaseModel):
+    name: str
+    passed: bool
+    description: str
+
+
+class LigandValidity(BaseModel):
+    """Physical-validity + chemistry report for a single bound ligand."""
+    name: str
+    chain_id: str
+    residue_number: str
+    atom_count: int
+    is_small_molecule: bool = False
+    pb_valid: bool | None = None
+    checks: list[PoseValidityCheck] = Field(default_factory=list)
+    strain_energy: float | None = None
+    chemistry: LigandChemistry | None = None
+    note: str | None = None
+
+
 class InteractionSummary(BaseModel):
     protein_protein_count: int = 0
     protein_ligand_count: int = 0
@@ -268,6 +306,7 @@ class AnalysisResponse(BaseModel):
     pae: PaeSummary | None = None
     interaction_summary: InteractionSummary | None = None
     ligand_interactions: list[LigandInteractionSummary] = Field(default_factory=list)
+    ligand_validity: list[LigandValidity] = Field(default_factory=list)
     chains: list[ChainSummary]
     ligands: list[LigandSummary]
     contacts: list[ContactRecord]

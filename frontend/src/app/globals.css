@@ -84,8 +84,13 @@
   --pio-quality-green-border: rgba(74, 140, 100, 0.22);
   --pio-quality-green-fg: #1B3D28;
   --pio-quality-green-fg-soft: rgba(27, 61, 40, 0.50);
+  /* 2D ligand depiction (RDKit SVG) — theme-adaptive atom colours */
+  --pio-mol-c: #6b6b6b;
+  --pio-mol-o: #ff0000;
+  --pio-mol-n: #0000ff;
   /* Floating ligand panel */
   --pio-fp-bg: rgba(217, 231, 242, 0.88);
+  --pio-fp-blur: 10px;
   --pio-fp-border: rgba(26, 64, 106, 0.20);
   --pio-fp-shadow: 0 8px 32px rgba(26, 64, 106, 0.18);
   --pio-fp-divider: rgba(26, 64, 106, 0.12);
@@ -111,8 +116,13 @@
 [data-theme="dark"] {
   --pio-white: #1c1c22;
   --pio-paper: #131316;
+  /* 2D ligand depiction — white skeleton + brighter heteroatoms on dark */
+  --pio-mol-c: #ededed;
+  --pio-mol-o: #ff7676;
+  --pio-mol-n: #7aa2ff;
   /* Floating ligand panel — dark mode */
-  --pio-fp-bg: rgba(26, 64, 106, 0.80);
+  --pio-fp-bg: rgba(26, 64, 106, 0.90);
+  --pio-fp-blur: 20px;
   --pio-fp-border: rgba(200, 227, 238, 0.14);
   --pio-fp-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
   --pio-fp-divider: rgba(200, 227, 238, 0.10);

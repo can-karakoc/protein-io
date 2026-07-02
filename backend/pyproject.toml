@@ -9,6 +9,10 @@ dependencies = [
     "pydantic>=2.8.0",
     "python-multipart>=0.0.9",
     "uvicorn[standard]>=0.30.0",
+    # Physical-validity layer (Phase 9): CPU-only cheminformatics. Heavier than the
+    # rest, but mandatory for drug-discovery credibility. See docs/ROADMAP-2026.md.
+    "rdkit>=2024.9.1",
+    "posebusters>=0.3.1",
 ]
 
 [project.optional-dependencies]

@@ -19,7 +19,7 @@ import { ease, listItem, spring, stagger, tabContent } from "@/lib/motion";
 
 import { buildApiUrl } from "@/lib/api";
 import { downloadComparisonReportPdf } from "@/lib/comparisonReport";
-import type { AnalysisResponse, ContactDifference, ContactRecord, FoldseekHit, FoldseekSearchResult, RcsbAnalysisResponse, ResidueConfidence } from "@/lib/types";
+import type { AnalysisResponse, ContactDifference, ContactRecord, FoldseekHit, FoldseekSearchResult, LigandInteractionSummary, LigandSummary, LigandValidity, RcsbAnalysisResponse, ResidueConfidence } from "@/lib/types";
 import type { ContextTab, StructureEntry } from "@/lib/workspaceStore";
 import { useWorkspace } from "@/lib/workspaceStore";
 
@@ -458,136 +458,263 @@ function LigandsTab({ entry }: { entry: StructureEntry }) {
     );
   }
 
+  const hasCofactorNote = (analysis.ligand_validity ?? []).some((v) => v.note);
+
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h2 className="pio-section-title">Ligands</h2>
         <p className="pio-section-copy mt-1">
-          Per-ligand contact counts, closest atom pair, and contacting residues.
+          Chemistry, physical-validity checks, and binding contacts for each bound ligand.
         </p>
       </div>
       <motion.div className="flex flex-col gap-3" initial="hidden" animate="show" variants={stagger}>
-      {analysis.ligands.map((lig) => {
-        const key = `${lig.chain_id}:${lig.residue_number}`;
-        const isFloating = floatingLigandKey === key;
-        const isSelected =
-          selection?.kind === "ligand" &&
-          selection.chainId === lig.chain_id &&
-          selection.residueNumber === lig.residue_number;
-        const interaction = analysis.ligand_interactions.find(
-          (li) => li.name === lig.name && li.chain_id === lig.chain_id,
-        );
+        {analysis.ligands.map((lig) => {
+          const key = `${lig.chain_id}:${lig.residue_number}`;
+          const isFloating = floatingLigandKey === key;
+          const isSelected =
+            selection?.kind === "ligand" &&
+            selection.chainId === lig.chain_id &&
+            selection.residueNumber === lig.residue_number;
+          const interaction = analysis.ligand_interactions.find(
+            (li) => li.name === lig.name && li.chain_id === lig.chain_id,
+          );
+          const validity = (analysis.ligand_validity ?? []).find(
+            (v) => v.name === lig.name && v.chain_id === lig.chain_id && v.residue_number === lig.residue_number,
+          );
 
-        function toggleFloating() {
-          if (isFloating) {
-            setFloatingLigandKey(null);
-            setSelection(null);
-          } else {
-            setFloatingLigandKey(key);
-            setSelection({ kind: "ligand", chainId: lig.chain_id, residueName: lig.name, residueNumber: lig.residue_number, label: lig.name });
+          function toggle() {
+            if (isFloating) {
+              setFloatingLigandKey(null);
+              setSelection(null);
+            } else {
+              setFloatingLigandKey(key);
+              setSelection({ kind: "ligand", chainId: lig.chain_id, residueName: lig.name, residueNumber: lig.residue_number, label: lig.name });
+            }
           }
-        }
 
-        // Fixed 4 stats so every card has the same structure
-        const STAT_COLS = ["Atoms", "Contacts", "Protein", "Closest"] as const;
-        const statValues: Record<string, string | number> = {
-          Atoms:    lig.atom_count,
-          Contacts: interaction?.contact_count ?? "—",
-          Protein:  interaction?.protein_contact_count ?? "—",
-          Closest:  interaction?.closest_distance_angstrom != null
-                      ? fmtDist(interaction.closest_distance_angstrom)
-                      : "—",
-        };
+          return (
+            <LigandCard
+              key={`${lig.name}-${lig.chain_id}-${lig.residue_number}`}
+              lig={lig}
+              interaction={interaction}
+              validity={validity}
+              isFloating={isFloating}
+              isSelected={!!isSelected}
+              onToggle={toggle}
+            />
+          );
+        })}
+      </motion.div>
 
-        const residues = interaction?.contacting_residues ?? [];
-        const RESIDUE_CAP = 8;
+      {hasCofactorNote && (
+        <p className="text-pio-xs text-[var(--pio-graphite)] opacity-70">
+          Pose-validity (PoseBusters) checks apply only to organic small-molecule ligands.
+          Ions, small cofactors, and metal-containing groups such as heme show chemistry from
+          the PDB Chemical Component Dictionary where available.
+        </p>
+      )}
+    </div>
+  );
+}
 
-        return (
-          <motion.div
-            key={`${lig.name}-${lig.chain_id}-${lig.residue_number}`}
-            variants={listItem}
-            role="button"
-            tabIndex={0}
-            onClick={toggleFloating}
-            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleFloating(); } }}
-            whileHover={!isSelected ? { y: -2 } : undefined}
-            whileTap={{ scale: 0.98 }}
-            transition={spring.snappy}
-            className={[
-              "rounded-[14px] p-4 transition-colors cursor-pointer",
-              isSelected ? "" : "bg-[var(--pio-paper)] hover:bg-[var(--pio-sky)]",
-            ].join(" ")}
-            style={{
-              border: `2px solid ${isSelected ? "var(--pio-highlight)" : "transparent"}`,
-              background: isSelected ? "var(--pio-row-selection-bg)" : undefined,
-            }}
-          >
-            {/* ── Header ── */}
-            <div className="flex items-center justify-between gap-2 mb-4">
-              <div className="flex items-center gap-2 min-w-0">
-                <p className="text-pio-md font-bold text-[var(--pio-ink)] truncate">{lig.name}</p>
-                <span className="shrink-0 font-[family-name:var(--font-pio-mono)] text-pio-xs text-[var(--pio-graphite)]">
-                  {lig.chain_id}:{lig.residue_number}
-                </span>
-                {interaction && interaction.possible_clash_count > 0 && (
-                  <span className="pio-badge pio-badge-warning text-pio-xs shrink-0">
-                    {interaction.possible_clash_count} clash{interaction.possible_clash_count > 1 ? "es" : ""}
-                  </span>
-                )}
-              </div>
-              <motion.button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); toggleFloating(); }}
-                whileTap={{ scale: 0.90 }}
-                transition={spring.press}
-                className={[
-                  "shrink-0 rounded-[8px] px-2.5 py-1 text-pio-xs font-semibold transition-colors",
-                  isFloating
-                    ? "bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)]"
-                    : "bg-[var(--pio-sky)] text-[var(--pio-highlight)] hover:bg-[var(--pio-highlight)] hover:text-[var(--pio-highlight-text)]",
-                ].join(" ")}
-              >
-                {isFloating ? "Close" : "View"}
-              </motion.button>
-            </div>
+function LigandCard({
+  lig, interaction, validity, isFloating, isSelected, onToggle,
+}: {
+  lig: LigandSummary;
+  interaction: LigandInteractionSummary | undefined;
+  validity: LigandValidity | undefined;
+  isFloating: boolean;
+  isSelected: boolean;
+  onToggle: () => void;
+}) {
+  const chem = validity?.chemistry ?? null;
 
-            {/* ── Stats — always 4 columns, uniform across all cards ── */}
-            <div className="grid grid-cols-4 gap-x-2 mb-4">
-              {STAT_COLS.map((col) => (
-                <div key={col}>
-                  <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] mb-0.5">{col}</p>
-                  <p className="font-[family-name:var(--font-pio-mono)] text-pio-lg font-bold text-[var(--pio-ink)] truncate">{statValues[col]}</p>
+  // Verdict badge in the header: pose validity for small molecules, else a class tag.
+  let verdict: { cls: string; label: string } | null = null;
+  if (chem && validity) {
+    verdict =
+      validity.pb_valid === true ? { cls: "pio-badge-active", label: "PB-valid" }
+      : validity.pb_valid === false ? { cls: "pio-badge-warning", label: "invalid pose" }
+      : { cls: "pio-badge-neutral", label: "not checked" };
+  } else if (validity && !validity.is_small_molecule) {
+    verdict = { cls: "pio-badge-neutral", label: "ion / cofactor" };
+  } else if (validity && validity.is_small_molecule && !chem) {
+    verdict = { cls: "pio-badge-neutral", label: "chemistry unavailable" };
+  }
+
+  const STAT_COLS = ["Atoms", "Contacts", "Protein", "Closest"] as const;
+  const statValues: Record<string, string | number> = {
+    Atoms:    lig.atom_count,
+    Contacts: interaction?.contact_count ?? "—",
+    Protein:  interaction?.protein_contact_count ?? "—",
+    Closest:  interaction?.closest_distance_angstrom != null ? fmtDist(interaction.closest_distance_angstrom) : "—",
+  };
+
+  const CHEM_STATS: { label: string; value: string | number | null }[] = chem ? [
+    { label: "MW", value: chem.molecular_weight },
+    { label: "LogP", value: chem.logp },
+    { label: "HBD", value: chem.h_bond_donors },
+    { label: "HBA", value: chem.h_bond_acceptors },
+    { label: "TPSA", value: chem.tpsa },
+    { label: "Rot", value: chem.rotatable_bonds },
+    { label: "Rings", value: chem.ring_count },
+    { label: "QED", value: chem.qed },
+  ] : [];
+
+  const residues = interaction?.contacting_residues ?? [];
+  const RESIDUE_CAP = 8;
+  const failing = (validity?.checks ?? []).filter((ch) => !ch.passed);
+  const checkCount = validity?.checks.length ?? 0;
+  const passCount = checkCount - failing.length;
+
+  return (
+    <motion.div
+      variants={listItem}
+      role="button"
+      tabIndex={0}
+      onClick={onToggle}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(); } }}
+      whileHover={!isSelected ? { y: -2 } : undefined}
+      whileTap={{ scale: 0.98 }}
+      transition={spring.snappy}
+      className={[
+        "rounded-[14px] p-4 transition-colors cursor-pointer",
+        isSelected ? "" : "bg-[var(--pio-paper)] hover:bg-[var(--pio-sky)]",
+      ].join(" ")}
+      style={{
+        border: `2px solid ${isSelected ? "var(--pio-highlight)" : "transparent"}`,
+        background: isSelected ? "var(--pio-row-selection-bg)" : undefined,
+      }}
+    >
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between gap-2 mb-4">
+        <div className="flex items-center gap-2 min-w-0 flex-wrap">
+          <p className="text-pio-md font-bold text-[var(--pio-ink)] truncate">{lig.name}</p>
+          <span className="shrink-0 font-[family-name:var(--font-pio-mono)] text-pio-xs text-[var(--pio-graphite)]">
+            {lig.chain_id}:{lig.residue_number}
+          </span>
+          {verdict && <span className={`pio-badge ${verdict.cls} text-pio-xs shrink-0`}>{verdict.label}</span>}
+          {interaction && interaction.possible_clash_count > 0 && (
+            <span className="pio-badge pio-badge-warning text-pio-xs shrink-0">
+              {interaction.possible_clash_count} clash{interaction.possible_clash_count > 1 ? "es" : ""}
+            </span>
+          )}
+        </div>
+        <motion.button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onToggle(); }}
+          whileTap={{ scale: 0.90 }}
+          transition={spring.press}
+          className={[
+            "shrink-0 rounded-[8px] px-2.5 py-1 text-pio-xs font-semibold transition-colors",
+            isFloating
+              ? "bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)]"
+              : "bg-[var(--pio-sky)] text-[var(--pio-highlight)] hover:bg-[var(--pio-highlight)] hover:text-[var(--pio-highlight-text)]",
+          ].join(" ")}
+        >
+          {isFloating ? "Close" : "View"}
+        </motion.button>
+      </div>
+
+      {/* ── Chemistry: 2D depiction + properties ── */}
+      {chem && (
+        <div className="mb-4 flex gap-4">
+          {chem.depiction_svg && (
+            <div
+              className="w-[124px] shrink-0 self-start rounded-[10px] [&>svg]:h-auto [&>svg]:w-full"
+              dangerouslySetInnerHTML={{ __html: chem.depiction_svg }}
+            />
+          )}
+          <div className="min-w-0 flex-1">
+            {chem.formula && (
+              <p className="mb-2 font-[family-name:var(--font-pio-mono)] text-pio-xs text-[var(--pio-graphite)] truncate">
+                {chem.formula}
+              </p>
+            )}
+            <div className="grid grid-cols-4 gap-x-4 gap-y-3">
+              {CHEM_STATS.map((s) => (
+                <div key={s.label} className="min-w-0">
+                  <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] mb-0.5">{s.label}</p>
+                  <p className="font-[family-name:var(--font-pio-mono)] text-pio-sm font-bold text-[var(--pio-ink)]">
+                    {s.value == null ? "—" : s.value}
+                  </p>
                 </div>
               ))}
             </div>
-
-            {/* ── Contacting residues — capped so all cards stay same height ── */}
-            <div>
-              <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] mb-1.5">
-                Contacting residues
-              </p>
-              {residues.length > 0 ? (
-                <div className="flex flex-wrap gap-1">
-                  {residues.slice(0, RESIDUE_CAP).map((r) => (
-                    <span key={`${r.chain_id}-${r.residue_number}`} className="pio-badge pio-badge-neutral" style={{ fontFamily: "var(--font-pio-mono)", fontSize: "var(--text-pio-xs)" }}>
-                      {r.chain_id}:{r.residue_name}{r.residue_number}
-                    </span>
-                  ))}
-                  {residues.length > RESIDUE_CAP && (
-                    <span className="pio-badge pio-badge-neutral" style={{ fontFamily: "var(--font-pio-mono)", fontSize: "var(--text-pio-xs)" }}>
-                      +{residues.length - RESIDUE_CAP}
-                    </span>
-                  )}
-                </div>
-              ) : (
-                <p className="text-pio-sm text-[var(--pio-graphite)] opacity-50">—</p>
+            <div className="mt-3 flex flex-wrap items-center gap-1.5">
+              <span className={`pio-badge text-pio-xs ${chem.lipinski_pass ? "pio-badge-active" : "pio-badge-caution"}`}>
+                {chem.lipinski_pass ? "Lipinski ✓" : `Lipinski ${chem.lipinski_violations ?? 0} viol.`}
+              </span>
+              {chem.pains_alerts != null && (
+                <span className={`pio-badge text-pio-xs ${chem.pains_alerts > 0 ? "pio-badge-warning" : "pio-badge-active"}`}>
+                  {chem.pains_alerts > 0 ? `${chem.pains_alerts} PAINS` : "no PAINS"}
+                </span>
+              )}
+              {validity?.strain_energy != null && (
+                <span className={`pio-badge text-pio-xs ${validity.strain_energy > 10 ? "pio-badge-caution" : "pio-badge-neutral"}`}>
+                  strain {validity.strain_energy} kcal/mol
+                </span>
               )}
             </div>
-          </motion.div>
-        );
-      })}
-      </motion.div>
-    </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Binding stats — always 4 columns ── */}
+      <div className="grid grid-cols-4 gap-x-3 mb-4">
+        {STAT_COLS.map((col) => (
+          <div key={col} className="min-w-0">
+            <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] mb-0.5">{col}</p>
+            <p className="font-[family-name:var(--font-pio-mono)] text-pio-lg font-bold text-[var(--pio-ink)] truncate">{statValues[col]}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Contacting residues ── */}
+      <div>
+        <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] mb-1.5">
+          Contacting residues
+        </p>
+        {residues.length > 0 ? (
+          <div className="flex flex-wrap gap-1">
+            {residues.slice(0, RESIDUE_CAP).map((r) => (
+              <span key={`${r.chain_id}-${r.residue_number}`} className="pio-badge pio-badge-neutral" style={{ fontFamily: "var(--font-pio-mono)", fontSize: "var(--text-pio-xs)" }}>
+                {r.chain_id}:{r.residue_name}{r.residue_number}
+              </span>
+            ))}
+            {residues.length > RESIDUE_CAP && (
+              <span className="pio-badge pio-badge-neutral" style={{ fontFamily: "var(--font-pio-mono)", fontSize: "var(--text-pio-xs)" }}>
+                +{residues.length - RESIDUE_CAP}
+              </span>
+            )}
+          </div>
+        ) : (
+          <p className="text-pio-sm text-[var(--pio-graphite)] opacity-50">—</p>
+        )}
+      </div>
+
+      {/* ── Physical-validity checks / note ── */}
+      {checkCount > 0 && (
+        <div className="mt-4 border-t border-[var(--pio-line)] pt-3">
+          <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] mb-1.5">
+            PoseBusters {passCount}/{checkCount} checks passed
+          </p>
+          {failing.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {failing.map((ch) => (
+                <span key={ch.name} className="pio-badge pio-badge-warning text-pio-xs" title={ch.description}>
+                  ✗ {ch.description}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span className="pio-badge pio-badge-active text-pio-xs">✓ All checks passed</span>
+          )}
+        </div>
+      )}
+
+    </motion.div>
   );
 }
 
@@ -2546,7 +2673,7 @@ const TAB_ORDER: ContextTab[] = [
 ];
 
 export function ContextPanel() {
-  const { getActive, contextTab, setContextTab } = useWorkspace();
+  const { getActive, contextTab, setContextTab, floatingLigandKey, setFloatingLigandKey, selection, setSelection } = useWorkspace();
   const active = getActive();
   const tabStripRef = useRef<HTMLDivElement>(null);
   const prevTabIdxRef = useRef(0);
@@ -2561,6 +2688,15 @@ export function ContextPanel() {
   const currentTabIdx = TAB_ORDER.indexOf(selectedTab);
   const dir = currentTabIdx >= prevTabIdxRef.current ? 1 : -1;
   useEffect(() => { prevTabIdxRef.current = currentTabIdx; }, [currentTabIdx]);
+
+  // The floating ligand viewer + its selection belong to the Ligands tab. When the
+  // user navigates away, close the panel and drop the ligand highlight.
+  useEffect(() => {
+    if (selectedTab !== "ligands") {
+      if (floatingLigandKey !== null) setFloatingLigandKey(null);
+      if (selection?.kind === "ligand") setSelection(null);
+    }
+  }, [selectedTab, floatingLigandKey, selection, setFloatingLigandKey, setSelection]);
 
   if (!active) {
     return <EmptyGallery />;

@@ -90,6 +90,7 @@ async def analyze(
             pae=pae,
             pae_warnings=sidecar_warnings,
             global_scores=global_scores,
+            include_validity=True,
         )
         timing_header = analysis.timing.as_header_value(read_ms=read_ms)
         response.headers[TIMING_HEADER] = timing_header
