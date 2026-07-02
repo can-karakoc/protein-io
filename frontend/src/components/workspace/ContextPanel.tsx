@@ -1260,7 +1260,7 @@ function InterfacesTab({ entry }: { entry: StructureEntry }) {
               transition={spring.snappy}
               className={[
                 "rounded-[14px] overflow-hidden cursor-pointer transition-colors",
-                isSelected ? "" : "bg-[#FBFBF8] hover:bg-[var(--pio-sky)]",
+                isSelected ? "" : "bg-[var(--pio-paper)] hover:bg-[var(--pio-sky)]",
               ].join(" ")}
               style={{
                 border: `2px solid ${isSelected ? "var(--pio-highlight)" : "transparent"}`,
@@ -1518,43 +1518,78 @@ function PaeHeatmap({ matrix }: { matrix: PaeMatrix }) {
   const ref = useRef<HTMLCanvasElement | null>(null);
   const D = matrix.down_size;
   const max = matrix.max_error || 30;
+  const blocks = matrix.chain_blocks;
+  const N = matrix.size;
 
   useEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
-    const SIZE = 320;
+    const SIZE = 340;
+    const PAD_L = 34, PAD_B = 30, PAD_T = 8, PAD_R = 8;
+    const plotW = SIZE - PAD_L - PAD_R;
+    const plotH = SIZE - PAD_T - PAD_B;
     const dpr = window.devicePixelRatio || 1;
     canvas.width = SIZE * dpr;
     canvas.height = SIZE * dpr;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.scale(dpr, dpr);
-    const cell = SIZE / D;
+    ctx.clearRect(0, 0, SIZE, SIZE);
+
+    const ink = getComputedStyle(document.documentElement).getPropertyValue("--pio-graphite").trim() || "#888";
+    const cx = plotW / D;
+    const cy = plotH / D;
+
+    // cells
     for (let i = 0; i < D; i++) {
       for (let j = 0; j < D; j++) {
         ctx.fillStyle = paeColor(matrix.values[i][j], max);
-        ctx.fillRect(j * cell, i * cell, Math.ceil(cell), Math.ceil(cell));
+        ctx.fillRect(PAD_L + j * cx, PAD_T + i * cy, Math.ceil(cx), Math.ceil(cy));
       }
     }
-    if (matrix.chain_blocks.length > 1) {
-      ctx.strokeStyle = "rgba(20,20,15,0.4)";
+
+    // chain boundary lines
+    if (blocks.length > 1) {
+      ctx.strokeStyle = "rgba(128,128,128,0.55)";
       ctx.lineWidth = 0.75;
-      for (const b of matrix.chain_blocks.slice(1)) {
-        const p = b.start * cell;
-        ctx.beginPath(); ctx.moveTo(p, 0); ctx.lineTo(p, SIZE); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, p); ctx.lineTo(SIZE, p); ctx.stroke();
+      for (const b of blocks.slice(1)) {
+        const px = PAD_L + b.start * cx;
+        const py = PAD_T + b.start * cy;
+        ctx.beginPath(); ctx.moveTo(px, PAD_T); ctx.lineTo(px, PAD_T + plotH); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(PAD_L, py); ctx.lineTo(PAD_L + plotW, py); ctx.stroke();
       }
     }
-  }, [matrix, D, max]);
+    // plot outline
+    ctx.strokeStyle = "rgba(128,128,128,0.3)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(PAD_L, PAD_T, plotW, plotH);
+
+    // chain letters along both axes
+    ctx.fillStyle = ink;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    if (blocks.length > 1) {
+      ctx.font = "600 11px ui-sans-serif, system-ui, sans-serif";
+      for (const b of blocks) {
+        const mid = (b.start + b.end) / 2;
+        ctx.fillText(b.chain_id, PAD_L + mid * cx, PAD_T + plotH + 11);           // x-axis
+        ctx.fillText(b.chain_id, PAD_L - 13, PAD_T + mid * cy);                    // y-axis
+      }
+    }
+
+    // axis titles
+    ctx.font = "600 9px ui-sans-serif, system-ui, sans-serif";
+    ctx.fillText("Scored residue" + (blocks.length > 1 ? " (by chain)" : ""), PAD_L + plotW / 2, SIZE - 3);
+    ctx.save();
+    ctx.translate(9, PAD_T + plotH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText("Aligned residue", 0, 0);
+    ctx.restore();
+  }, [matrix, D, max, N, blocks]);
 
   return (
     <div className="flex flex-col gap-2">
-      <canvas ref={ref} className="w-full rounded-[10px]" style={{ aspectRatio: "1 / 1", imageRendering: "pixelated" }} />
-      {matrix.chain_blocks.length > 1 && (
-        <p className="font-[family-name:var(--font-pio-mono)] text-pio-2xs text-[var(--pio-graphite)]">
-          Chains (in order): {matrix.chain_blocks.map((b) => b.chain_id).join(" · ")}
-        </p>
-      )}
+      <canvas ref={ref} className="w-full" style={{ aspectRatio: "1 / 1" }} />
       <div className="flex items-center gap-2">
         <span className="text-pio-2xs text-[var(--pio-graphite)]">0 Å · confident</span>
         <div
