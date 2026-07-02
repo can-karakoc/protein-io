@@ -134,6 +134,24 @@ def compare_pdb_contents(
 PREDICTED_SOURCES = {"alphafold", "boltz", "chai"}
 
 
+def compute_ligand_validity(content: bytes, filename: str | None) -> list:
+    """Run the RDKit + PoseBusters validity pass; fail soft to an empty list."""
+    import logging
+
+    from app.integrations.chemistry import ChemistryError, analyze_ligand_validity
+    from app.models import LigandValidity
+
+    try:
+        raw = analyze_ligand_validity(content, filename)
+        return [LigandValidity(**item) for item in raw]
+    except ChemistryError as exc:
+        logging.getLogger(__name__).warning("Ligand validity skipped: %s", exc)
+        return []
+    except Exception as exc:  # pragma: no cover - defensive
+        logging.getLogger(__name__).warning("Ligand validity failed: %s", exc)
+        return []
+
+
 def analyze_pdb_content_with_timing(
     content: bytes,
     filename: str | None = None,
@@ -142,8 +160,14 @@ def analyze_pdb_content_with_timing(
     pae: PaeSummary | None = None,
     pae_warnings: list[str] | None = None,
     global_scores: GlobalModelScores | None = None,
+    include_validity: bool = False,
 ) -> TimedAnalysis:
-    """Run analysis and return coarse timings for development diagnostics."""
+    """Run analysis and return coarse timings for development diagnostics.
+
+    ``include_validity`` runs the RDKit + PoseBusters physical-validity pass on bound
+    ligands. It is opt-in because it is heavier than the core pipeline (kept off for
+    batch requests). Fails soft: validity errors are logged and skipped.
+    """
     structure_id = structure_id_from_filename(filename)
 
     parse_started = perf_counter()
@@ -178,6 +202,11 @@ def analyze_pdb_content_with_timing(
     contacts = annotate_contacts_with_confidence(contacts, confidence_lookup)
     summary = structure.summary.model_copy(update={"contact_count": len(contacts)})
     interface_analysis = analyze_interfaces(contacts, residue_confidences)
+
+    ligand_validity: list = []
+    if include_validity and structure.ligands:
+        ligand_validity = compute_ligand_validity(content, filename)
+
     response = AnalysisResponse(
         summary=summary,
         metadata=metadata,
@@ -187,6 +216,7 @@ def analyze_pdb_content_with_timing(
         pae=pae,
         interaction_summary=summarize_interactions(contacts),
         ligand_interactions=summarize_ligand_interactions(contacts, water_bridges=water_bridges, ligands=structure.ligands),
+        ligand_validity=ligand_validity,
         water_bridges=water_bridges,
         chains=structure.chains,
         ligands=structure.ligands,
@@ -216,6 +246,7 @@ def analyze_rcsb_id_with_timing(
         filename=rcsb_structure.filename,
         cutoff_angstrom=cutoff_angstrom,
         metadata=rcsb_structure.metadata,
+        include_validity=True,
     )
     return TimedRcsbAnalysis(
         response=rcsb_response_from_structure(rcsb_structure, analysis.response),
@@ -233,6 +264,7 @@ def analyze_alphafold_id_with_timing(
         filename=alphafold_structure.filename,
         cutoff_angstrom=cutoff_angstrom,
         metadata=alphafold_structure.metadata,
+        include_validity=True,
     )
     uniprot_annotations = fetch_uniprot_annotations(uniprot_id)
     enriched = analysis.response.model_copy(update={"uniprot_annotations": uniprot_annotations})
