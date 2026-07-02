@@ -163,8 +163,8 @@ function WarningBanner({ warnings }: { warnings: string[] }) {
     <div className="flex flex-col gap-1 rounded-[10px] bg-[var(--pio-amber-pale)] border border-[var(--pio-amber)] p-3">
       {warnings.map((w, i) => (
         <div key={i} className="flex items-start gap-2">
-          <AlertTriangle size={11} className="mt-0.5 shrink-0 text-[var(--pio-amber-deep)]" />
-          <p className="text-pio-3xs text-[var(--pio-amber-deep)]">{w}</p>
+          <AlertTriangle size={13} className="mt-0.5 shrink-0 text-[var(--pio-amber-deep)]" />
+          <p className="text-pio-xs leading-[1.5] text-[var(--pio-amber-deep)]">{w}</p>
         </div>
       ))}
     </div>
@@ -1450,6 +1450,13 @@ function ConfidenceTab({ entry }: { entry: StructureEntry }) {
 
   return (
     <div className="flex flex-col gap-4">
+      <div>
+        <h2 className="pio-section-title">Confidence (pLDDT)</h2>
+        <p className="pio-section-copy mt-1">
+          Per-residue pLDDT — how confident the model is in each residue&apos;s predicted position (0–100).
+          Treat low and very-low regions cautiously.
+        </p>
+      </div>
       {/* Stat tiles */}
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-[12px] bg-[var(--pio-paper)] px-4 py-3">
@@ -1514,6 +1521,13 @@ function paeColor(value: number, max: number): string {
   return `rgb(${c[0]},${c[1]},${c[2]})`;
 }
 
+function plotPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath();
+  const rr = (ctx as unknown as { roundRect?: (x: number, y: number, w: number, h: number, r: number) => void }).roundRect;
+  if (typeof rr === "function") rr.call(ctx, x, y, w, h, r);
+  else ctx.rect(x, y, w, h);
+}
+
 function PaeHeatmap({ matrix }: { matrix: PaeMatrix }) {
   const ref = useRef<HTMLCanvasElement | null>(null);
   const D = matrix.down_size;
@@ -1537,18 +1551,21 @@ function PaeHeatmap({ matrix }: { matrix: PaeMatrix }) {
     ctx.clearRect(0, 0, SIZE, SIZE);
 
     const ink = getComputedStyle(document.documentElement).getPropertyValue("--pio-graphite").trim() || "#888";
+    const fam = getComputedStyle(document.body).fontFamily || "system-ui, sans-serif";
     const cx = plotW / D;
     const cy = plotH / D;
+    const R = 10;
 
-    // cells
+    // cells + boundary lines, clipped to a rounded plot region
+    ctx.save();
+    plotPath(ctx, PAD_L, PAD_T, plotW, plotH, R);
+    ctx.clip();
     for (let i = 0; i < D; i++) {
       for (let j = 0; j < D; j++) {
         ctx.fillStyle = paeColor(matrix.values[i][j], max);
         ctx.fillRect(PAD_L + j * cx, PAD_T + i * cy, Math.ceil(cx), Math.ceil(cy));
       }
     }
-
-    // chain boundary lines
     if (blocks.length > 1) {
       ctx.strokeStyle = "rgba(128,128,128,0.55)";
       ctx.lineWidth = 0.75;
@@ -1559,29 +1576,30 @@ function PaeHeatmap({ matrix }: { matrix: PaeMatrix }) {
         ctx.beginPath(); ctx.moveTo(PAD_L, py); ctx.lineTo(PAD_L + plotW, py); ctx.stroke();
       }
     }
-    // plot outline
+    ctx.restore();
+
+    // rounded plot outline
     ctx.strokeStyle = "rgba(128,128,128,0.3)";
     ctx.lineWidth = 1;
-    ctx.strokeRect(PAD_L, PAD_T, plotW, plotH);
+    plotPath(ctx, PAD_L, PAD_T, plotW, plotH, R);
+    ctx.stroke();
 
-    // chain letters along both axes
+    // labels — sized to the font-size token scale (2xs = 9px, 3xs = 8px)
     ctx.fillStyle = ink;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     if (blocks.length > 1) {
-      ctx.font = "600 11px ui-sans-serif, system-ui, sans-serif";
+      ctx.font = `600 9px ${fam}`;
       for (const b of blocks) {
         const mid = (b.start + b.end) / 2;
-        ctx.fillText(b.chain_id, PAD_L + mid * cx, PAD_T + plotH + 11);           // x-axis
-        ctx.fillText(b.chain_id, PAD_L - 13, PAD_T + mid * cy);                    // y-axis
+        ctx.fillText(b.chain_id, PAD_L + mid * cx, PAD_T + plotH + 12);           // x-axis
+        ctx.fillText(b.chain_id, PAD_L - 14, PAD_T + mid * cy);                    // y-axis
       }
     }
-
-    // axis titles
-    ctx.font = "600 9px ui-sans-serif, system-ui, sans-serif";
-    ctx.fillText("Scored residue" + (blocks.length > 1 ? " (by chain)" : ""), PAD_L + plotW / 2, SIZE - 3);
+    ctx.font = `600 8px ${fam}`;
+    ctx.fillText("Scored residue" + (blocks.length > 1 ? " (by chain)" : ""), PAD_L + plotW / 2, SIZE - 2);
     ctx.save();
-    ctx.translate(9, PAD_T + plotH / 2);
+    ctx.translate(8, PAD_T + plotH / 2);
     ctx.rotate(-Math.PI / 2);
     ctx.fillText("Aligned residue", 0, 0);
     ctx.restore();
@@ -1617,6 +1635,13 @@ function PaeTab({ entry }: { entry: StructureEntry }) {
 
   return (
     <div className="flex flex-col gap-4">
+      <div>
+        <h2 className="pio-section-title">Predicted Aligned Error</h2>
+        <p className="pio-section-copy mt-1">
+          Expected error in the relative position of every residue pair. Off-diagonal blocks show how
+          confidently the chains are placed relative to one another.
+        </p>
+      </div>
       <div className="grid grid-cols-2 gap-2">
         {[
           { label: "Residues",    value: pae.residue_count.toLocaleString() },
@@ -2184,6 +2209,13 @@ function CompareTab() {
 
   return (
     <div className="flex flex-col gap-5">
+      <div>
+        <h2 className="pio-section-title">Compare</h2>
+        <p className="pio-section-copy mt-1">
+          Two structures side by side — structural alignment (TM-score, RMSD), per-metric deltas,
+          and shared / gained / lost contacts.
+        </p>
+      </div>
       {pillHeader()}
       {exportRow()}
       {tmAlignPanel()}
