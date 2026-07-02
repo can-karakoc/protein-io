@@ -77,8 +77,16 @@ export type StructureSummary = {
   contact_count: number;
 };
 
+export type GlobalModelScores = {
+  ptm: number | null;
+  iptm: number | null;
+  pde_mean: number | null;
+  chain_iptm: Record<string, number>;
+  chain_ptm: Record<string, number>;
+};
+
 export type StructureMetadata = {
-  source: "upload" | "rcsb" | "alphafold";
+  source: "upload" | "rcsb" | "alphafold" | "boltz" | "chai";
   status: "current" | "removed" | null;
   pdb_id: string | null;
   uniprot_id: string | null;
@@ -223,6 +231,7 @@ export type AnalysisResponse = {
   version: string;
   summary: StructureSummary;
   metadata: StructureMetadata | null;
+  global_scores: GlobalModelScores | null;
   confidence: ConfidenceSummary | null;
   residue_confidences: ResidueConfidence[];
   pae: PaeSummary | null;

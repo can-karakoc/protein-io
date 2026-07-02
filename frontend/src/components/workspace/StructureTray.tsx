@@ -112,6 +112,8 @@ function StructureLoader({ onLoaded }: { onLoaded: () => void }) {
   const [uniprotId, setUniprotId] = useState("");
   const [pendingFile, setPendingFile] = useState<{ name: string; text: string; format: StructureFormat } | null>(null);
   const [paeText, setPaeText] = useState("");
+  const [sidecarFile, setSidecarFile] = useState<File | null>(null);
+  const [paeFileName, setPaeFileName] = useState("");
   const [paeOpen, setPaeOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -159,7 +161,11 @@ function StructureLoader({ onLoaded }: { onLoaded: () => void }) {
         "file",
         new File([pendingFile.text], pendingFile.name, { type: "chemical/x-pdb" }),
       );
-      if (paeText.trim()) fd.append("pae_file", new File([paeText], "pae.json", { type: "application/json" }));
+      if (sidecarFile) {
+        fd.append("confidence_file", sidecarFile, sidecarFile.name);
+      } else if (paeText.trim()) {
+        fd.append("confidence_file", new File([paeText], paeFileName || "confidence.json", { type: "application/json" }));
+      }
       fd.append("cutoff_angstrom", String(cutoff));
       const res = await fetch(buildApiUrl("/api/analyze"), { method: "POST", body: fd });
       if (!res.ok) {
@@ -301,14 +307,14 @@ function StructureLoader({ onLoaded }: { onLoaded: () => void }) {
               onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); }}
             />
           </label>
-          {/* PAE sidecar */}
+          {/* Confidence sidecar (AlphaFold PAE / Boltz JSON / Chai NPZ) */}
           <button
             type="button"
             onClick={() => setPaeOpen((o) => !o)}
             className="flex items-center gap-1 text-pio-xs text-[var(--pio-graphite)] opacity-70 hover:opacity-100"
           >
             <ChevronDown size={10} className={paeOpen ? "rotate-180" : ""} />
-            PAE sidecar (optional)
+            Confidence sidecar (optional)
           </button>
           <AnimatePresence initial={false}>
             {paeOpen && (
@@ -323,15 +329,23 @@ function StructureLoader({ onLoaded }: { onLoaded: () => void }) {
                 <label className="flex cursor-pointer items-center gap-2 rounded-[8px] border border-dashed border-[var(--pio-line)] bg-[var(--pio-paper)] px-3 py-2">
                   <FileUp size={11} className="text-[var(--pio-graphite)]" />
                   <span className="text-pio-xs text-[var(--pio-graphite)]">
-                    {paeText ? "PAE JSON loaded" : "Upload PAE .json"}
+                    {paeFileName || "Upload .json or .npz"}
                   </span>
                   <input
                     type="file"
-                    accept=".json"
+                    accept=".json,.npz,application/json"
                     className="sr-only"
                     onChange={async (e) => {
                       const f = e.target.files?.[0];
-                      if (f) setPaeText(await f.text());
+                      if (!f) return;
+                      setPaeFileName(f.name);
+                      if (f.name.toLowerCase().endsWith(".npz")) {
+                        setSidecarFile(f);
+                        setPaeText("");
+                      } else {
+                        setPaeText(await f.text());
+                        setSidecarFile(null);
+                      }
                     }}
                   />
                 </label>

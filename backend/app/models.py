@@ -168,8 +168,17 @@ class PaeSummary(BaseModel):
     high_error_threshold: float
 
 
+class GlobalModelScores(BaseModel):
+    """ptm / iptm and related global confidence scores from Boltz / Chai sidecars."""
+    ptm: float | None = None
+    iptm: float | None = None
+    pde_mean: float | None = None
+    chain_iptm: dict[str, float] = Field(default_factory=dict)
+    chain_ptm: dict[str, float] = Field(default_factory=dict)
+
+
 class StructureMetadata(BaseModel):
-    source: Literal["upload", "rcsb", "alphafold"] = "upload"
+    source: Literal["upload", "rcsb", "alphafold", "boltz", "chai"] = "upload"
     status: Literal["current", "removed"] | None = None
     pdb_id: str | None = None
     uniprot_id: str | None = None
@@ -253,6 +262,7 @@ class AnalysisResponse(BaseModel):
     version: str = "0.1.0"
     summary: StructureSummary
     metadata: StructureMetadata | None = None
+    global_scores: GlobalModelScores | None = None
     confidence: ConfidenceSummary | None = None
     residue_confidences: list[ResidueConfidence] = Field(default_factory=list)
     pae: PaeSummary | None = None
