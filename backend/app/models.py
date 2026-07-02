@@ -393,12 +393,19 @@ class TmAlignResult(BaseModel):
     target_length: int
 
 
+class LddtResult(BaseModel):
+    """Cα-lDDT of structure A (model) relative to structure B (reference)."""
+    lddt: float
+    residue_count: int
+
+
 class StructureComparisonResponse(BaseModel):
     structure_a: AnalysisResponse
     structure_b: AnalysisResponse
     delta: StructureComparisonDelta
     contacts: ContactComparisonSummary
     tm_align: TmAlignResult | None = None
+    lddt: LddtResult | None = None
     warnings: list[str] = Field(default_factory=list)
 
 

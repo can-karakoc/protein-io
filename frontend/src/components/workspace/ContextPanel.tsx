@@ -2131,7 +2131,7 @@ function CompareTab() {
   }
 
   // ── Results ───────────────────────────────────────────────────────────────
-  const { delta, contacts, tm_align } = comparison!;
+  const { delta, contacts, tm_align, lddt } = comparison!;
   const DELTA_ROWS: Array<{ label: string; value: number }> = [
     { label: "Residues", value: delta.residue_count_delta },
     { label: "Chains",   value: delta.chain_count_delta },
@@ -2150,42 +2150,66 @@ function CompareTab() {
     contacts.lost_contacts;
 
   function tmAlignPanel() {
-    if (!tm_align) return null;
-    const tmScore = Math.max(tm_align.tm_score_query, tm_align.tm_score_target);
+    if (!tm_align && !lddt) return null;
+    const tmScore = tm_align ? Math.max(tm_align.tm_score_query, tm_align.tm_score_target) : 0;
     const similarity =
       tmScore >= 0.7 ? { label: "Highly similar", color: "var(--pio-green-deep)" } :
       tmScore >= 0.5 ? { label: "Similar fold",   color: "var(--pio-highlight)" } :
       tmScore >= 0.3 ? { label: "Partial similarity", color: "var(--pio-graphite)" } :
                        { label: "Low similarity", color: "var(--pio-graphite)" };
+    const lddtInfo = lddt && (
+      lddt.lddt >= 0.8 ? { label: "High agreement", color: "var(--pio-green-deep)" } :
+      lddt.lddt >= 0.6 ? { label: "Good agreement", color: "var(--pio-highlight)" } :
+      lddt.lddt >= 0.4 ? { label: "Partial agreement", color: "var(--pio-graphite)" } :
+                         { label: "Low agreement", color: "var(--pio-graphite)" }
+    );
     return (
       <div>
         <p className="mb-2 text-pio-xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-60">
           Structural alignment
         </p>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-[12px] bg-[var(--pio-lavender-pale)] px-4 py-3">
-            <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-lavender-deep)] opacity-70 mb-1">TM-score</p>
-            <p className="font-[family-name:var(--font-pio-mono)] text-pio-2xl font-bold text-[var(--pio-ink)] leading-none">
-              {tmScore.toFixed(3)}
-            </p>
-            <p className="mt-1.5 text-pio-2xs font-semibold" style={{ color: similarity.color }}>
-              {similarity.label}
-            </p>
+        {tm_align && (
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-[12px] bg-[var(--pio-lavender-pale)] px-4 py-3">
+              <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-lavender-deep)] opacity-70 mb-1">TM-score</p>
+              <p className="font-[family-name:var(--font-pio-mono)] text-pio-2xl font-bold text-[var(--pio-ink)] leading-none">
+                {tmScore.toFixed(3)}
+              </p>
+              <p className="mt-1.5 text-pio-2xs font-semibold" style={{ color: similarity.color }}>
+                {similarity.label}
+              </p>
+            </div>
+            <div className="rounded-[12px] bg-[var(--pio-lavender-pale)] px-4 py-3">
+              <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-lavender-deep)] opacity-70 mb-1">RMSD</p>
+              <p className="font-[family-name:var(--font-pio-mono)] text-pio-2xl font-bold text-[var(--pio-ink)] leading-none">
+                {tm_align.rmsd.toFixed(2)} Å
+              </p>
+              <p className="mt-1.5 text-pio-2xs text-[var(--pio-graphite)] opacity-60">
+                aligned residues
+              </p>
+            </div>
           </div>
-          <div className="rounded-[12px] bg-[var(--pio-lavender-pale)] px-4 py-3">
-            <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-lavender-deep)] opacity-70 mb-1">RMSD</p>
-            <p className="font-[family-name:var(--font-pio-mono)] text-pio-2xl font-bold text-[var(--pio-ink)] leading-none">
-              {tm_align.rmsd.toFixed(2)} Å
-            </p>
-            <p className="mt-1.5 text-pio-2xs text-[var(--pio-graphite)] opacity-60">
-              aligned residues
-            </p>
+        )}
+        {lddt && lddtInfo && (
+          <div className="mt-2 flex items-center justify-between rounded-[12px] bg-[var(--pio-lavender-pale)] px-4 py-3">
+            <div>
+              <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-lavender-deep)] opacity-70 mb-1">lDDT · A vs B</p>
+              <p className="font-[family-name:var(--font-pio-mono)] text-pio-2xl font-bold text-[var(--pio-ink)] leading-none">
+                {lddt.lddt.toFixed(3)}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-pio-2xs font-semibold" style={{ color: lddtInfo.color }}>{lddtInfo.label}</p>
+              <p className="mt-1 text-pio-2xs text-[var(--pio-graphite)] opacity-60">{lddt.residue_count} residues matched</p>
+            </div>
           </div>
-        </div>
-        <p className="mt-1.5 text-pio-2xs text-[var(--pio-graphite)] opacity-50">
-          Query {tm_align.query_length} res · Target {tm_align.target_length} res ·{" "}
-          TM<sub>Q</sub> {tm_align.tm_score_query.toFixed(3)} · TM<sub>T</sub> {tm_align.tm_score_target.toFixed(3)}
-        </p>
+        )}
+        {tm_align && (
+          <p className="mt-1.5 text-pio-2xs text-[var(--pio-graphite)] opacity-50">
+            Query {tm_align.query_length} res · Target {tm_align.target_length} res ·{" "}
+            TM<sub>Q</sub> {tm_align.tm_score_query.toFixed(3)} · TM<sub>T</sub> {tm_align.tm_score_target.toFixed(3)}
+          </p>
+        )}
       </div>
     );
   }

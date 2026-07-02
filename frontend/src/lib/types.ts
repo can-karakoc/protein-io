@@ -351,7 +351,13 @@ export type StructureComparisonResponse = {
   delta: StructureComparisonDelta;
   contacts: ContactComparisonSummary;
   tm_align: TmAlignResult | null;
+  lddt: LddtResult | null;
   warnings: string[];
+};
+
+export type LddtResult = {
+  lddt: number;
+  residue_count: number;
 };
 
 export type RcsbAnalysisResponse = {

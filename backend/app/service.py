@@ -116,8 +116,10 @@ def compare_pdb_contents(
 ) -> StructureComparisonResponse:
     import logging
     from app.integrations.tmalign import TmAlignError, run_tmalign
-    from app.models import TmAlignResult
+    from app.lddt import LddtError, compute_lddt
+    from app.models import LddtResult, TmAlignResult
 
+    log = logging.getLogger(__name__)
     analysis_a = analyze_pdb_content(content_a, filename=filename_a, cutoff_angstrom=cutoff_angstrom)
     analysis_b = analyze_pdb_content(content_b, filename=filename_b, cutoff_angstrom=cutoff_angstrom)
     result = compare_analyses(analysis_a, analysis_b)
@@ -126,7 +128,13 @@ def compare_pdb_contents(
         tm = run_tmalign(content_a, content_b, filename_a, filename_b)
         result.tm_align = TmAlignResult(**tm)
     except TmAlignError as exc:
-        logging.getLogger(__name__).warning("TM-align skipped: %s", exc)
+        log.warning("TM-align skipped: %s", exc)
+
+    # lDDT of A (model) vs B (reference); fails soft when residues don't match.
+    try:
+        result.lddt = LddtResult(**compute_lddt(content_a, content_b, filename_a, filename_b))
+    except LddtError as exc:
+        log.info("lDDT skipped: %s", exc)
 
     return result
 
