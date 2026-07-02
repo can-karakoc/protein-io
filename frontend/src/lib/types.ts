@@ -258,6 +258,7 @@ export type ChainPairSummary = {
   interface_pae: number | null;
   cross_pae_mean: number | null;
   interface_confidence: InterfaceConfidence | null;
+  interface_bsa: number | null;
 };
 
 export type InterfaceAnalysis = {
@@ -351,7 +352,31 @@ export type StructureComparisonResponse = {
   delta: StructureComparisonDelta;
   contacts: ContactComparisonSummary;
   tm_align: TmAlignResult | null;
+  lddt: LddtResult | null;
+  lddt_pli: LddtPliResult | null;
+  dockq: DockqResult | null;
   warnings: string[];
+};
+
+export type DockqResult = {
+  dockq: number;
+  fnat: number;
+  irmsd: number;
+  lrmsd: number;
+  quality: "high" | "medium" | "acceptable" | "incorrect";
+  chain_a: string;
+  chain_b: string;
+};
+
+export type LddtResult = {
+  lddt: number;
+  residue_count: number;
+};
+
+export type LddtPliResult = {
+  lddt_pli: number;
+  contact_count: number;
+  ligand_atom_count: number;
 };
 
 export type RcsbAnalysisResponse = {

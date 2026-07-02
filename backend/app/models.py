@@ -297,6 +297,7 @@ class ChainPairSummary(BaseModel):
     interface_pae: float | None = None      # mean PAE over interface-residue pairs (both directions)
     cross_pae_mean: float | None = None     # mean PAE over all A×B residue pairs (both directions)
     interface_confidence: InterfaceConfidence | None = None
+    interface_bsa: float | None = None      # buried surface area on binding (ΔSASA, Å²)
 
 
 class WaterBridgeRecord(BaseModel):
@@ -393,12 +394,39 @@ class TmAlignResult(BaseModel):
     target_length: int
 
 
+class LddtResult(BaseModel):
+    """Cα-lDDT of structure A (model) relative to structure B (reference)."""
+    lddt: float
+    residue_count: int
+
+
+class LddtPliResult(BaseModel):
+    """Protein–ligand interface lDDT (A model vs B reference)."""
+    lddt_pli: float
+    contact_count: int
+    ligand_atom_count: int
+
+
+class DockqResult(BaseModel):
+    """DockQ complex-quality score for the primary interface (A model vs B reference)."""
+    dockq: float
+    fnat: float
+    irmsd: float
+    lrmsd: float
+    quality: Literal["high", "medium", "acceptable", "incorrect"]
+    chain_a: str
+    chain_b: str
+
+
 class StructureComparisonResponse(BaseModel):
     structure_a: AnalysisResponse
     structure_b: AnalysisResponse
     delta: StructureComparisonDelta
     contacts: ContactComparisonSummary
     tm_align: TmAlignResult | None = None
+    lddt: LddtResult | None = None
+    lddt_pli: LddtPliResult | None = None
+    dockq: DockqResult | None = None
     warnings: list[str] = Field(default_factory=list)
 
 

@@ -1299,17 +1299,25 @@ function InterfacesTab({ entry }: { entry: StructureEntry }) {
                 </motion.button>
               </div>
 
-              {/* Interface-aware confidence (PAE) */}
-              {cp.interface_pae != null && (
+              {/* Interface metrics — PAE confidence + buried surface area */}
+              {(cp.interface_pae != null || cp.interface_bsa != null) && (
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 pb-3">
-                  <span className="text-pio-xs text-[var(--pio-graphite)]">
-                    Interface PAE{" "}
-                    <span className="font-[family-name:var(--font-pio-mono)] font-bold text-[var(--pio-ink)]">{cp.interface_pae.toFixed(1)} Å</span>
-                  </span>
+                  {cp.interface_pae != null && (
+                    <span className="text-pio-xs text-[var(--pio-graphite)]">
+                      Interface PAE{" "}
+                      <span className="font-[family-name:var(--font-pio-mono)] font-bold text-[var(--pio-ink)]">{cp.interface_pae.toFixed(1)} Å</span>
+                    </span>
+                  )}
                   {cp.cross_pae_mean != null && (
                     <span className="text-pio-xs text-[var(--pio-graphite)]">
                       Cross-PAE{" "}
                       <span className="font-[family-name:var(--font-pio-mono)] font-bold text-[var(--pio-ink)]">{cp.cross_pae_mean.toFixed(1)} Å</span>
+                    </span>
+                  )}
+                  {cp.interface_bsa != null && (
+                    <span className="text-pio-xs text-[var(--pio-graphite)]">
+                      Buried area{" "}
+                      <span className="font-[family-name:var(--font-pio-mono)] font-bold text-[var(--pio-ink)]">{cp.interface_bsa.toLocaleString()} Å²</span>
                     </span>
                   )}
                 </div>
@@ -1937,6 +1945,33 @@ function CompareTab() {
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, []);
 
+  // Default the compare pair to the two most-recently-loaded structures whenever the
+  // current selection isn't a valid, distinct, loaded pair — so Compare works as soon
+  // as two structures are present, without needing manual pill selection.
+  useEffect(() => {
+    const loaded = structures.filter((s) => s.structureText && !s.isAnalyzing);
+    if (loaded.length < 2) return;
+    const isValid = (id: string | null) => !!id && loaded.some((s) => s.id === id);
+    if (!isValid(compareIds[0]) || !isValid(compareIds[1]) || compareIds[0] === compareIds[1]) {
+      const [a, b] = loaded.slice(-2);
+      setCompareId(0, a.id);
+      setCompareId(1, b.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [structures, compareIds]);
+
+  // Auto-run the comparison once both selected structures have loaded. Retries when
+  // structure text finishes downloading; each distinct pair runs at most once.
+  const lastRunRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!entA?.structureText || !entB?.structureText || entA.id === entB.id) return;
+    const key = `${entA.id}::${entB.id}`;
+    if (lastRunRef.current === key) return;
+    lastRunRef.current = key;
+    void runCompareWith(entA.id, entB.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entA?.id, entB?.id, entA?.structureText, entB?.structureText]);
+
   async function runCompareWith(idA: string | null, idB: string | null) {
     const a = structures.find((s) => s.id === idA);
     const b = structures.find((s) => s.id === idB);
@@ -1969,11 +2004,8 @@ function CompareTab() {
   function handleSlotSelect(slot: 0 | 1, id: string) {
     setOpenSlot(null);
     setCompareId(slot, id);
-    // auto-run: use the newly selected id alongside the OTHER slot's current id
-    const otherId = slot === 0 ? compareIds[1] : compareIds[0];
-    const newIdA = slot === 0 ? id : compareIds[0];
-    const newIdB = slot === 1 ? id : compareIds[1];
-    if (otherId && id !== otherId) void runCompareWith(newIdA, newIdB);
+    // The auto-run effect fires the comparison once both slots reference loaded
+    // structures — no need to trigger it here.
   }
 
   function handleSlotClear(slot: 0 | 1) {
@@ -2131,7 +2163,7 @@ function CompareTab() {
   }
 
   // ── Results ───────────────────────────────────────────────────────────────
-  const { delta, contacts, tm_align } = comparison!;
+  const { delta, contacts, tm_align, lddt, lddt_pli, dockq } = comparison!;
   const DELTA_ROWS: Array<{ label: string; value: number }> = [
     { label: "Residues", value: delta.residue_count_delta },
     { label: "Chains",   value: delta.chain_count_delta },
@@ -2150,42 +2182,121 @@ function CompareTab() {
     contacts.lost_contacts;
 
   function tmAlignPanel() {
-    if (!tm_align) return null;
-    const tmScore = Math.max(tm_align.tm_score_query, tm_align.tm_score_target);
+    if (!tm_align && !lddt && !lddt_pli) return null;
+    const tmScore = tm_align ? Math.max(tm_align.tm_score_query, tm_align.tm_score_target) : 0;
     const similarity =
       tmScore >= 0.7 ? { label: "Highly similar", color: "var(--pio-green-deep)" } :
       tmScore >= 0.5 ? { label: "Similar fold",   color: "var(--pio-highlight)" } :
       tmScore >= 0.3 ? { label: "Partial similarity", color: "var(--pio-graphite)" } :
                        { label: "Low similarity", color: "var(--pio-graphite)" };
+    const lddtInfo = lddt && (
+      lddt.lddt >= 0.8 ? { label: "High agreement", color: "var(--pio-green-deep)" } :
+      lddt.lddt >= 0.6 ? { label: "Good agreement", color: "var(--pio-highlight)" } :
+      lddt.lddt >= 0.4 ? { label: "Partial agreement", color: "var(--pio-graphite)" } :
+                         { label: "Low agreement", color: "var(--pio-graphite)" }
+    );
     return (
       <div>
         <p className="mb-2 text-pio-xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-60">
           Structural alignment
         </p>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-[12px] bg-[var(--pio-lavender-pale)] px-4 py-3">
-            <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-lavender-deep)] opacity-70 mb-1">TM-score</p>
-            <p className="font-[family-name:var(--font-pio-mono)] text-pio-2xl font-bold text-[var(--pio-ink)] leading-none">
-              {tmScore.toFixed(3)}
-            </p>
-            <p className="mt-1.5 text-pio-2xs font-semibold" style={{ color: similarity.color }}>
-              {similarity.label}
+        {tm_align && (
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-[12px] bg-[var(--pio-lavender-pale)] px-4 py-3">
+              <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-lavender-deep)] opacity-70 mb-1">TM-score</p>
+              <p className="font-[family-name:var(--font-pio-mono)] text-pio-2xl font-bold text-[var(--pio-ink)] leading-none">
+                {tmScore.toFixed(3)}
+              </p>
+              <p className="mt-1.5 text-pio-2xs font-semibold" style={{ color: similarity.color }}>
+                {similarity.label}
+              </p>
+            </div>
+            <div className="rounded-[12px] bg-[var(--pio-lavender-pale)] px-4 py-3">
+              <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-lavender-deep)] opacity-70 mb-1">RMSD</p>
+              <p className="font-[family-name:var(--font-pio-mono)] text-pio-2xl font-bold text-[var(--pio-ink)] leading-none">
+                {tm_align.rmsd.toFixed(2)} Å
+              </p>
+              <p className="mt-1.5 text-pio-2xs text-[var(--pio-graphite)] opacity-60">
+                aligned residues
+              </p>
+            </div>
+          </div>
+        )}
+        {lddt && lddtInfo && (
+          <div className="mt-2 flex items-center justify-between rounded-[12px] bg-[var(--pio-lavender-pale)] px-4 py-3">
+            <div>
+              <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-lavender-deep)] opacity-70 mb-1">lDDT · A vs B</p>
+              <p className="font-[family-name:var(--font-pio-mono)] text-pio-2xl font-bold text-[var(--pio-ink)] leading-none">
+                {lddt.lddt.toFixed(3)}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-pio-2xs font-semibold" style={{ color: lddtInfo.color }}>{lddtInfo.label}</p>
+              <p className="mt-1 text-pio-2xs text-[var(--pio-graphite)] opacity-60">{lddt.residue_count} residues matched</p>
+            </div>
+          </div>
+        )}
+        {lddt_pli && (
+          <div className="mt-2 flex items-center justify-between rounded-[12px] bg-[var(--pio-lavender-pale)] px-4 py-3">
+            <div>
+              <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-lavender-deep)] opacity-70 mb-1">lDDT-PLI · ligand pose</p>
+              <p className="font-[family-name:var(--font-pio-mono)] text-pio-2xl font-bold text-[var(--pio-ink)] leading-none">
+                {lddt_pli.lddt_pli.toFixed(3)}
+              </p>
+            </div>
+            <p className="text-right text-pio-2xs text-[var(--pio-graphite)] opacity-60">
+              {lddt_pli.contact_count.toLocaleString()} protein–ligand<br />contacts · {lddt_pli.ligand_atom_count} ligand atoms
             </p>
           </div>
-          <div className="rounded-[12px] bg-[var(--pio-lavender-pale)] px-4 py-3">
-            <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-lavender-deep)] opacity-70 mb-1">RMSD</p>
-            <p className="font-[family-name:var(--font-pio-mono)] text-pio-2xl font-bold text-[var(--pio-ink)] leading-none">
-              {tm_align.rmsd.toFixed(2)} Å
-            </p>
-            <p className="mt-1.5 text-pio-2xs text-[var(--pio-graphite)] opacity-60">
-              aligned residues
-            </p>
+        )}
+        {tm_align && (
+          <p className="mt-1.5 text-pio-2xs text-[var(--pio-graphite)] opacity-50">
+            Query {tm_align.query_length} res · Target {tm_align.target_length} res ·{" "}
+            TM<sub>Q</sub> {tm_align.tm_score_query.toFixed(3)} · TM<sub>T</sub> {tm_align.tm_score_target.toFixed(3)}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  function dockqPanel() {
+    if (!dockq) return null;
+    const q =
+      dockq.quality === "high"       ? { cls: "pio-badge-active",   label: "High quality" } :
+      dockq.quality === "medium"     ? { cls: "pio-badge-metadata", label: "Medium quality" } :
+      dockq.quality === "acceptable" ? { cls: "pio-badge-caution",  label: "Acceptable" } :
+                                       { cls: "pio-badge-warning",  label: "Incorrect" };
+    const metrics = [
+      { label: "Fnat",  value: dockq.fnat.toFixed(2) },
+      { label: "iRMSD", value: `${dockq.irmsd.toFixed(2)} Å` },
+      { label: "LRMSD", value: `${dockq.lrmsd.toFixed(2)} Å` },
+    ];
+    return (
+      <div>
+        <p className="mb-2 text-pio-xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-60">
+          Complex quality (DockQ)
+        </p>
+        <div className="rounded-[12px] bg-[var(--pio-lavender-pale)] px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-lavender-deep)] opacity-70 mb-1">
+                DockQ · chains {dockq.chain_a}–{dockq.chain_b}
+              </p>
+              <p className="font-[family-name:var(--font-pio-mono)] text-pio-2xl font-bold text-[var(--pio-ink)] leading-none">
+                {dockq.dockq.toFixed(3)}
+              </p>
+            </div>
+            <span className={`pio-badge ${q.cls} text-pio-xs`}>{q.label}</span>
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {metrics.map((m) => (
+              <div key={m.label}>
+                <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] mb-0.5">{m.label}</p>
+                <p className="font-[family-name:var(--font-pio-mono)] text-pio-sm font-bold text-[var(--pio-ink)]">{m.value}</p>
+              </div>
+            ))}
           </div>
         </div>
-        <p className="mt-1.5 text-pio-2xs text-[var(--pio-graphite)] opacity-50">
-          Query {tm_align.query_length} res · Target {tm_align.target_length} res ·{" "}
-          TM<sub>Q</sub> {tm_align.tm_score_query.toFixed(3)} · TM<sub>T</sub> {tm_align.tm_score_target.toFixed(3)}
-        </p>
       </div>
     );
   }
@@ -2218,6 +2329,7 @@ function CompareTab() {
       </div>
       {pillHeader()}
       {exportRow()}
+      {dockqPanel()}
       {tmAlignPanel()}
 
       {/* Delta summary */}
@@ -2462,7 +2574,7 @@ function HitTile({ hit, isSelected, onLoad }: { hit: FoldseekHit; isSelected: bo
 }
 
 function SimilarTab({ entry }: { entry: StructureEntry }) {
-  const { updateStructure, addStructure, setActiveId, setCompareId, setComparison, setCompareLoading, setContextTab } = useWorkspace();
+  const { updateStructure, addStructure, setActiveId, setCompareId, setContextTab } = useWorkspace();
 
   function hitKey(hit: FoldseekHit) {
     return `${hit.database}-${hit.rank}-${hit.target}`;
@@ -2509,25 +2621,8 @@ function SimilarTab({ entry }: { entry: StructureEntry }) {
       isAnalyzing: false,
     });
 
-    // Auto-run compare using freshly loaded texts — no need to wait for store re-render
-    if (!entry.structureText) return;
-    setCompareLoading(true);
+    // Compare runs automatically on the Compare tab once both structures are loaded.
     setContextTab("compare");
-    try {
-      const ext = (fmt: string) => fmt === "cif" ? ".cif" : ".pdb";
-      const fd = new FormData();
-      fd.append("file_a", new File([entry.structureText], `${entry.name}${ext(entry.structureFormat)}`, { type: "text/plain" }));
-      fd.append("file_b", new File([payload.structure_text], `${accession}${ext(payload.structure_format)}`, { type: "text/plain" }));
-      fd.append("cutoff_angstrom", String(4.0));
-      const cmpRes = await fetch(buildApiUrl("/api/compare"), { method: "POST", body: fd });
-      if (!cmpRes.ok) {
-        const body = (await cmpRes.json().catch(() => null)) as { detail?: string } | null;
-        throw new Error(body?.detail ?? `Compare failed (${cmpRes.status})`);
-      }
-      setComparison(await cmpRes.json());
-    } catch (e) {
-      setComparison(null, e instanceof Error ? e.message : "Comparison failed");
-    }
   }
 
   const [isSearching, setIsSearching] = useState(false);

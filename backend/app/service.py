@@ -115,9 +115,12 @@ def compare_pdb_contents(
     cutoff_angstrom: float = 4.0,
 ) -> StructureComparisonResponse:
     import logging
+    from app.dockq import DockQError, compute_dockq
     from app.integrations.tmalign import TmAlignError, run_tmalign
-    from app.models import TmAlignResult
+    from app.lddt import LddtError, compute_lddt, compute_lddt_pli
+    from app.models import DockqResult, LddtPliResult, LddtResult, TmAlignResult
 
+    log = logging.getLogger(__name__)
     analysis_a = analyze_pdb_content(content_a, filename=filename_a, cutoff_angstrom=cutoff_angstrom)
     analysis_b = analyze_pdb_content(content_b, filename=filename_b, cutoff_angstrom=cutoff_angstrom)
     result = compare_analyses(analysis_a, analysis_b)
@@ -126,12 +129,50 @@ def compare_pdb_contents(
         tm = run_tmalign(content_a, content_b, filename_a, filename_b)
         result.tm_align = TmAlignResult(**tm)
     except TmAlignError as exc:
-        logging.getLogger(__name__).warning("TM-align skipped: %s", exc)
+        log.warning("TM-align skipped: %s", exc)
+
+    # lDDT of A (model) vs B (reference); fails soft when residues don't match.
+    try:
+        result.lddt = LddtResult(**compute_lddt(content_a, content_b, filename_a, filename_b))
+    except LddtError as exc:
+        log.info("lDDT skipped: %s", exc)
+
+    # lDDT-PLI (protein–ligand interface); only when both structures share a ligand.
+    try:
+        result.lddt_pli = LddtPliResult(**compute_lddt_pli(content_a, content_b, filename_a, filename_b))
+    except LddtError as exc:
+        log.info("lDDT-PLI skipped: %s", exc)
+
+    # DockQ (complex quality); only for multi-chain structures with a shared interface.
+    try:
+        result.dockq = DockqResult(**compute_dockq(content_a, content_b, filename_a, filename_b))
+    except DockQError as exc:
+        log.info("DockQ skipped: %s", exc)
 
     return result
 
 
 PREDICTED_SOURCES = {"alphafold", "boltz", "chai"}
+
+
+def _add_interface_bsa(interface_analysis, content: bytes):
+    """Attach buried surface area (dSASA) to each chain pair; fail soft."""
+    import logging
+
+    from app.sasa import SasaError, compute_interface_bsa
+
+    try:
+        pairs = [(cp.chain_a, cp.chain_b) for cp in interface_analysis.chain_pairs]
+        bsa = compute_interface_bsa(content, pairs)
+    except (SasaError, Exception) as exc:  # pragma: no cover - defensive
+        logging.getLogger(__name__).info("Interface BSA skipped: %s", exc)
+        return interface_analysis
+
+    new_pairs = [
+        cp.model_copy(update={"interface_bsa": bsa.get((cp.chain_a, cp.chain_b))})
+        for cp in interface_analysis.chain_pairs
+    ]
+    return interface_analysis.model_copy(update={"chain_pairs": new_pairs})
 
 
 def compute_ligand_validity(content: bytes, filename: str | None) -> list:
@@ -207,6 +248,10 @@ def analyze_pdb_content_with_timing(
     if pae is not None and pae.matrix:
         from app.interface_confidence import enrich_interface_confidence
         interface_analysis, pae_matrix = enrich_interface_confidence(interface_analysis, pae, structure)
+
+    # Interface buried surface area (dSASA) — heavy, so only on the interactive path.
+    if include_validity and interface_analysis and interface_analysis.chain_pairs:
+        interface_analysis = _add_interface_bsa(interface_analysis, content)
 
     ligand_validity: list = []
     if include_validity and structure.ligands:
