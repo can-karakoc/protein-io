@@ -57,21 +57,25 @@ Full detail lives in `ACTION_PLAN.md`. Summary of what exists today:
 
 Phases are ordered by **impact ÷ effort**. Each is independently shippable.
 
-### Phase 9 — Physical Validity layer  ⬅️ IN PROGRESS (`feat/physical-validity`)
+### Phase 9 — Physical Validity layer  ✅ DONE (`feat/physical-validity`)
 
 The signature "we understand co-folding failure modes" feature.
 
-- `[~]` **PoseBusters** validity per ligand pose: sanitization, atoms connected, bond
+- `[x]` **PoseBusters** validity per ligand pose: sanitization, atoms connected, bond
   lengths/angles, internal steric clash, aromatic-ring flatness, double-bond flatness,
   internal energy ratio → a single **PB-valid ✓/✗** badge + per-check breakdown.
-- `[~]` **RDKit** ligand chemistry card: 2D depiction (SVG), SMILES, formula, MW, logP,
+- `[x]` **RDKit** ligand chemistry card: 2D depiction (SVG), SMILES, formula, MW, logP,
   HBD, HBA, TPSA, rotatable bonds, ring count, QED, Lipinski pass/violations, PAINS
   alerts.
-- `[~]` **Ligand strain energy** (pose vs relaxed conformer, MMFF/UFF).
-- `[~]` Fail-soft per ligand (ions/cofactors below a heavy-atom floor are flagged, not
-  errored); never breaks the core analysis.
-- `[ ]` Frontend "Validity" section in the Ligands tab: badges, failing-check list,
-  depiction, drug-likeness.
+- `[x]` **Ligand strain energy** (pose vs relaxed conformer, MMFF/UFF).
+- `[x]` Robust bond-order perception: CCD template (by residue name) → hydrogen-present
+  geometric → heavy-atom neutral fallback. Correctly recovers real heavy-atom-only
+  crystal ligands (verified on 1HSG indinavir, 613 Da).
+- `[x]` Fail-soft per ligand (ions/cofactors below a heavy-atom floor are flagged, not
+  errored); never breaks the core analysis. Opt-in (`include_validity`), off for batch.
+- `[x]` Frontend "Physical validity & chemistry" section in the Ligands tab: badges,
+  failing-check list, theme-neutral depiction, drug-likeness grid.
+- `[x]` 5 new backend tests (172 total pass); RDKit + PoseBusters added as deps.
 
 ### Phase 10 — Interface-aware confidence
 
