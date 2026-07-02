@@ -1299,17 +1299,25 @@ function InterfacesTab({ entry }: { entry: StructureEntry }) {
                 </motion.button>
               </div>
 
-              {/* Interface-aware confidence (PAE) */}
-              {cp.interface_pae != null && (
+              {/* Interface metrics — PAE confidence + buried surface area */}
+              {(cp.interface_pae != null || cp.interface_bsa != null) && (
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 pb-3">
-                  <span className="text-pio-xs text-[var(--pio-graphite)]">
-                    Interface PAE{" "}
-                    <span className="font-[family-name:var(--font-pio-mono)] font-bold text-[var(--pio-ink)]">{cp.interface_pae.toFixed(1)} Å</span>
-                  </span>
+                  {cp.interface_pae != null && (
+                    <span className="text-pio-xs text-[var(--pio-graphite)]">
+                      Interface PAE{" "}
+                      <span className="font-[family-name:var(--font-pio-mono)] font-bold text-[var(--pio-ink)]">{cp.interface_pae.toFixed(1)} Å</span>
+                    </span>
+                  )}
                   {cp.cross_pae_mean != null && (
                     <span className="text-pio-xs text-[var(--pio-graphite)]">
                       Cross-PAE{" "}
                       <span className="font-[family-name:var(--font-pio-mono)] font-bold text-[var(--pio-ink)]">{cp.cross_pae_mean.toFixed(1)} Å</span>
+                    </span>
+                  )}
+                  {cp.interface_bsa != null && (
+                    <span className="text-pio-xs text-[var(--pio-graphite)]">
+                      Buried area{" "}
+                      <span className="font-[family-name:var(--font-pio-mono)] font-bold text-[var(--pio-ink)]">{cp.interface_bsa.toLocaleString()} Å²</span>
                     </span>
                   )}
                 </div>

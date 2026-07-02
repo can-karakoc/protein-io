@@ -142,6 +142,26 @@ def compare_pdb_contents(
 PREDICTED_SOURCES = {"alphafold", "boltz", "chai"}
 
 
+def _add_interface_bsa(interface_analysis, content: bytes):
+    """Attach buried surface area (dSASA) to each chain pair; fail soft."""
+    import logging
+
+    from app.sasa import SasaError, compute_interface_bsa
+
+    try:
+        pairs = [(cp.chain_a, cp.chain_b) for cp in interface_analysis.chain_pairs]
+        bsa = compute_interface_bsa(content, pairs)
+    except (SasaError, Exception) as exc:  # pragma: no cover - defensive
+        logging.getLogger(__name__).info("Interface BSA skipped: %s", exc)
+        return interface_analysis
+
+    new_pairs = [
+        cp.model_copy(update={"interface_bsa": bsa.get((cp.chain_a, cp.chain_b))})
+        for cp in interface_analysis.chain_pairs
+    ]
+    return interface_analysis.model_copy(update={"chain_pairs": new_pairs})
+
+
 def compute_ligand_validity(content: bytes, filename: str | None) -> list:
     """Run the RDKit + PoseBusters validity pass; fail soft to an empty list."""
     import logging
@@ -215,6 +235,10 @@ def analyze_pdb_content_with_timing(
     if pae is not None and pae.matrix:
         from app.interface_confidence import enrich_interface_confidence
         interface_analysis, pae_matrix = enrich_interface_confidence(interface_analysis, pae, structure)
+
+    # Interface buried surface area (dSASA) — heavy, so only on the interactive path.
+    if include_validity and interface_analysis and interface_analysis.chain_pairs:
+        interface_analysis = _add_interface_bsa(interface_analysis, content)
 
     ligand_validity: list = []
     if include_validity and structure.ligands:

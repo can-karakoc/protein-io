@@ -258,6 +258,7 @@ export type ChainPairSummary = {
   interface_pae: number | null;
   cross_pae_mean: number | null;
   interface_confidence: InterfaceConfidence | null;
+  interface_bsa: number | null;
 };
 
 export type InterfaceAnalysis = {

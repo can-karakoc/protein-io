@@ -297,6 +297,7 @@ class ChainPairSummary(BaseModel):
     interface_pae: float | None = None      # mean PAE over interface-residue pairs (both directions)
     cross_pae_mean: float | None = None     # mean PAE over all A×B residue pairs (both directions)
     interface_confidence: InterfaceConfidence | None = None
+    interface_bsa: float | None = None      # buried surface area on binding (ΔSASA, Å²)
 
 
 class WaterBridgeRecord(BaseModel):
