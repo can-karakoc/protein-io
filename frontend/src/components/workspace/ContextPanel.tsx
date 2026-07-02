@@ -19,7 +19,7 @@ import { ease, listItem, spring, stagger, tabContent } from "@/lib/motion";
 
 import { buildApiUrl } from "@/lib/api";
 import { downloadComparisonReportPdf } from "@/lib/comparisonReport";
-import type { AnalysisResponse, ContactDifference, ContactRecord, FoldseekHit, FoldseekSearchResult, LigandInteractionSummary, LigandSummary, LigandValidity, RcsbAnalysisResponse, ResidueConfidence } from "@/lib/types";
+import type { AnalysisResponse, ContactDifference, ContactRecord, FoldseekHit, FoldseekSearchResult, InterfaceConfidence, LigandInteractionSummary, LigandSummary, LigandValidity, PaeMatrix, RcsbAnalysisResponse, ResidueConfidence } from "@/lib/types";
 import type { ContextTab, StructureEntry } from "@/lib/workspaceStore";
 import { useWorkspace } from "@/lib/workspaceStore";
 
@@ -1180,6 +1180,12 @@ function InterfaceContactMap({
 
 // ── InterfacesTab ─────────────────────────────────────────────────────────────
 
+function interfaceConfBadge(conf: InterfaceConfidence): { cls: string; label: string } {
+  if (conf === "high") return { cls: "pio-badge-active", label: "High confidence" };
+  if (conf === "moderate") return { cls: "pio-badge-caution", label: "Moderate confidence" };
+  return { cls: "pio-badge-warning", label: "Low confidence" };
+}
+
 function InterfacesTab({ entry }: { entry: StructureEntry }) {
   const { analysis } = entry;
   const { selection, setSelection } = useWorkspace();
@@ -1275,6 +1281,11 @@ function InterfacesTab({ entry }: { entry: StructureEntry }) {
                 <span className="text-pio-xs text-[var(--pio-graphite)]">
                   {cp.contact_count.toLocaleString()} contacts
                 </span>
+                {cp.interface_confidence && (
+                  <span className={`pio-badge ${interfaceConfBadge(cp.interface_confidence).cls} text-pio-xs shrink-0`}>
+                    {interfaceConfBadge(cp.interface_confidence).label}
+                  </span>
+                )}
                 {/* Expand toggle — stops propagation so it doesn't trigger 3D selection */}
                 <motion.button
                   type="button"
@@ -1287,6 +1298,22 @@ function InterfacesTab({ entry }: { entry: StructureEntry }) {
                   <ChevronRight size={14} className={["transition-transform", isExpanded ? "rotate-90" : "rotate-0"].join(" ")} />
                 </motion.button>
               </div>
+
+              {/* Interface-aware confidence (PAE) */}
+              {cp.interface_pae != null && (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 pb-3">
+                  <span className="text-pio-xs text-[var(--pio-graphite)]">
+                    Interface PAE{" "}
+                    <span className="font-[family-name:var(--font-pio-mono)] font-bold text-[var(--pio-ink)]">{cp.interface_pae.toFixed(1)} Å</span>
+                  </span>
+                  {cp.cross_pae_mean != null && (
+                    <span className="text-pio-xs text-[var(--pio-graphite)]">
+                      Cross-PAE{" "}
+                      <span className="font-[family-name:var(--font-pio-mono)] font-bold text-[var(--pio-ink)]">{cp.cross_pae_mean.toFixed(1)} Å</span>
+                    </span>
+                  )}
+                </div>
+              )}
 
               {/* Per-chain summary row */}
               <div className="grid grid-cols-2 gap-3 px-4 pb-4">
@@ -1468,6 +1495,78 @@ function ConfidenceTab({ entry }: { entry: StructureEntry }) {
 
 // ── Tab: PAE ──────────────────────────────────────────────────────────────────
 
+// PAE colour scale (AlphaFold-style Greens_r): low error = confident = dark green,
+// high error = uncertain = pale. Data-driven, so it reads on both themes.
+function paeColor(value: number, max: number): string {
+  const t = Math.max(0, Math.min(1, value / (max || 1)));
+  const stops: [number, [number, number, number]][] = [
+    [0.0, [0, 68, 27]],
+    [0.5, [65, 171, 93]],
+    [1.0, [247, 252, 245]],
+  ];
+  let lo = stops[0];
+  let hi = stops[stops.length - 1];
+  for (let i = 0; i < stops.length - 1; i++) {
+    if (t >= stops[i][0] && t <= stops[i + 1][0]) { lo = stops[i]; hi = stops[i + 1]; break; }
+  }
+  const f = (t - lo[0]) / ((hi[0] - lo[0]) || 1);
+  const c = [0, 1, 2].map((k) => Math.round(lo[1][k] + (hi[1][k] - lo[1][k]) * f));
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+
+function PaeHeatmap({ matrix }: { matrix: PaeMatrix }) {
+  const ref = useRef<HTMLCanvasElement | null>(null);
+  const D = matrix.down_size;
+  const max = matrix.max_error || 30;
+
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas) return;
+    const SIZE = 320;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = SIZE * dpr;
+    canvas.height = SIZE * dpr;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.scale(dpr, dpr);
+    const cell = SIZE / D;
+    for (let i = 0; i < D; i++) {
+      for (let j = 0; j < D; j++) {
+        ctx.fillStyle = paeColor(matrix.values[i][j], max);
+        ctx.fillRect(j * cell, i * cell, Math.ceil(cell), Math.ceil(cell));
+      }
+    }
+    if (matrix.chain_blocks.length > 1) {
+      ctx.strokeStyle = "rgba(20,20,15,0.4)";
+      ctx.lineWidth = 0.75;
+      for (const b of matrix.chain_blocks.slice(1)) {
+        const p = b.start * cell;
+        ctx.beginPath(); ctx.moveTo(p, 0); ctx.lineTo(p, SIZE); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, p); ctx.lineTo(SIZE, p); ctx.stroke();
+      }
+    }
+  }, [matrix, D, max]);
+
+  return (
+    <div className="flex flex-col gap-2">
+      <canvas ref={ref} className="w-full rounded-[10px]" style={{ aspectRatio: "1 / 1", imageRendering: "pixelated" }} />
+      {matrix.chain_blocks.length > 1 && (
+        <p className="font-[family-name:var(--font-pio-mono)] text-pio-2xs text-[var(--pio-graphite)]">
+          Chains (in order): {matrix.chain_blocks.map((b) => b.chain_id).join(" · ")}
+        </p>
+      )}
+      <div className="flex items-center gap-2">
+        <span className="text-pio-2xs text-[var(--pio-graphite)]">0 Å · confident</span>
+        <div
+          className="h-2 flex-1 rounded-full"
+          style={{ background: `linear-gradient(90deg, ${paeColor(0, max)}, ${paeColor(max / 2, max)}, ${paeColor(max, max)})` }}
+        />
+        <span className="text-pio-2xs text-[var(--pio-graphite)]">{max.toFixed(0)} Å · uncertain</span>
+      </div>
+    </div>
+  );
+}
+
 function PaeTab({ entry }: { entry: StructureEntry }) {
   const { analysis } = entry;
   if (!analysis) return null;
@@ -1496,9 +1595,21 @@ function PaeTab({ entry }: { entry: StructureEntry }) {
           </div>
         ))}
       </div>
-      <p className="text-pio-xs text-[var(--pio-graphite)] opacity-60">
-        PAE matrix heatmap available in the full workbench view.
-      </p>
+      {analysis.pae_matrix ? (
+        <div>
+          <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] mb-2">Predicted aligned error</p>
+          <PaeHeatmap matrix={analysis.pae_matrix} />
+          <p className="mt-2 text-pio-xs text-[var(--pio-graphite)] opacity-70">
+            Expected position error between every residue pair. Green blocks off the diagonal mean
+            the two chains are confidently placed relative to each other; pale blocks mean the
+            relative orientation is uncertain.
+          </p>
+        </div>
+      ) : (
+        <p className="text-pio-xs text-[var(--pio-graphite)] opacity-60">
+          PAE matrix could not be aligned to the structure (token count mismatch).
+        </p>
+      )}
     </div>
   );
 }
