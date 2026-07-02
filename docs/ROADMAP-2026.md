@@ -92,13 +92,16 @@ Global pLDDT/PAE correlate poorly with quality; interface-specific metrics are t
 - `[x]` Degrades gracefully when tokens can't be aligned (ligand tokens). 6 new tests
   (184 total pass). Uses real sidecar ipTM/pTM where available (already in `global_scores`).
 
-### Phase 11 — Reference-based benchmarking (Compare)
+### Phase 11 — Reference-based benchmarking (Compare)  🚧 IN PROGRESS (`feat/reference-benchmarking`)
 
 Speak Boltz/AF3's own evaluation language.
 
+- `[x]` **lDDT** — in-house superposition-free Cα-lDDT (CASP/AlphaFold local metric) in
+  the Compare tab (`lddt.py`, no dependency). A = model vs B = reference.
 - `[ ]` **DockQ** (+ Fnat, iRMSD, LRMSD, CAPRI class) for predicted-vs-reference complexes.
-- `[ ]` **lDDT** and **lDDT-PLI** local scores.
-- `[ ]` **freesasa**: per-residue SASA + interface buried surface area (dSASA).
+- `[ ]` **lDDT-PLI** (protein–ligand interface lDDT).
+- `[ ]` **freesasa**: per-residue SASA + interface buried surface area (dSASA). (freesasa
+  installed; integration pending.)
 
 ### Phase 12 — Function & structural context
 
