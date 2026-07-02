@@ -2139,7 +2139,7 @@ function CompareTab() {
   }
 
   // ── Results ───────────────────────────────────────────────────────────────
-  const { delta, contacts, tm_align, lddt, lddt_pli } = comparison!;
+  const { delta, contacts, tm_align, lddt, lddt_pli, dockq } = comparison!;
   const DELTA_ROWS: Array<{ label: string; value: number }> = [
     { label: "Residues", value: delta.residue_count_delta },
     { label: "Chains",   value: delta.chain_count_delta },
@@ -2235,6 +2235,48 @@ function CompareTab() {
     );
   }
 
+  function dockqPanel() {
+    if (!dockq) return null;
+    const q =
+      dockq.quality === "high"       ? { cls: "pio-badge-active",   label: "High quality" } :
+      dockq.quality === "medium"     ? { cls: "pio-badge-metadata", label: "Medium quality" } :
+      dockq.quality === "acceptable" ? { cls: "pio-badge-caution",  label: "Acceptable" } :
+                                       { cls: "pio-badge-warning",  label: "Incorrect" };
+    const metrics = [
+      { label: "Fnat",  value: dockq.fnat.toFixed(2) },
+      { label: "iRMSD", value: `${dockq.irmsd.toFixed(2)} Å` },
+      { label: "LRMSD", value: `${dockq.lrmsd.toFixed(2)} Å` },
+    ];
+    return (
+      <div>
+        <p className="mb-2 text-pio-xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-60">
+          Complex quality (DockQ)
+        </p>
+        <div className="rounded-[12px] bg-[var(--pio-lavender-pale)] px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-lavender-deep)] opacity-70 mb-1">
+                DockQ · chains {dockq.chain_a}–{dockq.chain_b}
+              </p>
+              <p className="font-[family-name:var(--font-pio-mono)] text-pio-2xl font-bold text-[var(--pio-ink)] leading-none">
+                {dockq.dockq.toFixed(3)}
+              </p>
+            </div>
+            <span className={`pio-badge ${q.cls} text-pio-xs`}>{q.label}</span>
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {metrics.map((m) => (
+              <div key={m.label}>
+                <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] mb-0.5">{m.label}</p>
+                <p className="font-[family-name:var(--font-pio-mono)] text-pio-sm font-bold text-[var(--pio-ink)]">{m.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   function exportRow() {
     const labelA = entA ? compareDisplayLabel(entA) : "A";
     const labelB = entB ? compareDisplayLabel(entB) : "B";
@@ -2263,6 +2305,7 @@ function CompareTab() {
       </div>
       {pillHeader()}
       {exportRow()}
+      {dockqPanel()}
       {tmAlignPanel()}
 
       {/* Delta summary */}

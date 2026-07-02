@@ -407,6 +407,17 @@ class LddtPliResult(BaseModel):
     ligand_atom_count: int
 
 
+class DockqResult(BaseModel):
+    """DockQ complex-quality score for the primary interface (A model vs B reference)."""
+    dockq: float
+    fnat: float
+    irmsd: float
+    lrmsd: float
+    quality: Literal["high", "medium", "acceptable", "incorrect"]
+    chain_a: str
+    chain_b: str
+
+
 class StructureComparisonResponse(BaseModel):
     structure_a: AnalysisResponse
     structure_b: AnalysisResponse
@@ -415,6 +426,7 @@ class StructureComparisonResponse(BaseModel):
     tm_align: TmAlignResult | None = None
     lddt: LddtResult | None = None
     lddt_pli: LddtPliResult | None = None
+    dockq: DockqResult | None = None
     warnings: list[str] = Field(default_factory=list)
 
 

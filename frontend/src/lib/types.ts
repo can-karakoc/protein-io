@@ -354,7 +354,18 @@ export type StructureComparisonResponse = {
   tm_align: TmAlignResult | null;
   lddt: LddtResult | null;
   lddt_pli: LddtPliResult | null;
+  dockq: DockqResult | null;
   warnings: string[];
+};
+
+export type DockqResult = {
+  dockq: number;
+  fnat: number;
+  irmsd: number;
+  lrmsd: number;
+  quality: "high" | "medium" | "acceptable" | "incorrect";
+  chain_a: string;
+  chain_b: string;
 };
 
 export type LddtResult = {

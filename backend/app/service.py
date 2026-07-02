@@ -115,9 +115,10 @@ def compare_pdb_contents(
     cutoff_angstrom: float = 4.0,
 ) -> StructureComparisonResponse:
     import logging
+    from app.dockq import DockQError, compute_dockq
     from app.integrations.tmalign import TmAlignError, run_tmalign
     from app.lddt import LddtError, compute_lddt, compute_lddt_pli
-    from app.models import LddtPliResult, LddtResult, TmAlignResult
+    from app.models import DockqResult, LddtPliResult, LddtResult, TmAlignResult
 
     log = logging.getLogger(__name__)
     analysis_a = analyze_pdb_content(content_a, filename=filename_a, cutoff_angstrom=cutoff_angstrom)
@@ -141,6 +142,12 @@ def compare_pdb_contents(
         result.lddt_pli = LddtPliResult(**compute_lddt_pli(content_a, content_b, filename_a, filename_b))
     except LddtError as exc:
         log.info("lDDT-PLI skipped: %s", exc)
+
+    # DockQ (complex quality); only for multi-chain structures with a shared interface.
+    try:
+        result.dockq = DockqResult(**compute_dockq(content_a, content_b, filename_a, filename_b))
+    except DockQError as exc:
+        log.info("DockQ skipped: %s", exc)
 
     return result
 
