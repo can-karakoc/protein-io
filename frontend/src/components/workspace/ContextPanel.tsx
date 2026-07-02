@@ -1945,6 +1945,33 @@ function CompareTab() {
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, []);
 
+  // Default the compare pair to the two most-recently-loaded structures whenever the
+  // current selection isn't a valid, distinct, loaded pair — so Compare works as soon
+  // as two structures are present, without needing manual pill selection.
+  useEffect(() => {
+    const loaded = structures.filter((s) => s.structureText && !s.isAnalyzing);
+    if (loaded.length < 2) return;
+    const isValid = (id: string | null) => !!id && loaded.some((s) => s.id === id);
+    if (!isValid(compareIds[0]) || !isValid(compareIds[1]) || compareIds[0] === compareIds[1]) {
+      const [a, b] = loaded.slice(-2);
+      setCompareId(0, a.id);
+      setCompareId(1, b.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [structures, compareIds]);
+
+  // Auto-run the comparison once both selected structures have loaded. Retries when
+  // structure text finishes downloading; each distinct pair runs at most once.
+  const lastRunRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!entA?.structureText || !entB?.structureText || entA.id === entB.id) return;
+    const key = `${entA.id}::${entB.id}`;
+    if (lastRunRef.current === key) return;
+    lastRunRef.current = key;
+    void runCompareWith(entA.id, entB.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entA?.id, entB?.id, entA?.structureText, entB?.structureText]);
+
   async function runCompareWith(idA: string | null, idB: string | null) {
     const a = structures.find((s) => s.id === idA);
     const b = structures.find((s) => s.id === idB);
@@ -1977,11 +2004,8 @@ function CompareTab() {
   function handleSlotSelect(slot: 0 | 1, id: string) {
     setOpenSlot(null);
     setCompareId(slot, id);
-    // auto-run: use the newly selected id alongside the OTHER slot's current id
-    const otherId = slot === 0 ? compareIds[1] : compareIds[0];
-    const newIdA = slot === 0 ? id : compareIds[0];
-    const newIdB = slot === 1 ? id : compareIds[1];
-    if (otherId && id !== otherId) void runCompareWith(newIdA, newIdB);
+    // The auto-run effect fires the comparison once both slots reference loaded
+    // structures — no need to trigger it here.
   }
 
   function handleSlotClear(slot: 0 | 1) {
@@ -2550,7 +2574,7 @@ function HitTile({ hit, isSelected, onLoad }: { hit: FoldseekHit; isSelected: bo
 }
 
 function SimilarTab({ entry }: { entry: StructureEntry }) {
-  const { updateStructure, addStructure, setActiveId, setCompareId, setComparison, setCompareLoading, setContextTab } = useWorkspace();
+  const { updateStructure, addStructure, setActiveId, setCompareId, setContextTab } = useWorkspace();
 
   function hitKey(hit: FoldseekHit) {
     return `${hit.database}-${hit.rank}-${hit.target}`;
@@ -2597,25 +2621,8 @@ function SimilarTab({ entry }: { entry: StructureEntry }) {
       isAnalyzing: false,
     });
 
-    // Auto-run compare using freshly loaded texts — no need to wait for store re-render
-    if (!entry.structureText) return;
-    setCompareLoading(true);
+    // Compare runs automatically on the Compare tab once both structures are loaded.
     setContextTab("compare");
-    try {
-      const ext = (fmt: string) => fmt === "cif" ? ".cif" : ".pdb";
-      const fd = new FormData();
-      fd.append("file_a", new File([entry.structureText], `${entry.name}${ext(entry.structureFormat)}`, { type: "text/plain" }));
-      fd.append("file_b", new File([payload.structure_text], `${accession}${ext(payload.structure_format)}`, { type: "text/plain" }));
-      fd.append("cutoff_angstrom", String(4.0));
-      const cmpRes = await fetch(buildApiUrl("/api/compare"), { method: "POST", body: fd });
-      if (!cmpRes.ok) {
-        const body = (await cmpRes.json().catch(() => null)) as { detail?: string } | null;
-        throw new Error(body?.detail ?? `Compare failed (${cmpRes.status})`);
-      }
-      setComparison(await cmpRes.json());
-    } catch (e) {
-      setComparison(null, e instanceof Error ? e.message : "Comparison failed");
-    }
   }
 
   const [isSearching, setIsSearching] = useState(false);
