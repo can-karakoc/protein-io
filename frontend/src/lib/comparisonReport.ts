@@ -159,7 +159,6 @@ export async function downloadComparisonReportPdf(
         else if (v < 0) data.cell.styles.textColor = [192, 83, 58] as unknown as string;
       }
     },
-    didDrawPage() { y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY; },
   });
   y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 4;
 
@@ -196,7 +195,6 @@ export async function downloadComparisonReportPdf(
       headStyles: { fillColor: [245, 245, 240], textColor: [107, 114, 128], fontSize: 8, fontStyle: "bold" },
       bodyStyles: { fontSize: 8.5, textColor: [26, 26, 24] },
       alternateRowStyles: { fillColor: [249, 249, 246] },
-      didDrawPage() { y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY; },
     });
     y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 4;
     if (rows.length > cap) {
