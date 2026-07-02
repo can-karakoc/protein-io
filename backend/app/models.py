@@ -400,6 +400,13 @@ class LddtResult(BaseModel):
     residue_count: int
 
 
+class LddtPliResult(BaseModel):
+    """Protein–ligand interface lDDT (A model vs B reference)."""
+    lddt_pli: float
+    contact_count: int
+    ligand_atom_count: int
+
+
 class StructureComparisonResponse(BaseModel):
     structure_a: AnalysisResponse
     structure_b: AnalysisResponse
@@ -407,6 +414,7 @@ class StructureComparisonResponse(BaseModel):
     contacts: ContactComparisonSummary
     tm_align: TmAlignResult | None = None
     lddt: LddtResult | None = None
+    lddt_pli: LddtPliResult | None = None
     warnings: list[str] = Field(default_factory=list)
 
 

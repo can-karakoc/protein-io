@@ -116,8 +116,8 @@ def compare_pdb_contents(
 ) -> StructureComparisonResponse:
     import logging
     from app.integrations.tmalign import TmAlignError, run_tmalign
-    from app.lddt import LddtError, compute_lddt
-    from app.models import LddtResult, TmAlignResult
+    from app.lddt import LddtError, compute_lddt, compute_lddt_pli
+    from app.models import LddtPliResult, LddtResult, TmAlignResult
 
     log = logging.getLogger(__name__)
     analysis_a = analyze_pdb_content(content_a, filename=filename_a, cutoff_angstrom=cutoff_angstrom)
@@ -135,6 +135,12 @@ def compare_pdb_contents(
         result.lddt = LddtResult(**compute_lddt(content_a, content_b, filename_a, filename_b))
     except LddtError as exc:
         log.info("lDDT skipped: %s", exc)
+
+    # lDDT-PLI (protein–ligand interface); only when both structures share a ligand.
+    try:
+        result.lddt_pli = LddtPliResult(**compute_lddt_pli(content_a, content_b, filename_a, filename_b))
+    except LddtError as exc:
+        log.info("lDDT-PLI skipped: %s", exc)
 
     return result
 

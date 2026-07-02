@@ -2139,7 +2139,7 @@ function CompareTab() {
   }
 
   // ── Results ───────────────────────────────────────────────────────────────
-  const { delta, contacts, tm_align, lddt } = comparison!;
+  const { delta, contacts, tm_align, lddt, lddt_pli } = comparison!;
   const DELTA_ROWS: Array<{ label: string; value: number }> = [
     { label: "Residues", value: delta.residue_count_delta },
     { label: "Chains",   value: delta.chain_count_delta },
@@ -2158,7 +2158,7 @@ function CompareTab() {
     contacts.lost_contacts;
 
   function tmAlignPanel() {
-    if (!tm_align && !lddt) return null;
+    if (!tm_align && !lddt && !lddt_pli) return null;
     const tmScore = tm_align ? Math.max(tm_align.tm_score_query, tm_align.tm_score_target) : 0;
     const similarity =
       tmScore >= 0.7 ? { label: "Highly similar", color: "var(--pio-green-deep)" } :
@@ -2210,6 +2210,19 @@ function CompareTab() {
               <p className="text-pio-2xs font-semibold" style={{ color: lddtInfo.color }}>{lddtInfo.label}</p>
               <p className="mt-1 text-pio-2xs text-[var(--pio-graphite)] opacity-60">{lddt.residue_count} residues matched</p>
             </div>
+          </div>
+        )}
+        {lddt_pli && (
+          <div className="mt-2 flex items-center justify-between rounded-[12px] bg-[var(--pio-lavender-pale)] px-4 py-3">
+            <div>
+              <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-lavender-deep)] opacity-70 mb-1">lDDT-PLI · ligand pose</p>
+              <p className="font-[family-name:var(--font-pio-mono)] text-pio-2xl font-bold text-[var(--pio-ink)] leading-none">
+                {lddt_pli.lddt_pli.toFixed(3)}
+              </p>
+            </div>
+            <p className="text-right text-pio-2xs text-[var(--pio-graphite)] opacity-60">
+              {lddt_pli.contact_count.toLocaleString()} protein–ligand<br />contacts · {lddt_pli.ligand_atom_count} ligand atoms
+            </p>
           </div>
         )}
         {tm_align && (

@@ -353,12 +353,19 @@ export type StructureComparisonResponse = {
   contacts: ContactComparisonSummary;
   tm_align: TmAlignResult | null;
   lddt: LddtResult | null;
+  lddt_pli: LddtPliResult | null;
   warnings: string[];
 };
 
 export type LddtResult = {
   lddt: number;
   residue_count: number;
+};
+
+export type LddtPliResult = {
+  lddt_pli: number;
+  contact_count: number;
+  ligand_atom_count: number;
 };
 
 export type RcsbAnalysisResponse = {
