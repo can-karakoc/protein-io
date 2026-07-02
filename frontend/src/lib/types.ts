@@ -293,6 +293,7 @@ export type StructureComparisonResponse = {
   structure_b: AnalysisResponse;
   delta: StructureComparisonDelta;
   contacts: ContactComparisonSummary;
+  tm_align: TmAlignResult | null;
   warnings: string[];
 };
 
@@ -304,3 +305,32 @@ export type RcsbAnalysisResponse = {
 };
 
 export type AlphaFoldAnalysisResponse = RcsbAnalysisResponse;
+
+export type TmAlignResult = {
+  tm_score_query: number;
+  tm_score_target: number;
+  rmsd: number;
+  query_length: number;
+  target_length: number;
+};
+
+export type FoldseekHit = {
+  rank: number;
+  database: string;
+  target: string;
+  pdb_id: string | null;
+  chain: string | null;
+  uniprot_id: string | null;
+  title: string | null;
+  organism: string | null;
+  tmscore: number | null;
+  seq_identity: number | null;
+  evalue: number | null;
+  prob: number | null;
+};
+
+export type FoldseekSearchResult = {
+  hits: FoldseekHit[];
+  ticket_id: string;
+  database_counts: Record<string, number>;
+};

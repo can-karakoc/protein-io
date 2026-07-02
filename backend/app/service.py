@@ -114,9 +114,21 @@ def compare_pdb_contents(
     filename_b: str | None = None,
     cutoff_angstrom: float = 4.0,
 ) -> StructureComparisonResponse:
+    import logging
+    from app.integrations.tmalign import TmAlignError, run_tmalign
+    from app.models import TmAlignResult
+
     analysis_a = analyze_pdb_content(content_a, filename=filename_a, cutoff_angstrom=cutoff_angstrom)
     analysis_b = analyze_pdb_content(content_b, filename=filename_b, cutoff_angstrom=cutoff_angstrom)
-    return compare_analyses(analysis_a, analysis_b)
+    result = compare_analyses(analysis_a, analysis_b)
+
+    try:
+        tm = run_tmalign(content_a, content_b, filename_a, filename_b)
+        result.tm_align = TmAlignResult(**tm)
+    except TmAlignError as exc:
+        logging.getLogger(__name__).warning("TM-align skipped: %s", exc)
+
+    return result
 
 
 PREDICTED_SOURCES = {"alphafold", "boltz", "chai"}

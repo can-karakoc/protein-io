@@ -318,11 +318,21 @@ class ContactComparisonSummary(BaseModel):
     lost_contacts: list[ContactDifference] = Field(default_factory=list)
 
 
+class TmAlignResult(BaseModel):
+    """TM-align structural alignment scores."""
+    tm_score_query: float
+    tm_score_target: float
+    rmsd: float
+    query_length: int
+    target_length: int
+
+
 class StructureComparisonResponse(BaseModel):
     structure_a: AnalysisResponse
     structure_b: AnalysisResponse
     delta: StructureComparisonDelta
     contacts: ContactComparisonSummary
+    tm_align: TmAlignResult | None = None
     warnings: list[str] = Field(default_factory=list)
 
 
@@ -352,3 +362,24 @@ class BatchAnalysisResponse(BaseModel):
     total: int
     succeeded: int
     failed: int
+
+
+class FoldseekHit(BaseModel):
+    rank: int
+    database: str
+    target: str
+    pdb_id: str | None = None
+    chain: str | None = None
+    uniprot_id: str | None = None
+    title: str | None = None
+    organism: str | None = None
+    tmscore: float | None = None
+    seq_identity: float | None = None
+    evalue: float | None = None
+    prob: float | None = None
+
+
+class FoldseekSearchResult(BaseModel):
+    hits: list[FoldseekHit]
+    ticket_id: str
+    database_counts: dict[str, int] = Field(default_factory=dict)
