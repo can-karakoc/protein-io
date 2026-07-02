@@ -598,9 +598,30 @@ function LigandsTab({ entry }: { entry: StructureEntry }) {
             flags poses that are chemically or geometrically implausible.
           </p>
           <motion.div className="mt-3 flex flex-col gap-3" initial="hidden" animate="show" variants={stagger}>
-            {validity.map((v) => (
-              <LigandValidityCard key={`${v.name}-${v.chain_id}-${v.residue_number}`} v={v} />
-            ))}
+            {validity.map((v) => {
+              const vKey = `${v.chain_id}:${v.residue_number}`;
+              const vSelected =
+                selection?.kind === "ligand" &&
+                selection.chainId === v.chain_id &&
+                selection.residueNumber === v.residue_number;
+              function selectValidity() {
+                if (floatingLigandKey === vKey) {
+                  setFloatingLigandKey(null);
+                  setSelection(null);
+                } else {
+                  setFloatingLigandKey(vKey);
+                  setSelection({ kind: "ligand", chainId: v.chain_id, residueName: v.name, residueNumber: v.residue_number, label: v.name });
+                }
+              }
+              return (
+                <LigandValidityCard
+                  key={`${v.name}-${v.chain_id}-${v.residue_number}`}
+                  v={v}
+                  isSelected={!!vSelected}
+                  onSelect={selectValidity}
+                />
+              );
+            })}
           </motion.div>
         </div>
       )}
@@ -608,7 +629,7 @@ function LigandsTab({ entry }: { entry: StructureEntry }) {
   );
 }
 
-function LigandValidityCard({ v }: { v: LigandValidity }) {
+function LigandValidityCard({ v, isSelected, onSelect }: { v: LigandValidity; isSelected: boolean; onSelect: () => void }) {
   const idTag = (
     <span className="shrink-0 font-[family-name:var(--font-pio-mono)] text-pio-xs text-[var(--pio-graphite)]">
       {v.chain_id}:{v.residue_number}
@@ -661,8 +682,21 @@ function LigandValidityCard({ v }: { v: LigandValidity }) {
   return (
     <motion.div
       variants={listItem}
-      className="rounded-[14px] bg-[var(--pio-paper)] p-4"
-      style={{ border: "2px solid transparent" }}
+      role="button"
+      tabIndex={0}
+      onClick={onSelect}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
+      whileHover={!isSelected ? { y: -2 } : undefined}
+      whileTap={{ scale: 0.98 }}
+      transition={spring.snappy}
+      className={[
+        "rounded-[14px] p-4 transition-colors cursor-pointer",
+        isSelected ? "" : "bg-[var(--pio-paper)] hover:bg-[var(--pio-sky)]",
+      ].join(" ")}
+      style={{
+        border: `2px solid ${isSelected ? "var(--pio-highlight)" : "transparent"}`,
+        background: isSelected ? "var(--pio-row-selection-bg)" : undefined,
+      }}
     >
       {/* Header */}
       <div className="flex items-center gap-2 mb-3 flex-wrap">
@@ -680,7 +714,7 @@ function LigandValidityCard({ v }: { v: LigandValidity }) {
         {/* 2D depiction */}
         {c.depiction_svg && (
           <div
-            className="w-[150px] shrink-0 self-start rounded-[10px] [&>svg]:h-auto [&>svg]:w-full"
+            className="w-[128px] shrink-0 self-start rounded-[10px] [&>svg]:h-auto [&>svg]:w-full"
             dangerouslySetInnerHTML={{ __html: c.depiction_svg }}
           />
         )}
@@ -689,9 +723,9 @@ function LigandValidityCard({ v }: { v: LigandValidity }) {
         <div className="min-w-0 flex-1">
           <div className="grid grid-cols-4 gap-x-2 gap-y-3">
             {STATS.map((s) => (
-              <div key={s.label}>
+              <div key={s.label} className="min-w-0">
                 <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] mb-0.5">{s.label}</p>
-                <p className="font-[family-name:var(--font-pio-mono)] text-pio-md font-bold text-[var(--pio-ink)] truncate">
+                <p className="font-[family-name:var(--font-pio-mono)] text-pio-sm font-bold text-[var(--pio-ink)]">
                   {s.value == null ? "—" : s.value}
                 </p>
               </div>
