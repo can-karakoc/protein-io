@@ -105,22 +105,29 @@ Speak Boltz/AF3's own evaluation language. All metrics in-house (no external dep
   Interfaces tab.
 - `[x]` 13 new tests (191 backend pass); all verified e2e on real structures.
 
-### Phase 12 — Function & structural context
+### Phase 12 — Function & structural context  🚧 PARTIAL (`feat/function-and-campaign`)
 
-- `[ ]` Binding-pocket detection + druggability (**P2Rank** or **fpocket**); flag whether
-  the co-folded ligand sits in a real pocket.
-- `[ ]` **DSSP** secondary-structure track + disorder flags.
-- `[ ]` Unified sequence track: pLDDT × secondary structure × domains × disorder.
-- `[ ]` **ChEMBL / BindingDB / PubChem** target context: known binders + measured
-  affinities for the loaded target.
+- `[x]` **ChEMBL target context** (`integrations/chembl.py`): known-binder / bioactivity
+  summary by UniProt accession — target, N potent measurements, most-potent compounds.
+  Overview "Known binders · ChEMBL" panel (lazy-fetched). `GET /api/chembl/{uniprot}/summary`.
+- `[ ]` Binding-pocket detection + druggability (**P2Rank**/**fpocket**) — DEFERRED:
+  external Java/C binaries, deploy-hostile on Render (would need an in-house
+  LIGSITE-style implementation).
+- `[ ]` **DSSP** secondary-structure track — DEFERRED: pick an in-house Cα method
+  (P-SEA) to avoid the DSSP binary; accuracy needs care.
+- `[ ]` Unified sequence track (pLDDT × SS × domains × disorder) — depends on SS above.
 
-### Phase 13 — Design-campaign triage
+### Phase 13 — Design-campaign triage  🚧 PARTIAL (`feat/function-and-campaign`)
 
 Where the real biotech pain lives: the RFdiffusion → MPNN → co-fold → *filter* loop.
 
-- `[ ]` Campaign dashboard: rank designs by the BindCraft-style composite (pLDDT + ipTM +
-  iPAE + PB-valid + dSASA + H-bond count).
-- `[ ]` Batch structural clustering (**Foldseek** + **FoldMason**).
+- `[x]` Composite ranking upgraded with **interface buried surface area** (dSASA), the key
+  binder-campaign signal: batch computes BSA per multimer design (reuses Phase 11 SASA);
+  BatchWorkspace score weights in interface size; new sortable BSA column + CSV.
+- `[ ]` ipTM/iPAE/PB-valid in the composite — DEFERRED: the batch endpoint doesn't ingest
+  per-design confidence sidecars or run validity (latency); needs a batch-with-sidecars flow.
+- `[ ]` Batch structural clustering — DEFERRED (**FoldMason** is another binary; an
+  in-house all-vs-all TM-align cluster is O(N²) but feasible for small campaigns).
 - `[ ]` Shareable campaign report.
 
 ### Phase 14 — Antibody mode
