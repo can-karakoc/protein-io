@@ -17,7 +17,7 @@ import { useEffect, useRef, useState } from "react";
 import { ease, listItem, spring, stagger, tabContent } from "@/lib/motion";
 
 import { buildApiUrl } from "@/lib/api";
-import type { AnalysisResponse, ContactDifference, ContactRecord, RcsbAnalysisResponse, ResidueConfidence } from "@/lib/types";
+import type { AnalysisResponse, ContactDifference, ContactRecord, FoldseekHit, FoldseekSearchResult, RcsbAnalysisResponse, ResidueConfidence } from "@/lib/types";
 import type { ContextTab, StructureEntry } from "@/lib/workspaceStore";
 import { useWorkspace } from "@/lib/workspaceStore";
 
@@ -80,7 +80,7 @@ function StatRow({ label, value }: { label: string; value: string | number }) {
 function TopContactList({ title, rows }: { title: string; rows: Array<[string, number]> }) {
   return (
     <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
-      <p className="text-pio-3xs mb-2 font-bold uppercase tracking-[0.08em] text-[var(--pio-graphite)]">{title}</p>
+      <p className="text-pio-2xs mb-2 font-bold uppercase tracking-[0.08em] text-[var(--pio-graphite)]">{title}</p>
       {rows.length ? rows.map(([label, count]) => (
         <div key={label} className="flex items-center justify-between py-[3px]">
           <span className="font-[family-name:var(--font-pio-mono)] text-pio-sm text-[var(--pio-ink)]">{label}</span>
@@ -114,7 +114,7 @@ function InteractionSummaryPanel({ summary }: { summary: NonNullable<AnalysisRes
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 16 }}>
         {metrics.map(([label, value]) => (
           <div key={label} style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
-            <p className="text-pio-3xs font-bold uppercase tracking-[0.08em] text-[var(--pio-graphite)]">{label}</p>
+            <p className="text-pio-2xs font-bold uppercase tracking-[0.08em] text-[var(--pio-graphite)]">{label}</p>
             <p className="font-[family-name:var(--font-pio-mono)] text-pio-3xl font-bold leading-none text-[var(--pio-ink)] mt-1">
               {value.toLocaleString()}
             </p>
@@ -278,7 +278,7 @@ function OverviewTab({ entry }: { entry: StructureEntry }) {
             <div key={row.label} className="rounded-[6px] px-2 py-1.5 transition-colors hover:bg-[var(--pio-sky)] cursor-pointer">
               <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">{row.label}</p>
               {row.mono ? (
-                <p className="mt-0.5 font-mono text-pio-sm font-medium text-[var(--pio-ink)]">{row.value}</p>
+                <p className="mt-0.5 font-[family-name:var(--font-pio-mono)] text-pio-sm font-medium text-[var(--pio-ink)]">{row.value}</p>
               ) : (
                 <p className="mt-0.5 text-pio-base font-medium text-[var(--pio-ink)]">{row.value}</p>
               )}
@@ -426,8 +426,8 @@ function ChainsTab({ entry }: { entry: StructureEntry }) {
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[rgba(199,217,236,0.4)] text-pio-sm font-bold text-[var(--pio-highlight)]">
                     {c.id}
                   </div>
-                  <p className="font-mono text-pio-lg font-medium text-[var(--pio-ink)]">{c.residue_count.toLocaleString()}</p>
-                  <p className="font-mono text-pio-lg font-medium text-[var(--pio-ink)]">{c.atom_count.toLocaleString()}</p>
+                  <p className="font-[family-name:var(--font-pio-mono)] text-pio-lg font-medium text-[var(--pio-ink)]">{c.residue_count.toLocaleString()}</p>
+                  <p className="font-[family-name:var(--font-pio-mono)] text-pio-lg font-medium text-[var(--pio-ink)]">{c.atom_count.toLocaleString()}</p>
                 </motion.div>
                 {i < analysis.chains.length - 1 && (
                   <div className="mx-3 h-px bg-[var(--pio-line)]" />
@@ -1559,21 +1559,21 @@ function ContactDiffTable({ rows, emptyLabel }: { rows: ContactDifference[]; emp
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-[var(--pio-line)]">
-              <th className="py-1.5 pr-3 text-pio-3xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-60">Contact</th>
-              <th className="py-1.5 pr-3 text-pio-3xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-60">Type</th>
-              <th className="py-1.5 text-pio-3xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-60">Dist A / B</th>
+              <th className="py-1.5 pr-3 text-pio-xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-60">Contact</th>
+              <th className="py-1.5 pr-3 text-pio-xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-60">Type</th>
+              <th className="py-1.5 text-pio-xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-60">Dist A / B</th>
             </tr>
           </thead>
           <tbody>
             {pageRows.map((r, i) => (
               <tr key={page * DIFF_PAGE_SIZE + i} className="border-b border-[var(--pio-line)] last:border-0">
-                <td className="py-2 pr-3 text-pio-xs text-[var(--pio-ink)] font-mono">{r.label}</td>
+                <td className="py-2 pr-3 text-pio-xs text-[var(--pio-ink)] font-[family-name:var(--font-pio-mono)]">{r.label}</td>
                 <td className="py-2 pr-3">
                   <span style={{ ...DIFF_CHIP_BASE, ...contactChipStyle(r.contact_type) }}>
                     {r.contact_type}
                   </span>
                 </td>
-                <td className="py-2 text-pio-3xs font-mono text-[var(--pio-graphite)]">
+                <td className="py-2 text-pio-3xs font-[family-name:var(--font-pio-mono)] text-[var(--pio-graphite)]">
                   {r.distance_a_angstrom != null ? r.distance_a_angstrom.toFixed(2) : "—"}
                   {" / "}
                   {r.distance_b_angstrom != null ? r.distance_b_angstrom.toFixed(2) : "—"} Å
@@ -1831,7 +1831,7 @@ function CompareTab() {
   }
 
   // ── Results ───────────────────────────────────────────────────────────────
-  const { delta, contacts } = comparison!;
+  const { delta, contacts, tm_align } = comparison!;
   const DELTA_ROWS: Array<{ label: string; value: number }> = [
     { label: "Residues", value: delta.residue_count_delta },
     { label: "Chains",   value: delta.chain_count_delta },
@@ -1849,13 +1849,55 @@ function CompareTab() {
     diffTab === "gained" ? contacts.gained_contacts :
     contacts.lost_contacts;
 
+  function tmAlignPanel() {
+    if (!tm_align) return null;
+    const tmScore = Math.max(tm_align.tm_score_query, tm_align.tm_score_target);
+    const similarity =
+      tmScore >= 0.7 ? { label: "Highly similar", color: "var(--pio-green-deep)" } :
+      tmScore >= 0.5 ? { label: "Similar fold",   color: "var(--pio-highlight)" } :
+      tmScore >= 0.3 ? { label: "Partial similarity", color: "var(--pio-graphite)" } :
+                       { label: "Low similarity", color: "var(--pio-graphite)" };
+    return (
+      <div>
+        <p className="mb-2 text-pio-xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-60">
+          Structural alignment
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-[12px] bg-[var(--pio-lavender-pale)] px-4 py-3">
+            <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-lavender-deep)] opacity-70 mb-1">TM-score</p>
+            <p className="font-[family-name:var(--font-pio-mono)] text-pio-2xl font-bold text-[var(--pio-ink)] leading-none">
+              {tmScore.toFixed(3)}
+            </p>
+            <p className="mt-1.5 text-pio-2xs font-semibold" style={{ color: similarity.color }}>
+              {similarity.label}
+            </p>
+          </div>
+          <div className="rounded-[12px] bg-[var(--pio-lavender-pale)] px-4 py-3">
+            <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-lavender-deep)] opacity-70 mb-1">RMSD</p>
+            <p className="font-[family-name:var(--font-pio-mono)] text-pio-2xl font-bold text-[var(--pio-ink)] leading-none">
+              {tm_align.rmsd.toFixed(2)} Å
+            </p>
+            <p className="mt-1.5 text-pio-2xs text-[var(--pio-graphite)] opacity-60">
+              aligned residues
+            </p>
+          </div>
+        </div>
+        <p className="mt-1.5 text-pio-2xs text-[var(--pio-graphite)] opacity-50">
+          Query {tm_align.query_length} res · Target {tm_align.target_length} res ·{" "}
+          TM<sub>Q</sub> {tm_align.tm_score_query.toFixed(3)} · TM<sub>T</sub> {tm_align.tm_score_target.toFixed(3)}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-5">
       {pillHeader()}
+      {tmAlignPanel()}
 
       {/* Delta summary */}
       <div>
-        <p className="mb-2 text-pio-3xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-60">Delta (B − A)</p>
+        <p className="mb-2 text-pio-xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-60">Delta (B − A)</p>
         <div className="rounded-[10px] border border-[var(--pio-line)] overflow-hidden">
           {DELTA_ROWS.map((row, i) => (
             <div
@@ -1871,7 +1913,7 @@ function CompareTab() {
 
       {/* Contact diff tabs */}
       <div>
-        <p className="mb-2 text-pio-3xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-60">Contacts</p>
+        <p className="mb-2 text-pio-xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-60">Contacts</p>
         <div className="flex gap-1 rounded-[12px] border border-[var(--pio-line)] bg-[var(--pio-paper)] p-1 mb-3">
           {DIFF_TABS.map((t) => (
             <button
@@ -1985,6 +2027,302 @@ function MethodsTab({ entry }: { entry: StructureEntry }) {
   );
 }
 
+// ── SimilarTab ───────────────────────────────────────────────────────────────
+
+function DatabaseBadge({ db }: { db: string }) {
+  const isPdb = db.toLowerCase().includes("pdb");
+  return (
+    <span
+      className={[
+        "inline-flex items-center rounded-[6px] px-1.5 py-0.5 text-pio-3xs font-semibold uppercase tracking-wide",
+        isPdb
+          ? "bg-[var(--pio-sky-pale)] text-[var(--pio-highlight)]"
+          : "bg-[var(--pio-lavender-pale)] text-[var(--pio-lavender-deep)]",
+      ].join(" ")}
+    >
+      {isPdb ? "PDB" : "AlphaFold"}
+    </span>
+  );
+}
+
+function HitTile({ hit, isSelected, onLoad }: { hit: FoldseekHit; isSelected: boolean; onLoad: () => void }) {
+  const [loading, setLoading] = useState(false);
+  const label = hit.pdb_id
+    ? `${hit.pdb_id.toUpperCase()}${hit.chain ? `:${hit.chain}` : ""}`
+    : hit.uniprot_id ?? hit.target;
+  const canLoad = !!(hit.pdb_id || hit.uniprot_id);
+
+  async function handleClick() {
+    if (loading || !canLoad) return;
+    setLoading(true);
+    try {
+      await onLoad();
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <motion.div
+      variants={listItem}
+      role="button"
+      tabIndex={0}
+      onClick={handleClick}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClick(); } }}
+      whileHover={!isSelected ? { y: -2 } : undefined}
+      whileTap={{ scale: 0.98 }}
+      transition={spring.snappy}
+      className="rounded-[14px] p-4 transition-colors cursor-pointer"
+      style={{
+        border: `2px solid ${isSelected ? "var(--pio-highlight)" : "transparent"}`,
+        background: isSelected ? "var(--pio-row-selection-bg)" : "var(--pio-paper)",
+      }}
+    >
+      {/* Header row */}
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
+          <span className="font-[family-name:var(--font-pio-mono)] text-pio-base font-bold text-[var(--pio-ink)]">
+            #{hit.rank} {label}
+          </span>
+          <DatabaseBadge db={hit.database} />
+        </div>
+        {canLoad && (
+          <motion.button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); handleClick(); }}
+            disabled={loading}
+            whileTap={{ scale: 0.90 }}
+            transition={spring.press}
+            className={[
+              "shrink-0 flex items-center gap-1 rounded-[8px] px-2.5 py-1 text-pio-xs font-semibold transition-colors cursor-pointer disabled:opacity-50",
+              isSelected
+                ? "bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)]"
+                : "bg-[var(--pio-sky)] text-[var(--pio-highlight)] hover:bg-[var(--pio-highlight)] hover:text-[var(--pio-highlight-text)]",
+            ].join(" ")}
+          >
+            {loading && <Loader2 size={11} className="animate-spin" />}
+            {loading ? "Loading…" : "Load"}
+          </motion.button>
+        )}
+      </div>
+
+      {/* Title + organism */}
+      {hit.title && (
+        <p className="text-pio-xs text-[var(--pio-graphite)] leading-snug line-clamp-2 mb-1">{hit.title}</p>
+      )}
+      {hit.organism && (
+        <p className="text-pio-2xs italic text-[var(--pio-graphite)] opacity-70 mb-2">{hit.organism}</p>
+      )}
+
+      {/* Stats row */}
+      <div className="flex gap-4 flex-wrap mt-1">
+        {hit.tmscore != null && (
+          <span className="text-pio-2xs text-[var(--pio-graphite)]">
+            TM-score <span className="font-semibold text-[var(--pio-ink)]">{hit.tmscore.toFixed(3)}</span>
+          </span>
+        )}
+        {hit.seq_identity != null && (
+          <span className="text-pio-2xs text-[var(--pio-graphite)]">
+            Seq ID <span className="font-semibold text-[var(--pio-ink)]">{(hit.seq_identity * 100).toFixed(1)}%</span>
+          </span>
+        )}
+        {hit.evalue != null && (
+          <span className="text-pio-2xs text-[var(--pio-graphite)]">
+            E-value <span className="font-semibold text-[var(--pio-ink)]">{hit.evalue.toExponential(2)}</span>
+          </span>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+function SimilarTab({ entry }: { entry: StructureEntry }) {
+  const { updateStructure, addStructure, setActiveId, setCompareId, setComparison, setCompareLoading, setContextTab } = useWorkspace();
+
+  function hitKey(hit: FoldseekHit) {
+    return `${hit.database}-${hit.rank}-${hit.target}`;
+  }
+
+  async function loadHit(hit: FoldseekHit) {
+    setSelectedHitKey(hitKey(hit));
+    const isAfdb = !!(hit.uniprot_id && !hit.pdb_id);
+    const accession = isAfdb ? hit.uniprot_id! : hit.pdb_id!;
+    const source = isAfdb ? "alphafold" : "rcsb";
+    const entryId = addStructure({
+      name: accession,
+      source,
+      pdbId: isAfdb ? "" : accession,
+      uniprotId: isAfdb ? accession : "",
+      structureText: "",
+      structureFormat: "cif",
+      cutoff: 4.0,
+      analysis: null,
+      foldseekResult: null,
+      isAnalyzing: true,
+      error: null,
+    });
+    setActiveId(entryId);
+
+    // Pre-wire compare slots so Compare tab reflects the right pair
+    setCompareId(0, entry.id);
+    setCompareId(1, entryId);
+
+    const path = isAfdb
+      ? `/api/alphafold/${encodeURIComponent(accession)}/analyze?cutoff_angstrom=4`
+      : `/api/rcsb/${encodeURIComponent(accession)}/analyze?cutoff_angstrom=4`;
+    const res = await fetch(buildApiUrl(path));
+    if (!res.ok) {
+      const body = (await res.json().catch(() => null)) as { detail?: string } | null;
+      updateStructure(entryId, { isAnalyzing: false, error: body?.detail ?? `Fetch failed (${res.status})` });
+      return;
+    }
+    const payload = (await res.json()) as RcsbAnalysisResponse;
+    updateStructure(entryId, {
+      structureText: payload.structure_text,
+      structureFormat: payload.structure_format,
+      analysis: payload.analysis,
+      isAnalyzing: false,
+    });
+
+    // Auto-run compare using freshly loaded texts — no need to wait for store re-render
+    if (!entry.structureText) return;
+    setCompareLoading(true);
+    setContextTab("compare");
+    try {
+      const ext = (fmt: string) => fmt === "cif" ? ".cif" : ".pdb";
+      const fd = new FormData();
+      fd.append("file_a", new File([entry.structureText], `${entry.name}${ext(entry.structureFormat)}`, { type: "text/plain" }));
+      fd.append("file_b", new File([payload.structure_text], `${accession}${ext(payload.structure_format)}`, { type: "text/plain" }));
+      fd.append("cutoff_angstrom", String(4.0));
+      const cmpRes = await fetch(buildApiUrl("/api/compare"), { method: "POST", body: fd });
+      if (!cmpRes.ok) {
+        const body = (await cmpRes.json().catch(() => null)) as { detail?: string } | null;
+        throw new Error(body?.detail ?? `Compare failed (${cmpRes.status})`);
+      }
+      setComparison(await cmpRes.json());
+    } catch (e) {
+      setComparison(null, e instanceof Error ? e.message : "Comparison failed");
+    }
+  }
+
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [selectedHitKey, setSelectedHitKey] = useState<string | null>(null);
+  const result = entry.foldseekResult as FoldseekSearchResult | null;
+
+  async function runSearch() {
+    if (!entry.structureText || isSearching) return;
+    setIsSearching(true);
+    setSearchError(null);
+    try {
+      const blob = new Blob([entry.structureText], { type: "text/plain" });
+      const filename = entry.name.endsWith(".cif") || entry.name.endsWith(".pdb")
+        ? entry.name
+        : `${entry.name}.cif`;
+      const fd = new FormData();
+      fd.append("file", blob, filename);
+      const res = await fetch(buildApiUrl("/api/foldseek/search"), { method: "POST", body: fd });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { detail?: string } | null;
+        throw new Error(body?.detail ?? `Search failed (${res.status})`);
+      }
+      const data = (await res.json()) as FoldseekSearchResult;
+      updateStructure(entry.id, { foldseekResult: data });
+    } catch (e) {
+      setSearchError(e instanceof Error ? e.message : "Search failed");
+    } finally {
+      setIsSearching(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <h3 className="text-pio-xl font-bold text-[var(--pio-ink)]">Structural similarity</h3>
+        <p className="text-pio-xs text-[var(--pio-graphite)] leading-relaxed">
+          Search PDB and AlphaFold DB for structurally similar proteins using Foldseek (3Di+AA mode). Results are ranked by TM-score.
+        </p>
+      </div>
+
+      {!result && !isSearching && (
+        <button
+          type="button"
+          className="w-full rounded-[12px] py-2.5 text-pio-base font-semibold bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)] hover:opacity-90 transition-opacity cursor-pointer"
+          onClick={runSearch}
+        >
+          Find similar structures
+        </button>
+      )}
+
+      {isSearching && (
+        <div className="flex flex-col items-center gap-3 py-10">
+          <Loader2 size={24} className="animate-spin text-[var(--pio-highlight)]" />
+          <p className="text-pio-xs text-[var(--pio-graphite)]">Searching PDB + AlphaFold DB…</p>
+          <p className="text-pio-2xs text-[var(--pio-graphite)] opacity-60">This usually takes 10–30 seconds</p>
+        </div>
+      )}
+
+      {searchError && (
+        <div className="rounded-[10px] border border-[var(--pio-coral)] bg-[var(--pio-coral-pale)] p-4">
+          <p className="text-pio-xs font-semibold text-[var(--pio-coral-deep)] mb-1">Search failed</p>
+          <p className="text-pio-3xs text-[var(--pio-coral-deep)]">{searchError}</p>
+          <button
+            type="button"
+            className="mt-3 text-pio-xs font-semibold text-[var(--pio-highlight)] hover:underline cursor-pointer"
+            onClick={runSearch}
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {result && (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <p className="text-pio-xs font-semibold text-[var(--pio-graphite)]">
+              {result.hits.length} hits
+              {Object.keys(result.database_counts).length > 0 && (
+                <span className="ml-2 font-normal opacity-70">
+                  ({Object.entries(result.database_counts).map(([db, n]) => `${n} ${db}`).join(", ")})
+                </span>
+              )}
+            </p>
+            <button
+              type="button"
+              className="text-pio-2xs font-semibold text-[var(--pio-highlight)] hover:underline cursor-pointer"
+              onClick={runSearch}
+            >
+              Re-search
+            </button>
+          </div>
+
+          {result.hits.length === 0 ? (
+            <p className="text-pio-xs text-[var(--pio-graphite)] opacity-60 py-6 text-center">
+              No similar structures found.
+            </p>
+          ) : (
+            <motion.div
+              className="flex flex-col gap-2"
+              initial="hidden"
+              animate="show"
+              variants={stagger}
+            >
+              {result.hits.map((hit) => (
+                <HitTile
+                  key={hitKey(hit)}
+                  hit={hit}
+                  isSelected={selectedHitKey === hitKey(hit)}
+                  onLoad={() => loadHit(hit)}
+                />
+              ))}
+            </motion.div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Tab definition ────────────────────────────────────────────────────────────
 
 type TabDef = {
@@ -2002,8 +2340,9 @@ const TABS: TabDef[] = [
   { id: "interfaces", label: "Interfaces", count: (a) => a.interface_analysis?.chain_pairs.length ?? 0, visible: (a) => !!(a?.interface_analysis?.chain_pairs?.length) },
   { id: "confidence", label: "pLDDT", visible: (a) => !!(a?.confidence) },
   { id: "pae", label: "PAE", visible: (a) => !!(a?.pae) },
-  { id: "quality", label: "Quality" },
   { id: "compare", label: "Compare" },
+  { id: "similar", label: "Similar" },
+  { id: "quality", label: "Quality" },
   { id: "methods", label: "Methods" },
 ];
 
@@ -2085,6 +2424,7 @@ function EmptyGallery() {
       structureFormat: "cif",
       cutoff: 4.0,
       analysis: null,
+      foldseekResult: null,
       isAnalyzing: true,
       error: null,
     });
@@ -2182,7 +2522,7 @@ function EmptyGallery() {
 
 const TAB_ORDER: ContextTab[] = [
   "overview", "chains", "ligands", "contacts", "interfaces",
-  "confidence", "pae", "quality", "compare", "report", "methods",
+  "confidence", "pae", "compare", "similar", "quality", "report", "methods",
 ];
 
 export function ContextPanel() {
@@ -2238,6 +2578,7 @@ export function ContextPanel() {
       case "quality":     return <QualityTab entry={active} />;
       case "compare":     return <CompareTab />;
       case "methods":     return <MethodsTab entry={active} />;
+      case "similar":     return <SimilarTab entry={active} />;
       case "report":      return (
         <div className="text-pio-xs text-[var(--pio-graphite)] opacity-60">
           Report generation coming in Phase 12.5.

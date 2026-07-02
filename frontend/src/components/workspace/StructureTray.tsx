@@ -152,6 +152,7 @@ function StructureLoader({ onLoaded }: { onLoaded: () => void }) {
       structureFormat: pendingFile.format,
       cutoff,
       analysis: null,
+      foldseekResult: null,
       isAnalyzing: true,
       error: null,
     });
@@ -202,6 +203,7 @@ function StructureLoader({ onLoaded }: { onLoaded: () => void }) {
       structureFormat: "cif",
       cutoff,
       analysis: null,
+      foldseekResult: null,
       isAnalyzing: true,
       error: null,
     });
@@ -244,6 +246,7 @@ function StructureLoader({ onLoaded }: { onLoaded: () => void }) {
       structureFormat: "cif",
       cutoff,
       analysis: null,
+      foldseekResult: null,
       isAnalyzing: true,
       error: null,
     });
@@ -379,7 +382,7 @@ function StructureLoader({ onLoaded }: { onLoaded: () => void }) {
             onChange={(e) => setPdbId(e.target.value.toUpperCase())}
             onKeyDown={(e) => e.key === "Enter" && fetchRcsb()}
             placeholder="e.g. 2HHB"
-            className="pio-input h-9 w-full bg-[var(--pio-paper)] px-3 font-mono text-pio-sm uppercase"
+            className="pio-input h-9 w-full bg-[var(--pio-paper)] px-3 font-[family-name:var(--font-pio-mono)] text-pio-sm uppercase"
           />
           <motion.button
             type="button"
@@ -408,7 +411,7 @@ function StructureLoader({ onLoaded }: { onLoaded: () => void }) {
             onChange={(e) => setUniprotId(e.target.value.toUpperCase())}
             onKeyDown={(e) => e.key === "Enter" && fetchAlphaFold()}
             placeholder="e.g. P69905"
-            className="pio-input h-9 w-full bg-[var(--pio-paper)] px-3 font-mono text-pio-sm uppercase"
+            className="pio-input h-9 w-full bg-[var(--pio-paper)] px-3 font-[family-name:var(--font-pio-mono)] text-pio-sm uppercase"
           />
           <motion.button
             type="button"
@@ -429,7 +432,7 @@ function StructureLoader({ onLoaded }: { onLoaded: () => void }) {
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between">
           <label className="pio-label" htmlFor="tray-cutoff">Distance Cutoff</label>
-          <span className="font-mono text-xs text-[var(--pio-ink)]">{cutoff.toFixed(1)} Å</span>
+          <span className="font-[family-name:var(--font-pio-mono)] text-pio-xs text-[var(--pio-ink)]">{cutoff.toFixed(1)} Å</span>
         </div>
         <input
           id="tray-cutoff"
@@ -439,7 +442,7 @@ function StructureLoader({ onLoaded }: { onLoaded: () => void }) {
           step={0.1}
           value={cutoff}
           onChange={(e) => setCutoff(Number(e.target.value))}
-          className="pio-input h-9 w-full bg-[var(--pio-paper)] px-3 font-mono text-pio-sm"
+          className="pio-input h-9 w-full bg-[var(--pio-paper)] px-3 font-[family-name:var(--font-pio-mono)] text-pio-sm"
         />
       </div>
 

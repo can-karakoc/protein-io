@@ -10,7 +10,7 @@ from app.chat import run_chat
 from app.integrations.alphafold import AlphaFoldFetchError
 from app.integrations.boltz import BoltzParseError, parse_boltz_confidence
 from app.integrations.chai import ChaiParseError, parse_chai_scores
-from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, BatchAnalysisResponse, RcsbAnalysisResponse, StructureComparisonResponse, StructureMetadata
+from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, BatchAnalysisResponse, FoldseekSearchResult, RcsbAnalysisResponse, StructureComparisonResponse, StructureMetadata
 from app.pae import PaeParseError, analyze_pae_json
 from app.integrations.rcsb import RcsbFetchError
 from app.parser import StructureParseError
@@ -205,6 +205,23 @@ async def analyze_alphafold(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+# ── Foldseek ─────────────────────────────────────────────────────────────────
+
+@router.post("/api/foldseek/search", response_model=FoldseekSearchResult)
+async def foldseek_search(
+    file: UploadFile = File(...),
+) -> FoldseekSearchResult:
+    """Submit a structure to Foldseek and return ranked structural neighbours."""
+    from app.integrations.foldseek import FoldseekError, search_foldseek
+    content = await file.read()
+    try:
+        return await search_foldseek(content, file.filename or "structure.cif")
+    except FoldseekError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Foldseek search failed: {exc}") from exc
 
 
 # ── Chat ─────────────────────────────────────────────────────────────────────

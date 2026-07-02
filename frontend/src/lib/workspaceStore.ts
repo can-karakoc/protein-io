@@ -5,7 +5,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 import { createDebouncedIdbStorage } from "./idbStorage";
-import type { AnalysisResponse, StructureComparisonResponse, ViewerSelection } from "./types";
+import type { AnalysisResponse, FoldseekSearchResult, StructureComparisonResponse, ViewerSelection } from "./types";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -22,6 +22,7 @@ export type StructureEntry = {
   structureFormat: StructureFormat;
   cutoff: number;
   analysis: AnalysisResponse | null;
+  foldseekResult: FoldseekSearchResult | null;
   isAnalyzing: boolean;
   error: string | null;
   savedAt: string;
@@ -38,7 +39,8 @@ export type ContextTab =
   | "quality"
   | "compare"
   | "report"
-  | "methods";
+  | "methods"
+  | "similar";
 
 export type AppMode = "workspace" | "batch";
 
