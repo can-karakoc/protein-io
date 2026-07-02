@@ -615,8 +615,9 @@ function LigandValidityCard({ v }: { v: LigandValidity }) {
     </span>
   );
 
-  // Ions / cofactors below the small-molecule threshold: compact muted row.
+  // Ions, or molecules we couldn't perceive chemistry for: compact muted row.
   if (!v.is_small_molecule || !v.chemistry) {
+    const label = v.is_small_molecule ? "chemistry unavailable" : "ion / cofactor";
     return (
       <motion.div
         variants={listItem}
@@ -626,7 +627,7 @@ function LigandValidityCard({ v }: { v: LigandValidity }) {
         <div className="flex items-center gap-2">
           <p className="text-pio-md font-bold text-[var(--pio-ink)] truncate">{v.name}</p>
           {idTag}
-          <span className="pio-badge pio-badge-neutral text-pio-xs shrink-0">ion / cofactor</span>
+          <span className="pio-badge pio-badge-neutral text-pio-xs shrink-0">{label}</span>
         </div>
         {v.note && (
           <p className="mt-1.5 text-pio-xs text-[var(--pio-graphite)] opacity-70">{v.note}</p>
@@ -733,6 +734,12 @@ function LigandValidityCard({ v }: { v: LigandValidity }) {
             <span className="pio-badge pio-badge-active text-pio-xs">✓ All checks passed</span>
           )}
         </div>
+      )}
+
+      {v.checks.length === 0 && v.note && (
+        <p className="mt-3 border-t border-[var(--pio-line)] pt-3 text-pio-xs text-[var(--pio-graphite)] opacity-70">
+          {v.note}
+        </p>
       )}
     </motion.div>
   );

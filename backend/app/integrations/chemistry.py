@@ -104,25 +104,45 @@ def _analyze_one(chain_id: str, residue: gemmi.Residue) -> dict:
         base["note"] = f"Ion or small cofactor ({len(heavy_atoms)} heavy atoms) — chemistry not computed."
         return base
 
-    try:
-        mol = _build_mol(residue)
-    except Exception as exc:
-        base["note"] = f"Could not perceive chemistry from coordinates: {exc}"
-        return base
-
+    # A real molecule (not a tiny ion), even if perception is imperfect.
     base["is_small_molecule"] = True
-    base["chemistry"] = _chemistry(mol)
+    template_smiles = _ccd_smiles(name)
 
-    checks, pb_valid = _pose_checks(mol)
-    base["checks"] = checks
-    base["pb_valid"] = pb_valid
+    # Pose mol = 3D with perceived bond orders. Needed for PoseBusters + strain, but
+    # fails for metal-containing cofactors (heme, etc.) — that's expected.
+    pose_mol = None
+    try:
+        pose_mol = _build_pose_mol(residue, template_smiles)
+    except Exception:
+        pose_mol = None
 
-    base["strain_energy"] = _strain_energy(mol)
+    # Chemistry mol: prefer the pose; otherwise fall back to the CCD template (2D). This
+    # lets us report full chemistry for cofactors whose pose can't be validated.
+    chem_mol = pose_mol
+    if chem_mol is None and template_smiles:
+        from rdkit import Chem
+
+        chem_mol = Chem.MolFromSmiles(template_smiles)
+
+    if chem_mol is not None:
+        base["chemistry"] = _chemistry(chem_mol)
+
+    if pose_mol is not None:
+        checks, pb_valid = _pose_checks(pose_mol)
+        base["checks"] = checks
+        base["pb_valid"] = pb_valid
+        base["strain_energy"] = _strain_energy(pose_mol)
+    elif chem_mol is not None:
+        base["note"] = "Chemistry from PDB Chemical Component Dictionary; pose-validity checks not applicable (e.g. metal-containing cofactor)."
+    else:
+        base["note"] = "Could not perceive chemistry from coordinates."
+
     return base
 
 
-def _build_mol(residue: gemmi.Residue):
-    """Build a sanitized RDKit Mol with a 3D conformer from a gemmi residue.
+def _build_pose_mol(residue: gemmi.Residue, template_smiles: str | None):
+    """Build a sanitized RDKit Mol with a 3D conformer (correct bond orders) from a
+    gemmi residue, for pose-validity checks.
 
     Bond-order perception is the hard part (ligands rarely carry hydrogens). Strategy,
     most-reliable first:
@@ -132,6 +152,9 @@ def _build_mol(residue: gemmi.Residue):
       2. If hydrogens are present, perceive directly from geometry (valence unambiguous).
       3. Heavy-atom-only neutral perception as a last resort (rejected if it yields
          radicals / wrong bond orders).
+
+    Raises on failure (e.g. metal-containing cofactors); the caller falls back to
+    template-only chemistry.
     """
     from rdkit import Chem
     from rdkit.Chem import AllChem, rdDetermineBonds
@@ -139,7 +162,6 @@ def _build_mol(residue: gemmi.Residue):
     has_h = any(a.element.atomic_number == 1 for a in residue)
 
     # 1. CCD template (correct bond orders on the real coordinates)
-    template_smiles = _ccd_smiles(residue.name.strip())
     if template_smiles:
         try:
             block = _residue_pdb_block(residue, keep_h=False)
