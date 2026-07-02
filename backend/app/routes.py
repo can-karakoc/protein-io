@@ -10,7 +10,7 @@ from app.chat import run_chat
 from app.integrations.alphafold import AlphaFoldFetchError
 from app.integrations.boltz import BoltzParseError, parse_boltz_confidence
 from app.integrations.chai import ChaiParseError, parse_chai_scores
-from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, BatchAnalysisResponse, FoldseekSearchResult, RcsbAnalysisResponse, StructureComparisonResponse, StructureMetadata
+from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, BatchAnalysisResponse, ChemblTargetSummary, FoldseekSearchResult, RcsbAnalysisResponse, StructureComparisonResponse, StructureMetadata
 from app.pae import PaeParseError, analyze_pae_json
 from app.integrations.rcsb import RcsbFetchError
 from app.parser import StructureParseError
@@ -223,6 +223,20 @@ async def foldseek_search(
         raise HTTPException(status_code=502, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Foldseek search failed: {exc}") from exc
+
+
+# ── ChEMBL target context ─────────────────────────────────────────────────────
+
+@router.get("/api/chembl/{uniprot_id}/summary", response_model=ChemblTargetSummary | None)
+async def chembl_summary(uniprot_id: str) -> ChemblTargetSummary | None:
+    """Known-binder / bioactivity summary for a target by UniProt accession."""
+    from app.integrations.chembl import ChemblError, fetch_chembl_summary
+    try:
+        return await fetch_chembl_summary(uniprot_id)
+    except ChemblError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"ChEMBL lookup failed: {exc}") from exc
 
 
 # ── Chat ─────────────────────────────────────────────────────────────────────

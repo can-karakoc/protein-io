@@ -396,6 +396,22 @@ export type TmAlignResult = {
   target_length: number;
 };
 
+export type ChemblActivity = {
+  molecule_chembl_id: string | null;
+  pchembl_value: number | null;
+  standard_type: string | null;
+  standard_value: number | null;
+  standard_units: string | null;
+};
+
+export type ChemblTargetSummary = {
+  target_chembl_id: string;
+  pref_name: string | null;
+  uniprot_id: string;
+  bioactivity_count: number;
+  top_compounds: ChemblActivity[];
+};
+
 export type FoldseekHit = {
   rank: number;
   database: string;

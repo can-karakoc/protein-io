@@ -458,6 +458,23 @@ class BatchAnalysisResponse(BaseModel):
     failed: int
 
 
+class ChemblActivity(BaseModel):
+    molecule_chembl_id: str | None = None
+    pchembl_value: float | None = None
+    standard_type: str | None = None
+    standard_value: float | None = None
+    standard_units: str | None = None
+
+
+class ChemblTargetSummary(BaseModel):
+    """Known-binder / bioactivity context for a target from ChEMBL."""
+    target_chembl_id: str
+    pref_name: str | None = None
+    uniprot_id: str
+    bioactivity_count: int
+    top_compounds: list[ChemblActivity] = Field(default_factory=list)
+
+
 class FoldseekHit(BaseModel):
     rank: int
     database: str
