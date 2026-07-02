@@ -1,7 +1,18 @@
+# Render installs from this file (see render.yaml: pip install -r requirements.txt).
+# Must list every runtime dependency imported by app modules — keep in sync with
+# pyproject.toml.
 anthropic>=0.112.0
 fastapi>=0.115.0
-python-dotenv>=1.0.0
 gemmi>=0.7.5
+httpx>=0.27.0
+numpy>=1.26
 pydantic>=2.8.0
+python-dotenv>=1.0.0
 python-multipart>=0.0.9
+scipy>=1.11
+tmtools>=0.0.3
 uvicorn[standard]>=0.30.0
+# Physical-validity layer (RDKit + PoseBusters). Heavier wheels — if the Render
+# instance runs out of memory, these can be removed (ligand validity fails soft).
+posebusters>=0.3.1
+rdkit>=2024.9.1
