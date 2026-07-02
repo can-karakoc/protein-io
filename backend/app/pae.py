@@ -42,6 +42,7 @@ def analyze_pae_json(
             mean_predicted_aligned_error=mean_error,
             high_error_pair_count=high_error_pair_count,
             high_error_threshold=high_error_threshold,
+            matrix=[[float(v) for v in row] for row in matrix],
         ),
         warnings,
     )

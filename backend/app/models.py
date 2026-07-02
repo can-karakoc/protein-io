@@ -204,6 +204,25 @@ class PaeSummary(BaseModel):
     mean_predicted_aligned_error: float
     high_error_pair_count: int
     high_error_threshold: float
+    # Full N×N matrix retained transiently for interface-confidence computation;
+    # excluded from API output (the downsampled PaeMatrix is exposed instead).
+    matrix: list[list[float]] | None = Field(default=None, exclude=True, repr=False)
+
+
+class PaeChainBlock(BaseModel):
+    """Span of one chain along a (downsampled) PAE axis, for heatmap delineation."""
+    chain_id: str
+    start: int
+    end: int
+
+
+class PaeMatrix(BaseModel):
+    """Downsampled PAE matrix for heatmap rendering."""
+    size: int              # original residue/token dimension
+    down_size: int         # rendered dimension (== size when small)
+    values: list[list[float]]
+    max_error: float
+    chain_blocks: list[PaeChainBlock] = Field(default_factory=list)
 
 
 class GlobalModelScores(BaseModel):
@@ -261,6 +280,9 @@ class InterfaceResidue(BaseModel):
     plddt: float | None = None
 
 
+InterfaceConfidence = Literal["high", "moderate", "low"]
+
+
 class ChainPairSummary(BaseModel):
     chain_a: str
     chain_b: str
@@ -271,6 +293,10 @@ class ChainPairSummary(BaseModel):
     interface_residue_count_b: int = 0
     interface_residues_a: list[InterfaceResidue] = Field(default_factory=list)
     interface_residues_b: list[InterfaceResidue] = Field(default_factory=list)
+    # Interface-aware confidence (populated when a PAE sidecar is present and aligns).
+    interface_pae: float | None = None      # mean PAE over interface-residue pairs (both directions)
+    cross_pae_mean: float | None = None     # mean PAE over all A×B residue pairs (both directions)
+    interface_confidence: InterfaceConfidence | None = None
 
 
 class WaterBridgeRecord(BaseModel):
@@ -304,6 +330,7 @@ class AnalysisResponse(BaseModel):
     confidence: ConfidenceSummary | None = None
     residue_confidences: list[ResidueConfidence] = Field(default_factory=list)
     pae: PaeSummary | None = None
+    pae_matrix: PaeMatrix | None = None
     interaction_summary: InteractionSummary | None = None
     ligand_interactions: list[LigandInteractionSummary] = Field(default_factory=list)
     ligand_validity: list[LigandValidity] = Field(default_factory=list)
