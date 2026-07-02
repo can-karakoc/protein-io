@@ -92,16 +92,18 @@ Global pLDDT/PAE correlate poorly with quality; interface-specific metrics are t
 - `[x]` Degrades gracefully when tokens can't be aligned (ligand tokens). 6 new tests
   (184 total pass). Uses real sidecar ipTM/pTM where available (already in `global_scores`).
 
-### Phase 11 — Reference-based benchmarking (Compare)  🚧 IN PROGRESS (`feat/reference-benchmarking`)
+### Phase 11 — Reference-based benchmarking (Compare)  ✅ DONE (`feat/reference-benchmarking`)
 
-Speak Boltz/AF3's own evaluation language.
+Speak Boltz/AF3's own evaluation language. All metrics in-house (no external deps).
 
-- `[x]` **lDDT** — in-house superposition-free Cα-lDDT (CASP/AlphaFold local metric) in
-  the Compare tab (`lddt.py`, no dependency). A = model vs B = reference.
-- `[ ]` **DockQ** (+ Fnat, iRMSD, LRMSD, CAPRI class) for predicted-vs-reference complexes.
-- `[ ]` **lDDT-PLI** (protein–ligand interface lDDT).
-- `[ ]` **freesasa**: per-residue SASA + interface buried surface area (dSASA). (freesasa
-  installed; integration pending.)
+- `[x]` **lDDT** — superposition-free Cα-lDDT (`lddt.py`). A = model vs B = reference.
+- `[x]` **DockQ** (Fnat + iRMSD + LRMSD + quality bin) for the primary interface
+  (`dockq.py`, numpy Kabsch + scipy contacts).
+- `[x]` **lDDT-PLI** — protein–ligand interface lDDT (co-folded pose accuracy).
+- `[x]` **Interface buried surface area (dSASA)** — in-house Shrake-Rupley SASA
+  (`sasa.py`; freesasa wheel won't build on py3.13/arm64), shown per chain pair in the
+  Interfaces tab.
+- `[x]` 13 new tests (191 backend pass); all verified e2e on real structures.
 
 ### Phase 12 — Function & structural context
 
