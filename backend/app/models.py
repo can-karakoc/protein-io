@@ -72,6 +72,7 @@ class ContactRecord(BaseModel):
     contact_type: ContactType
     contact_categories: list[ContactCategory] = Field(default_factory=list)
     interaction_class: InteractionClass = "unclassified"
+    hbond_strength: Literal["strong", "moderate", "weak"] | None = None
     source_residue_confidence: ResidueConfidence | None = None
     target_residue_confidence: ResidueConfidence | None = None
     confidence_warning: bool = False
@@ -113,6 +114,8 @@ class LigandInteractionSummary(BaseModel):
     distance_distribution: DistanceDistribution = Field(default_factory=DistanceDistribution)
     interaction_class_breakdown: dict[str, int] = Field(default_factory=dict)
     water_bridge_count: int = 0
+    contact_efficiency: float | None = None
+    hbond_strength_breakdown: dict[str, int] = Field(default_factory=dict)
 
 
 class InteractionSummary(BaseModel):
@@ -165,8 +168,17 @@ class PaeSummary(BaseModel):
     high_error_threshold: float
 
 
+class GlobalModelScores(BaseModel):
+    """ptm / iptm and related global confidence scores from Boltz / Chai sidecars."""
+    ptm: float | None = None
+    iptm: float | None = None
+    pde_mean: float | None = None
+    chain_iptm: dict[str, float] = Field(default_factory=dict)
+    chain_ptm: dict[str, float] = Field(default_factory=dict)
+
+
 class StructureMetadata(BaseModel):
-    source: Literal["upload", "rcsb", "alphafold"] = "upload"
+    source: Literal["upload", "rcsb", "alphafold", "boltz", "chai"] = "upload"
     status: Literal["current", "removed"] | None = None
     pdb_id: str | None = None
     uniprot_id: str | None = None
@@ -250,6 +262,7 @@ class AnalysisResponse(BaseModel):
     version: str = "0.1.0"
     summary: StructureSummary
     metadata: StructureMetadata | None = None
+    global_scores: GlobalModelScores | None = None
     confidence: ConfidenceSummary | None = None
     residue_confidences: list[ResidueConfidence] = Field(default_factory=list)
     pae: PaeSummary | None = None

@@ -993,9 +993,18 @@ function LigandPoseComparisonSection({
         const fpA = buildFingerprint(contactsA, ligA);
         const fpB = buildFingerprint(contactsB, ligB);
         const diffRows = buildDiffFingerprint(fpA, fpB);
+
+        const effA = ligA.contact_efficiency;
+        const effB = ligB.contact_efficiency;
+        const effDelta = effA != null && effB != null ? effB - effA : null;
+        const hbondA = Object.values(ligA.hbond_strength_breakdown ?? {}).reduce((s, n) => s + n, 0);
+        const hbondB = Object.values(ligB.hbond_strength_breakdown ?? {}).reduce((s, n) => s + n, 0);
+        const strongA = ligA.hbond_strength_breakdown?.strong ?? 0;
+        const strongB = ligB.hbond_strength_breakdown?.strong ?? 0;
+
         return (
           <div key={ligA.name} className="mt-5">
-            <div className="mb-3 flex items-center gap-3">
+            <div className="mb-3 flex flex-wrap items-center gap-3">
               <span className="font-mono text-pio-xl font-bold text-[var(--pio-ink)]">{ligA.name}</span>
               <span className="pio-badge pio-badge-neutral text-pio-2xs">
                 {labelA}: {ligA.chain_id}:{ligA.residue_number} · {ligA.protein_contact_count} contacts
@@ -1003,6 +1012,42 @@ function LigandPoseComparisonSection({
               <span className="pio-badge pio-badge-neutral text-pio-2xs">
                 {labelB}: {ligB.chain_id}:{ligB.residue_number} · {ligB.protein_contact_count} contacts
               </span>
+            </div>
+            {/* Drug-discovery quick-diff row */}
+            <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {effA != null && effB != null && (
+                <div className="rounded-[8px] bg-[var(--pio-paper)] px-3 py-2">
+                  <p className="text-pio-3xs font-bold tracking-[0.08em] text-[var(--pio-graphite)] opacity-70">EFFICIENCY</p>
+                  <p className="mt-0.5 font-mono text-pio-sm font-bold text-[var(--pio-ink)]">
+                    {effA.toFixed(2)} → {effB.toFixed(2)}
+                  </p>
+                  <p className={`mt-0.5 font-mono text-pio-2xs font-semibold ${effDelta! > 0 ? "text-[var(--pio-green-deep)]" : effDelta! < 0 ? "text-[var(--pio-coral-deep)]" : "text-[var(--pio-graphite)]"}`}>
+                    {effDelta! > 0 ? "+" : ""}{effDelta!.toFixed(2)}
+                  </p>
+                </div>
+              )}
+              <div className="rounded-[8px] bg-[var(--pio-paper)] px-3 py-2">
+                <p className="text-pio-3xs font-bold tracking-[0.08em] text-[var(--pio-graphite)] opacity-70">H-BONDS</p>
+                <p className="mt-0.5 font-mono text-pio-sm font-bold text-[var(--pio-ink)]">{hbondA} → {hbondB}</p>
+                <p className="mt-0.5 font-mono text-pio-2xs text-[var(--pio-graphite)]">
+                  strong: {strongA} → {strongB}
+                </p>
+              </div>
+              <div className="rounded-[8px] bg-[var(--pio-paper)] px-3 py-2">
+                <p className="text-pio-3xs font-bold tracking-[0.08em] text-[var(--pio-graphite)] opacity-70">CONTACTS</p>
+                <p className="mt-0.5 font-mono text-pio-sm font-bold text-[var(--pio-ink)]">
+                  {ligA.protein_contact_count} → {ligB.protein_contact_count}
+                </p>
+                <p className={`mt-0.5 font-mono text-pio-2xs font-semibold ${ligB.protein_contact_count > ligA.protein_contact_count ? "text-[var(--pio-green-deep)]" : ligB.protein_contact_count < ligA.protein_contact_count ? "text-[var(--pio-coral-deep)]" : "text-[var(--pio-graphite)]"}`}>
+                  {ligB.protein_contact_count - ligA.protein_contact_count > 0 ? "+" : ""}{ligB.protein_contact_count - ligA.protein_contact_count}
+                </p>
+              </div>
+              <div className="rounded-[8px] bg-[var(--pio-paper)] px-3 py-2">
+                <p className="text-pio-3xs font-bold tracking-[0.08em] text-[var(--pio-graphite)] opacity-70">CLOSEST (Å)</p>
+                <p className="mt-0.5 font-mono text-pio-sm font-bold text-[var(--pio-ink)]">
+                  {ligA.closest_distance_angstrom?.toFixed(2) ?? "—"} → {ligB.closest_distance_angstrom?.toFixed(2) ?? "—"}
+                </p>
+              </div>
             </div>
             <DiffFingerprintMatrix rows={diffRows} labelA={labelA} labelB={labelB} />
           </div>

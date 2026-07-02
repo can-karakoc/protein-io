@@ -10,9 +10,9 @@ from app.integrations.alphafold import AlphaFoldStructure, fetch_alphafold_struc
 from app.integrations.rcsb import fetch_rcsb_structure
 from app.integrations.rcsb import RcsbStructure
 from app.integrations.uniprot import fetch_uniprot_annotations
-from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, ContactRecord, PaeSummary, RcsbAnalysisResponse, ResidueConfidence, StructureComparisonResponse, StructureMetadata
+from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, ContactRecord, GlobalModelScores, PaeSummary, RcsbAnalysisResponse, ResidueConfidence, StructureComparisonResponse, StructureMetadata
 from app.trust_score import assign_trust_label
-from app.parser import detect_structure_format_from_filename, parse_pdb_content
+from app.parser import detect_model_source_from_cif, detect_structure_format_from_filename, parse_pdb_content
 
 
 @dataclass(frozen=True)
@@ -94,6 +94,7 @@ def analyze_pdb_content(
     cutoff_angstrom: float = 4.0,
     pae: PaeSummary | None = None,
     pae_warnings: list[str] | None = None,
+    global_scores: GlobalModelScores | None = None,
 ) -> AnalysisResponse:
     """Run the MVP analysis pipeline for uploaded structure content."""
     return analyze_pdb_content_with_timing(
@@ -102,6 +103,7 @@ def analyze_pdb_content(
         cutoff_angstrom=cutoff_angstrom,
         pae=pae,
         pae_warnings=pae_warnings,
+        global_scores=global_scores,
     ).response
 
 
@@ -117,6 +119,9 @@ def compare_pdb_contents(
     return compare_analyses(analysis_a, analysis_b)
 
 
+PREDICTED_SOURCES = {"alphafold", "boltz", "chai"}
+
+
 def analyze_pdb_content_with_timing(
     content: bytes,
     filename: str | None = None,
@@ -124,6 +129,7 @@ def analyze_pdb_content_with_timing(
     metadata: StructureMetadata | None = None,
     pae: PaeSummary | None = None,
     pae_warnings: list[str] | None = None,
+    global_scores: GlobalModelScores | None = None,
 ) -> TimedAnalysis:
     """Run analysis and return coarse timings for development diagnostics."""
     structure_id = structure_id_from_filename(filename)
@@ -136,13 +142,23 @@ def analyze_pdb_content_with_timing(
     )
     parse_ms = elapsed_ms(parse_started)
 
+    # Auto-detect Boltz/Chai/AlphaFold from CIF header when not already known
+    if metadata is None:
+        try:
+            text = content.decode("utf-8", errors="replace")
+            detected = detect_model_source_from_cif(text)
+            if detected in PREDICTED_SOURCES:
+                metadata = StructureMetadata(source=detected)  # type: ignore[arg-type]
+        except Exception:
+            pass
+
     contacts_started = perf_counter()
     contacts, contact_warnings = calculate_contacts(structure, cutoff_angstrom=cutoff_angstrom)
     water_bridges = find_water_bridges(structure)
     contacts_ms = elapsed_ms(contacts_started)
 
     response_started = perf_counter()
-    is_predicted = metadata is not None and metadata.source in {"alphafold"}
+    is_predicted = metadata is not None and metadata.source in PREDICTED_SOURCES
     confidence, residue_confidences, confidence_warnings = analyze_plddt_confidence(
         structure, force_predicted=is_predicted
     )
@@ -153,11 +169,12 @@ def analyze_pdb_content_with_timing(
     response = AnalysisResponse(
         summary=summary,
         metadata=metadata,
+        global_scores=global_scores,
         confidence=confidence,
         residue_confidences=residue_confidences,
         pae=pae,
         interaction_summary=summarize_interactions(contacts),
-        ligand_interactions=summarize_ligand_interactions(contacts, water_bridges=water_bridges),
+        ligand_interactions=summarize_ligand_interactions(contacts, water_bridges=water_bridges, ligands=structure.ligands),
         water_bridges=water_bridges,
         chains=structure.chains,
         ligands=structure.ligands,

@@ -114,6 +114,42 @@ def detect_structure_format_from_filename(filename: str | None) -> StructureForm
     return None
 
 
+def detect_model_source_from_cif(text: str) -> str | None:
+    """Return 'boltz', 'chai', 'alphafold', or None by inspecting mmCIF _software table.
+
+    Scans only the first 8 KB so this stays fast even for large files.
+    """
+    header = text[:8000]
+    try:
+        doc = gemmi.cif.read_string(header if header.endswith("\n") else header + "\n#\n")
+        for block in doc:
+            for tag in ("_software.name", "_software.classification"):
+                col = block.find([tag])
+                if not col:
+                    continue
+                for row in col:
+                    name = row[0].strip().strip('"').lower()
+                    if "boltz" in name:
+                        return "boltz"
+                    if "chai" in name:
+                        return "chai"
+                    if "alphafold" in name or "colabfold" in name or "openfold" in name:
+                        return "alphafold"
+    except Exception:
+        pass
+
+    # Fallback: keyword scan of header (works when _software block is absent)
+    header_lower = header.lower()
+    if "boltz" in header_lower:
+        return "boltz"
+    if "chai-1" in header_lower or "_chai_" in header_lower:
+        return "chai"
+    if "alphafold" in header_lower:
+        return "alphafold"
+
+    return None
+
+
 def detect_structure_format_from_content(text: str) -> StructureFormat:
     stripped = text.lstrip()
     if stripped.startswith("data_") or "_atom_site." in stripped[:5000]:

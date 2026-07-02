@@ -8,7 +8,9 @@ from starlette.responses import Response
 
 from app.chat import run_chat
 from app.integrations.alphafold import AlphaFoldFetchError
-from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, BatchAnalysisResponse, RcsbAnalysisResponse, StructureComparisonResponse
+from app.integrations.boltz import BoltzParseError, parse_boltz_confidence
+from app.integrations.chai import ChaiParseError, parse_chai_scores
+from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, BatchAnalysisResponse, RcsbAnalysisResponse, StructureComparisonResponse, StructureMetadata
 from app.pae import PaeParseError, analyze_pae_json
 from app.integrations.rcsb import RcsbFetchError
 from app.parser import StructureParseError
@@ -25,11 +27,49 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+async def _parse_confidence_sidecar(
+    pae_file: UploadFile | None,
+    confidence_file: UploadFile | None,
+) -> tuple[object, object, list[str], str | None]:
+    """Return (pae_summary, global_scores, warnings, source_hint) from whichever sidecar was supplied.
+
+    source_hint is "boltz", "chai", or None — used to seed metadata.source when the CIF
+    has no _software.name block (e.g. files exported without provenance headers).
+    Priority: confidence_file (Boltz JSON / Chai NPZ) > pae_file (AlphaFold JSON).
+    """
+    if confidence_file is not None:
+        content = await confidence_file.read()
+        fname = (confidence_file.filename or "").lower()
+        if fname.endswith(".npz"):
+            try:
+                pae, scores, warnings = parse_chai_scores(content)
+                return pae, scores, warnings, "chai"
+            except ChaiParseError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+        else:
+            try:
+                pae, scores, warnings = parse_boltz_confidence(content)
+                return pae, scores, warnings, "boltz"
+            except BoltzParseError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    if pae_file is not None:
+        pae_content = await pae_file.read()
+        try:
+            pae, pae_warnings = analyze_pae_json(pae_content)
+            return pae, None, pae_warnings, None
+        except PaeParseError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return None, None, [], None
+
+
 @router.post("/analyze", response_model=AnalysisResponse)
 async def analyze(
     response: Response,
     file: UploadFile = File(...),
     pae_file: UploadFile | None = File(None),
+    confidence_file: UploadFile | None = File(None),
     cutoff_angstrom: float = Form(4.0),
 ) -> AnalysisResponse:
     if cutoff_angstrom <= 0:
@@ -38,23 +78,24 @@ async def analyze(
     try:
         read_started = perf_counter()
         content = await file.read()
-        pae_content = await pae_file.read() if pae_file is not None else None
+        pae, global_scores, sidecar_warnings, source_hint = await _parse_confidence_sidecar(pae_file, confidence_file)
         read_ms = elapsed_ms(read_started)
-        pae, pae_warnings = analyze_pae_json(pae_content) if pae_content is not None else (None, [])
+        # Seed metadata with source hint so the CIF badge shows even without _software.name
+        hint_metadata = StructureMetadata(source=source_hint) if source_hint else None  # type: ignore[arg-type]
         analysis = analyze_pdb_content_with_timing(
             content,
             filename=file.filename,
             cutoff_angstrom=cutoff_angstrom,
+            metadata=hint_metadata,
             pae=pae,
-            pae_warnings=pae_warnings,
+            pae_warnings=sidecar_warnings,
+            global_scores=global_scores,
         )
         timing_header = analysis.timing.as_header_value(read_ms=read_ms)
         response.headers[TIMING_HEADER] = timing_header
         logger.info("analysis timing filename=%s %s", file.filename or "uploaded", timing_header)
         return analysis.response
     except StructureParseError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except PaeParseError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -65,9 +106,16 @@ async def analyze_api(
     response: Response,
     file: UploadFile = File(...),
     pae_file: UploadFile | None = File(None),
+    confidence_file: UploadFile | None = File(None),
     cutoff_angstrom: float = Form(4.0),
 ) -> AnalysisResponse:
-    return await analyze(response=response, file=file, pae_file=pae_file, cutoff_angstrom=cutoff_angstrom)
+    return await analyze(
+        response=response,
+        file=file,
+        pae_file=pae_file,
+        confidence_file=confidence_file,
+        cutoff_angstrom=cutoff_angstrom,
+    )
 
 
 @router.post("/api/compare", response_model=StructureComparisonResponse)

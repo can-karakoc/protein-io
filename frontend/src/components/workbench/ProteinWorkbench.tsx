@@ -291,6 +291,7 @@ function ProteinWorkbenchState({
   );
   const [paeFileName, setPaeFileName] = useState("");
   const [paeText, setPaeText] = useState("");
+  const [sidecarFile, setSidecarFile] = useState<File | null>(null);
   const [pdbId, setPdbId] = useState(initialCache?.pdbId ?? initialSavedRun?.pdbId ?? "");
   const [uniprotId, setUniprotId] = useState(initialCache?.uniprotId ?? initialSavedRun?.uniprotId ?? "");
   const [cutoff, setCutoff] = useState(seed?.cutoff ?? 4.0);
@@ -455,6 +456,7 @@ function ProteinWorkbenchState({
     setResultsTab("overview");
     setPaeFileName("");
     setPaeText("");
+    setSidecarFile(null);
     setFileName(file.name);
     setStructureFormat(formatFromFileName(file.name));
     setInputSource("upload");
@@ -489,6 +491,7 @@ function ProteinWorkbenchState({
     setResultsTab("overview");
     setPaeFileName("");
     setPaeText("");
+    setSidecarFile(null);
     const fetchStarted = performance.now();
     try {
       const response = await fetch(EXAMPLE_FILE);
@@ -520,38 +523,45 @@ function ProteinWorkbenchState({
   }
 
   async function handlePaeFile(file: File) {
-    const timingStarted = performance.now();
-    setError(null);
-    setStatus({ label: "Reading PAE JSON", detail: "Validating the optional AlphaFold error sidecar." });
-    if (!file.name.toLowerCase().endsWith(".json")) {
-      setStatus(null);
+    const fname = file.name.toLowerCase();
+    const isNpz = fname.endsWith(".npz");
+    const isJson = fname.endsWith(".json");
+
+    if (!isJson && !isNpz) {
       setError({
-        title: "Unsupported PAE file",
-        message: `${file.name} is not a JSON file.`,
-        nextStep: "Choose the PAE sidecar as a .json file, or continue without PAE.",
+        title: "Unsupported confidence file",
+        message: `${file.name} must be a .json (AlphaFold PAE, Boltz confidence) or .npz (Chai scores) file.`,
+        nextStep: "Choose the appropriate confidence sidecar file, or continue without one.",
       });
       return;
     }
+
+    setError(null);
+    setStatus({ label: "Reading confidence sidecar", detail: isNpz ? "Chai .npz scores file." : "JSON confidence / PAE sidecar." });
     setAnalysis(null);
     setAnalysisTimestamp(null);
     setSelection(null);
     setContactFilter("all");
     setResultsTab("overview");
+
     try {
-      const text = await file.text();
-      JSON.parse(text);
-      setPaeFileName(file.name);
-      setPaeText(text);
-      logTiming("pae sidecar read", timingStarted, {
-        fileName: file.name,
-        bytes: file.size,
-        characters: text.length,
-      });
+      if (isJson) {
+        const text = await file.text();
+        JSON.parse(text);
+        setPaeFileName(file.name);
+        setPaeText(text);
+        setSidecarFile(null);
+      } else {
+        // .npz — keep as raw File, don't try to read as text
+        setSidecarFile(file);
+        setPaeFileName(file.name);
+        setPaeText("");
+      }
     } catch (caught) {
       setError({
-        title: "Invalid PAE JSON",
-        message: caught instanceof Error ? caught.message : "The PAE sidecar could not be parsed as JSON.",
-        nextStep: "Use the PAE JSON downloaded with an AlphaFold prediction, or remove the sidecar.",
+        title: "Invalid confidence sidecar",
+        message: caught instanceof Error ? caught.message : "The sidecar file could not be read.",
+        nextStep: "Use the confidence JSON or .npz file from your Boltz/Chai/AlphaFold run.",
       });
     } finally {
       setStatus(null);
@@ -582,12 +592,14 @@ function ProteinWorkbenchState({
           type: contentTypeForFormat(structureFormat),
         }),
       );
-      if (paeText.trim()) {
+      if (sidecarFile) {
+        // Chai .npz — send as raw binary
+        formData.append("confidence_file", sidecarFile, sidecarFile.name);
+      } else if (paeText.trim()) {
+        // JSON sidecar (AlphaFold PAE, Boltz confidence, or generic)
         formData.append(
-          "pae_file",
-          new File([paeText], paeFileName || "pae.json", {
-            type: "application/json",
-          }),
+          "confidence_file",
+          new File([paeText], paeFileName || "confidence.json", { type: "application/json" }),
         );
       }
       formData.append("cutoff_angstrom", String(cutoff));
@@ -837,6 +849,7 @@ function ProteinWorkbenchState({
     setUniprotId("");
     setPaeFileName("");
     setPaeText("");
+    setSidecarFile(null);
     setAnalysis(null);
     setAnalysisTimestamp(null);
     setSelection(null);
@@ -1501,23 +1514,44 @@ function ResultsPanel({
         {selectedTab === "overview" ? (
           <div className="grid min-w-0 max-w-full gap-6 overflow-hidden">
             <>
-              {analysis.metadata && analysis.metadata.source !== "upload" && (() => {
-                const isAlphaFold = analysis.metadata.source === "alphafold";
-                const rawTitle = analysis.metadata.title ?? analysis.metadata.pdb_id ?? analysis.metadata.uniprot_id ?? "Structure";
-                const title = toTitleCase(rawTitle.replace(/\s+at\s+[\d.]+\s+angstroms?\s+resolution\s*$/i, "").trim());
-                const entryUrl = isAlphaFold ? analysis.metadata.alphafold_url : analysis.metadata.rcsb_url;
+              {(() => {
+                const src = analysis.metadata?.source;
+                const isBoltz = src === "boltz";
+                const isChai = src === "chai";
+                const isPredictedUpload = isBoltz || isChai;
+                const isAlphaFold = src === "alphafold";
+                const sourceLabel = isBoltz ? "Boltz-1" : isChai ? "Chai-1" : null;
+
                 return (
-                  <div className="flex items-start gap-3">
-                    <h2 className="pio-section-title">{title}</h2>
-                    {entryUrl && (
-                      <a href={entryUrl} target="_blank" rel="noreferrer" aria-label={isAlphaFold ? "AlphaFold DB entry" : "RCSB entry"}
-                        style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: "50%", background: "var(--pio-highlight)", color: "var(--pio-highlight-text)", flexShrink: 0, textDecoration: "none" }}>
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                          <path d="M2.5 11.5L11.5 2.5M11.5 2.5H6M11.5 2.5V8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </a>
+                  <>
+                    {/* Boltz / Chai source badge */}
+                    {isPredictedUpload && (
+                      <div className="flex items-center gap-2">
+                        <span className="pio-badge pio-badge-predicted">{sourceLabel}</span>
+                        <span className="text-pio-xs text-[var(--pio-graphite)]">Predicted structure</span>
+                      </div>
                     )}
-                  </div>
+
+                    {/* Title + link (RCSB / AlphaFold DB entries) */}
+                    {analysis.metadata && !isPredictedUpload && src !== "upload" && (() => {
+                      const rawTitle = analysis.metadata.title ?? analysis.metadata.pdb_id ?? analysis.metadata.uniprot_id ?? "Structure";
+                      const title = toTitleCase(rawTitle.replace(/\s+at\s+[\d.]+\s+angstroms?\s+resolution\s*$/i, "").trim());
+                      const entryUrl = isAlphaFold ? analysis.metadata.alphafold_url : analysis.metadata.rcsb_url;
+                      return (
+                        <div className="flex items-start gap-3">
+                          <h2 className="pio-section-title">{title}</h2>
+                          {entryUrl && (
+                            <a href={entryUrl} target="_blank" rel="noreferrer" aria-label={isAlphaFold ? "AlphaFold DB entry" : "RCSB entry"}
+                              style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: "50%", background: "var(--pio-highlight)", color: "var(--pio-highlight-text)", flexShrink: 0, textDecoration: "none" }}>
+                              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                                <path d="M2.5 11.5L11.5 2.5M11.5 2.5H6M11.5 2.5V8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </a>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </>
                 );
               })()}
               {analysis.uniprot_annotations && (
@@ -1525,6 +1559,10 @@ function ResultsPanel({
               )}
               <MetadataPanel metadata={analysis.metadata ?? null} />
               <SummaryCards analysis={analysis} />
+              {/* Global model scores (Boltz / Chai ptm / iptm / pde) */}
+              {analysis.global_scores && (
+                <GlobalScoresOverview scores={analysis.global_scores} />
+              )}
               <InteractionSummaryPanel summary={analysis.interaction_summary ?? null} />
             </>
           </div>
@@ -3018,6 +3056,43 @@ function formatTimestamp(timestamp: string) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(timestamp));
+}
+
+function GlobalScoresOverview({ scores }: { scores: NonNullable<AnalysisResponse["global_scores"]> }) {
+  const items: { label: string; value: number | null; unit?: string; tip: string }[] = [
+    { label: "pTM",      value: scores.ptm,      tip: "Template modelling score for the full complex (0–1; higher is better)." },
+    { label: "ipTM",     value: scores.iptm,     tip: "Interface template modelling score — quality of predicted inter-chain contacts (0–1)." },
+    { label: "mean PDE", value: scores.pde_mean, unit: "Å", tip: "Mean predicted distance error across all residue pairs (Å; lower is better)." },
+  ].filter((i) => i.value != null);
+
+  if (!items.length) return null;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">Global scores</p>
+      <div style={{ display: "flex", gap: 8 }}>
+        {items.map(({ label, value, unit, tip }) => (
+          <div key={label} title={tip} style={{ flex: 1, display: "flex", flexDirection: "column", background: "var(--pio-lavender-pale)", borderRadius: 12, padding: "10px 12px" }}>
+            <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-lavender-deep)]">{label}</p>
+            <p className="mt-0.5 font-[family-name:var(--font-pio-mono)] text-pio-xl font-bold leading-none text-[var(--pio-ink)]">
+              {value != null ? value.toFixed(3) : "—"}
+              {unit && <span className="ml-0.5 text-pio-2xs font-normal text-[var(--pio-graphite)]">{unit}</span>}
+            </p>
+          </div>
+        ))}
+      </div>
+      {Object.keys(scores.chain_iptm ?? {}).length > 1 && (
+        <div style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "8px 12px" }}>
+          <p className="mb-1.5 text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">Per-chain ipTM</p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {Object.entries(scores.chain_iptm).map(([chain, val]) => (
+              <span key={chain} className="pio-badge pio-badge-predicted">{chain}: {val.toFixed(3)}</span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function SummaryCards({ analysis }: { analysis: AnalysisResponse | null }) {

@@ -133,14 +133,14 @@ export function ExploreSidebar({
               or load bundled sample →
             </button>
 
-            {/* PAE sidecar — collapsible */}
+            {/* Confidence sidecar — collapsible (AlphaFold PAE JSON / Boltz JSON / Chai NPZ) */}
             <button
               type="button"
               onClick={() => setPaeOpen((o) => !o)}
               className="mt-1 flex items-center justify-between rounded-[12px] border border-[var(--pio-line)] bg-[var(--pio-paper)] px-3 py-2 text-pio-xs text-[var(--pio-graphite)] transition-colors hover:bg-[var(--pio-sand)]"
             >
               <span>
-                Add PAE JSON <span className="opacity-60">(optional)</span>
+                Add confidence sidecar <span className="opacity-60">(optional)</span>
               </span>
               <ChevronDown className={`h-3.5 w-3.5 transition-transform ${paeOpen ? "rotate-180" : ""}`} />
             </button>
@@ -148,14 +148,14 @@ export function ExploreSidebar({
             {paeOpen && (
               <label className="flex cursor-pointer flex-col rounded-[12px] border border-dashed border-[var(--pio-line-strong)] bg-[var(--pio-paper)] px-3 py-2.5 transition-colors hover:bg-[var(--pio-sand)]">
                 <span className="text-xs font-semibold text-[var(--pio-ink)]">
-                  {paeFileName || "Choose PAE JSON"}
+                  {paeFileName || "Choose confidence file"}
                 </span>
                 <span className="mt-0.5 text-pio-xs text-[var(--pio-graphite)]">
-                  AlphaFold predicted aligned error
+                  AlphaFold PAE · Boltz confidence .json · Chai scores .npz
                 </span>
                 <input
                   type="file"
-                  accept=".json,application/json"
+                  accept=".json,.npz,application/json"
                   className="sr-only"
                   onChange={(e) => {
                     const file = e.target.files?.[0];

@@ -22,6 +22,8 @@ export type LigandSummary = {
   atom_count: number;
 };
 
+export type HbondStrength = "strong" | "moderate" | "weak";
+
 export type ContactRecord = {
   chain_a: string;
   residue_a: string;
@@ -35,6 +37,7 @@ export type ContactRecord = {
   contact_type: ContactType;
   contact_categories: ContactCategory[];
   interaction_class?: "h-bond" | "salt-bridge" | "aromatic" | "pi-cation" | "hydrophobic" | "halogen-bond" | "unclassified" | null;
+  hbond_strength?: HbondStrength | null;
   source_residue_confidence?: ResidueConfidence | null;
   target_residue_confidence?: ResidueConfidence | null;
   confidence_warning?: boolean;
@@ -74,8 +77,16 @@ export type StructureSummary = {
   contact_count: number;
 };
 
+export type GlobalModelScores = {
+  ptm: number | null;
+  iptm: number | null;
+  pde_mean: number | null;
+  chain_iptm: Record<string, number>;
+  chain_ptm: Record<string, number>;
+};
+
 export type StructureMetadata = {
-  source: "upload" | "rcsb" | "alphafold";
+  source: "upload" | "rcsb" | "alphafold" | "boltz" | "chai";
   status: "current" | "removed" | null;
   pdb_id: string | null;
   uniprot_id: string | null;
@@ -156,6 +167,8 @@ export type LigandInteractionSummary = {
   distance_distribution: DistanceDistribution;
   interaction_class_breakdown?: Record<string, number>;
   water_bridge_count?: number;
+  contact_efficiency?: number | null;
+  hbond_strength_breakdown?: Record<string, number>;
 };
 
 export type InteractionSummary = {
@@ -218,6 +231,7 @@ export type AnalysisResponse = {
   version: string;
   summary: StructureSummary;
   metadata: StructureMetadata | null;
+  global_scores: GlobalModelScores | null;
   confidence: ConfidenceSummary | null;
   residue_confidences: ResidueConfidence[];
   pae: PaeSummary | null;

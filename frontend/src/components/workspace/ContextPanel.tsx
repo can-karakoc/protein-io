@@ -60,10 +60,10 @@ function plddtLabel(v: number) {
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-pio-3xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-70">
+      <span className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">
         {label}
       </span>
-      <span className="text-pio-lg font-bold text-[var(--pio-ink)]">{value}</span>
+      <span className="font-[family-name:var(--font-pio-mono)] text-pio-2xl font-bold leading-none text-[var(--pio-ink)]">{value}</span>
     </div>
   );
 }
@@ -177,7 +177,11 @@ function OverviewTab({ entry }: { entry: StructureEntry }) {
   const metadata = analysis.metadata ?? null;
   const s = analysis.summary;
   const isAlphaFold = metadata?.source === "alphafold";
+  const isBoltz = metadata?.source === "boltz";
+  const isChai = metadata?.source === "chai";
+  const isPredictedUpload = isBoltz || isChai;
   const isUpload = !metadata || metadata.source === "upload";
+  const sourceLabel = isBoltz ? "Boltz-1" : isChai ? "Chai-1" : null;
 
   // Title: de-capitalize from ALL CAPS + strip resolution suffix
   const rawTitle = metadata?.title ?? metadata?.pdb_id ?? metadata?.uniprot_id ?? null;
@@ -205,7 +209,13 @@ function OverviewTab({ entry }: { entry: StructureEntry }) {
     { label: "MODEL DATE",  value: formatDepositedDate(metadata?.deposition_date), mono: true },
     { label: "ENTITIES",    value: metadata?.entity_count ?? null },
   ];
-  const metaRows = (isAlphaFold ? alphaFoldRows : rcsbRows).filter((r) => r.value != null);
+  const boltzChaiRows: MetaRow[] = [
+    { label: "SOURCE",  value: sourceLabel },
+    { label: "METHOD",  value: "Predicted model" },
+  ];
+  const metaRows = (
+    isPredictedUpload ? boltzChaiRows : isAlphaFold ? alphaFoldRows : rcsbRows
+  ).filter((r) => r.value != null);
 
   // Summary card items
   const summaryItems: [string, number | string, string][] = [
@@ -218,8 +228,16 @@ function OverviewTab({ entry }: { entry: StructureEntry }) {
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Title + link button */}
-      {!isUpload && title && (
+      {/* Boltz / Chai header badge */}
+      {isPredictedUpload && (
+        <div className="flex items-center gap-2">
+          <span className="pio-badge pio-badge-predicted">{sourceLabel}</span>
+          <span className="text-pio-xs text-[var(--pio-graphite)]">Predicted structure</span>
+        </div>
+      )}
+
+      {/* Title + link button (RCSB and AlphaFold DB entries have a title) */}
+      {!isUpload && !isPredictedUpload && title && (
         <div className="flex items-start gap-3">
           <h2 className="pio-section-title flex-1">{title}</h2>
           {entryUrl && (
@@ -257,7 +275,7 @@ function OverviewTab({ entry }: { entry: StructureEntry }) {
       {!isUpload && metaRows.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 24px" }}>
           {metaRows.map((row) => (
-            <div key={row.label} className="rounded-[6px] px-2 py-1.5 transition-colors hover:bg-[var(--pio-sky)]">
+            <div key={row.label} className="rounded-[6px] px-2 py-1.5 transition-colors hover:bg-[var(--pio-sky)] cursor-pointer">
               <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">{row.label}</p>
               {row.mono ? (
                 <p className="mt-0.5 font-mono text-pio-sm font-medium text-[var(--pio-ink)]">{row.value}</p>
@@ -284,12 +302,63 @@ function OverviewTab({ entry }: { entry: StructureEntry }) {
         ))}
       </div>
 
+      {/* Global model scores (Boltz / Chai / AlphaFold) */}
+      {analysis.global_scores && (
+        <GlobalScoresSection scores={analysis.global_scores} />
+      )}
+
       {/* Interaction summary */}
       {analysis.interaction_summary && (
         <InteractionSummaryPanel summary={analysis.interaction_summary} />
       )}
 
       <WarningBanner warnings={analysis.warnings ?? []} />
+    </div>
+  );
+}
+
+// ── Global scores (ptm / iptm / pde) ─────────────────────────────────────────
+
+function GlobalScoresSection({ scores }: { scores: import("@/lib/types").GlobalModelScores }) {
+  type ScoreItem = { label: string; value: number | null; tip: string; unit?: string };
+  const items: ScoreItem[] = [
+    { label: "pTM",      value: scores.ptm,      tip: "Template modelling score for the full complex (0–1; higher is better)." },
+    { label: "ipTM",     value: scores.iptm,     tip: "Interface template modelling score — quality of predicted inter-chain contacts (0–1)." },
+    { label: "mean PDE", value: scores.pde_mean, tip: "Mean predicted distance error across all residue pairs (Å; lower is better).", unit: "Å" },
+  ].filter((i) => i.value != null);
+
+  if (!items.length) return null;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">Global scores</p>
+      <div className="flex gap-2">
+        {items.map(({ label, value, tip, unit }) => (
+          <div
+            key={label}
+            title={tip}
+            className="flex flex-1 flex-col rounded-[12px] bg-[var(--pio-lavender-pale)] px-3 py-2.5"
+          >
+            <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-lavender-deep)]">{label}</p>
+            <p className="mt-0.5 font-[family-name:var(--font-pio-mono)] text-pio-xl font-bold leading-none text-[var(--pio-ink)]">
+              {value != null ? value.toFixed(3) : "—"}
+              {unit && <span className="ml-0.5 text-pio-2xs font-normal text-[var(--pio-graphite)]">{unit}</span>}
+            </p>
+          </div>
+        ))}
+      </div>
+      {Object.keys(scores.chain_iptm ?? {}).length > 1 && (
+        <div className="rounded-[10px] bg-[var(--pio-paper)] px-3 py-2">
+          <p className="mb-1.5 text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">Per-chain ipTM</p>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(scores.chain_iptm).map(([chain, val]) => (
+              <span key={chain} className="pio-badge pio-badge-predicted">
+                {chain}: {val.toFixed(3)}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1225,24 +1294,21 @@ function ConfidenceTab({ entry }: { entry: StructureEntry }) {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Average badge */}
-      <div className="pio-panel-nested flex items-center gap-4 p-4">
-        <div className="flex flex-col">
-          <span className="text-pio-3xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-70">
-            Average pLDDT
-          </span>
-          <span
-            className="text-pio-4xl font-bold leading-[1.1]"
-            style={{ color: plddtColor(conf.average_plddt) }}
-          >
+      {/* Stat tiles */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-[12px] bg-[var(--pio-paper)] px-4 py-3">
+          <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">Average pLDDT</p>
+          <p className="font-[family-name:var(--font-pio-mono)] text-pio-2xl font-bold leading-none mt-1" style={{ color: plddtColor(conf.average_plddt) }}>
             {conf.average_plddt.toFixed(1)}
-          </span>
-          <span className="text-pio-xs" style={{ color: plddtColor(conf.average_plddt) }}>
-            {plddtLabel(conf.average_plddt)} confidence
-          </span>
+          </p>
+          <p className="text-pio-xs mt-1" style={{ color: plddtColor(conf.average_plddt) }}>
+            {plddtLabel(conf.average_plddt)}
+          </p>
         </div>
-        <div className="flex-1" />
-        <Stat label="Residues" value={total.toLocaleString()} />
+        <div className="rounded-[12px] bg-[var(--pio-paper)] px-4 py-3">
+          <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">Residues</p>
+          <p className="font-[family-name:var(--font-pio-mono)] text-pio-2xl font-bold leading-none mt-1 text-[var(--pio-ink)]">{total.toLocaleString()}</p>
+        </div>
       </div>
 
       {/* Band breakdown */}
@@ -1252,8 +1318,8 @@ function ConfidenceTab({ entry }: { entry: StructureEntry }) {
           return (
             <div key={b.label}>
               <div className="flex justify-between mb-1">
-                <span className="text-pio-3xs text-[var(--pio-graphite)]">{b.label}</span>
-                <span className="text-pio-3xs font-semibold text-[var(--pio-ink)]">
+                <span className="text-pio-xs text-[var(--pio-graphite)]">{b.label}</span>
+                <span className="text-pio-xs font-semibold text-[var(--pio-ink)]">
                   {b.count.toLocaleString()} ({w}%)
                 </span>
               </div>
@@ -1281,24 +1347,29 @@ function PaeTab({ entry }: { entry: StructureEntry }) {
   if (!pae) {
     return (
       <p className="text-pio-xs text-[var(--pio-graphite)] opacity-60">
-        No PAE data. Upload a PAE .json sidecar alongside an AlphaFold structure to enable this tab.
+        No PAE data. Upload a confidence sidecar (.json or .npz) alongside a predicted structure to enable this tab.
       </p>
     );
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="pio-panel-nested grid grid-cols-2 gap-x-4 gap-y-3 p-4">
-        <Stat label="Residues" value={pae.residue_count.toLocaleString()} />
-        <Stat label="Mean PAE" value={`${pae.mean_predicted_aligned_error.toFixed(1)} Å`} />
-        <Stat label="Max PAE" value={`${pae.max_predicted_aligned_error.toFixed(1)} Å`} />
-        <Stat label={`High-error pairs (≥${pae.high_error_threshold}Å)`} value={pae.high_error_pair_count.toLocaleString()} />
+      <div className="grid grid-cols-2 gap-2">
+        {[
+          { label: "Residues",    value: pae.residue_count.toLocaleString() },
+          { label: "Mean PAE",    value: `${pae.mean_predicted_aligned_error.toFixed(1)} Å` },
+          { label: "Max PAE",     value: `${pae.max_predicted_aligned_error.toFixed(1)} Å` },
+          { label: `High-error pairs (≥${pae.high_error_threshold}Å)`, value: pae.high_error_pair_count.toLocaleString() },
+        ].map(({ label, value }) => (
+          <div key={label} className="rounded-[12px] bg-[var(--pio-paper)] px-4 py-3">
+            <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">{label}</p>
+            <p className="font-[family-name:var(--font-pio-mono)] text-pio-2xl font-bold leading-none mt-1 text-[var(--pio-ink)]">{value}</p>
+          </div>
+        ))}
       </div>
-      <div className="rounded-[10px] border border-[var(--pio-amber)] bg-[var(--pio-amber-pale)] p-3">
-        <p className="text-pio-xs text-[var(--pio-amber-deep)]">
-          PAE matrix heatmap visualization requires the full workbench view.
-        </p>
-      </div>
+      <p className="text-pio-xs text-[var(--pio-graphite)] opacity-60">
+        PAE matrix heatmap available in the full workbench view.
+      </p>
     </div>
   );
 }
@@ -2200,7 +2271,7 @@ export function ContextPanel() {
                   aria-selected={isActive}
                   onClick={() => setContextTab(tab.id)}
                   className={[
-                    "flex-1 min-w-max whitespace-nowrap text-center rounded-[12px] px-2 sm:px-3.5 py-2 text-pio-base font-semibold transition-colors",
+                    "flex-1 min-w-max whitespace-nowrap text-center rounded-[12px] px-2 sm:px-3.5 py-2 text-pio-base font-semibold transition-colors cursor-pointer",
                     isActive
                       ? "bg-[var(--pio-highlight)] text-[var(--pio-highlight-text)]"
                       : "text-[var(--pio-graphite)] hover:opacity-100 hover:bg-[var(--pio-paper)]",
