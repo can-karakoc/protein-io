@@ -662,6 +662,11 @@ if (now - lastMouseDownAt.current < 300) {
   );
 }
 
+// Chat calls the Anthropic API — enable only in local dev (or when explicitly opted in),
+// so the public deployment has no chat entry point and can't drain API credits.
+const CHAT_ENABLED =
+  process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_ENABLE_CHAT === "true";
+
 // ── Top navigation ────────────────────────────────────────────────────────────
 
 const APP_MODES: Array<{ id: AppMode; label: string }> = [
@@ -698,7 +703,7 @@ function WorkspaceTopNav() {
         </nav>
 
         <div className="ml-auto flex items-center gap-1 sm:gap-6">
-          {mode === "workspace" && <ChatDrawerToggle />}
+          {mode === "workspace" && CHAT_ENABLED && <ChatDrawerToggle />}
           <a
             href="https://github.com/can-karakoc/protein-io/tree/main/docs"
             target="_blank"
@@ -1058,7 +1063,8 @@ function WorkspaceLayout() {
 const CARD_CLS = "overflow-hidden rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]";
 
 export function WorkspaceShell() {
-  const { mode, chatOpen, setChatOpen, getActive } = useWorkspace();
+  const { mode, chatOpen: chatOpenRaw, setChatOpen, getActive } = useWorkspace();
+  const chatOpen = chatOpenRaw && CHAT_ENABLED; // never render chat in the deployed build
   const active = getActive();
 
   // Chat panel state

@@ -1,4 +1,5 @@
 import logging
+import os
 from time import perf_counter
 from typing import Any
 
@@ -255,5 +256,9 @@ class ChatResponse(BaseModel):
 
 @router.post("/api/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest) -> ChatResponse:
+    # Chat hits the Anthropic API. Disable it on the public deployment (CHAT_ENABLED=false
+    # in render.yaml) so it can't drain API credits; defaults to on for local dev.
+    if os.getenv("CHAT_ENABLED", "true").strip().lower() != "true":
+        raise HTTPException(status_code=403, detail="Chat is disabled on this deployment.")
     result = await run_chat(request.analysis, request.messages, request.comparison)
     return ChatResponse(**result)

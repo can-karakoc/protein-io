@@ -12,3 +12,6 @@ services:
         value: 3.12.8
       - key: FRONTEND_ORIGIN
         sync: false
+      # Disable the Anthropic-backed chat endpoint on the public deployment.
+      - key: CHAT_ENABLED
+        value: "false"
