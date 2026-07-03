@@ -283,6 +283,31 @@ export type UniProtAnnotations = {
   variants: UniProtFeature[];
 };
 
+export type SSType = "helix" | "sheet" | "coil";
+export type ResidueSecondaryStructure = { residue_number: string; ss: SSType };
+export type ChainSecondaryStructure = { chain_id: string; residues: ResidueSecondaryStructure[] };
+export type SecondaryStructureSummary = {
+  residue_count: number;
+  helix_count: number;
+  sheet_count: number;
+  coil_count: number;
+};
+export type SecondaryStructure = {
+  source: "geometric";
+  summary: SecondaryStructureSummary;
+  chains: ChainSecondaryStructure[];
+};
+
+export type PocketResidue = { chain_id: string; residue_number: string; residue_name: string };
+export type Pocket = {
+  rank: number;
+  volume_angstrom3: number;
+  druggability: number;
+  mean_enclosure: number;
+  center: number[];
+  lining_residues: PocketResidue[];
+};
+
 export type AnalysisResponse = {
   version: string;
   summary: StructureSummary;
@@ -301,6 +326,8 @@ export type AnalysisResponse = {
   water_bridges?: WaterBridgeRecord[];
   warnings: string[];
   interface_analysis?: InterfaceAnalysis | null;
+  secondary_structure?: SecondaryStructure | null;
+  pockets?: Pocket[];
   uniprot_annotations?: UniProtAnnotations | null;
 };
 

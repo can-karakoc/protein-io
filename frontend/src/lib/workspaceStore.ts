@@ -31,7 +31,9 @@ export type StructureEntry = {
 export type ContextTab =
   | "overview"
   | "chains"
+  | "sequence"
   | "ligands"
+  | "pockets"
   | "contacts"
   | "interfaces"
   | "confidence"

@@ -13,13 +13,13 @@ import {
   Shield,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ease, listItem, spring, stagger, tabContent } from "@/lib/motion";
 
 import { buildApiUrl } from "@/lib/api";
 import { downloadComparisonReportPdf } from "@/lib/comparisonReport";
-import type { AnalysisResponse, ChemblTargetSummary, ContactDifference, ContactRecord, FoldseekHit, FoldseekSearchResult, InterfaceConfidence, LigandInteractionSummary, LigandSummary, LigandValidity, PaeMatrix, RcsbAnalysisResponse, ResidueConfidence } from "@/lib/types";
+import type { AnalysisResponse, ChainSecondaryStructure, ChemblTargetSummary, ContactDifference, ContactRecord, FoldseekHit, FoldseekSearchResult, InterfaceConfidence, LigandInteractionSummary, LigandSummary, LigandValidity, PaeMatrix, Pocket, RcsbAnalysisResponse, ResidueConfidence, SSType } from "@/lib/types";
 import type { ContextTab, StructureEntry } from "@/lib/workspaceStore";
 import { useWorkspace } from "@/lib/workspaceStore";
 
@@ -2827,10 +2827,198 @@ type TabDef = {
   visible?: (a: AnalysisResponse | null) => boolean;
 };
 
+// ── Tab: Sequence (secondary structure + pLDDT + domains) ──────────────────────
+
+const SS_COLORS: Record<SSType, string> = {
+  helix: "#c0533a", // coral
+  sheet: "#3b6fa0", // steel blue
+  coil: "#9aa0a6",  // gray
+};
+
+// AlphaFold pLDDT colour bands (the standard, recognisable scale).
+function plddtHex(p: number): string {
+  if (p >= 90) return "#0053d6";
+  if (p >= 70) return "#65cbf3";
+  if (p >= 50) return "#ffdb13";
+  return "#ff7d45";
+}
+
+function ChainTrack({ chain, plddtByKey }: { chain: ChainSecondaryStructure; plddtByKey: Map<string, number> }) {
+  const ref = useRef<HTMLCanvasElement | null>(null);
+  const residues = chain.residues;
+  const n = residues.length;
+  const W = 600, SS_H = 12, GAP = 3, PL_H = 8;
+  const H = SS_H + GAP + PL_H;
+  const hasPlddt = residues.some((r) => plddtByKey.has(`${chain.chain_id}:${r.residue_number}`));
+
+  useEffect(() => {
+    const cv = ref.current;
+    if (!cv || n === 0) return;
+    const dpr = window.devicePixelRatio || 1;
+    cv.width = W * dpr;
+    cv.height = H * dpr;
+    const ctx = cv.getContext("2d");
+    if (!ctx) return;
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, W, H);
+    const cw = W / n;
+    residues.forEach((r, i) => {
+      const x = i * cw;
+      const w = Math.ceil(cw) + 0.5;
+      ctx.fillStyle = SS_COLORS[r.ss];
+      if (r.ss === "coil") ctx.fillRect(x, SS_H / 2 - 1, w, 2);
+      else ctx.fillRect(x, 0, w, SS_H);
+      const p = plddtByKey.get(`${chain.chain_id}:${r.residue_number}`);
+      if (p != null) {
+        ctx.fillStyle = plddtHex(p);
+        ctx.fillRect(x, SS_H + GAP, w, PL_H);
+      }
+    });
+  }, [chain, plddtByKey, n, H]);
+
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between">
+        <span className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">Chain {chain.chain_id}</span>
+        <span className="text-pio-2xs text-[var(--pio-graphite)] opacity-60">{n} residues{hasPlddt ? " · SS + pLDDT" : " · SS"}</span>
+      </div>
+      <canvas ref={ref} className="w-full" style={{ aspectRatio: `${W} / ${H}` }} />
+    </div>
+  );
+}
+
+function SequenceTab({ entry }: { entry: StructureEntry }) {
+  const { analysis } = entry;
+  const plddtByKey = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const rc of analysis?.residue_confidences ?? []) m.set(`${rc.chain_id}:${rc.residue_number}`, rc.plddt);
+    return m;
+  }, [analysis?.residue_confidences]);
+
+  if (!analysis?.secondary_structure) return null;
+  const ss = analysis.secondary_structure;
+  const total = ss.summary.residue_count || 1;
+  const bands = [
+    { label: "Helix", count: ss.summary.helix_count, color: SS_COLORS.helix },
+    { label: "Sheet", count: ss.summary.sheet_count, color: SS_COLORS.sheet },
+    { label: "Coil", count: ss.summary.coil_count, color: SS_COLORS.coil },
+  ];
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div>
+        <h2 className="pio-section-title">Sequence &amp; secondary structure</h2>
+        <p className="pio-section-copy mt-1">
+          Geometric (Cα) secondary-structure estimate per chain, with the pLDDT confidence
+          track beneath it. Helix / sheet / coil are assigned from backbone geometry (P-SEA).
+        </p>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        {bands.map((b) => (
+          <div key={b.label} className="rounded-[12px] bg-[var(--pio-paper)] px-3 py-2.5">
+            <div className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-[3px]" style={{ background: b.color }} />
+              <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">{b.label}</p>
+            </div>
+            <p className="mt-1 font-[family-name:var(--font-pio-mono)] text-pio-lg font-bold text-[var(--pio-ink)]">{Math.round((b.count / total) * 100)}%</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex flex-col gap-4">
+        {ss.chains.map((c) => <ChainTrack key={c.chain_id} chain={c} plddtByKey={plddtByKey} />)}
+      </div>
+
+      {analysis.uniprot_annotations?.domains?.length ? (
+        <div>
+          <p className="mb-2 text-pio-xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-60">Domains (UniProt)</p>
+          <div className="flex flex-col gap-1">
+            {analysis.uniprot_annotations.domains.slice(0, 12).map((d, i) => (
+              <div key={i} className="flex items-center justify-between gap-2 rounded-[8px] bg-[var(--pio-paper)] px-3 py-1.5">
+                <span className="text-pio-xs text-[var(--pio-ink)] truncate">{d.description ?? "Domain"}</span>
+                {d.start != null && d.end != null && (
+                  <span className="shrink-0 font-[family-name:var(--font-pio-mono)] text-pio-2xs text-[var(--pio-graphite)]">{d.start}–{d.end}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+// ── Tab: Pockets ───────────────────────────────────────────────────────────────
+
+function PocketCard({ p }: { p: Pocket }) {
+  const drugPct = Math.round(p.druggability * 100);
+  const lining = p.lining_residues.slice(0, 10);
+  return (
+    <motion.div variants={listItem} className="rounded-[14px] bg-[var(--pio-paper)] p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <span className="pio-badge pio-badge-metadata text-pio-xs">Pocket #{p.rank}</span>
+        <span className="font-[family-name:var(--font-pio-mono)] text-pio-md font-bold text-[var(--pio-ink)]">{p.volume_angstrom3.toLocaleString()} Å³</span>
+      </div>
+      <div className="mb-3 grid grid-cols-2 gap-x-4 gap-y-2">
+        <div>
+          <p className="mb-1 text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">Druggability</p>
+          <div className="flex items-center gap-2">
+            <div className="h-2 flex-1 overflow-hidden rounded-full bg-[var(--pio-line)]">
+              <div className="h-full rounded-full bg-[var(--pio-highlight)]" style={{ width: `${drugPct}%` }} />
+            </div>
+            <span className="font-[family-name:var(--font-pio-mono)] text-pio-xs text-[var(--pio-ink)]">{p.druggability.toFixed(2)}</span>
+          </div>
+        </div>
+        <div>
+          <p className="mb-1 text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">Enclosure</p>
+          <p className="font-[family-name:var(--font-pio-mono)] text-pio-sm font-bold text-[var(--pio-ink)]">{p.mean_enclosure.toFixed(1)} / 7</p>
+        </div>
+      </div>
+      <p className="mb-1.5 text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">Lining residues</p>
+      <div className="flex flex-wrap gap-1">
+        {lining.map((r) => (
+          <span key={`${r.chain_id}-${r.residue_number}`} className="pio-badge pio-badge-neutral" style={{ fontFamily: "var(--font-pio-mono)", fontSize: "var(--text-pio-xs)" }}>
+            {r.chain_id}:{r.residue_name}{r.residue_number}
+          </span>
+        ))}
+        {p.lining_residues.length > lining.length && (
+          <span className="pio-badge pio-badge-neutral" style={{ fontSize: "var(--text-pio-xs)" }}>+{p.lining_residues.length - lining.length}</span>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+function PocketsTab({ entry }: { entry: StructureEntry }) {
+  const { analysis } = entry;
+  const pockets = analysis?.pockets ?? [];
+  if (!pockets.length) {
+    return <p className="text-pio-sm text-[var(--pio-graphite)] opacity-60">No binding pockets detected.</p>;
+  }
+  return (
+    <div className="flex flex-col gap-5">
+      <div>
+        <h2 className="pio-section-title">Binding pockets</h2>
+        <p className="pio-section-copy mt-1">
+          Geometric cavity estimate (LIGSITE-style grid) — volume, a druggability proxy, and
+          the residues lining each pocket, ranked by size. A geometric estimate, not a
+          validated site prediction.
+        </p>
+      </div>
+      <motion.div className="flex flex-col gap-3" initial="hidden" animate="show" variants={stagger}>
+        {pockets.map((p) => <PocketCard key={p.rank} p={p} />)}
+      </motion.div>
+    </div>
+  );
+}
+
 const TABS: TabDef[] = [
   { id: "overview", label: "Overview" },
   { id: "chains", label: "Chains", count: (a) => a.chains.length },
+  { id: "sequence", label: "Sequence", visible: (a) => !!(a?.secondary_structure?.summary.residue_count) },
   { id: "ligands", label: "Ligands", count: (a) => a.ligands.length },
+  { id: "pockets", label: "Pockets", count: (a) => a.pockets?.length ?? 0, visible: (a) => !!(a?.pockets?.length) },
   { id: "contacts", label: "Contacts", count: (a) => a.summary.contact_count },
   { id: "interfaces", label: "Interfaces", count: (a) => a.interface_analysis?.chain_pairs.length ?? 0, visible: (a) => !!(a?.interface_analysis?.chain_pairs?.length) },
   { id: "confidence", label: "pLDDT", visible: (a) => !!(a?.confidence) },
@@ -3016,7 +3204,7 @@ function EmptyGallery() {
 // ── Main ContextPanel ─────────────────────────────────────────────────────────
 
 const TAB_ORDER: ContextTab[] = [
-  "overview", "chains", "ligands", "contacts", "interfaces",
+  "overview", "chains", "sequence", "ligands", "pockets", "contacts", "interfaces",
   "confidence", "pae", "compare", "similar", "quality", "report", "methods",
 ];
 
@@ -3074,7 +3262,9 @@ export function ContextPanel() {
     switch (contextTab) {
       case "overview":    return <OverviewTab entry={active} />;
       case "chains":      return <ChainsTab entry={active} />;
+      case "sequence":    return <SequenceTab entry={active} />;
       case "ligands":     return <LigandsTab entry={active} />;
+      case "pockets":     return <PocketsTab entry={active} />;
       case "contacts":    return <ContactsTab entry={active} />;
       case "interfaces":  return <InterfacesTab entry={active} />;
       case "confidence":  return <ConfidenceTab entry={active} />;
