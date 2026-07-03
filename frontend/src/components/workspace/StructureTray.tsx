@@ -580,7 +580,7 @@ export function StructureTray({ onCollapse }: { onCollapse?: () => void } = {}) 
   const [loaderOpen, setLoaderOpen] = useState(structures.length === 0);
 
   return (
-    <aside className="flex h-full flex-col bg-[var(--pio-white)]">
+    <aside className="flex flex-1 min-h-0 flex-col bg-[var(--pio-white)]">
       {/* Header — only visible when structures are loaded */}
       {structures.length > 0 && (
         <div className="flex items-center gap-2 border-b border-[var(--pio-line)] px-4 py-3 flex-shrink-0">

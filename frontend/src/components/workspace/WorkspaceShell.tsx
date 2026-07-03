@@ -919,7 +919,7 @@ function WorkspaceLayout() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.12, ease: ease.out }}
-              className="flex-1 min-h-0"
+              className="flex-1 min-h-0 flex flex-col"
               style={{ width: 280 }}
             >
               <StructureTray onCollapse={chatOpen ? () => setTrayExpanded(false) : undefined} />
@@ -931,7 +931,7 @@ function WorkspaceLayout() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.12, ease: ease.out }}
-              className="flex-1 min-h-0"
+              className="flex-1 min-h-0 flex flex-col"
               style={{ width: 60 }}
             >
               <TrayMini onExpand={() => setTrayExpanded(true)} />
