@@ -265,12 +265,7 @@ function OverviewTab({ entry }: { entry: StructureEntry }) {
 
       {/* UniProt function */}
       {analysis.uniprot_annotations?.function && (
-        <div className="rounded-[10px] bg-[var(--pio-paper)] px-[14px] py-3">
-          <p className="text-pio-2xs font-bold uppercase tracking-[0.08em] text-[var(--pio-graphite)]">Function</p>
-          <p className="mt-1 text-pio-xs leading-[1.6] text-[var(--pio-ink)]">
-            {analysis.uniprot_annotations.function}
-          </p>
-        </div>
+        <FunctionPanel text={analysis.uniprot_annotations.function} />
       )}
 
       {/* Known binders from ChEMBL (targets with a UniProt accession) */}
@@ -322,6 +317,42 @@ function OverviewTab({ entry }: { entry: StructureEntry }) {
   );
 }
 
+// ── UniProt function (expandable) ─────────────────────────────────────────────
+
+function FunctionPanel({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  // Only offer a toggle when the text is long enough to be worth collapsing.
+  const isLong = text.length > 320;
+  return (
+    <div className="rounded-[10px] bg-[var(--pio-paper)] px-[14px] py-3">
+      <p className="text-pio-2xs font-bold uppercase tracking-[0.08em] text-[var(--pio-graphite)]">Function</p>
+      <p
+        className={[
+          "mt-1 text-pio-xs leading-[1.6] text-[var(--pio-ink)]",
+          isLong && !expanded ? "line-clamp-4" : "",
+        ].join(" ")}
+      >
+        {text}
+      </p>
+      {isLong && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-1.5 inline-flex items-center gap-1 text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-highlight)] hover:underline"
+        >
+          {expanded ? "Show less" : "Show more"}
+          <svg
+            width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"
+            style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform 150ms" }}
+          >
+            <path d="M2.5 4L5 6.5L7.5 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ── ChEMBL known-binder context ───────────────────────────────────────────────
 
 function ChemblPanel({ uniprotId }: { uniprotId: string }) {
@@ -341,9 +372,12 @@ function ChemblPanel({ uniprotId }: { uniprotId: string }) {
 
   if (loading) {
     return (
-      <div className="rounded-[10px] bg-[var(--pio-paper)] px-[14px] py-3">
-        <p className="text-pio-2xs font-bold uppercase tracking-[0.08em] text-[var(--pio-graphite)]">Known binders · ChEMBL</p>
-        <p className="mt-1 text-pio-xs text-[var(--pio-graphite)] opacity-70">Looking up target bioactivity…</p>
+      <div className="rounded-[14px] bg-[var(--pio-paper)] p-4">
+        <div className="flex items-center gap-2">
+          <span className="pio-badge pio-badge-metadata text-pio-xs">ChEMBL</span>
+          <span className="text-pio-sm font-semibold text-[var(--pio-ink)]">Known binders</span>
+        </div>
+        <p className="mt-2 text-pio-xs text-[var(--pio-graphite)] opacity-70">Looking up target bioactivity…</p>
       </div>
     );
   }
@@ -355,35 +389,49 @@ function ChemblPanel({ uniprotId }: { uniprotId: string }) {
       .join(" ");
 
   return (
-    <div className="rounded-[10px] bg-[var(--pio-paper)] px-[14px] py-3">
+    <div className="rounded-[14px] bg-[var(--pio-paper)] p-4">
+      {/* Header: badge + target link */}
       <div className="flex items-center justify-between gap-2">
-        <p className="text-pio-2xs font-bold uppercase tracking-[0.08em] text-[var(--pio-graphite)]">Known binders · ChEMBL</p>
+        <div className="flex items-center gap-2">
+          <span className="pio-badge pio-badge-metadata text-pio-xs">ChEMBL</span>
+          <span className="text-pio-sm font-semibold text-[var(--pio-ink)]">Known binders</span>
+        </div>
         <a
           href={`https://www.ebi.ac.uk/chembl/target_report_card/${data.target_chembl_id}/`}
           target="_blank" rel="noreferrer"
-          className="font-[family-name:var(--font-pio-mono)] text-pio-2xs text-[var(--pio-highlight)] hover:underline shrink-0"
+          className="flex items-center gap-1 font-[family-name:var(--font-pio-mono)] text-pio-2xs text-[var(--pio-highlight)] hover:underline shrink-0"
         >
-          {data.target_chembl_id} ↗
+          {data.target_chembl_id}
+          <svg width="10" height="10" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M2.5 11.5L11.5 2.5M11.5 2.5H6M11.5 2.5V8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </a>
       </div>
-      {data.pref_name && <p className="mt-1 text-pio-sm font-semibold text-[var(--pio-ink)]">{data.pref_name}</p>}
-      <p className="mt-0.5 text-pio-xs text-[var(--pio-graphite)]">
-        <span className="font-[family-name:var(--font-pio-mono)] font-bold text-[var(--pio-ink)]">{data.bioactivity_count.toLocaleString()}</span> potent bioactivity measurements
+
+      {/* Target name + bioactivity stat */}
+      {data.pref_name && <p className="mt-2 text-pio-sm font-semibold text-[var(--pio-ink)]">{data.pref_name}</p>}
+      <p className="mt-1 flex items-baseline gap-1.5">
+        <span className="font-[family-name:var(--font-pio-mono)] text-pio-2xl font-bold leading-none text-[var(--pio-ink)]">{data.bioactivity_count.toLocaleString()}</span>
+        <span className="text-pio-2xs text-[var(--pio-graphite)]">potent bioactivity measurements</span>
       </p>
+
       {data.top_compounds.length > 0 && (
-        <div className="mt-2">
-          <p className="mb-1 text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">Most potent compounds</p>
-          <div className="flex flex-col gap-0.5">
+        <div className="mt-3">
+          <p className="mb-1.5 text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">Most potent compounds</p>
+          <div className="flex flex-col gap-1">
             {data.top_compounds.slice(0, 6).map((c) => (
               <a
                 key={c.molecule_chembl_id}
                 href={`https://www.ebi.ac.uk/chembl/compound_report_card/${c.molecule_chembl_id}/`}
                 target="_blank" rel="noreferrer"
-                className="flex items-center justify-between gap-2 rounded-[6px] px-2 py-1 hover:bg-[var(--pio-sky)] transition-colors"
+                className="flex items-center justify-between gap-2 rounded-[8px] px-2.5 py-1.5 hover:bg-[var(--pio-sky)] transition-colors"
               >
-                <span className="font-[family-name:var(--font-pio-mono)] text-pio-xs text-[var(--pio-highlight)] shrink-0">{c.molecule_chembl_id}</span>
-                <span className="text-pio-2xs text-[var(--pio-graphite)] truncate text-right">
-                  {fmtValue(c)}{c.pchembl_value != null ? ` · pChEMBL ${c.pchembl_value.toFixed(1)}` : ""}
+                <span className="font-[family-name:var(--font-pio-mono)] text-pio-xs font-medium text-[var(--pio-highlight)] shrink-0">{c.molecule_chembl_id}</span>
+                <span className="flex items-center gap-1.5 shrink-0">
+                  {fmtValue(c) && <span className="text-pio-2xs text-[var(--pio-graphite)] truncate">{fmtValue(c)}</span>}
+                  {c.pchembl_value != null && (
+                    <span className="pio-badge pio-badge-neutral text-pio-2xs shrink-0">pChEMBL {c.pchembl_value.toFixed(1)}</span>
+                  )}
                 </span>
               </a>
             ))}
