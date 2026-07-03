@@ -119,18 +119,24 @@ All in-house, no external binaries.
 - `[x]` **Unified sequence track**: Sequence tab — per-chain canvas track of SS +
   pLDDT band + UniProt domains + composition summary.
 
-### Phase 13 — Design-campaign triage  🚧 PARTIAL (`feat/function-and-campaign`)
+### Phase 13 — Design-campaign triage  ✅ DONE (`feat/phase13-campaign-triage`)
 
 Where the real biotech pain lives: the RFdiffusion → MPNN → co-fold → *filter* loop.
 
 - `[x]` Composite ranking upgraded with **interface buried surface area** (dSASA), the key
   binder-campaign signal: batch computes BSA per multimer design (reuses Phase 11 SASA);
   BatchWorkspace score weights in interface size; new sortable BSA column + CSV.
-- `[ ]` ipTM/iPAE/PB-valid in the composite — DEFERRED: the batch endpoint doesn't ingest
-  per-design confidence sidecars or run validity (latency); needs a batch-with-sidecars flow.
-- `[ ]` Batch structural clustering — DEFERRED (**FoldMason** is another binary; an
-  in-house all-vs-all TM-align cluster is O(N²) but feasible for small campaigns).
-- `[ ]` Shareable campaign report.
+- `[x]` **ipTM / iPAE / PB-valid in the composite** — the batch endpoint now accepts optional
+  per-design confidence sidecars (paired by filename stem → ipTM + interface-PAE) and an
+  opt-in `include_validity` flag (→ PoseBusters PB-valid + buried area). The composite score
+  is now component-based: only signals present in the campaign contribute, weights normalise
+  to 100, missing-per-design gets half credit. New conditional columns (ipTM, iPAE, PB-valid).
+- `[x]` **Batch structural clustering** — in-house `clustering.py`: all-vs-all TM-align
+  (`tmtools`, no binary) → similarity matrix → leader clustering at TM ≥ 0.5, representative
+  per cluster. Opt-in `/api/batch/cluster` action; cluster column/badges + breakdown card.
+- `[x]` **Shareable campaign report** — self-contained HTML (`campaignReport.ts`), embedded
+  styles + data, opens offline in any browser (local-first): ranked table + score formula +
+  clusters. Verified e2e (backend 209 tests; browser: 2HHB+3HHB cluster together).
 
 ### Phase 14 — Antibody mode
 

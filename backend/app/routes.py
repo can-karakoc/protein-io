@@ -11,7 +11,7 @@ from app.chat import run_chat
 from app.integrations.alphafold import AlphaFoldFetchError
 from app.integrations.boltz import BoltzParseError, parse_boltz_confidence
 from app.integrations.chai import ChaiParseError, parse_chai_scores
-from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, BatchAnalysisResponse, ChemblTargetSummary, FoldseekSearchResult, RcsbAnalysisResponse, StructureComparisonResponse, StructureMetadata
+from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, BatchAnalysisResponse, BatchClusterResponse, ChemblTargetSummary, FoldseekSearchResult, RcsbAnalysisResponse, StructureComparisonResponse, StructureMetadata
 from app.pae import PaeParseError, analyze_pae_json
 from app.integrations.rcsb import RcsbFetchError
 from app.parser import StructureParseError
@@ -28,6 +28,42 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+def _parse_sidecar_bytes(
+    filename: str,
+    content: bytes,
+    strict: bool = True,
+) -> tuple[object, object, list[str], str | None]:
+    """Parse one confidence sidecar's bytes → (pae, global_scores, warnings, source_hint).
+
+    Dispatch by extension: ``.npz`` → Chai scores; ``.json`` → Boltz confidence first,
+    then AlphaFold PAE. ``strict`` raises HTTP 400 on parse errors (single-analyze);
+    non-strict returns empty on failure (batch — one bad sidecar shouldn't fail the run).
+    """
+    fname = (filename or "").lower()
+    if fname.endswith(".npz"):
+        try:
+            pae, scores, warnings = parse_chai_scores(content)
+            return pae, scores, warnings, "chai"
+        except ChaiParseError as exc:
+            if strict:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+            return None, None, [], None
+
+    # JSON: try Boltz confidence, then AlphaFold-style PAE.
+    try:
+        pae, scores, warnings = parse_boltz_confidence(content)
+        return pae, scores, warnings, "boltz"
+    except BoltzParseError as boltz_exc:
+        try:
+            pae, pae_warnings = analyze_pae_json(content)
+            return pae, None, pae_warnings, None
+        except PaeParseError as pae_exc:
+            if strict:
+                raise HTTPException(status_code=400, detail=str(pae_exc)) from pae_exc
+            logger.info("Batch sidecar %s ignored (boltz: %s; pae: %s)", filename, boltz_exc, pae_exc)
+            return None, None, [], None
+
+
 async def _parse_confidence_sidecar(
     pae_file: UploadFile | None,
     confidence_file: UploadFile | None,
@@ -40,19 +76,7 @@ async def _parse_confidence_sidecar(
     """
     if confidence_file is not None:
         content = await confidence_file.read()
-        fname = (confidence_file.filename or "").lower()
-        if fname.endswith(".npz"):
-            try:
-                pae, scores, warnings = parse_chai_scores(content)
-                return pae, scores, warnings, "chai"
-            except ChaiParseError as exc:
-                raise HTTPException(status_code=400, detail=str(exc)) from exc
-        else:
-            try:
-                pae, scores, warnings = parse_boltz_confidence(content)
-                return pae, scores, warnings, "boltz"
-            except BoltzParseError as exc:
-                raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return _parse_sidecar_bytes(confidence_file.filename or "", content, strict=True)
 
     if pae_file is not None:
         pae_content = await pae_file.read()
@@ -63,6 +87,26 @@ async def _parse_confidence_sidecar(
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return None, None, [], None
+
+
+# Tokens stripped from a sidecar's filename stem when pairing it to a structure by name.
+_SIDECAR_TOKENS = ("_pae", "_confidence", "_scores", "_plddt", "_predicted_aligned_error", "_error")
+
+
+def _sidecar_stem(filename: str) -> str:
+    """Normalized stem used to pair a sidecar with a structure (drop dir, ext, suffixes)."""
+    base = (filename or "").rsplit("/", 1)[-1].rsplit("\\", 1)[-1].lower()
+    for ext in (".json", ".npz"):
+        if base.endswith(ext):
+            base = base[: -len(ext)]
+            break
+    for tok in _SIDECAR_TOKENS:
+        if base.endswith(tok):
+            base = base[: -len(tok)]
+    for pre in ("confidence_", "scores_", "pae_"):
+        if base.startswith(pre):
+            base = base[len(pre):]
+    return base
 
 
 @router.post("/analyze", response_model=AnalysisResponse)
@@ -148,15 +192,60 @@ async def compare_structures(
 @router.post("/api/batch/analyze", response_model=BatchAnalysisResponse)
 async def batch_analyze_structures(
     files: list[UploadFile] = File(...),
+    sidecar_files: list[UploadFile] = File(default_factory=list),
     cutoff_angstrom: float = Form(4.0),
+    include_validity: bool = Form(False),
 ) -> BatchAnalysisResponse:
     if len(files) > 50:
         raise HTTPException(status_code=400, detail="Maximum 50 structures per batch request.")
     if cutoff_angstrom <= 0:
         raise HTTPException(status_code=400, detail="cutoff_angstrom must be greater than zero.")
     from app.batch import batch_analyze
+
     file_contents = [(f.filename or f"file_{i}", await f.read()) for i, f in enumerate(files)]
-    return await batch_analyze(file_contents, cutoff_angstrom=cutoff_angstrom)
+
+    # Pair optional confidence sidecars to structures by normalized filename stem, so
+    # ipTM + interface-PAE become available per design. Bad sidecars are ignored (non-strict).
+    sidecars: dict[str, tuple] = {}
+    for sc in sidecar_files or []:
+        content = await sc.read()
+        pae, scores, warnings, _hint = _parse_sidecar_bytes(sc.filename or "", content, strict=False)
+        if pae is None and scores is None:
+            continue
+        sidecars[_sidecar_stem(sc.filename or "")] = (pae, scores, warnings)
+
+    return await batch_analyze(
+        file_contents,
+        cutoff_angstrom=cutoff_angstrom,
+        sidecars=sidecars or None,
+        include_validity=include_validity,
+    )
+
+
+@router.post("/api/batch/cluster", response_model=BatchClusterResponse)
+async def batch_cluster_structures(
+    files: list[UploadFile] = File(...),
+    tm_threshold: float = Form(0.5),
+) -> BatchClusterResponse:
+    """Cluster a design campaign by fold (in-house all-vs-all TM-align). O(N²), opt-in."""
+    if len(files) > 50:
+        raise HTTPException(status_code=400, detail="Maximum 50 structures per cluster request.")
+    if not 0.0 < tm_threshold <= 1.0:
+        raise HTTPException(status_code=400, detail="tm_threshold must be in (0, 1].")
+    from app.clustering import ClusterError, cluster_by_fold
+    from app.models import FoldCluster
+
+    file_contents = [(f.filename or f"file_{i}", await f.read()) for i, f in enumerate(files)]
+    try:
+        raw = cluster_by_fold(file_contents, tm_threshold=tm_threshold)
+    except ClusterError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return BatchClusterResponse(
+        clusters=[FoldCluster(**c) for c in raw["clusters"]],
+        assignments=raw["assignments"],
+        tm_threshold=raw["tm_threshold"],
+        skipped=raw["skipped"],
+    )
 
 
 @router.get("/api/rcsb/{pdb_id}/analyze", response_model=RcsbAnalysisResponse)

@@ -5,7 +5,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 import { createDebouncedIdbStorage } from "./idbStorage";
-import type { AnalysisResponse, BatchAnalysisResponse, FoldseekSearchResult, StructureComparisonResponse, ViewerSelection } from "./types";
+import type { AnalysisResponse, BatchAnalysisResponse, BatchClusterResponse, FoldseekSearchResult, StructureComparisonResponse, ViewerSelection } from "./types";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -61,6 +61,7 @@ export type WorkspaceState = {
   compareIsLoading: boolean;
   compareError: string | null;
   batchResult: BatchAnalysisResponse | null;
+  batchCluster: BatchClusterResponse | null;
 
   // Actions
   addStructure: (entry: Omit<StructureEntry, "id" | "savedAt">) => string;
@@ -76,6 +77,7 @@ export type WorkspaceState = {
   setComparison: (c: StructureComparisonResponse | null, err?: string | null) => void;
   setCompareLoading: (v: boolean) => void;
   setBatchResult: (r: BatchAnalysisResponse | null) => void;
+  setBatchCluster: (c: BatchClusterResponse | null) => void;
   setHasHydrated: (v: boolean) => void;
   getActive: () => StructureEntry | null;
 };
@@ -98,6 +100,7 @@ export const useWorkspace = create<WorkspaceState>()(
       compareIsLoading: false,
       compareError: null,
       batchResult: null,
+      batchCluster: null,
 
       addStructure: (entry) => {
         const id = nanoid(10);
@@ -159,7 +162,9 @@ export const useWorkspace = create<WorkspaceState>()(
 
       setCompareLoading: (v) => set({ compareIsLoading: v, compareError: null }),
 
-      setBatchResult: (r) => set({ batchResult: r }),
+      // A new (or cleared) batch invalidates any cached fold clustering.
+      setBatchResult: (r) => set({ batchResult: r, batchCluster: null }),
+      setBatchCluster: (c) => set({ batchCluster: c }),
 
       setHasHydrated: (v) => set({ hasHydrated: v }),
 
@@ -194,6 +199,7 @@ export const useWorkspace = create<WorkspaceState>()(
         // Batch campaign results persist to IndexedDB (large; survives mode switches
         // and page refresh, unlike the old quota-limited localStorage cache).
         batchResult: s.batchResult,
+        batchCluster: s.batchCluster,
       }),
     },
   ),

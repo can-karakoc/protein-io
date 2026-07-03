@@ -441,6 +441,21 @@ export type BatchAnalysisResponse = {
   failed: number;
 };
 
+export type FoldCluster = {
+  cluster_id: number;
+  representative: string;
+  members: string[];
+  size: number;
+  mean_tm: number;
+};
+
+export type BatchClusterResponse = {
+  clusters: FoldCluster[];
+  assignments: Record<string, number>; // filename -> cluster_id
+  tm_threshold: number;
+  skipped: string[];
+};
+
 export type ChemblActivity = {
   molecule_chembl_id: string | null;
   pchembl_value: number | null;

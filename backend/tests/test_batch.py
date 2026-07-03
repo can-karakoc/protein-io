@@ -1,4 +1,5 @@
 import asyncio
+import json
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -7,6 +8,7 @@ from app.main import app
 
 SAMPLE_PDB = Path(__file__).parents[2] / "examples" / "sample.pdb"
 SAMPLE_CIF = Path(__file__).parents[2] / "examples" / "sample.cif"
+BATCH_SAMPLE = Path(__file__).parents[2] / "examples" / "batch_sample"
 
 
 # ── unit tests for batch_analyze ──────────────────────────────────────────────
@@ -118,3 +120,71 @@ def test_batch_endpoint_handles_bad_file_gracefully():
     assert body["succeeded"] == 1
     assert body["failed"] == 1
     assert body["entries"][1]["error"] is not None
+
+
+# ── Phase 13: sidecars, validity, clustering ──────────────────────────────────
+
+def test_batch_pairs_confidence_sidecar_by_stem():
+    """A confidence sidecar named like the structure populates ipTM per design."""
+    from app.batch import batch_analyze
+    from app.models import GlobalModelScores
+
+    sidecar = (None, GlobalModelScores(ptm=0.85, iptm=0.72), [])
+    result = asyncio.run(batch_analyze(
+        [("design_1.pdb", SAMPLE_PDB.read_bytes())],
+        sidecars={"design_1": sidecar},
+    ))
+    assert result.succeeded == 1
+    gs = result.entries[0].analysis.global_scores
+    assert gs is not None
+    assert gs.iptm == 0.72
+    assert gs.ptm == 0.85
+
+
+def test_batch_without_sidecar_has_no_global_scores():
+    from app.batch import batch_analyze
+
+    result = asyncio.run(batch_analyze([("design_1.pdb", SAMPLE_PDB.read_bytes())]))
+    assert result.entries[0].analysis.global_scores is None
+
+
+def test_batch_include_validity_runs_pockets():
+    """include_validity=True turns on the heavier pass (pockets populated for a real fold)."""
+    from app.batch import batch_analyze
+
+    hsg = (BATCH_SAMPLE / "1HSG.cif").read_bytes()
+    off = asyncio.run(batch_analyze([("1HSG.cif", hsg)], include_validity=False))
+    on = asyncio.run(batch_analyze([("1HSG.cif", hsg)], include_validity=True))
+    assert off.entries[0].analysis.pockets == []
+    assert len(on.entries[0].analysis.pockets) >= 1
+
+
+def test_batch_endpoint_accepts_sidecar_and_validity_flags():
+    client = TestClient(app)
+    boltz_json = json.dumps({"ptm": 0.9, "iptm": 0.6}).encode()
+    response = client.post(
+        "/api/batch/analyze",
+        files=[
+            ("files", ("d1.pdb", SAMPLE_PDB.read_bytes(), "chemical/x-pdb")),
+            ("sidecar_files", ("d1_confidence.json", boltz_json, "application/json")),
+        ],
+        data={"include_validity": "true"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["succeeded"] == 1
+    assert body["entries"][0]["analysis"]["global_scores"]["iptm"] == 0.6
+
+
+def test_batch_endpoint_ignores_unparseable_sidecar():
+    client = TestClient(app)
+    response = client.post(
+        "/api/batch/analyze",
+        files=[
+            ("files", ("d1.pdb", SAMPLE_PDB.read_bytes(), "chemical/x-pdb")),
+            ("sidecar_files", ("d1.json", b"not json at all", "application/json")),
+        ],
+    )
+    # Bad sidecar must not fail the run.
+    assert response.status_code == 200
+    assert response.json()["succeeded"] == 1

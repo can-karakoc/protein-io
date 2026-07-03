@@ -503,6 +503,22 @@ class BatchAnalysisResponse(BaseModel):
     failed: int
 
 
+class FoldCluster(BaseModel):
+    """One structural cluster of designs (grouped by TM-align similarity)."""
+    cluster_id: int
+    representative: str          # filename of the cluster seed (largest design)
+    members: list[str]           # filenames in this cluster
+    size: int
+    mean_tm: float               # mean intra-cluster TM-score (1.0 for singletons)
+
+
+class BatchClusterResponse(BaseModel):
+    clusters: list[FoldCluster]
+    assignments: dict[str, int]  # filename -> cluster_id
+    tm_threshold: float
+    skipped: list[str]           # filenames that couldn't be parsed/clustered
+
+
 class ChemblActivity(BaseModel):
     molecule_chembl_id: str | None = None
     pchembl_value: float | None = None
