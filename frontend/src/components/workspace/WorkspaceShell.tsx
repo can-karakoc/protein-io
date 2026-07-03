@@ -952,22 +952,36 @@ function WorkspaceLayout() {
 
         {/* pLDDT / Structure color toggle — top-right, only when confidences exist */}
         {residueConfidences.length > 0 && (
-          <div className="absolute right-3 top-3 z-10 inline-flex rounded-full border border-[rgba(20,20,15,0.14)] bg-[var(--pio-white)] p-[3px]">
-            {(["structure", "plddt"] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setViewerColorMode(m)}
-                className={[
-                  "rounded-full px-3 py-1 text-pio-xs font-semibold transition-colors",
-                  viewerColorMode === m
-                    ? "bg-[var(--pio-ink)] text-[var(--pio-white)]"
-                    : "bg-transparent text-[var(--pio-graphite)] hover:text-[var(--pio-ink)]",
-                ].join(" ")}
+          <div className="absolute right-3 top-3 z-10 flex flex-col items-end gap-2">
+            <div className="inline-flex rounded-full border border-[rgba(20,20,15,0.14)] bg-[var(--pio-white)] p-[3px]">
+              {(["structure", "plddt"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setViewerColorMode(m)}
+                  className={[
+                    "rounded-full px-3 py-1 text-pio-xs font-semibold transition-colors",
+                    viewerColorMode === m
+                      ? "bg-[var(--pio-ink)] text-[var(--pio-white)]"
+                      : "bg-transparent text-[var(--pio-graphite)] hover:text-[var(--pio-ink)]",
+                  ].join(" ")}
+                >
+                  {m === "plddt" ? "pLDDT" : "Structure"}
+                </button>
+              ))}
+            </div>
+            {effectiveColorMode === "plddt" && (
+              <div
+                className="max-w-[240px] rounded-[14px] border border-[var(--pio-line)] px-3 py-2 text-pio-xs leading-5 text-[var(--pio-graphite)]"
+                style={{
+                  background: "color-mix(in srgb, var(--pio-white) 80%, transparent)",
+                  backdropFilter: "blur(12px)",
+                  WebkitBackdropFilter: "blur(12px)",
+                }}
               >
-                {m === "plddt" ? "pLDDT" : "Structure"}
-              </button>
-            ))}
+                Mol* pLDDT coloring is active using residue B-factor confidence values.
+              </div>
+            )}
           </div>
         )}
 
