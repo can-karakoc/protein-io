@@ -1,4 +1,5 @@
 import logging
+import os
 from time import perf_counter
 from typing import Any
 
@@ -10,7 +11,7 @@ from app.chat import run_chat
 from app.integrations.alphafold import AlphaFoldFetchError
 from app.integrations.boltz import BoltzParseError, parse_boltz_confidence
 from app.integrations.chai import ChaiParseError, parse_chai_scores
-from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, BatchAnalysisResponse, FoldseekSearchResult, RcsbAnalysisResponse, StructureComparisonResponse, StructureMetadata
+from app.models import AlphaFoldAnalysisResponse, AnalysisResponse, BatchAnalysisResponse, ChemblTargetSummary, FoldseekSearchResult, RcsbAnalysisResponse, StructureComparisonResponse, StructureMetadata
 from app.pae import PaeParseError, analyze_pae_json
 from app.integrations.rcsb import RcsbFetchError
 from app.parser import StructureParseError
@@ -225,6 +226,20 @@ async def foldseek_search(
         raise HTTPException(status_code=500, detail=f"Foldseek search failed: {exc}") from exc
 
 
+# ── ChEMBL target context ─────────────────────────────────────────────────────
+
+@router.get("/api/chembl/{uniprot_id}/summary", response_model=ChemblTargetSummary | None)
+async def chembl_summary(uniprot_id: str) -> ChemblTargetSummary | None:
+    """Known-binder / bioactivity summary for a target by UniProt accession."""
+    from app.integrations.chembl import ChemblError, fetch_chembl_summary
+    try:
+        return await fetch_chembl_summary(uniprot_id)
+    except ChemblError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"ChEMBL lookup failed: {exc}") from exc
+
+
 # ── Chat ─────────────────────────────────────────────────────────────────────
 
 class ChatRequest(BaseModel):
@@ -241,5 +256,9 @@ class ChatResponse(BaseModel):
 
 @router.post("/api/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest) -> ChatResponse:
+    # Chat hits the Anthropic API. Disable it on the public deployment (CHAT_ENABLED=false
+    # in render.yaml) so it can't drain API credits; defaults to on for local dev.
+    if os.getenv("CHAT_ENABLED", "true").strip().lower() != "true":
+        raise HTTPException(status_code=403, detail="Chat is disabled on this deployment.")
     result = await run_chat(request.analysis, request.messages, request.comparison)
     return ChatResponse(**result)

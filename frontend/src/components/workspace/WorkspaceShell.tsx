@@ -662,6 +662,11 @@ if (now - lastMouseDownAt.current < 300) {
   );
 }
 
+// Chat calls the Anthropic API — enable only in local dev (or when explicitly opted in),
+// so the public deployment has no chat entry point and can't drain API credits.
+const CHAT_ENABLED =
+  process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_ENABLE_CHAT === "true";
+
 // ── Top navigation ────────────────────────────────────────────────────────────
 
 const APP_MODES: Array<{ id: AppMode; label: string }> = [
@@ -698,7 +703,7 @@ function WorkspaceTopNav() {
         </nav>
 
         <div className="ml-auto flex items-center gap-1 sm:gap-6">
-          {mode === "workspace" && <ChatDrawerToggle />}
+          {mode === "workspace" && CHAT_ENABLED && <ChatDrawerToggle />}
           <a
             href="https://github.com/can-karakoc/protein-io/tree/main/docs"
             target="_blank"
@@ -909,7 +914,7 @@ function WorkspaceLayout() {
       <motion.div
         animate={{ width: trayExpanded ? 280 : 60 }}
         transition={spring.snappy}
-        className="relative z-[1] flex-shrink-0 h-full overflow-hidden shadow-[8px_0_24px_rgba(17,22,16,0.07)]"
+        className="relative z-[1] flex-shrink-0 h-full overflow-hidden flex flex-col shadow-[8px_0_24px_rgba(17,22,16,0.07)]"
       >
         <AnimatePresence mode="wait">
           {trayExpanded ? (
@@ -919,7 +924,7 @@ function WorkspaceLayout() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.12, ease: ease.out }}
-              className="h-full"
+              className="flex-1 min-h-0 flex flex-col"
               style={{ width: 280 }}
             >
               <StructureTray onCollapse={chatOpen ? () => setTrayExpanded(false) : undefined} />
@@ -931,7 +936,7 @@ function WorkspaceLayout() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.12, ease: ease.out }}
-              className="h-full"
+              className="flex-1 min-h-0 flex flex-col"
               style={{ width: 60 }}
             >
               <TrayMini onExpand={() => setTrayExpanded(true)} />
@@ -952,22 +957,36 @@ function WorkspaceLayout() {
 
         {/* pLDDT / Structure color toggle — top-right, only when confidences exist */}
         {residueConfidences.length > 0 && (
-          <div className="absolute right-3 top-3 z-10 inline-flex rounded-full border border-[rgba(20,20,15,0.14)] bg-[var(--pio-white)] p-[3px]">
-            {(["structure", "plddt"] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setViewerColorMode(m)}
-                className={[
-                  "rounded-full px-3 py-1 text-pio-xs font-semibold transition-colors",
-                  viewerColorMode === m
-                    ? "bg-[var(--pio-ink)] text-[var(--pio-white)]"
-                    : "bg-transparent text-[var(--pio-graphite)] hover:text-[var(--pio-ink)]",
-                ].join(" ")}
+          <div className="absolute right-3 top-3 z-10 flex flex-col items-end gap-2">
+            <div className="inline-flex rounded-full border border-[rgba(20,20,15,0.14)] bg-[var(--pio-white)] p-[3px]">
+              {(["structure", "plddt"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setViewerColorMode(m)}
+                  className={[
+                    "rounded-full px-3 py-1 text-pio-xs font-semibold transition-colors",
+                    viewerColorMode === m
+                      ? "bg-[var(--pio-ink)] text-[var(--pio-white)]"
+                      : "bg-transparent text-[var(--pio-graphite)] hover:text-[var(--pio-ink)]",
+                  ].join(" ")}
+                >
+                  {m === "plddt" ? "pLDDT" : "Structure"}
+                </button>
+              ))}
+            </div>
+            {effectiveColorMode === "plddt" && (
+              <div
+                className="max-w-[240px] rounded-[14px] border border-[var(--pio-line)] px-3 py-2 text-pio-xs leading-5 text-[var(--pio-graphite)]"
+                style={{
+                  background: "color-mix(in srgb, var(--pio-white) 80%, transparent)",
+                  backdropFilter: "blur(12px)",
+                  WebkitBackdropFilter: "blur(12px)",
+                }}
               >
-                {m === "plddt" ? "pLDDT" : "Structure"}
-              </button>
-            ))}
+                Mol* pLDDT coloring is active using residue B-factor confidence values.
+              </div>
+            )}
           </div>
         )}
 
@@ -1044,7 +1063,8 @@ function WorkspaceLayout() {
 const CARD_CLS = "overflow-hidden rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10),0_1px_0px_rgba(17,22,16,0.04)]";
 
 export function WorkspaceShell() {
-  const { mode, chatOpen, setChatOpen, getActive } = useWorkspace();
+  const { mode, chatOpen: chatOpenRaw, setChatOpen, getActive } = useWorkspace();
+  const chatOpen = chatOpenRaw && CHAT_ENABLED; // never render chat in the deployed build
   const active = getActive();
 
   // Chat panel state

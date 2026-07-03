@@ -1,52 +1,28 @@
 "use client";
 
 import { AlertCircle, CheckCircle2, Download, FileUp, Loader2, Play, RotateCcw, XCircle } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { buildApiUrl } from "@/lib/api";
-import type { AnalysisResponse } from "@/lib/types";
-
-const BATCH_CACHE_KEY = "pio_batch_cache_v1";
-
-function loadBatchCache(): BatchAnalysisResponse | null {
-  try {
-    const raw = localStorage.getItem(BATCH_CACHE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as { version: 1; result: BatchAnalysisResponse };
-    if (parsed.version !== 1 || !parsed.result?.entries) return null;
-    return parsed.result;
-  } catch {
-    return null;
-  }
-}
-
-function saveBatchCache(result: BatchAnalysisResponse) {
-  try {
-    localStorage.setItem(BATCH_CACHE_KEY, JSON.stringify({ version: 1, result }));
-  } catch {
-    // QuotaExceededError on very large batches — silently skip
-  }
-}
-
-type BatchDesignEntry = {
-  filename: string;
-  analysis: AnalysisResponse | null;
-  error: string | null;
-};
-
-type BatchAnalysisResponse = {
-  entries: BatchDesignEntry[];
-  total: number;
-  succeeded: number;
-  failed: number;
-};
+import type { BatchAnalysisResponse, BatchDesignEntry } from "@/lib/types";
+import { useWorkspace } from "@/lib/workspaceStore";
 
 type RankedEntry = BatchDesignEntry & { score: number | null; rank: number | null };
 
-type SortKey = "filename" | "chains" | "residues" | "contacts" | "plddt" | "score";
+type SortKey = "filename" | "chains" | "residues" | "contacts" | "plddt" | "bsa" | "score";
 type SortDir = "asc" | "desc";
 
-// Score = 70% pLDDT (confidence) + 30% contact density (relative to batch).
-// Clashes subtract up to 10 points. Range 0–100.
+// Largest interface buried surface area across a design's chain pairs (binder-campaign
+// signal). Null for single-chain designs.
+function designBsa(a: BatchDesignEntry["analysis"]): number | null {
+  const vals = (a?.interface_analysis?.chain_pairs ?? [])
+    .map((p) => p.interface_bsa)
+    .filter((v): v is number => v != null);
+  return vals.length ? Math.max(...vals) : null;
+}
+
+// Composite design score (0–100). When any design has an interface, buried surface area
+// (interface size) contributes 20%; otherwise weights fall back to pLDDT + density.
+// Clashes subtract up to 10 points.
 function computeRankedEntries(entries: BatchDesignEntry[]): RankedEntry[] {
   const succeeded = entries.filter((e) => e.analysis != null);
   const maxDensity = Math.max(
@@ -56,6 +32,8 @@ function computeRankedEntries(entries: BatchDesignEntry[]): RankedEntry[] {
     }),
     1,
   );
+  const hasBsa = succeeded.some((e) => designBsa(e.analysis) != null);
+  const maxBsa = Math.max(...succeeded.map((e) => designBsa(e.analysis) ?? 0), 1);
 
   const withScores: RankedEntry[] = entries.map((e) => {
     const a = e.analysis;
@@ -66,11 +44,14 @@ function computeRankedEntries(entries: BatchDesignEntry[]): RankedEntry[] {
     const clashes = a.interaction_summary?.possible_clash_count ?? 0;
     const residues = a.summary.residue_count || 1;
 
-    const plddtPart = plddt != null ? (plddt / 100) * 70 : 35;
-    const densityPart = (density / maxDensity) * 30;
+    const plddtWeight = hasBsa ? 55 : 70;
+    const densityWeight = hasBsa ? 25 : 30;
+    const plddtPart = plddt != null ? (plddt / 100) * plddtWeight : plddtWeight / 2;
+    const densityPart = (density / maxDensity) * densityWeight;
+    const bsaPart = hasBsa ? ((designBsa(a) ?? 0) / maxBsa) * 20 : 0;
     const clashPenalty = Math.min(10, (clashes / residues) * 200);
 
-    return { ...e, score: Math.max(0, plddtPart + densityPart - clashPenalty), rank: null };
+    return { ...e, score: Math.max(0, plddtPart + densityPart + bsaPart - clashPenalty), rank: null };
   });
 
   // Assign ranks only to succeeded entries, by descending score
@@ -83,9 +64,10 @@ function computeRankedEntries(entries: BatchDesignEntry[]): RankedEntry[] {
 }
 
 function exportCsv(entries: RankedEntry[], cutoff: number) {
-  const headers = ["Rank", "File", "Score", "Chains", "Residues", "Contacts", "pLDDT", "Clashes", "Status", "Error"];
+  const headers = ["Rank", "File", "Score", "Chains", "Residues", "Contacts", "pLDDT", "Interface BSA (A^2)", "Clashes", "Status", "Error"];
   const rows = entries.map((e) => {
     const a = e.analysis;
+    const bsa = designBsa(a);
     return [
       e.rank ?? "",
       e.filename,
@@ -94,6 +76,7 @@ function exportCsv(entries: RankedEntry[], cutoff: number) {
       a?.summary.residue_count ?? "",
       a?.summary.contact_count ?? "",
       a?.confidence?.average_plddt?.toFixed(1) ?? "",
+      bsa != null ? bsa.toFixed(0) : "",
       a?.interaction_summary?.possible_clash_count ?? "",
       e.error ? "Error" : "OK",
       e.error ?? "",
@@ -110,25 +93,17 @@ function exportCsv(entries: RankedEntry[], cutoff: number) {
 }
 
 export function BatchWorkspace() {
+  // Results live in the workspace store (persisted to IndexedDB) so they survive
+  // switching modes — which unmounts this component — and page refreshes.
+  const result = useWorkspace((s) => s.batchResult);
+  const setResult = useWorkspace((s) => s.setBatchResult);
   const [files, setFiles] = useState<File[]>([]);
   const [cutoff, setCutoff] = useState(4.0);
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<BatchAnalysisResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("score");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Restore cached results on mount
-  useEffect(() => {
-    const cached = loadBatchCache();
-    if (cached) setResult(cached);
-  }, []);
-
-  // Persist results whenever they change
-  useEffect(() => {
-    if (result) saveBatchCache(result);
-  }, [result]);
 
   const rankedEntries = useMemo(
     () => (result ? computeRankedEntries(result.entries) : []),
@@ -167,7 +142,6 @@ export function BatchWorkspace() {
     setFiles([]);
     setResult(null);
     setError(null);
-    try { localStorage.removeItem(BATCH_CACHE_KEY); } catch { /* ignore */ }
   }
 
   async function analyze() {
@@ -210,6 +184,7 @@ export function BatchWorkspace() {
       <div className="flex flex-1 min-h-0">
       {/* Sidebar */}
       <aside
+        className="scrollbar-thin-panel"
         style={{
           width: 280,
           flexShrink: 0,
@@ -279,7 +254,7 @@ export function BatchWorkspace() {
                   <span className="text-pio-3xs" style={{ color: "var(--pio-graphite)", opacity: 0.6, fontStyle: "italic" }}>cached</span>
                 )}
               </div>
-              <div style={{ maxHeight: 200, overflowY: "auto" }}>
+              <div className="scrollbar-thin-panel" style={{ maxHeight: 200, overflowY: "auto" }}>
                 {names.map((name) => (
                   <div
                     key={name}
@@ -391,7 +366,7 @@ export function BatchWorkspace() {
               Score formula
             </p>
             <p className="text-pio-xs" style={{ color: "var(--pio-graphite)", lineHeight: 1.6 }}>
-              70% pLDDT confidence + 30% contact density − clash penalty (0–100)
+              pLDDT confidence + contact density + interface size (buried area, for multimers) − clash penalty (0–100)
             </p>
           </div>
         )}
@@ -443,6 +418,7 @@ function entryMetric(entry: RankedEntry, key: SortKey): number | null {
   if (key === "residues") return a.summary.residue_count;
   if (key === "contacts") return a.summary.contact_count;
   if (key === "plddt") return a.confidence?.average_plddt ?? null;
+  if (key === "bsa") return designBsa(a);
   return null;
 }
 
@@ -508,7 +484,7 @@ function BatchResultsView({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "minmax(0,2fr) 60px 80px 80px 72px 72px 72px",
+            gridTemplateColumns: "minmax(0,2fr) 60px 80px 80px 72px 92px 72px 72px",
             background: "var(--pio-paper)",
             borderBottom: "1px solid var(--pio-line)",
             padding: "0 12px",
@@ -521,6 +497,7 @@ function BatchResultsView({
               ["residues", "Residues"],
               ["contacts", "Contacts"],
               ["plddt", "pLDDT"],
+              ["bsa", "Interface BSA"],
               ["score", "Score"],
             ] as [SortKey, string][]
           ).map(([key, label]) => (
@@ -538,7 +515,7 @@ function BatchResultsView({
       </div>
 
       <p className="text-pio-xs" style={{ color: "var(--pio-graphite)", opacity: 0.7 }}>
-        Score = 70% pLDDT + 30% contact density (relative to batch) − clash penalty. Cutoff: {cutoff.toFixed(1)} Å.
+        Score = pLDDT + contact density + interface buried area (multimers) − clash penalty. Cutoff: {cutoff.toFixed(1)} Å.
       </p>
     </div>
   );
@@ -617,6 +594,7 @@ function SortableHeader({
 
 function DesignRow({ entry, isLast }: { entry: RankedEntry; isLast: boolean }) {
   const a = entry.analysis;
+  const bsaValue = designBsa(a);
   const plddt = a?.confidence?.average_plddt;
   const plddtColor =
     plddt == null
@@ -634,7 +612,7 @@ function DesignRow({ entry, isLast }: { entry: RankedEntry; isLast: boolean }) {
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "minmax(0,2fr) 60px 80px 80px 72px 72px 72px",
+        gridTemplateColumns: "minmax(0,2fr) 60px 80px 80px 72px 92px 72px 72px",
         padding: "0 12px",
         borderBottom: isLast ? "none" : "1px solid var(--pio-line)",
         alignItems: "center",
@@ -694,6 +672,8 @@ function DesignRow({ entry, isLast }: { entry: RankedEntry; isLast: boolean }) {
       <div className="text-pio-xs" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: 600, color: plddt != null ? plddtColor : "var(--pio-graphite)", opacity: plddt != null ? 1 : 0.4 }}>
         {plddt != null ? plddt.toFixed(1) : "—"}
       </div>
+      {/* Interface BSA */}
+      <Cell value={bsaValue != null ? `${bsaValue.toLocaleString()} Å²` : null} mono />
       {/* Score */}
       <div className="text-pio-xs" style={{ fontFamily: "var(--font-pio-mono)", fontWeight: entry.rank === 1 ? 700 : 600, color: entry.score != null ? "var(--pio-ink)" : "var(--pio-graphite)", opacity: entry.score != null ? 1 : 0.4 }}>
         {entry.score != null ? entry.score.toFixed(1) : "—"}

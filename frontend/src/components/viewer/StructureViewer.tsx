@@ -184,11 +184,6 @@ export function StructureViewer({
   return (
     <div className="pio-viewer-exempt relative h-full min-w-0 overflow-hidden bg-white" style={{ isolation: "isolate" }}>
       <div ref={containerRef} className="absolute inset-0" />
-      {colorMode === "plddt" && residueConfidences.length ? (
-        <div className="pointer-events-none absolute left-5 top-5 max-w-[260px] rounded-[var(--pio-radius-sm)] bg-[var(--pio-white)] px-3 py-2 text-xs leading-5 text-[var(--pio-graphite)] shadow-[var(--pio-shadow-sm)]">
-          Mol* pLDDT coloring is active using residue B-factor confidence values.
-        </div>
-      ) : null}
       {isRendering && !viewerError ? (
         <div className="pio-render-overlay absolute inset-0 flex items-center justify-center px-6 text-center text-sm leading-6 text-[var(--pio-graphite)]">
           <div className="pio-loading-pulse">

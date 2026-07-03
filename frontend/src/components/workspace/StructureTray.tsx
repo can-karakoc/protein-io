@@ -2,9 +2,28 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, ChevronDown, ChevronsLeft, FileUp, GitCompare, Layers, Loader2, Play, Search, Trash2, X } from "lucide-react";
-import { useRef, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 
 import { ease, listItem, spring, stagger } from "@/lib/motion";
+
+// Accordion body that re-flows with its (possibly nested) content via CSS grid-rows.
+// framer-motion's `height: auto` animation locks a measured pixel height and clips
+// with `overflow: hidden` when inner content later grows — which collapsed the sidebar
+// content height and broke scrolling. grid-rows 0fr↔1fr has no such lock.
+function Collapsible({ open, children }: { open: boolean; children: ReactNode }) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateRows: open ? "1fr" : "0fr",
+        opacity: open ? 1 : 0,
+        transition: "grid-template-rows 0.26s cubic-bezier(0.4,0,0.2,1), opacity 0.2s ease",
+      }}
+    >
+      <div className="min-h-0 overflow-hidden">{children}</div>
+    </div>
+  );
+}
 
 import { buildApiUrl } from "@/lib/api";
 import type { AnalysisResponse, StructureComparisonResponse } from "@/lib/types";
@@ -319,16 +338,7 @@ function StructureLoader({ onLoaded }: { onLoaded: () => void }) {
             <ChevronDown size={10} className={paeOpen ? "rotate-180" : ""} />
             Confidence sidecar (optional)
           </button>
-          <AnimatePresence initial={false}>
-            {paeOpen && (
-              <motion.div
-                key="pae-body"
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.22, ease: ease.inOut }}
-                style={{ overflow: "hidden" }}
-              >
+          <Collapsible open={paeOpen}>
                 <label className="flex cursor-pointer items-center gap-2 rounded-[8px] border border-dashed border-[var(--pio-line)] bg-[var(--pio-paper)] px-3 py-2">
                   <FileUp size={11} className="text-[var(--pio-graphite)]" />
                   <span className="text-pio-xs text-[var(--pio-graphite)]">
@@ -352,9 +362,7 @@ function StructureLoader({ onLoaded }: { onLoaded: () => void }) {
                     }}
                   />
                 </label>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          </Collapsible>
 
           <motion.button
             type="button"
@@ -518,16 +526,7 @@ function ComparePanel() {
         <ChevronDown size={11} className={["ml-auto transition-transform", open ? "rotate-180" : ""].join(" ")} />
       </button>
 
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            key="compare-body"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.24, ease: ease.inOut }}
-            style={{ overflow: "hidden" }}
-          >
+      <Collapsible open={open}>
             <div className="flex flex-col gap-2 pb-4 px-1">
               {([0, 1] as const).map((slot) => (
                 <div key={slot}>
@@ -566,9 +565,7 @@ function ComparePanel() {
                 </div>
               )}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </Collapsible>
     </div>
   );
 }
@@ -580,7 +577,7 @@ export function StructureTray({ onCollapse }: { onCollapse?: () => void } = {}) 
   const [loaderOpen, setLoaderOpen] = useState(structures.length === 0);
 
   return (
-    <aside className="flex h-full flex-col bg-[var(--pio-white)]">
+    <aside className="flex flex-1 min-h-0 flex-col bg-[var(--pio-white)]">
       {/* Header — only visible when structures are loaded */}
       {structures.length > 0 && (
         <div className="flex items-center gap-2 border-b border-[var(--pio-line)] px-4 py-3 flex-shrink-0">
@@ -657,22 +654,11 @@ export function StructureTray({ onCollapse }: { onCollapse?: () => void } = {}) 
               />
             </button>
 
-            <AnimatePresence initial={false}>
-              {loaderOpen && (
-                <motion.div
-                  key="loader-body"
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.28, ease: ease.inOut }}
-                  style={{ overflow: "hidden" }}
-                >
-                  <div className="px-6 pb-5">
-                    <StructureLoader onLoaded={() => setLoaderOpen(false)} />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <Collapsible open={loaderOpen}>
+              <div className="px-6 pb-5">
+                <StructureLoader onLoaded={() => setLoaderOpen(false)} />
+              </div>
+            </Collapsible>
 
             {/* Compare panel — only when ≥2 structures are loaded */}
             {structures.length >= 2 && <ComparePanel />}

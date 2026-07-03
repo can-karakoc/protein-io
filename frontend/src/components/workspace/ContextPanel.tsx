@@ -19,7 +19,7 @@ import { ease, listItem, spring, stagger, tabContent } from "@/lib/motion";
 
 import { buildApiUrl } from "@/lib/api";
 import { downloadComparisonReportPdf } from "@/lib/comparisonReport";
-import type { AnalysisResponse, ContactDifference, ContactRecord, FoldseekHit, FoldseekSearchResult, InterfaceConfidence, LigandInteractionSummary, LigandSummary, LigandValidity, PaeMatrix, RcsbAnalysisResponse, ResidueConfidence } from "@/lib/types";
+import type { AnalysisResponse, ChemblTargetSummary, ContactDifference, ContactRecord, FoldseekHit, FoldseekSearchResult, InterfaceConfidence, LigandInteractionSummary, LigandSummary, LigandValidity, PaeMatrix, RcsbAnalysisResponse, ResidueConfidence } from "@/lib/types";
 import type { ContextTab, StructureEntry } from "@/lib/workspaceStore";
 import { useWorkspace } from "@/lib/workspaceStore";
 
@@ -273,6 +273,9 @@ function OverviewTab({ entry }: { entry: StructureEntry }) {
         </div>
       )}
 
+      {/* Known binders from ChEMBL (targets with a UniProt accession) */}
+      {metadata?.uniprot_id && <ChemblPanel uniprotId={metadata.uniprot_id} />}
+
       {/* Metadata key-value grid */}
       {!isUpload && metaRows.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 24px" }}>
@@ -315,6 +318,78 @@ function OverviewTab({ entry }: { entry: StructureEntry }) {
       )}
 
       <WarningBanner warnings={analysis.warnings ?? []} />
+    </div>
+  );
+}
+
+// ── ChEMBL known-binder context ───────────────────────────────────────────────
+
+function ChemblPanel({ uniprotId }: { uniprotId: string }) {
+  const [data, setData] = useState<ChemblTargetSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setData(null);
+    fetch(buildApiUrl(`/api/chembl/${encodeURIComponent(uniprotId)}/summary`))
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: ChemblTargetSummary | null) => { if (!cancelled) { setData(j); setLoading(false); } })
+      .catch(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [uniprotId]);
+
+  if (loading) {
+    return (
+      <div className="rounded-[10px] bg-[var(--pio-paper)] px-[14px] py-3">
+        <p className="text-pio-2xs font-bold uppercase tracking-[0.08em] text-[var(--pio-graphite)]">Known binders · ChEMBL</p>
+        <p className="mt-1 text-pio-xs text-[var(--pio-graphite)] opacity-70">Looking up target bioactivity…</p>
+      </div>
+    );
+  }
+  if (!data) return null; // target not in ChEMBL — hide silently
+
+  const fmtValue = (c: ChemblTargetSummary["top_compounds"][number]) =>
+    [c.standard_type, c.standard_value != null ? `${c.standard_value}${c.standard_units ? ` ${c.standard_units}` : ""}` : null]
+      .filter(Boolean)
+      .join(" ");
+
+  return (
+    <div className="rounded-[10px] bg-[var(--pio-paper)] px-[14px] py-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-pio-2xs font-bold uppercase tracking-[0.08em] text-[var(--pio-graphite)]">Known binders · ChEMBL</p>
+        <a
+          href={`https://www.ebi.ac.uk/chembl/target_report_card/${data.target_chembl_id}/`}
+          target="_blank" rel="noreferrer"
+          className="font-[family-name:var(--font-pio-mono)] text-pio-2xs text-[var(--pio-highlight)] hover:underline shrink-0"
+        >
+          {data.target_chembl_id} ↗
+        </a>
+      </div>
+      {data.pref_name && <p className="mt-1 text-pio-sm font-semibold text-[var(--pio-ink)]">{data.pref_name}</p>}
+      <p className="mt-0.5 text-pio-xs text-[var(--pio-graphite)]">
+        <span className="font-[family-name:var(--font-pio-mono)] font-bold text-[var(--pio-ink)]">{data.bioactivity_count.toLocaleString()}</span> potent bioactivity measurements
+      </p>
+      {data.top_compounds.length > 0 && (
+        <div className="mt-2">
+          <p className="mb-1 text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">Most potent compounds</p>
+          <div className="flex flex-col gap-0.5">
+            {data.top_compounds.slice(0, 6).map((c) => (
+              <a
+                key={c.molecule_chembl_id}
+                href={`https://www.ebi.ac.uk/chembl/compound_report_card/${c.molecule_chembl_id}/`}
+                target="_blank" rel="noreferrer"
+                className="flex items-center justify-between gap-2 rounded-[6px] px-2 py-1 hover:bg-[var(--pio-sky)] transition-colors"
+              >
+                <span className="font-[family-name:var(--font-pio-mono)] text-pio-xs text-[var(--pio-highlight)] shrink-0">{c.molecule_chembl_id}</span>
+                <span className="text-pio-2xs text-[var(--pio-graphite)] truncate text-right">
+                  {fmtValue(c)}{c.pchembl_value != null ? ` · pChEMBL ${c.pchembl_value.toFixed(1)}` : ""}
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
