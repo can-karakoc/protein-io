@@ -105,17 +105,19 @@ Speak Boltz/AF3's own evaluation language. All metrics in-house (no external dep
   Interfaces tab.
 - `[x]` 13 new tests (191 backend pass); all verified e2e on real structures.
 
-### Phase 12 — Function & structural context  🚧 PARTIAL (`feat/function-and-campaign`)
+### Phase 12 — Function & structural context  ✅ DONE (`feat/phase12-function`)
+
+All in-house, no external binaries.
 
 - `[x]` **ChEMBL target context** (`integrations/chembl.py`): known-binder / bioactivity
-  summary by UniProt accession — target, N potent measurements, most-potent compounds.
-  Overview "Known binders · ChEMBL" panel (lazy-fetched). `GET /api/chembl/{uniprot}/summary`.
-- `[ ]` Binding-pocket detection + druggability (**P2Rank**/**fpocket**) — DEFERRED:
-  external Java/C binaries, deploy-hostile on Render (would need an in-house
-  LIGSITE-style implementation).
-- `[ ]` **DSSP** secondary-structure track — DEFERRED: pick an in-house Cα method
-  (P-SEA) to avoid the DSSP binary; accuracy needs care.
-- `[ ]` Unified sequence track (pLDDT × SS × domains × disorder) — depends on SS above.
+  summary by UniProt accession. Overview "Known binders · ChEMBL" panel.
+- `[x]` **Binding-pocket detection** (`pockets.py`): in-house LIGSITE-style grid
+  (numpy + scipy.ndimage) — 7-direction enclosure + near-surface shell; volume,
+  druggability proxy, lining residues. Pockets tab. Verified on 1HSG (active site).
+- `[x]` **Secondary structure** (`secondary_structure.py`): in-house P-SEA (Cα geometry)
+  helix/sheet/coil. Validated (myoglobin 69% helix; HIV protease sheet-dominant).
+- `[x]` **Unified sequence track**: Sequence tab — per-chain canvas track of SS +
+  pLDDT band + UniProt domains + composition summary.
 
 ### Phase 13 — Design-campaign triage  🚧 PARTIAL (`feat/function-and-campaign`)
 
