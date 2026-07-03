@@ -155,6 +155,56 @@ def compare_pdb_contents(
 PREDICTED_SOURCES = {"alphafold", "boltz", "chai"}
 
 
+def _compute_secondary_structure(atoms):
+    """Geometric (P-SEA) secondary-structure estimate; fail-soft to None."""
+    import logging
+
+    from app.models import ChainSecondaryStructure, ResidueSecondaryStructure, SecondaryStructure, SecondaryStructureSummary
+    from app.secondary_structure import compute_secondary_structure
+
+    try:
+        raw = compute_secondary_structure(atoms)
+        if raw["summary"]["residue_count"] == 0:
+            return None
+        return SecondaryStructure(
+            summary=SecondaryStructureSummary(**raw["summary"]),
+            chains=[
+                ChainSecondaryStructure(
+                    chain_id=c["chain_id"],
+                    residues=[ResidueSecondaryStructure(**r) for r in c["residues"]],
+                )
+                for c in raw["chains"]
+            ],
+        )
+    except Exception as exc:  # pragma: no cover - defensive
+        logging.getLogger(__name__).info("Secondary structure skipped: %s", exc)
+        return None
+
+
+def _compute_pockets(atoms) -> list:
+    """Geometric binding-pocket estimate; fail-soft to an empty list."""
+    import logging
+
+    from app.models import Pocket, PocketResidue
+    from app.pockets import PocketError, detect_pockets
+
+    try:
+        return [
+            Pocket(
+                rank=p["rank"],
+                volume_angstrom3=p["volume_angstrom3"],
+                druggability=p["druggability"],
+                mean_enclosure=p["mean_enclosure"],
+                center=p["center"],
+                lining_residues=[PocketResidue(**r) for r in p["lining_residues"]],
+            )
+            for p in detect_pockets(atoms)
+        ]
+    except (PocketError, Exception) as exc:  # pragma: no cover - defensive
+        logging.getLogger(__name__).info("Pocket detection skipped: %s", exc)
+        return []
+
+
 def _add_interface_bsa(interface_analysis, content: bytes):
     """Attach buried surface area (dSASA) to each chain pair; fail soft."""
     import logging
@@ -257,6 +307,9 @@ def analyze_pdb_content_with_timing(
     if include_validity and structure.ligands:
         ligand_validity = compute_ligand_validity(content, filename)
 
+    secondary_structure = _compute_secondary_structure(structure.atoms)
+    pockets = _compute_pockets(structure.atoms) if include_validity else []
+
     response = AnalysisResponse(
         summary=summary,
         metadata=metadata,
@@ -268,6 +321,8 @@ def analyze_pdb_content_with_timing(
         interaction_summary=summarize_interactions(contacts),
         ligand_interactions=summarize_ligand_interactions(contacts, water_bridges=water_bridges, ligands=structure.ligands),
         ligand_validity=ligand_validity,
+        secondary_structure=secondary_structure,
+        pockets=pockets,
         water_bridges=water_bridges,
         chains=structure.chains,
         ligands=structure.ligands,

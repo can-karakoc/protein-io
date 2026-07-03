@@ -323,6 +323,49 @@ class InterfaceAnalysis(BaseModel):
     intra_chain_contact_count: int = 0
 
 
+SSType = Literal["helix", "sheet", "coil"]
+
+
+class ResidueSecondaryStructure(BaseModel):
+    residue_number: str
+    ss: SSType
+
+
+class ChainSecondaryStructure(BaseModel):
+    chain_id: str
+    residues: list[ResidueSecondaryStructure] = Field(default_factory=list)
+
+
+class SecondaryStructureSummary(BaseModel):
+    residue_count: int
+    helix_count: int
+    sheet_count: int
+    coil_count: int
+
+
+class SecondaryStructure(BaseModel):
+    """Geometric (P-SEA, Cα-only) secondary-structure estimate."""
+    source: Literal["geometric"] = "geometric"
+    summary: SecondaryStructureSummary
+    chains: list[ChainSecondaryStructure] = Field(default_factory=list)
+
+
+class PocketResidue(BaseModel):
+    chain_id: str
+    residue_number: str
+    residue_name: str
+
+
+class Pocket(BaseModel):
+    """Geometric binding-pocket estimate (LIGSITE-style grid)."""
+    rank: int
+    volume_angstrom3: float
+    druggability: float          # 0–1 proxy (volume × mean enclosure)
+    mean_enclosure: float        # 0–7 buriedness
+    center: list[float]
+    lining_residues: list[PocketResidue] = Field(default_factory=list)
+
+
 class AnalysisResponse(BaseModel):
     version: str = "0.1.0"
     summary: StructureSummary
@@ -340,6 +383,8 @@ class AnalysisResponse(BaseModel):
     contacts: list[ContactRecord]
     water_bridges: list[WaterBridgeRecord] = Field(default_factory=list)
     interface_analysis: InterfaceAnalysis | None = None
+    secondary_structure: SecondaryStructure | None = None
+    pockets: list[Pocket] = Field(default_factory=list)
     uniprot_annotations: UniProtAnnotations | None = None
     warnings: list[str] = Field(default_factory=list)
 
