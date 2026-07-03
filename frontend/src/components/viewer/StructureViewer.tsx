@@ -251,6 +251,15 @@ function selectionExpression(selection: ViewerSelection): SelectionExpression {
       });
   }
 
+  if (selection.kind === "pocket") {
+    return (MS) =>
+      MS.struct.combinator.merge(
+        selection.residues.map((r) =>
+          residueExpression(MS, { chainId: r.chainId, residueNumber: r.residueNumber, residueName: r.residueName }),
+        ),
+      );
+  }
+
   return (MS) => contactExpression(MS, selection.contact);
 }
 

@@ -67,6 +67,11 @@ export type ViewerSelection =
       kind: "contact";
       contact: ContactRecord;
       label: string;
+    }
+  | {
+      kind: "pocket";
+      residues: { chainId: string; residueNumber: string; residueName?: string }[];
+      label: string;
     };
 
 export type StructureSummary = {

@@ -2921,7 +2921,7 @@ function SequenceTab({ entry }: { entry: StructureEntry }) {
               <span className="h-2.5 w-2.5 rounded-[3px]" style={{ background: b.color }} />
               <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">{b.label}</p>
             </div>
-            <p className="mt-1 font-[family-name:var(--font-pio-mono)] text-pio-lg font-bold text-[var(--pio-ink)]">{Math.round((b.count / total) * 100)}%</p>
+            <p className="mt-1 font-[family-name:var(--font-pio-mono)] text-pio-2xl font-bold leading-none text-[var(--pio-ink)]">{Math.round((b.count / total) * 100)}%</p>
           </div>
         ))}
       </div>
@@ -2951,14 +2951,32 @@ function SequenceTab({ entry }: { entry: StructureEntry }) {
 
 // ── Tab: Pockets ───────────────────────────────────────────────────────────────
 
-function PocketCard({ p }: { p: Pocket }) {
+function PocketCard({ p, isSelected, onSelect }: { p: Pocket; isSelected: boolean; onSelect: () => void }) {
   const drugPct = Math.round(p.druggability * 100);
   const lining = p.lining_residues.slice(0, 10);
   return (
-    <motion.div variants={listItem} className="rounded-[14px] bg-[var(--pio-paper)] p-4">
+    <motion.div
+      variants={listItem}
+      role="button"
+      tabIndex={0}
+      onClick={onSelect}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
+      whileHover={!isSelected ? { y: -2 } : undefined}
+      whileTap={{ scale: 0.98 }}
+      transition={spring.snappy}
+      className={[
+        "rounded-[14px] p-4 transition-colors cursor-pointer",
+        isSelected ? "" : "bg-[var(--pio-paper)] hover:bg-[var(--pio-sky)]",
+      ].join(" ")}
+      style={{
+        border: `2px solid ${isSelected ? "var(--pio-highlight)" : "transparent"}`,
+        background: isSelected ? "var(--pio-row-selection-bg)" : undefined,
+      }}
+    >
       <div className="mb-3 flex items-center gap-2">
         <span className="pio-badge pio-badge-metadata text-pio-xs">Pocket #{p.rank}</span>
         <span className="font-[family-name:var(--font-pio-mono)] text-pio-md font-bold text-[var(--pio-ink)]">{p.volume_angstrom3.toLocaleString()} Å³</span>
+        <span className="ml-auto text-pio-2xs text-[var(--pio-graphite)] opacity-60">{isSelected ? "highlighted" : "click to highlight"}</span>
       </div>
       <div className="mb-3 grid grid-cols-2 gap-x-4 gap-y-2">
         <div>
@@ -2992,6 +3010,7 @@ function PocketCard({ p }: { p: Pocket }) {
 
 function PocketsTab({ entry }: { entry: StructureEntry }) {
   const { analysis } = entry;
+  const { selection, setSelection } = useWorkspace();
   const pockets = analysis?.pockets ?? [];
   if (!pockets.length) {
     return <p className="text-pio-sm text-[var(--pio-graphite)] opacity-60">No binding pockets detected.</p>;
@@ -3002,12 +3021,31 @@ function PocketsTab({ entry }: { entry: StructureEntry }) {
         <h2 className="pio-section-title">Binding pockets</h2>
         <p className="pio-section-copy mt-1">
           Geometric cavity estimate (LIGSITE-style grid) — volume, a druggability proxy, and
-          the residues lining each pocket, ranked by size. A geometric estimate, not a
-          validated site prediction.
+          the residues lining each pocket, ranked by size. Click a pocket to highlight its
+          lining residues in 3D. A geometric estimate, not a validated site prediction.
         </p>
       </div>
       <motion.div className="flex flex-col gap-3" initial="hidden" animate="show" variants={stagger}>
-        {pockets.map((p) => <PocketCard key={p.rank} p={p} />)}
+        {pockets.map((p) => {
+          const label = `Pocket #${p.rank}`;
+          const isSelected = selection?.kind === "pocket" && selection.label === label;
+          function toggle() {
+            if (isSelected) {
+              setSelection(null);
+            } else {
+              setSelection({
+                kind: "pocket",
+                label,
+                residues: p.lining_residues.slice(0, 50).map((r) => ({
+                  chainId: r.chain_id,
+                  residueNumber: r.residue_number,
+                  residueName: r.residue_name,
+                })),
+              });
+            }
+          }
+          return <PocketCard key={p.rank} p={p} isSelected={isSelected} onSelect={toggle} />;
+        })}
       </motion.div>
     </div>
   );
