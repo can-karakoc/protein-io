@@ -346,7 +346,7 @@ button:not(:disabled),
   scrollbar-color: rgba(var(--pio-ink-rgb), 0.20) transparent;
 }
 .scrollbar-thin-report::-webkit-scrollbar {
-  width: 4px;
+  width: 3px;
 }
 .scrollbar-thin-report::-webkit-scrollbar-track {
   background: transparent;
@@ -374,7 +374,7 @@ button:not(:disabled),
   scrollbar-color: rgba(var(--pio-ink-rgb), 0.18) transparent;
 }
 .scrollbar-thin-panel::-webkit-scrollbar {
-  width: 4px;
+  width: 3px;
 }
 .scrollbar-thin-panel::-webkit-scrollbar-track {
   background: transparent;

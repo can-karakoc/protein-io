@@ -184,6 +184,7 @@ export function BatchWorkspace() {
       <div className="flex flex-1 min-h-0">
       {/* Sidebar */}
       <aside
+        className="scrollbar-thin-panel"
         style={{
           width: 280,
           flexShrink: 0,
@@ -253,7 +254,7 @@ export function BatchWorkspace() {
                   <span className="text-pio-3xs" style={{ color: "var(--pio-graphite)", opacity: 0.6, fontStyle: "italic" }}>cached</span>
                 )}
               </div>
-              <div style={{ maxHeight: 200, overflowY: "auto" }}>
+              <div className="scrollbar-thin-panel" style={{ maxHeight: 200, overflowY: "auto" }}>
                 {names.map((name) => (
                   <div
                     key={name}
