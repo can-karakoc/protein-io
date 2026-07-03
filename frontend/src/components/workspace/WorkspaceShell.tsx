@@ -909,7 +909,7 @@ function WorkspaceLayout() {
       <motion.div
         animate={{ width: trayExpanded ? 280 : 60 }}
         transition={spring.snappy}
-        className="relative z-[1] flex-shrink-0 h-full overflow-hidden shadow-[8px_0_24px_rgba(17,22,16,0.07)]"
+        className="relative z-[1] flex-shrink-0 h-full overflow-hidden flex flex-col shadow-[8px_0_24px_rgba(17,22,16,0.07)]"
       >
         <AnimatePresence mode="wait">
           {trayExpanded ? (
@@ -919,7 +919,7 @@ function WorkspaceLayout() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.12, ease: ease.out }}
-              className="h-full"
+              className="flex-1 min-h-0"
               style={{ width: 280 }}
             >
               <StructureTray onCollapse={chatOpen ? () => setTrayExpanded(false) : undefined} />
@@ -931,7 +931,7 @@ function WorkspaceLayout() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.12, ease: ease.out }}
-              className="h-full"
+              className="flex-1 min-h-0"
               style={{ width: 60 }}
             >
               <TrayMini onExpand={() => setTrayExpanded(true)} />
