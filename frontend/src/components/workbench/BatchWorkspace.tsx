@@ -1,44 +1,10 @@
 "use client";
 
 import { AlertCircle, CheckCircle2, Download, FileUp, Loader2, Play, RotateCcw, XCircle } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { buildApiUrl } from "@/lib/api";
-import type { AnalysisResponse } from "@/lib/types";
-
-const BATCH_CACHE_KEY = "pio_batch_cache_v1";
-
-function loadBatchCache(): BatchAnalysisResponse | null {
-  try {
-    const raw = localStorage.getItem(BATCH_CACHE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as { version: 1; result: BatchAnalysisResponse };
-    if (parsed.version !== 1 || !parsed.result?.entries) return null;
-    return parsed.result;
-  } catch {
-    return null;
-  }
-}
-
-function saveBatchCache(result: BatchAnalysisResponse) {
-  try {
-    localStorage.setItem(BATCH_CACHE_KEY, JSON.stringify({ version: 1, result }));
-  } catch {
-    // QuotaExceededError on very large batches — silently skip
-  }
-}
-
-type BatchDesignEntry = {
-  filename: string;
-  analysis: AnalysisResponse | null;
-  error: string | null;
-};
-
-type BatchAnalysisResponse = {
-  entries: BatchDesignEntry[];
-  total: number;
-  succeeded: number;
-  failed: number;
-};
+import type { BatchAnalysisResponse, BatchDesignEntry } from "@/lib/types";
+import { useWorkspace } from "@/lib/workspaceStore";
 
 type RankedEntry = BatchDesignEntry & { score: number | null; rank: number | null };
 
@@ -127,25 +93,17 @@ function exportCsv(entries: RankedEntry[], cutoff: number) {
 }
 
 export function BatchWorkspace() {
+  // Results live in the workspace store (persisted to IndexedDB) so they survive
+  // switching modes — which unmounts this component — and page refreshes.
+  const result = useWorkspace((s) => s.batchResult);
+  const setResult = useWorkspace((s) => s.setBatchResult);
   const [files, setFiles] = useState<File[]>([]);
   const [cutoff, setCutoff] = useState(4.0);
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<BatchAnalysisResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("score");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Restore cached results on mount
-  useEffect(() => {
-    const cached = loadBatchCache();
-    if (cached) setResult(cached);
-  }, []);
-
-  // Persist results whenever they change
-  useEffect(() => {
-    if (result) saveBatchCache(result);
-  }, [result]);
 
   const rankedEntries = useMemo(
     () => (result ? computeRankedEntries(result.entries) : []),
@@ -184,7 +142,6 @@ export function BatchWorkspace() {
     setFiles([]);
     setResult(null);
     setError(null);
-    try { localStorage.removeItem(BATCH_CACHE_KEY); } catch { /* ignore */ }
   }
 
   async function analyze() {

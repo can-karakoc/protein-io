@@ -396,6 +396,19 @@ export type TmAlignResult = {
   target_length: number;
 };
 
+export type BatchDesignEntry = {
+  filename: string;
+  analysis: AnalysisResponse | null;
+  error: string | null;
+};
+
+export type BatchAnalysisResponse = {
+  entries: BatchDesignEntry[];
+  total: number;
+  succeeded: number;
+  failed: number;
+};
+
 export type ChemblActivity = {
   molecule_chembl_id: string | null;
   pchembl_value: number | null;

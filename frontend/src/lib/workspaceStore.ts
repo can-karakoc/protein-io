@@ -5,7 +5,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 import { createDebouncedIdbStorage } from "./idbStorage";
-import type { AnalysisResponse, FoldseekSearchResult, StructureComparisonResponse, ViewerSelection } from "./types";
+import type { AnalysisResponse, BatchAnalysisResponse, FoldseekSearchResult, StructureComparisonResponse, ViewerSelection } from "./types";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -58,6 +58,7 @@ export type WorkspaceState = {
   comparison: StructureComparisonResponse | null;
   compareIsLoading: boolean;
   compareError: string | null;
+  batchResult: BatchAnalysisResponse | null;
 
   // Actions
   addStructure: (entry: Omit<StructureEntry, "id" | "savedAt">) => string;
@@ -72,6 +73,7 @@ export type WorkspaceState = {
   setFloatingLigandKey: (key: string | null) => void;
   setComparison: (c: StructureComparisonResponse | null, err?: string | null) => void;
   setCompareLoading: (v: boolean) => void;
+  setBatchResult: (r: BatchAnalysisResponse | null) => void;
   setHasHydrated: (v: boolean) => void;
   getActive: () => StructureEntry | null;
 };
@@ -93,6 +95,7 @@ export const useWorkspace = create<WorkspaceState>()(
       comparison: null,
       compareIsLoading: false,
       compareError: null,
+      batchResult: null,
 
       addStructure: (entry) => {
         const id = nanoid(10);
@@ -154,6 +157,8 @@ export const useWorkspace = create<WorkspaceState>()(
 
       setCompareLoading: (v) => set({ compareIsLoading: v, compareError: null }),
 
+      setBatchResult: (r) => set({ batchResult: r }),
+
       setHasHydrated: (v) => set({ hasHydrated: v }),
 
       getActive: () => {
@@ -184,6 +189,9 @@ export const useWorkspace = create<WorkspaceState>()(
         // after a page refresh without re-running the API call.
         comparison: s.comparison,
         compareError: s.compareError,
+        // Batch campaign results persist to IndexedDB (large; survives mode switches
+        // and page refresh, unlike the old quota-limited localStorage cache).
+        batchResult: s.batchResult,
       }),
     },
   ),
