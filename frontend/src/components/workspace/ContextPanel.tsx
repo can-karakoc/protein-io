@@ -19,7 +19,7 @@ import { ease, listItem, spring, stagger, tabContent } from "@/lib/motion";
 
 import { buildApiUrl } from "@/lib/api";
 import { downloadComparisonReportPdf } from "@/lib/comparisonReport";
-import type { AnalysisResponse, ChainSecondaryStructure, ChemblTargetSummary, ContactDifference, ContactRecord, FoldseekHit, FoldseekSearchResult, InterfaceConfidence, LigandInteractionSummary, LigandSummary, LigandValidity, PaeMatrix, Pocket, RcsbAnalysisResponse, ResidueConfidence, SSType } from "@/lib/types";
+import type { AnalysisResponse, AntibodyCdr, ChainSecondaryStructure, ChemblTargetSummary, ContactDifference, ContactRecord, FoldseekHit, FoldseekSearchResult, InterfaceConfidence, LigandInteractionSummary, LigandSummary, LigandValidity, PaeMatrix, Pocket, RcsbAnalysisResponse, ResidueConfidence, SSType } from "@/lib/types";
 import type { ContextTab, StructureEntry } from "@/lib/workspaceStore";
 import { useWorkspace } from "@/lib/workspaceStore";
 
@@ -3105,12 +3105,95 @@ function PocketsTab({ entry }: { entry: StructureEntry }) {
   );
 }
 
+// ── Antibody tab ──────────────────────────────────────────────────────────────
+
+function CdrCard({ cdr, chainId, isSelected, onSelect }: { cdr: AntibodyCdr; chainId: string; isSelected: boolean; onSelect: () => void }) {
+  return (
+    <motion.div
+      variants={listItem}
+      role="button"
+      tabIndex={0}
+      onClick={onSelect}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
+      whileHover={!isSelected ? { y: -2 } : undefined}
+      whileTap={{ scale: 0.98 }}
+      transition={spring.snappy}
+      className={["rounded-[12px] p-3 transition-colors cursor-pointer", isSelected ? "" : "bg-[var(--pio-paper)] hover:bg-[var(--pio-sky)]"].join(" ")}
+      style={{
+        border: `2px solid ${isSelected ? "var(--pio-highlight)" : "transparent"}`,
+        background: isSelected ? "var(--pio-row-selection-bg)" : undefined,
+      }}
+    >
+      <div className="mb-1.5 flex items-center gap-2">
+        <span className="pio-badge pio-badge-metadata text-pio-2xs">{cdr.name}</span>
+        <span className="text-pio-2xs text-[var(--pio-graphite)]">{chainId}:{cdr.start}–{cdr.end} · {cdr.length} aa</span>
+        {cdr.mean_plddt != null && (
+          <span className="ml-auto font-[family-name:var(--font-pio-mono)] text-pio-2xs font-bold" style={{ color: plddtHex(cdr.mean_plddt) }}>
+            pLDDT {cdr.mean_plddt.toFixed(0)}
+          </span>
+        )}
+        <span className="text-pio-2xs text-[var(--pio-graphite)] opacity-60">{isSelected ? "highlighted" : "highlight"}</span>
+      </div>
+      <p className="break-all font-[family-name:var(--font-pio-mono)] text-pio-xs text-[var(--pio-ink)]">{cdr.sequence}</p>
+    </motion.div>
+  );
+}
+
+function AntibodyTab({ entry }: { entry: StructureEntry }) {
+  const { analysis } = entry;
+  const { selection, setSelection } = useWorkspace();
+  const chains = analysis?.antibody?.chains ?? [];
+  if (!chains.length) {
+    return <p className="text-pio-sm text-[var(--pio-graphite)] opacity-60">No antibody variable domains detected.</p>;
+  }
+  return (
+    <div className="flex flex-col gap-5">
+      <div>
+        <h2 className="pio-section-title">Antibody</h2>
+        <p className="pio-section-copy mt-1">
+          Variable-domain (Fv) CDR loops, detected in-house by aligning each chain to reference
+          VH/VL domains. Kabat-style regions — a sequence-based estimate, not a validated
+          numbering. Click a CDR to highlight it in 3D.
+        </p>
+      </div>
+      {chains.map((ch) => (
+        <div key={ch.chain_id} className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <span className="pio-badge pio-badge-active text-pio-xs">{ch.domain_type}</span>
+            <span className="text-pio-sm font-semibold text-[var(--pio-ink)]">Chain {ch.chain_id}</span>
+            <span className="ml-auto text-pio-2xs text-[var(--pio-graphite)]">{Math.round(ch.identity * 100)}% framework identity</span>
+          </div>
+          <motion.div className="flex flex-col gap-2" initial="hidden" animate="show" variants={stagger}>
+            {ch.cdrs.map((cdr) => {
+              const label = `${ch.chain_id} ${cdr.name}`;
+              const isSelected = selection?.kind === "cdr" && selection.label === label;
+              function toggle() {
+                if (isSelected) {
+                  setSelection(null);
+                } else {
+                  setSelection({
+                    kind: "cdr",
+                    label,
+                    residues: cdr.residue_numbers.map((rn) => ({ chainId: ch.chain_id, residueNumber: rn })),
+                  });
+                }
+              }
+              return <CdrCard key={cdr.name} cdr={cdr} chainId={ch.chain_id} isSelected={isSelected} onSelect={toggle} />;
+            })}
+          </motion.div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const TABS: TabDef[] = [
   { id: "overview", label: "Overview" },
   { id: "chains", label: "Chains", count: (a) => a.chains.length },
   { id: "sequence", label: "Sequence", visible: (a) => !!(a?.secondary_structure?.summary.residue_count) },
   { id: "ligands", label: "Ligands", count: (a) => a.ligands.length },
   { id: "pockets", label: "Pockets", count: (a) => a.pockets?.length ?? 0, visible: (a) => !!(a?.pockets?.length) },
+  { id: "antibody", label: "Antibody", count: (a) => a.antibody?.chains.length ?? 0, visible: (a) => !!(a?.antibody?.chains?.length) },
   { id: "contacts", label: "Contacts", count: (a) => a.summary.contact_count },
   { id: "interfaces", label: "Interfaces", count: (a) => a.interface_analysis?.chain_pairs.length ?? 0, visible: (a) => !!(a?.interface_analysis?.chain_pairs?.length) },
   { id: "confidence", label: "pLDDT", visible: (a) => !!(a?.confidence) },
@@ -3296,7 +3379,7 @@ function EmptyGallery() {
 // ── Main ContextPanel ─────────────────────────────────────────────────────────
 
 const TAB_ORDER: ContextTab[] = [
-  "overview", "chains", "sequence", "ligands", "pockets", "contacts", "interfaces",
+  "overview", "chains", "sequence", "ligands", "pockets", "antibody", "contacts", "interfaces",
   "confidence", "pae", "compare", "similar", "quality", "report", "methods",
 ];
 
@@ -3357,6 +3440,7 @@ export function ContextPanel() {
       case "sequence":    return <SequenceTab entry={active} />;
       case "ligands":     return <LigandsTab entry={active} />;
       case "pockets":     return <PocketsTab entry={active} />;
+      case "antibody":    return <AntibodyTab entry={active} />;
       case "contacts":    return <ContactsTab entry={active} />;
       case "interfaces":  return <InterfacesTab entry={active} />;
       case "confidence":  return <ConfidenceTab entry={active} />;

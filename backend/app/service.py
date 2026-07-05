@@ -205,6 +205,32 @@ def _compute_pockets(atoms) -> list:
         return []
 
 
+def _compute_antibody(atoms, residue_confidences):
+    """In-house antibody Fv/CDR annotation; fail-soft to None. Adds per-CDR mean pLDDT."""
+    import logging
+
+    from app.antibody import annotate_antibody
+    from app.models import AntibodyAnalysis, AntibodyCdr, AntibodyChain
+
+    try:
+        raw = annotate_antibody(atoms)
+        if not raw:
+            return None
+        plddt = {(c.chain_id, c.residue_number): c.plddt for c in residue_confidences}
+        chains = []
+        for ch in raw:
+            cdrs = []
+            for cdr in ch["cdrs"]:
+                vals = [plddt[(ch["chain_id"], rn)] for rn in cdr["residue_numbers"] if (ch["chain_id"], rn) in plddt]
+                mean = round(sum(vals) / len(vals), 1) if vals else None
+                cdrs.append(AntibodyCdr(**cdr, mean_plddt=mean))
+            chains.append(AntibodyChain(chain_id=ch["chain_id"], domain_type=ch["domain_type"], identity=ch["identity"], cdrs=cdrs))
+        return AntibodyAnalysis(chains=chains)
+    except Exception as exc:  # pragma: no cover - defensive
+        logging.getLogger(__name__).info("Antibody annotation skipped: %s", exc)
+        return None
+
+
 def _add_interface_bsa(interface_analysis, content: bytes):
     """Attach buried surface area (dSASA) to each chain pair; fail soft."""
     import logging
@@ -309,6 +335,7 @@ def analyze_pdb_content_with_timing(
 
     secondary_structure = _compute_secondary_structure(structure.atoms)
     pockets = _compute_pockets(structure.atoms) if include_validity else []
+    antibody = _compute_antibody(structure.atoms, residue_confidences) if include_validity else None
 
     response = AnalysisResponse(
         summary=summary,
@@ -323,6 +350,7 @@ def analyze_pdb_content_with_timing(
         ligand_validity=ligand_validity,
         secondary_structure=secondary_structure,
         pockets=pockets,
+        antibody=antibody,
         water_bridges=water_bridges,
         chains=structure.chains,
         ligands=structure.ligands,

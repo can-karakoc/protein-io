@@ -265,7 +265,7 @@ function selectionExpression(selection: ViewerSelection): SelectionExpression {
       });
   }
 
-  if (selection.kind === "pocket") {
+  if (selection.kind === "pocket" || selection.kind === "cdr") {
     return (MS) =>
       MS.struct.combinator.merge(
         selection.residues.map((r) =>

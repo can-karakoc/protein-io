@@ -34,6 +34,7 @@ export type ContextTab =
   | "sequence"
   | "ligands"
   | "pockets"
+  | "antibody"
   | "contacts"
   | "interfaces"
   | "confidence"

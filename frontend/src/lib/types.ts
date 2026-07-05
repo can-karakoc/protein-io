@@ -72,6 +72,11 @@ export type ViewerSelection =
       kind: "pocket";
       residues: { chainId: string; residueNumber: string; residueName?: string }[];
       label: string;
+    }
+  | {
+      kind: "cdr";
+      residues: { chainId: string; residueNumber: string; residueName?: string }[];
+      label: string;
     };
 
 export type StructureSummary = {
@@ -313,6 +318,26 @@ export type Pocket = {
   lining_residues: PocketResidue[];
 };
 
+export type AntibodyCdr = {
+  name: string;
+  start: string;
+  end: string;
+  sequence: string;
+  length: number;
+  residue_numbers: string[];
+  mean_plddt: number | null;
+};
+export type AntibodyChain = {
+  chain_id: string;
+  domain_type: string; // VH | VL
+  identity: number;
+  cdrs: AntibodyCdr[];
+};
+export type AntibodyAnalysis = {
+  source: string;
+  chains: AntibodyChain[];
+};
+
 export type AnalysisResponse = {
   version: string;
   summary: StructureSummary;
@@ -333,6 +358,7 @@ export type AnalysisResponse = {
   interface_analysis?: InterfaceAnalysis | null;
   secondary_structure?: SecondaryStructure | null;
   pockets?: Pocket[];
+  antibody?: AntibodyAnalysis | null;
   uniprot_annotations?: UniProtAnnotations | null;
 };
 

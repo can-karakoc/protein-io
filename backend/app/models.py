@@ -366,6 +366,29 @@ class Pocket(BaseModel):
     lining_residues: list[PocketResidue] = Field(default_factory=list)
 
 
+class AntibodyCdr(BaseModel):
+    """One complementarity-determining region loop (sequence-based estimate)."""
+    name: str                       # CDR-H1 / CDR-H2 / CDR-H3 / CDR-L1 / …
+    start: str                      # structure residue number
+    end: str
+    sequence: str
+    length: int
+    residue_numbers: list[str]
+    mean_plddt: float | None = None
+
+
+class AntibodyChain(BaseModel):
+    chain_id: str
+    domain_type: str                # VH | VL
+    identity: float                 # framework alignment identity to the reference domain
+    cdrs: list[AntibodyCdr]
+
+
+class AntibodyAnalysis(BaseModel):
+    source: str = "sequence"        # in-house NW alignment to reference VH/VL, Kabat-style CDRs
+    chains: list[AntibodyChain]
+
+
 class AnalysisResponse(BaseModel):
     version: str = "0.1.0"
     summary: StructureSummary
@@ -385,6 +408,7 @@ class AnalysisResponse(BaseModel):
     interface_analysis: InterfaceAnalysis | None = None
     secondary_structure: SecondaryStructure | None = None
     pockets: list[Pocket] = Field(default_factory=list)
+    antibody: AntibodyAnalysis | None = None
     uniprot_annotations: UniProtAnnotations | None = None
     warnings: list[str] = Field(default_factory=list)
 

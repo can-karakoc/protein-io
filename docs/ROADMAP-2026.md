@@ -138,12 +138,20 @@ Where the real biotech pain lives: the RFdiffusion → MPNN → co-fold → *fil
   styles + data, opens offline in any browser (local-first): ranked table + score formula +
   clusters. Verified e2e (backend 209 tests; browser: 2HHB+3HHB cluster together).
 
-### Phase 14 — Antibody mode
+### Phase 14 — Antibody mode  🚧 PARTIAL (`feat/phase14-antibody`)
 
 Antibodies are a large share of biotech; no free review UI offers this.
 
-- `[ ]` **ANARCI** numbering (IMGT/Kabat/Chothia) + CDR annotation.
-- `[ ]` CDR-focused interface + confidence view; SAbDab context.
+- `[x]` **In-house Fv detection + CDR annotation** (`antibody.py`) — ANARCI needs the HMMER
+  binary (breaks the no-binaries/deploy-safe rule), so instead each chain is fit-aligned
+  (semi-global NW, numpy) to reference VH/VL domains with marked Kabat-style CDRs; regions
+  transfer by column and CDR-H3 insertions are inherited. Fit (not global) alignment avoids
+  false positives on long chains (HER2 dropped 0.72→0.28). Gated behind `include_validity`,
+  fail-soft. Verified: trastuzumab/rituximab detected, hemoglobin/HER2 rejected.
+- `[x]` **Antibody tab** — VH/VL chains + CDR loops (sequence, residue range, per-CDR mean
+  pLDDT), each clickable to highlight the loop in Mol* (new `cdr` selection). 8 new tests.
+- `[ ]` CDR-focused interface view (paratope contacts) + SAbDab context — DEFERRED.
+- `[ ]` IMGT/Kabat/Chothia numbering scheme toggle — DEFERRED (current = Kabat-style estimate).
 
 ### Phase 15 — Workflow, collaboration, reproducibility
 
