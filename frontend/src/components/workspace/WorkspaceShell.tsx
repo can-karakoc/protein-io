@@ -825,6 +825,10 @@ function WorkspaceLayout() {
   // Right panel shrinks from 400 toward a 320 floor, reserving room for the viewer.
   const leftW = trayExpanded ? 280 : 60;
   const rightW = Math.round(Math.max(320, Math.min(400, containerW - leftW - 300)));
+  // Space left for the 3D viewer — drives whether the in-viewer controls go compact
+  // (the Structure/pLDDT toggle overflows the viewer on narrow screens otherwise).
+  const viewerW = Math.max(0, containerW - leftW - rightW);
+  const compactViewerControls = viewerW < 300;
 
   // Case A: no analysis cached → run full analysis
   useEffect(() => {
@@ -987,9 +991,10 @@ function WorkspaceLayout() {
           colorMode={effectiveColorMode}
         />
 
-        {/* pLDDT / Structure color toggle — top-right, only when confidences exist */}
+        {/* pLDDT / Structure color toggle — top-right, only when confidences exist.
+            Goes compact on narrow viewers so it never overflows the viewer column. */}
         {residueConfidences.length > 0 && (
-          <div className="absolute right-3 top-3 z-10 flex flex-col items-end gap-2">
+          <div className="absolute right-3 top-3 z-10 flex max-w-[calc(100%-24px)] flex-col items-end gap-2">
             <div className="inline-flex rounded-full border border-[rgba(20,20,15,0.14)] bg-[var(--pio-white)] p-[3px]">
               {(["structure", "plddt"] as const).map((m) => (
                 <button
@@ -997,17 +1002,18 @@ function WorkspaceLayout() {
                   type="button"
                   onClick={() => setViewerColorMode(m)}
                   className={[
-                    "rounded-full px-3 py-1 text-pio-xs font-semibold transition-colors",
+                    "whitespace-nowrap rounded-full font-semibold transition-colors",
+                    compactViewerControls ? "px-2 py-0.5 text-pio-2xs" : "px-3 py-1 text-pio-xs",
                     viewerColorMode === m
                       ? "bg-[var(--pio-ink)] text-[var(--pio-white)]"
                       : "bg-transparent text-[var(--pio-graphite)] hover:text-[var(--pio-ink)]",
                   ].join(" ")}
                 >
-                  {m === "plddt" ? "pLDDT" : "Structure"}
+                  {m === "plddt" ? "pLDDT" : compactViewerControls ? "3D" : "Structure"}
                 </button>
               ))}
             </div>
-            {effectiveColorMode === "plddt" && (
+            {effectiveColorMode === "plddt" && !compactViewerControls && (
               <div
                 className="max-w-[240px] rounded-[14px] border border-[var(--pio-line)] px-3 py-2 text-pio-xs leading-5 text-[var(--pio-graphite)]"
                 style={{

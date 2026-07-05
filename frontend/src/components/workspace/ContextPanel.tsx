@@ -410,10 +410,16 @@ function ChemblPanel({ uniprotId }: { uniprotId: string }) {
 
       {/* Target name + bioactivity stat */}
       {data.pref_name && <p className="mt-2 text-pio-sm font-semibold text-[var(--pio-ink)]">{data.pref_name}</p>}
-      <p className="mt-1 flex items-baseline gap-1.5">
-        <span className="font-[family-name:var(--font-pio-mono)] text-pio-2xl font-bold leading-none text-[var(--pio-ink)]">{data.bioactivity_count.toLocaleString()}</span>
-        <span className="text-pio-2xs text-[var(--pio-graphite)]">potent bioactivity measurements</span>
-      </p>
+      {data.bioactivity_count > 0 ? (
+        <p className="mt-1 flex items-baseline gap-1.5">
+          <span className="font-[family-name:var(--font-pio-mono)] text-pio-2xl font-bold leading-none text-[var(--pio-ink)]">{data.bioactivity_count.toLocaleString()}</span>
+          <span className="text-pio-2xs text-[var(--pio-graphite)]">potent bioactivity measurements</span>
+        </p>
+      ) : (
+        <p className="mt-1.5 text-pio-xs leading-[1.5] text-[var(--pio-graphite)]">
+          No known small-molecule binders in ChEMBL.
+        </p>
+      )}
 
       {data.top_compounds.length > 0 && (
         <div className="mt-3">
