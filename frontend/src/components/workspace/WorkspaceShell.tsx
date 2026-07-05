@@ -800,8 +800,7 @@ function WorkspaceLayout() {
   const viewerColRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const [viewerColorMode, setViewerColorMode] = useState<"structure" | "plddt">("structure");
-  // null = follow the responsive auto behaviour; true/false = user override (sticky).
-  const [trayManual, setTrayManual] = useState<boolean | null>(null);
+  const [trayExpanded, setTrayExpanded] = useState(true);
   const [containerW, setContainerW] = useState(1280);
 
   // Track the workspace width so the side panels can respond to it.
@@ -814,13 +813,15 @@ function WorkspaceLayout() {
     return () => ro.disconnect();
   }, []);
 
-  // Left tray: auto-collapse to the mini-rail when space is tight (or chat is open);
-  // a manual toggle overrides that until the user changes it. Never collapse with no
-  // structures loaded (the loader must stay reachable).
+  // Left tray: the width/chat/structure-count regime decides whether it should be
+  // expanded; crossing that boundary re-drives the tray. A manual toggle holds only
+  // until the next boundary change. Never collapse with no structures (loader must stay).
   const LEFT_AUTO_COLLAPSE_W = 1024;
   const canCollapse = structures.length > 0;
-  const autoExpanded = !chatOpen && containerW >= LEFT_AUTO_COLLAPSE_W;
-  const trayExpanded = !canCollapse ? true : (trayManual ?? autoExpanded);
+  const shouldAutoExpand = !canCollapse || (!chatOpen && containerW >= LEFT_AUTO_COLLAPSE_W);
+  useEffect(() => {
+    setTrayExpanded(shouldAutoExpand);
+  }, [shouldAutoExpand]);
 
   // Right panel shrinks from 400 toward a 320 floor, reserving room for the viewer.
   const leftW = trayExpanded ? 280 : 60;
@@ -963,7 +964,7 @@ function WorkspaceLayout() {
               className="flex-1 min-h-0 flex flex-col"
               style={{ width: 280 }}
             >
-              <StructureTray onCollapse={canCollapse ? () => setTrayManual(false) : undefined} />
+              <StructureTray onCollapse={canCollapse ? () => setTrayExpanded(false) : undefined} />
             </motion.div>
           ) : (
             <motion.div
@@ -975,7 +976,7 @@ function WorkspaceLayout() {
               className="flex-1 min-h-0 flex flex-col"
               style={{ width: 60 }}
             >
-              <TrayMini onExpand={() => setTrayManual(true)} />
+              <TrayMini onExpand={() => setTrayExpanded(true)} />
             </motion.div>
           )}
         </AnimatePresence>
