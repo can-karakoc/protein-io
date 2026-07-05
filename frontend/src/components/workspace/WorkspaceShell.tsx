@@ -702,13 +702,14 @@ function WorkspaceTopNav() {
           })}
         </nav>
 
-        <div className="ml-auto flex items-center gap-1 sm:gap-6">
+        <div className="ml-auto flex items-center gap-2.5 sm:gap-5">
           {mode === "workspace" && CHAT_ENABLED && <ChatDrawerToggle />}
+          {/* Secondary external links — hidden on the smallest screens so the bar never crowds */}
           <a
             href="https://github.com/can-karakoc/protein-io/tree/main/docs"
             target="_blank"
             rel="noreferrer"
-            className="text-pio-xs sm:text-pio-md font-medium text-[var(--pio-ink)] opacity-50 transition-opacity hover:opacity-80"
+            className="hidden min-[560px]:inline whitespace-nowrap text-pio-xs sm:text-pio-md font-medium text-[var(--pio-ink)] opacity-50 transition-opacity hover:opacity-80"
           >
             Docs
           </a>
@@ -716,7 +717,7 @@ function WorkspaceTopNav() {
             href="https://github.com/can-karakoc/protein-io"
             target="_blank"
             rel="noreferrer"
-            className="text-pio-xs sm:text-pio-md font-medium text-[var(--pio-ink)] opacity-50 transition-opacity hover:opacity-80"
+            className="hidden min-[560px]:inline whitespace-nowrap text-pio-xs sm:text-pio-md font-medium text-[var(--pio-ink)] opacity-50 transition-opacity hover:opacity-80"
           >
             GitHub
           </a>

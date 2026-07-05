@@ -70,9 +70,18 @@ export function StructureViewer({
         }
 
         const viewerCreateStarted = performance.now();
+        // Mount Mol* into a FRESH child node each time. Viewer.create() runs
+        // ReactDOM.createRoot() on the element it's handed; reusing the same node
+        // across re-renders (or React StrictMode's double-invoke in dev) triggers
+        // "createRoot() on a container that has already been passed to createRoot()".
         viewerRef.current?.dispose();
+        viewerRef.current = null;
         containerRef.current.replaceChildren();
-        viewerRef.current = await Viewer.create(containerRef.current, {
+        const mount = document.createElement("div");
+        mount.style.position = "absolute";
+        mount.style.inset = "0";
+        containerRef.current.appendChild(mount);
+        const viewer = await Viewer.create(mount, {
           layoutIsExpanded: false,
           layoutShowControls: false,
           layoutShowSequence: false,
@@ -92,8 +101,13 @@ export function StructureViewer({
           volumeStreamingDisabled: true,
         });
         const viewerCreateMs = elapsedMs(viewerCreateStarted);
+        // A superseded run (structure changed, or StrictMode re-invoke) — drop it.
+        if (cancelled) {
+          viewer.dispose();
+          return;
+        }
+        viewerRef.current = viewer;
 
-        const viewer = viewerRef.current;
         const modelStarted = performance.now();
         await viewer.loadStructureFromData(structureText, molstarFormat(structureFormat), {
           dataLabel: structureFormat === "cif" ? "Uploaded mmCIF" : "Uploaded PDB",
