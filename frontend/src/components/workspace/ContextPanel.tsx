@@ -112,8 +112,8 @@ function InteractionSummaryPanel({ summary }: { summary: NonNullable<AnalysisRes
         Distance-based contact categories and top contact participants.
       </p>
 
-      {/* Metric cards — 3-col grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 16 }}>
+      {/* Metric cards — reflow 3→2 cols as the panel narrows */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(96px, 1fr))", gap: 8, marginTop: 16 }}>
         {metrics.map(([label, value]) => (
           <div key={label} style={{ background: "var(--pio-paper)", borderRadius: 10, padding: "12px 14px" }}>
             <p className="text-pio-2xs font-bold uppercase tracking-[0.08em] text-[var(--pio-graphite)]">{label}</p>
@@ -2543,7 +2543,7 @@ function MethodsTab({ entry }: { entry: StructureEntry }) {
         </p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 8 }}>
         {cards.map((card) => (
           <div key={card.label} style={{ background: "var(--pio-paper)", borderRadius: 12, padding: "12px 14px", overflow: "hidden", gridColumn: card.fullWidth ? "1 / -1" : undefined }}>
             <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">{card.label}</p>
@@ -2962,7 +2962,7 @@ function SequenceTab({ entry }: { entry: StructureEntry }) {
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(90px, 1fr))" }}>
         {bands.map((b) => (
           <div key={b.label} className="rounded-[12px] bg-[var(--pio-paper)] px-3 py-2.5">
             <div className="flex items-center gap-1.5">

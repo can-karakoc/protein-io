@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeftRight, ChevronsLeft, Download, Menu, Moon, Sun, X } from "lucide-react";
+import { ArrowLeftRight, Download, Loader2, Menu, Moon, Sun, X } from "lucide-react";
 import { ease, spring } from "@/lib/motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -702,13 +702,14 @@ function WorkspaceTopNav() {
           })}
         </nav>
 
-        <div className="ml-auto flex items-center gap-1 sm:gap-6">
+        <div className="ml-auto flex items-center gap-2.5 sm:gap-5">
           {mode === "workspace" && CHAT_ENABLED && <ChatDrawerToggle />}
+          {/* Secondary external links — hidden on the smallest screens so the bar never crowds */}
           <a
             href="https://github.com/can-karakoc/protein-io/tree/main/docs"
             target="_blank"
             rel="noreferrer"
-            className="text-pio-xs sm:text-pio-md font-medium text-[var(--pio-ink)] opacity-50 transition-opacity hover:opacity-80"
+            className="hidden min-[560px]:inline whitespace-nowrap text-pio-xs sm:text-pio-md font-medium text-[var(--pio-ink)] opacity-50 transition-opacity hover:opacity-80"
           >
             Docs
           </a>
@@ -716,7 +717,7 @@ function WorkspaceTopNav() {
             href="https://github.com/can-karakoc/protein-io"
             target="_blank"
             rel="noreferrer"
-            className="text-pio-xs sm:text-pio-md font-medium text-[var(--pio-ink)] opacity-50 transition-opacity hover:opacity-80"
+            className="hidden min-[560px]:inline whitespace-nowrap text-pio-xs sm:text-pio-md font-medium text-[var(--pio-ink)] opacity-50 transition-opacity hover:opacity-80"
           >
             GitHub
           </a>
@@ -739,38 +740,49 @@ function WorkspaceTopNav() {
 // ── Collapsed tray mini-strip ─────────────────────────────────────────────────
 
 function TrayMini({ onExpand }: { onExpand: () => void }) {
-  const { structures } = useWorkspace();
+  const { structures, activeId, setActiveId, setContextTab } = useWorkspace();
+  const MAX = 9;
   return (
     <div
-      className="flex flex-col items-center h-full py-3 gap-3"
+      className="flex flex-col items-center h-full py-3 gap-3 overflow-y-auto scrollbar-thin-panel"
       style={{ borderRight: "1px solid var(--pio-line)", background: "var(--pio-white)" }}
     >
       <button
         type="button"
         onClick={onExpand}
-        className="flex h-9 w-9 items-center justify-center rounded-[10px] text-[var(--pio-graphite)] hover:bg-[var(--pio-sky)] hover:text-[var(--pio-ink)] transition-colors"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[var(--pio-graphite)] hover:bg-[var(--pio-sky)] hover:text-[var(--pio-ink)] transition-colors"
         title="Expand structure panel"
       >
         <Menu size={15} />
       </button>
       <div className="flex flex-col items-center gap-2">
-        {structures.slice(0, 6).map((s) => (
-          <div
-            key={s.id}
-            title={s.pdbId || s.uniprotId || s.name || "Structure"}
-            className="flex h-8 w-8 items-center justify-center rounded-[8px]"
-            style={{
-              background: "rgba(199,217,236,0.5)",
-              color: "var(--pio-highlight)",
-              fontFamily: "var(--font-pio-mono)",
-              fontSize: 8,
-              fontWeight: 700,
-              letterSpacing: "0.02em",
-            }}
-          >
-            {(s.pdbId || s.uniprotId || s.name || "?").slice(0, 4).toUpperCase()}
-          </div>
-        ))}
+        {structures.slice(0, MAX).map((s) => {
+          const isActive = s.id === activeId;
+          const label = (s.pdbId || s.uniprotId || s.name || "?").slice(0, 4).toUpperCase();
+          return (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => { setActiveId(s.id); setContextTab("overview"); }}
+              title={`Switch to ${s.pdbId || s.uniprotId || s.name || "structure"}`}
+              className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] transition-all"
+              style={{
+                background: isActive ? "var(--pio-highlight)" : "rgba(199,217,236,0.5)",
+                color: isActive ? "var(--pio-highlight-text)" : "var(--pio-highlight)",
+                fontFamily: "var(--font-pio-mono)",
+                fontSize: 8,
+                fontWeight: 700,
+                letterSpacing: "0.02em",
+                boxShadow: isActive ? "0 0 0 2px var(--pio-highlight)" : "none",
+              }}
+            >
+              {s.isAnalyzing ? <Loader2 size={12} className="animate-spin" /> : label}
+            </button>
+          );
+        })}
+        {structures.length > MAX && (
+          <span className="text-pio-3xs font-semibold text-[var(--pio-graphite)] opacity-60">+{structures.length - MAX}</span>
+        )}
       </div>
     </div>
   );
@@ -786,13 +798,33 @@ function WorkspaceLayout() {
   } = useWorkspace();
   const active = getActive();
   const viewerColRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const [viewerColorMode, setViewerColorMode] = useState<"structure" | "plddt">("structure");
-  const [trayExpanded, setTrayExpanded] = useState(true);
+  // null = follow the responsive auto behaviour; true/false = user override (sticky).
+  const [trayManual, setTrayManual] = useState<boolean | null>(null);
+  const [containerW, setContainerW] = useState(1280);
 
-  // Auto-collapse when chat opens; re-expand when chat closes
+  // Track the workspace width so the side panels can respond to it.
   useEffect(() => {
-    setTrayExpanded(!chatOpen);
-  }, [chatOpen]);
+    const el = rootRef.current;
+    if (!el) return;
+    setContainerW(el.offsetWidth);
+    const ro = new ResizeObserver((entries) => setContainerW(entries[0].contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Left tray: auto-collapse to the mini-rail when space is tight (or chat is open);
+  // a manual toggle overrides that until the user changes it. Never collapse with no
+  // structures loaded (the loader must stay reachable).
+  const LEFT_AUTO_COLLAPSE_W = 1024;
+  const canCollapse = structures.length > 0;
+  const autoExpanded = !chatOpen && containerW >= LEFT_AUTO_COLLAPSE_W;
+  const trayExpanded = !canCollapse ? true : (trayManual ?? autoExpanded);
+
+  // Right panel shrinks from 400 toward a 320 floor, reserving room for the viewer.
+  const leftW = trayExpanded ? 280 : 60;
+  const rightW = Math.round(Math.max(320, Math.min(400, containerW - leftW - 300)));
 
   // Case A: no analysis cached → run full analysis
   useEffect(() => {
@@ -909,10 +941,10 @@ function WorkspaceLayout() {
   }, [floatingLigandKey, active]);
 
   return (
-    <div className="relative flex h-full w-full overflow-hidden">
-      {/* Left: structure tray — collapses to mini-strip when chat is open */}
+    <div ref={rootRef} className="relative flex h-full w-full overflow-hidden">
+      {/* Left: structure tray — collapses to a mini-rail (manual toggle + auto when narrow) */}
       <motion.div
-        animate={{ width: trayExpanded ? 280 : 60 }}
+        animate={{ width: leftW }}
         transition={spring.snappy}
         className="relative z-[1] flex-shrink-0 h-full overflow-hidden flex flex-col shadow-[8px_0_24px_rgba(17,22,16,0.07)]"
       >
@@ -927,7 +959,7 @@ function WorkspaceLayout() {
               className="flex-1 min-h-0 flex flex-col"
               style={{ width: 280 }}
             >
-              <StructureTray onCollapse={chatOpen ? () => setTrayExpanded(false) : undefined} />
+              <StructureTray onCollapse={canCollapse ? () => setTrayManual(false) : undefined} />
             </motion.div>
           ) : (
             <motion.div
@@ -939,7 +971,7 @@ function WorkspaceLayout() {
               className="flex-1 min-h-0 flex flex-col"
               style={{ width: 60 }}
             >
-              <TrayMini onExpand={() => setTrayExpanded(true)} />
+              <TrayMini onExpand={() => setTrayManual(true)} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -1050,8 +1082,11 @@ function WorkspaceLayout() {
         </AnimatePresence>
       </div>{/* end viewer */}
 
-      {/* Right: context panel */}
-      <div className="relative z-[1] w-[400px] flex-shrink-0 h-full overflow-hidden shadow-[-8px_0_24px_rgba(17,22,16,0.07)]">
+      {/* Right: context panel — responsive width, shrinks toward a 320 floor */}
+      <div
+        className="relative z-[1] flex-shrink-0 h-full overflow-hidden shadow-[-8px_0_24px_rgba(17,22,16,0.07)]"
+        style={{ width: rightW }}
+      >
         <ContextPanel />
       </div>
     </div>
