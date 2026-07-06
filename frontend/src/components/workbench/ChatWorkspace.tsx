@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUp, Check, ChevronDown, MessageSquare, Microscope, Search, Trash2, Zap } from "lucide-react";
+import { ArrowUp, Check, ChevronDown, MessageSquare, Search, Trash2, Zap } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -153,15 +153,6 @@ export function ChatWorkspace({ analysis, compareEntry, onFocusExplore, embedded
       <div className="flex-1 min-h-0 overflow-y-auto px-4 py-5 space-y-4 scrollbar-thin-report">
         {messages.length === 0 && !live && (
           <div className="flex flex-col items-center justify-center h-full gap-4 py-10 text-center px-4">
-            <div
-              className="flex h-11 w-11 items-center justify-center rounded-full"
-              style={{
-                background: "rgba(var(--pio-lavender-rgb), 0.22)",
-                boxShadow: "0 0 24px rgba(var(--pio-lavender-rgb), 0.32), 0 0 6px rgba(var(--pio-lavender-rgb), 0.20)",
-              }}
-            >
-              <Microscope size={20} style={{ color: "var(--pio-lavender-deep)" }} />
-            </div>
             <p className="text-pio-sm leading-relaxed text-[var(--pio-graphite)] max-w-[300px]">
               Ask anything about the loaded structure — contacts, ligands, chains, confidence scores, interaction types.
             </p>

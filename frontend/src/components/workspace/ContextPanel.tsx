@@ -321,34 +321,48 @@ function CopilotReview({ analysis }: { analysis: AnalysisResponse }) {
 
   return (
     <div className="rounded-[14px] p-4" style={{ background: "var(--pio-lavender-pale)" }}>
-      <div className="flex items-center gap-2">
-        <Sparkles size={14} style={{ color: "var(--pio-lavender-deep)" }} />
+      <div className="mb-2 flex items-center gap-2">
+        <Sparkles size={15} style={{ color: "var(--pio-lavender-deep)" }} />
         <p className="text-pio-2xs font-bold uppercase tracking-[0.08em]" style={{ color: "var(--pio-lavender-deep)" }}>AI review</p>
-        <span className="text-pio-2xs text-[var(--pio-graphite)] opacity-55">local only</span>
-        {!review && (
+        <span className="text-pio-2xs font-medium" style={{ color: "var(--pio-lavender-deep)", opacity: 0.6 }}>local only</span>
+      </div>
+
+      {!review && !loading && !error && (
+        <p className="text-pio-sm leading-[1.5] text-[var(--pio-graphite)]">
+          Narrate the metrics above into a plain-English verdict and a suggested next experiment — strictly over the
+          computed numbers. Uses your local Anthropic key.
+        </p>
+      )}
+      {error && <p className="text-pio-sm text-[var(--pio-coral-deep)]">{error}</p>}
+      {review && (
+        <div className="pio-markdown text-pio-sm leading-[1.55] text-[var(--pio-ink)]">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{review}</ReactMarkdown>
+        </div>
+      )}
+
+      <div className="mt-3">
+        {review && !loading ? (
+          <button
+            type="button"
+            onClick={() => void run()}
+            className="inline-flex items-center gap-1.5 text-pio-2xs font-semibold transition-opacity hover:opacity-70"
+            style={{ color: "var(--pio-lavender-deep)" }}
+          >
+            <Sparkles size={11} /> Regenerate
+          </button>
+        ) : (
           <button
             type="button"
             onClick={() => void run()}
             disabled={loading}
-            className="ml-auto inline-flex items-center gap-1.5 rounded-[10px] px-2.5 py-1 text-pio-2xs font-semibold text-[var(--pio-lavender-deep)] transition-colors hover:bg-[color-mix(in_srgb,var(--pio-lavender-deep)_12%,transparent)] disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-[12px] px-3.5 py-1.5 text-pio-xs font-semibold transition-opacity hover:opacity-90 disabled:opacity-60"
+            style={{ background: "var(--pio-lavender-deep)", color: "var(--pio-highlight-text)" }}
           >
-            {loading ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
-            {loading ? "Thinking…" : "Generate"}
+            {loading ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+            {loading ? "Thinking…" : "Generate review"}
           </button>
         )}
       </div>
-      {!review && !error && !loading && (
-        <p className="mt-1.5 text-pio-xs leading-[1.5] text-[var(--pio-graphite)]">
-          Narrate the metrics above into a plain-English verdict + a suggested next experiment. Strictly over the
-          computed numbers — uses your local Anthropic key.
-        </p>
-      )}
-      {error && <p className="mt-2 text-pio-xs text-[var(--pio-coral-deep)]">{error}</p>}
-      {review && (
-        <div className="pio-markdown mt-2 text-pio-sm leading-[1.55] text-[var(--pio-ink)]">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{review}</ReactMarkdown>
-        </div>
-      )}
     </div>
   );
 }
