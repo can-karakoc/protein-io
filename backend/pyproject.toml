@@ -2,6 +2,7 @@
 name = "protein-interaction-explorer-backend"
 version = "0.1.0"
 description = "FastAPI backend for protein interaction analysis"
+license = "GPL-3.0-or-later"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115.0",
@@ -21,6 +22,9 @@ dependencies = [
     # rest, but mandatory for drug-discovery credibility. See docs/ROADMAP-2026.md.
     "rdkit>=2024.9.1",
     "posebusters>=0.3.1",
+    # Antibody numbering (Phase 14): AntPack — a pip wheel, no HMMER binary (unlike
+    # ANARCI), so it stays deploy-safe. GPL-licensed → this project is GPL.
+    "antpack==0.3.8.6.3",
 ]
 
 [project.optional-dependencies]

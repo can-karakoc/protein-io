@@ -308,3 +308,12 @@ Contact table:
 - [Performance Baseline](docs/PERFORMANCE_BASELINE.md)
 - [Product Direction](docs/PRODUCT_DIRECTION.md)
 - [Release Plan](docs/RELEASE_PLAN.md)
+
+## License
+
+Protein I/O is licensed under the **GNU General Public License v3.0 or later** (see
+[`LICENSE`](LICENSE)). It was previously MIT; it moved to GPLv3 to incorporate
+[**AntPack**](https://pypi.org/project/antpack/) (GPL) for antibody Fv numbering — a
+pip-installable, HMMER-free alternative to ANARCI that keeps the "no binaries,
+deploy-safe" property. Antibody detection still fails soft to an in-house estimate if
+AntPack isn't available.

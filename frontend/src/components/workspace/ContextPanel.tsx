@@ -3151,9 +3151,9 @@ function AntibodyTab({ entry }: { entry: StructureEntry }) {
       <div>
         <h2 className="pio-section-title">Antibody</h2>
         <p className="pio-section-copy mt-1">
-          Variable-domain (Fv) CDR loops, detected in-house by aligning each chain to reference
-          VH/VL domains. Kabat-style regions — a sequence-based estimate, not a validated
-          numbering. Click a CDR to highlight it in 3D.
+          Variable-domain (Fv) chains and their CDR loops from <strong>IMGT numbering</strong>
+          {" "}(AntPack — no external binaries), covering heavy, light, and single-domain
+          nanobodies. Click a CDR to highlight it in 3D.
         </p>
       </div>
       {chains.map((ch) => (
@@ -3161,7 +3161,7 @@ function AntibodyTab({ entry }: { entry: StructureEntry }) {
           <div className="flex items-center gap-2">
             <span className="pio-badge pio-badge-active text-pio-xs">{ch.domain_type}</span>
             <span className="text-pio-sm font-semibold text-[var(--pio-ink)]">Chain {ch.chain_id}</span>
-            <span className="ml-auto text-pio-2xs text-[var(--pio-graphite)]">{Math.round(ch.identity * 100)}% framework identity</span>
+            <span className="ml-auto text-pio-2xs text-[var(--pio-graphite)]">{Math.round(ch.identity * 100)}% germline identity</span>
           </div>
           <motion.div className="flex flex-col gap-2" initial="hidden" animate="show" variants={stagger}>
             {ch.cdrs.map((cdr) => {

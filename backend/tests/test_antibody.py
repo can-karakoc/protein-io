@@ -2,10 +2,13 @@
 
 from types import SimpleNamespace
 
-# Real sequences (trastuzumab VH/VL, rituximab VH, hemoglobin-α as a negative).
+# Real sequences. CDR expectations use IMGT (AntPack's default scheme).
 TRAS_VH = "EVQLVESGGGLVQPGGSLRLSCAASGFNIKDTYIHWVRQAPGKGLEWVARIYPTNGYTRYADSVKGRFTISADTSKNTAYLQMNSLRAEDTAVYYCSRWGGDGFYAMDYWGQGTLVTVSS"
 TRAS_VL = "DIQMTQSPSSLSASVGDRVTITCRASQDVNTAVAWYQQKPGKAPKLLIYSASFLYSGVPSRFSGSRSGTDFTLTISSLQPEDFATYYCQQHYTTPPTFGQGTKVEIK"
 RITUX_VH = "QVQLQQPGAELVKPGASVKMSCKASGYTFTSYNMHWVKQTPGRGLEWIGAIYPGNGDTSYNQKFKGKATLTADKSSSTAYMQLSSLTSEDSAVYYCARSTYYGGDWYFNVWGAGTTVTVSA"
+# Caplacizumab — a single-domain camelid nanobody (VHH); the case the in-house
+# 2-reference heuristic couldn't handle but AntPack numbers correctly.
+NANOBODY_VHH = "EVQLVESGGGLVQPGNSLRLSCAASGFTFSSVYMNWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAKDRGVPYYYGMDYWGKGTLVTVSS"
 HBA = "VLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR"
 
 _ONE_TO_THREE = {
@@ -41,8 +44,9 @@ def test_detects_heavy_and_light_with_cdrs():
     assert result[0]["chain_id"] == "H"
 
     h_cdrs = {c["name"]: c["sequence"] for c in by_chain["H"]["cdrs"]}
-    assert h_cdrs["CDR-H1"] == "GFNIKDTYIH"
-    assert h_cdrs["CDR-H2"] == "RIYPTNGYTRYADSVKG"
+    # IMGT CDR definitions (AntPack).
+    assert h_cdrs["CDR-H1"] == "GFNIKDTY"
+    assert h_cdrs["CDR-H2"] == "IYPTNGYT"
     assert h_cdrs["CDR-H3"] == "SRWGGDGFYAMDY"
     l_cdrs = {c["name"]: c["sequence"] for c in by_chain["L"]["cdrs"]}
     assert l_cdrs["CDR-L3"] == "QQHYTTPPT"
@@ -54,10 +58,18 @@ def test_generalises_to_a_different_antibody():
     result = annotate_antibody(chain_atoms("A", RITUX_VH))
     assert len(result) == 1
     assert result[0]["domain_type"] == "VH"
+    assert len(result[0]["cdrs"]) == 3  # all three heavy CDRs numbered
+
+
+def test_detects_nanobody_vhh():
+    # The payoff of real numbering: a single-domain camelid VHH is detected + its CDRs.
+    from app.antibody import annotate_antibody
+
+    result = annotate_antibody(chain_atoms("A", NANOBODY_VHH))
+    assert len(result) == 1
+    assert result[0]["domain_type"] == "VH"
     cdrs = {c["name"]: c["sequence"] for c in result[0]["cdrs"]}
-    # Rituximab's own CDR-H3 (different length from the trastuzumab reference).
-    assert cdrs["CDR-H3"] == "STYYGGDWYFNV"
-    assert cdrs["CDR-H1"] == "GYTFTSYNMH"
+    assert cdrs["CDR-H3"] == "AKDRGVPYYYGMDY"
 
 
 def test_non_antibody_chain_rejected():
@@ -98,6 +110,18 @@ def test_cdr_residue_numbers_track_structure_numbering():
     assert h3["residue_numbers"][0] == h3["start"]
     assert int(h3["start"]) >= 100
     assert len(h3["residue_numbers"]) == h3["length"]
+
+
+def test_inhouse_fallback_still_works():
+    # Deploy resilience: if AntPack can't be imported, the in-house estimate runs.
+    from app.antibody import _annotate_inhouse
+
+    out = _annotate_inhouse(TRAS_VH)
+    assert out is not None
+    domain_type, identity, regions, order = out
+    assert domain_type == "VH"
+    assert identity >= 0.9  # trastuzumab is the reference
+    assert _annotate_inhouse(HBA) is None  # non-antibody rejected
 
 
 def test_service_attaches_mean_plddt():

@@ -16,3 +16,7 @@ uvicorn[standard]>=0.30.0
 # instance runs out of memory, these can be removed (ligand validity fails soft).
 posebusters>=0.3.1
 rdkit>=2024.9.1
+# Antibody numbering (Phase 14). AntPack is a pip wheel — no HMMER binary, unlike
+# ANARCI — so it stays deploy-safe. Pinned to the last freely-usable version; it is
+# GPL, which is why this project is GPL-licensed. Antibody mode fails soft without it.
+antpack==0.3.8.6.3
