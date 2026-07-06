@@ -740,7 +740,7 @@ function WorkspaceTopNav() {
 // ── Collapsed tray mini-strip ─────────────────────────────────────────────────
 
 function TrayMini({ onExpand }: { onExpand: () => void }) {
-  const { structures, activeId, setActiveId, setContextTab } = useWorkspace();
+  const { structures, activeId, setActiveId, setContextTab, removeStructure } = useWorkspace();
   const MAX = 9;
   return (
     <div
@@ -759,25 +759,37 @@ function TrayMini({ onExpand }: { onExpand: () => void }) {
         {structures.slice(0, MAX).map((s) => {
           const isActive = s.id === activeId;
           const label = (s.pdbId || s.uniprotId || s.name || "?").slice(0, 4).toUpperCase();
+          const displayName = s.pdbId || s.uniprotId || s.name || "structure";
           return (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => { setActiveId(s.id); setContextTab("overview"); }}
-              title={`Switch to ${s.pdbId || s.uniprotId || s.name || "structure"}`}
-              className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] transition-all"
-              style={{
-                background: isActive ? "var(--pio-highlight)" : "rgba(199,217,236,0.5)",
-                color: isActive ? "var(--pio-highlight-text)" : "var(--pio-highlight)",
-                fontFamily: "var(--font-pio-mono)",
-                fontSize: 8,
-                fontWeight: 700,
-                letterSpacing: "0.02em",
-                boxShadow: isActive ? "0 0 0 2px var(--pio-highlight)" : "none",
-              }}
-            >
-              {s.isAnalyzing ? <Loader2 size={12} className="animate-spin" /> : label}
-            </button>
+            <div key={s.id} className="group relative shrink-0">
+              <button
+                type="button"
+                onClick={() => { setActiveId(s.id); setContextTab("overview"); }}
+                title={`Switch to ${displayName}`}
+                className="flex h-9 w-9 items-center justify-center rounded-[9px] transition-all"
+                style={{
+                  background: isActive ? "var(--pio-highlight)" : "rgba(199,217,236,0.5)",
+                  color: isActive ? "var(--pio-highlight-text)" : "var(--pio-highlight)",
+                  fontFamily: "var(--font-pio-mono)",
+                  fontSize: 8,
+                  fontWeight: 700,
+                  letterSpacing: "0.02em",
+                  boxShadow: isActive ? "0 0 0 2px var(--pio-highlight)" : "none",
+                }}
+              >
+                {s.isAnalyzing ? <Loader2 size={12} className="animate-spin" /> : label}
+              </button>
+              {/* Close (remove) — appears on hover */}
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); removeStructure(s.id); }}
+                title={`Remove ${displayName}`}
+                aria-label={`Remove ${displayName}`}
+                className="absolute -right-1 -top-1 hidden h-4 w-4 items-center justify-center rounded-full border border-[var(--pio-line)] bg-[var(--pio-white)] text-[var(--pio-graphite)] shadow-sm transition-colors hover:bg-[var(--pio-coral-pale)] hover:text-[var(--pio-coral-deep)] group-hover:flex"
+              >
+                <X size={9} />
+              </button>
+            </div>
           );
         })}
         {structures.length > MAX && (
@@ -815,10 +827,10 @@ function WorkspaceLayout() {
 
   // Left tray: the width/chat/structure-count regime decides whether it should be
   // expanded; crossing that boundary re-drives the tray. A manual toggle holds only
-  // until the next boundary change. Never collapse with no structures (loader must stay).
+  // until the next boundary change. Auto-collapses on narrow even with no structures
+  // (the mini-rail's expand button — or the centre gallery — reaches the loader).
   const LEFT_AUTO_COLLAPSE_W = 1024;
-  const canCollapse = structures.length > 0;
-  const shouldAutoExpand = !canCollapse || (!chatOpen && containerW >= LEFT_AUTO_COLLAPSE_W);
+  const shouldAutoExpand = !chatOpen && containerW >= LEFT_AUTO_COLLAPSE_W;
   useEffect(() => {
     setTrayExpanded(shouldAutoExpand);
   }, [shouldAutoExpand]);
@@ -964,7 +976,7 @@ function WorkspaceLayout() {
               className="flex-1 min-h-0 flex flex-col"
               style={{ width: 280 }}
             >
-              <StructureTray onCollapse={canCollapse ? () => setTrayExpanded(false) : undefined} />
+              <StructureTray onCollapse={() => setTrayExpanded(false)} />
             </motion.div>
           ) : (
             <motion.div
