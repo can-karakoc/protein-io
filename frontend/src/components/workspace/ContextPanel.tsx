@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { ease, listItem, spring, stagger, tabContent } from "@/lib/motion";
 
@@ -179,40 +180,71 @@ function WarningBanner({ warnings }: { warnings: string[] }) {
 
 // ── Explain this metric (inline popover) ──────────────────────────────────────
 
-function MetricInfo({ metric, align = "left" }: { metric: MetricKey; align?: "left" | "right" }) {
+const METRIC_POPOVER_W = 250;
+
+function MetricInfo({ metric }: { metric: MetricKey }) {
   const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const popRef = useRef<HTMLDivElement>(null);
   const e = METRIC_EXPLAINERS[metric];
+
+  function toggle(ev: React.MouseEvent) {
+    ev.stopPropagation();
+    if (open) { setOpen(false); return; }
+    const r = btnRef.current?.getBoundingClientRect();
+    if (r) {
+      // Clamp within the viewport so a header near the panel edge doesn't clip.
+      const left = Math.max(12, Math.min(r.left, window.innerWidth - METRIC_POPOVER_W - 12));
+      setPos({ top: r.bottom + 6, left });
+    }
+    setOpen(true);
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(ev: MouseEvent) {
+      const t = ev.target as Node;
+      if (btnRef.current?.contains(t) || popRef.current?.contains(t)) return;
+      setOpen(false);
+    }
+    const close = () => setOpen(false);
+    document.addEventListener("mousedown", onDoc);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [open]);
+
   return (
-    <span className="relative inline-flex align-middle">
+    <>
       <button
+        ref={btnRef}
         type="button"
-        onClick={(ev) => { ev.stopPropagation(); setOpen((o) => !o); }}
+        onClick={toggle}
         aria-label={`Explain ${e.label}`}
-        className="inline-flex h-4 w-4 items-center justify-center rounded-full text-[var(--pio-graphite)] opacity-50 transition-opacity hover:opacity-100"
+        className="inline-flex h-4 w-4 items-center justify-center rounded-full align-middle text-[var(--pio-graphite)] opacity-50 transition-opacity hover:opacity-100"
       >
         <Info size={12} />
       </button>
-      <AnimatePresence>
-        {open && (
-          <>
-            <div className="fixed inset-0 z-40" onClick={(ev) => { ev.stopPropagation(); setOpen(false); }} />
-            <motion.div
-              initial={{ opacity: 0, y: 4, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 4, scale: 0.98 }}
-              transition={spring.snappy}
-              onClick={(ev) => ev.stopPropagation()}
-              className="absolute top-6 z-50 w-[250px] rounded-[12px] border border-[var(--pio-line)] bg-[var(--pio-white)] p-3 text-left shadow-[0_8px_24px_rgba(17,22,16,0.16)]"
-              style={{ [align]: 0 } as React.CSSProperties}
-            >
-              <p className="text-pio-xs font-bold text-[var(--pio-ink)]">{e.label}</p>
-              <p className="mt-1 text-pio-2xs leading-[1.55] text-[var(--pio-graphite)]">{e.what}</p>
-              <p className="mt-1.5 text-pio-2xs leading-[1.55] text-[var(--pio-ink)]">{e.read}</p>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </span>
+      {/* Portal to <body> so no ancestor overflow/stacking context can clip it. */}
+      {open && pos && createPortal(
+        <div
+          ref={popRef}
+          onClick={(ev) => ev.stopPropagation()}
+          className="fixed z-[9999] rounded-[12px] border border-[var(--pio-line)] bg-[var(--pio-white)] p-3 text-left shadow-[0_8px_28px_rgba(17,22,16,0.20)]"
+          style={{ top: pos.top, left: pos.left, width: METRIC_POPOVER_W }}
+        >
+          <p className="text-pio-xs font-bold text-[var(--pio-ink)]">{e.label}</p>
+          <p className="mt-1 text-pio-2xs leading-[1.55] text-[var(--pio-graphite)]">{e.what}</p>
+          <p className="mt-1.5 text-pio-2xs leading-[1.55] text-[var(--pio-ink)]">{e.read}</p>
+        </div>,
+        document.body,
+      )}
+    </>
   );
 }
 
