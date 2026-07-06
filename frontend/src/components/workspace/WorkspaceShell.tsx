@@ -992,10 +992,11 @@ function WorkspaceLayout() {
           colorMode={effectiveColorMode}
         />
 
-        {/* pLDDT / Structure color toggle — top-right, only when confidences exist.
-            Goes compact on narrow viewers so it never overflows the viewer column. */}
-        {residueConfidences.length > 0 && (
-          <div className="absolute right-3 top-3 z-10 flex max-w-[calc(100%-24px)] flex-col items-end gap-2">
+        {/* Top-right viewer overlays — toggle, selection pill and pLDDT note share one
+            vertical stack so they never overlap (e.g. pLDDT mode + an active selection). */}
+        <div className="absolute right-3 top-3 z-10 flex max-w-[calc(100%-24px)] flex-col items-end gap-2">
+          {/* Structure / pLDDT colour toggle — compact on narrow viewers */}
+          {residueConfidences.length > 0 && (
             <div className="inline-flex rounded-full border border-[rgba(20,20,15,0.14)] bg-[var(--pio-white)] p-[3px]">
               {(["structure", "plddt"] as const).map((m) => (
                 <button
@@ -1014,61 +1015,62 @@ function WorkspaceLayout() {
                 </button>
               ))}
             </div>
-            {effectiveColorMode === "plddt" && !compactViewerControls && (
-              <div
-                className="max-w-[240px] rounded-[14px] border border-[var(--pio-line)] px-3 py-2 text-pio-xs leading-5 text-[var(--pio-graphite)]"
-                style={{
-                  background: "color-mix(in srgb, var(--pio-white) 80%, transparent)",
-                  backdropFilter: "blur(12px)",
-                  WebkitBackdropFilter: "blur(12px)",
-                }}
-              >
-                Mol* pLDDT coloring is active using residue B-factor confidence values.
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Selected pill — top-right, visible when something is selected */}
-        <AnimatePresence>
-          {selection && (
-            <motion.div
-              key="selection-pill"
-              initial={{ y: 12, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 12, opacity: 0 }}
-              transition={{ duration: 0.2, ease: ease.out }}
-              className="absolute right-3 pointer-events-none z-10"
-              style={{ top: residueConfidences.length > 0 ? 52 : 12 }}
-            >
-              <div
-                className="pointer-events-auto inline-flex items-center gap-2"
-                style={{
-                  background: "rgba(12,22,36,0.72)",
-                  backdropFilter: "blur(14px)",
-                  WebkitBackdropFilter: "blur(14px)",
-                  borderRadius: 20,
-                  padding: "7px 8px 7px 14px",
-                }}
-              >
-                <div>
-                  <p className="text-pio-3xs" style={{ fontWeight: 700, color: "rgba(255,255,255,0.45)", letterSpacing: "0.12em", textTransform: "uppercase", lineHeight: 1, marginBottom: 3, whiteSpace: "nowrap" }}>Selected</p>
-                  <p className="text-pio-base" style={{ fontWeight: 700, color: "#fff", lineHeight: 1, whiteSpace: "nowrap", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis" }}>{selection.label}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => { setSelection(null); setFloatingLigandKey(null); }}
-                  style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, flexShrink: 0, background: "rgba(255,255,255,0.12)", borderRadius: "50%", color: "rgba(255,255,255,0.70)", transition: "background 0.15s" }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.22)"; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.12)"; }}
-                  title="Clear selection"
-                >
-                  <X size={10} />
-                </button>
-              </div>
-            </motion.div>
           )}
-        </AnimatePresence>
+
+          {/* Selected pill — visible when something is selected */}
+          <AnimatePresence>
+            {selection && (
+              <motion.div
+                key="selection-pill"
+                initial={{ y: 12, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 12, opacity: 0 }}
+                transition={{ duration: 0.2, ease: ease.out }}
+                className="pointer-events-none"
+              >
+                <div
+                  className="pointer-events-auto inline-flex items-center gap-2"
+                  style={{
+                    background: "rgba(12,22,36,0.72)",
+                    backdropFilter: "blur(14px)",
+                    WebkitBackdropFilter: "blur(14px)",
+                    borderRadius: 20,
+                    padding: "7px 8px 7px 14px",
+                  }}
+                >
+                  <div>
+                    <p className="text-pio-3xs" style={{ fontWeight: 700, color: "rgba(255,255,255,0.45)", letterSpacing: "0.12em", textTransform: "uppercase", lineHeight: 1, marginBottom: 3, whiteSpace: "nowrap" }}>Selected</p>
+                    <p className="text-pio-base" style={{ fontWeight: 700, color: "#fff", lineHeight: 1, whiteSpace: "nowrap", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis" }}>{selection.label}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setSelection(null); setFloatingLigandKey(null); }}
+                    style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, flexShrink: 0, background: "rgba(255,255,255,0.12)", borderRadius: "50%", color: "rgba(255,255,255,0.70)", transition: "background 0.15s" }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.22)"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.12)"; }}
+                    title="Clear selection"
+                  >
+                    <X size={10} />
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* pLDDT explanation note — last so it sits below the pill */}
+          {residueConfidences.length > 0 && effectiveColorMode === "plddt" && !compactViewerControls && (
+            <div
+              className="max-w-[240px] rounded-[14px] border border-[var(--pio-line)] px-3 py-2 text-pio-xs leading-5 text-[var(--pio-graphite)]"
+              style={{
+                background: "color-mix(in srgb, var(--pio-white) 80%, transparent)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+              }}
+            >
+              Mol* pLDDT coloring is active using residue B-factor confidence values.
+            </div>
+          )}
+        </div>
 
         {/* Floating ligand panel — absolute overlay inside the viewer column */}
         <AnimatePresence>
