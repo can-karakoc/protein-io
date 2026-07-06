@@ -13,7 +13,7 @@ import {
   Info,
   Loader2,
   Shield,
-  Sparkles,
+  Sparkle,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -322,13 +322,12 @@ function CopilotReview({ analysis }: { analysis: AnalysisResponse }) {
   return (
     <div className="rounded-[14px] p-4" style={{ background: "var(--pio-lavender-pale)" }}>
       <div className="mb-2 flex items-center gap-2">
-        <Sparkles size={15} style={{ color: "var(--pio-lavender-deep)" }} />
+        <Sparkle size={15} style={{ color: "var(--pio-lavender-deep)" }} />
         <p className="text-pio-2xs font-bold uppercase tracking-[0.08em]" style={{ color: "var(--pio-lavender-deep)" }}>AI review</p>
-        <span className="text-pio-2xs font-medium" style={{ color: "var(--pio-lavender-deep)", opacity: 0.6 }}>local only</span>
       </div>
 
       {!review && !loading && !error && (
-        <p className="text-pio-sm leading-[1.5] text-[var(--pio-graphite)]">
+        <p className="text-pio-sm leading-[1.5]" style={{ color: "var(--pio-lavender-deep)", opacity: 0.8 }}>
           Narrate the metrics above into a plain-English verdict and a suggested next experiment — strictly over the
           computed numbers. Uses your local Anthropic key.
         </p>
@@ -348,7 +347,7 @@ function CopilotReview({ analysis }: { analysis: AnalysisResponse }) {
             className="inline-flex items-center gap-1.5 text-pio-2xs font-semibold transition-opacity hover:opacity-70"
             style={{ color: "var(--pio-lavender-deep)" }}
           >
-            <Sparkles size={11} /> Regenerate
+            Regenerate
           </button>
         ) : (
           <button
@@ -358,7 +357,7 @@ function CopilotReview({ analysis }: { analysis: AnalysisResponse }) {
             className="inline-flex items-center gap-1.5 rounded-[12px] px-3.5 py-1.5 text-pio-xs font-semibold transition-opacity hover:opacity-90 disabled:opacity-60"
             style={{ background: "var(--pio-lavender-deep)", color: "var(--pio-highlight-text)" }}
           >
-            {loading ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+            {loading && <Loader2 size={12} className="animate-spin" />}
             {loading ? "Thinking…" : "Generate review"}
           </button>
         )}

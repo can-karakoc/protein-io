@@ -199,6 +199,10 @@ export const useWorkspace = create<WorkspaceState>()(
         compareIds: s.compareIds,
         contextTab: s.contextTab,
         mode: s.mode,
+        // Keep the chat panel open across a refresh if the user left it open.
+        // Rendering is still gated by CHAT_ENABLED, so this stays inert on the
+        // deployed build.
+        chatOpen: s.chatOpen,
         // Persist comparison result so the Compare tab is immediately ready
         // after a page refresh without re-running the API call.
         comparison: s.comparison,
