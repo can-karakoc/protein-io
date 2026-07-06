@@ -1,13 +1,16 @@
 "use client";
 
 import { ArrowUp, Check, ChevronDown, MessageSquare, Microscope, Search, Trash2, Zap } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 import type { AnalysisResponse } from "@/lib/types";
 import type { CompareSessionEntry } from "@/lib/compareSession";
 import { type ChatMessage, TOOL_LABELS, makeMsgId, sendChatMessage } from "@/lib/chat";
+import { useWorkspace } from "@/lib/workspaceStore";
+
+const EMPTY_MESSAGES: ChatMessage[] = [];
 
 type Phase = "thinking" | "tracing" | "done";
 
@@ -21,10 +24,22 @@ type ChatWorkspaceProps = {
   compareEntry: CompareSessionEntry | null;
   onFocusExplore: () => void;
   embedded?: boolean; // when true: strips outer card/shadow + inner header
+  structureKey?: string | null; // active structure id — chat history is persisted per structure
 };
 
-export function ChatWorkspace({ analysis, compareEntry, onFocusExplore, embedded = false }: ChatWorkspaceProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+export function ChatWorkspace({ analysis, compareEntry, onFocusExplore, embedded = false, structureKey = null }: ChatWorkspaceProps) {
+  // Chat history lives in the persisted store (per structure) so it survives closing the
+  // panel or reloading the page.
+  const messages = useWorkspace((s) => (structureKey ? s.chatHistory[structureKey] : undefined) ?? EMPTY_MESSAGES);
+  const setMessages = useCallback(
+    (updater: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => {
+      if (!structureKey) return;
+      const prev = useWorkspace.getState().chatHistory[structureKey] ?? EMPTY_MESSAGES;
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      useWorkspace.getState().setChatHistory(structureKey, next);
+    },
+    [structureKey],
+  );
   const [input, setInput] = useState("");
   const [live, setLive] = useState<LiveState | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);

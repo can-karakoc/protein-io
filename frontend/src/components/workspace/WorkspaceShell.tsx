@@ -1322,6 +1322,7 @@ export function WorkspaceShell() {
                   compareEntry={null}
                   onFocusExplore={() => setChatOpen(false)}
                   embedded
+                  structureKey={active?.id ?? null}
                 />
               </div>
             </motion.div>

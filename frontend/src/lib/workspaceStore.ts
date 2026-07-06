@@ -6,6 +6,7 @@ import { persist } from "zustand/middleware";
 
 import { createDebouncedIdbStorage } from "./idbStorage";
 import type { AnalysisResponse, BatchAnalysisResponse, BatchClusterResponse, FoldseekSearchResult, StructureComparisonResponse, ViewerSelection } from "./types";
+import type { ChatMessage } from "./chat";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -63,6 +64,7 @@ export type WorkspaceState = {
   compareError: string | null;
   batchResult: BatchAnalysisResponse | null;
   batchCluster: BatchClusterResponse | null;
+  chatHistory: Record<string, ChatMessage[]>; // per-structure chat, persisted
 
   // Actions
   addStructure: (entry: Omit<StructureEntry, "id" | "savedAt">) => string;
@@ -79,6 +81,7 @@ export type WorkspaceState = {
   setCompareLoading: (v: boolean) => void;
   setBatchResult: (r: BatchAnalysisResponse | null) => void;
   setBatchCluster: (c: BatchClusterResponse | null) => void;
+  setChatHistory: (structureId: string, messages: ChatMessage[]) => void;
   setHasHydrated: (v: boolean) => void;
   getActive: () => StructureEntry | null;
 };
@@ -102,6 +105,7 @@ export const useWorkspace = create<WorkspaceState>()(
       compareError: null,
       batchResult: null,
       batchCluster: null,
+      chatHistory: {},
 
       addStructure: (entry) => {
         const id = nanoid(10);
@@ -136,7 +140,8 @@ export const useWorkspace = create<WorkspaceState>()(
             s.compareIds[0] === id ? null : s.compareIds[0],
             s.compareIds[1] === id ? null : s.compareIds[1],
           ];
-          return { structures: remaining, activeId: newActive, compareIds: newCompare, comparison: null, compareError: null, compareIsLoading: false };
+          const { [id]: _dropped, ...chatHistory } = s.chatHistory;
+          return { structures: remaining, activeId: newActive, compareIds: newCompare, comparison: null, compareError: null, compareIsLoading: false, chatHistory };
         });
       },
 
@@ -166,6 +171,7 @@ export const useWorkspace = create<WorkspaceState>()(
       // A new (or cleared) batch invalidates any cached fold clustering.
       setBatchResult: (r) => set({ batchResult: r, batchCluster: null }),
       setBatchCluster: (c) => set({ batchCluster: c }),
+      setChatHistory: (structureId, messages) => set((s) => ({ chatHistory: { ...s.chatHistory, [structureId]: messages } })),
 
       setHasHydrated: (v) => set({ hasHydrated: v }),
 
@@ -201,6 +207,7 @@ export const useWorkspace = create<WorkspaceState>()(
         // and page refresh, unlike the old quota-limited localStorage cache).
         batchResult: s.batchResult,
         batchCluster: s.batchCluster,
+        chatHistory: s.chatHistory,
       }),
     },
   ),
