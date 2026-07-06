@@ -1,0 +1,23 @@
+[project]
+name = "proteinio"
+version = "0.1.0"
+description = "Python client for the Protein I/O structure-review API"
+readme = "README.md"
+license = "GPL-3.0-or-later"
+requires-python = ">=3.9"
+authors = [{ name = "Cankarakoc" }]
+dependencies = ["httpx>=0.27.0"]
+
+[project.urls]
+Homepage = "https://github.com/can-karakoc/protein-io"
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0.0"]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["proteinio*"]

@@ -142,10 +142,30 @@ The tests cover PDB and mmCIF parser behavior, PAE sidecar parsing, ligand detec
 
 ## API
 
+### Python client (local-first)
+
+Protein I/O is local-first — there is **no hosted public API**. Run a backend yourself and
+drive it from Python with the [`proteinio`](clients/python) client (`pip install ./clients/python`):
+
+```python
+from proteinio import Client
+pio = Client("http://localhost:8000")     # a backend you run
+a = pio.analyze_pdb("1hsg")
+print(a["summary"]["contact_count"], len(a["pockets"]))
+```
+
+The client wraps `analyze_pdb` / `analyze_alphafold` / `analyze_file` / `compare` /
+`batch_analyze` / `batch_cluster` / `chembl` / `versions`. See
+[clients/python/README.md](clients/python/README.md). Interactive OpenAPI docs are served at
+`/docs` when the backend runs.
+
+### Endpoints
+
 Health:
 
 ```text
 GET /health
+GET /api/versions
 ```
 
 Analyze:

@@ -168,8 +168,12 @@ Antibodies are a large share of biotech; no free review UI offers this.
 - `[x]` **Citable, versioned methods report** (`methodsReport.ts` + `/api/versions`) — download a
   Markdown methods/provenance doc listing only the methods actually used, with a software-version
   table (from `/api/versions`) and literature references. Verified on 1HSG.
-- `[ ]` Public REST API + documented Python client — pending a product decision (public traffic on
-  the paid backend needs rate limiting / abuse controls + an API-stability commitment).
+- `[x]` **Python client + documented API (local-first, "bring your own backend")** —
+  `clients/python` (`proteinio`): a pip-installable httpx client (`analyze_pdb`,
+  `analyze_alphafold`, `analyze_file`, `compare`, `batch_analyze`, `batch_cluster`, `chembl`,
+  `versions`) pointed at a backend you run — no hosted public endpoint, so zero cost/abuse
+  surface. Verified live against the local backend (1HSG → 1015 contacts, 3 pockets). A public
+  *hosted* API (rate limiting / keys / capacity) is deliberately deferred until there's demand.
 - `[ ]` Explicit local-first / privacy story in UI + docs — needs honest hosted-vs-self-hosted framing.
 
 ### Phase 16 — AI-native review copilot
