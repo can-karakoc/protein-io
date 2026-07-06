@@ -87,7 +87,7 @@ export function ChatWorkspace({ analysis, compareEntry, onFocusExplore, embedded
   if (!analysis) {
     return (
       <div className="flex min-h-full items-center justify-center p-8">
-        <div className="w-full max-w-[440px] rounded-[16px] border border-[var(--pio-line)] bg-[var(--pio-white)] p-10 text-center shadow-[0_2px_4px_rgba(17,22,16,0.06),0_12px_32px_rgba(17,22,16,0.10)]">
+        <div className="w-full max-w-[320px] text-center">
           <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(199,217,236,0.4)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <MessageSquare size={22} color="var(--pio-highlight)" />
           </div>
