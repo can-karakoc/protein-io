@@ -153,9 +153,14 @@ Antibodies are a large share of biotech; no free review UI offers this.
 - `[ ]` CDR-focused interface view (paratope contacts) + SAbDab context — DEFERRED.
 - `[ ]` Kabat/Chothia/Martin/Aho scheme toggle — DEFERRED (AntPack supports them; UI is IMGT-only).
 
-### Phase 15 — Workflow, collaboration, reproducibility
+### Phase 15 — Workflow, collaboration, reproducibility  🚧 PARTIAL (`feat/phase15-session-export`)
 
-- `[ ]` PyMOL/ChimeraX session export (`.pml` / `.cxc`).
+- `[x]` **PyMOL / ChimeraX session export** (`sessionExport.ts`) — from the Methods tab,
+  download a `.pml` or `.cxc` that loads the structure (fetch/open/`alphafold fetch`),
+  colours by pLDDT for predicted models, and lays down named selections for ligands
+  (sticks), pocket lining residues, antibody CDRs, and interface residues. Pure text, no
+  backend, no deps. Verified on 1HSG (ligand/pockets/interface) and P00533 (AlphaFold +
+  pLDDT) across both tools.
 - `[ ]` Shareable session bundle (file-based export/import, no backend).
 - `[ ]` Public REST API + documented Python client.
 - `[ ]` Citable, versioned methods/provenance report.

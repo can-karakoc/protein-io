@@ -19,6 +19,7 @@ import { ease, listItem, spring, stagger, tabContent } from "@/lib/motion";
 
 import { buildApiUrl } from "@/lib/api";
 import { downloadComparisonReportPdf } from "@/lib/comparisonReport";
+import { buildChimeraxScript, buildPymolScript, downloadSessionScript } from "@/lib/sessionExport";
 import type { AnalysisResponse, AntibodyCdr, ChainSecondaryStructure, ChemblTargetSummary, ContactDifference, ContactRecord, FoldseekHit, FoldseekSearchResult, InterfaceConfidence, LigandInteractionSummary, LigandSummary, LigandValidity, PaeMatrix, Pocket, RcsbAnalysisResponse, ResidueConfidence, SSType } from "@/lib/types";
 import type { ContextTab, StructureEntry } from "@/lib/workspaceStore";
 import { useWorkspace } from "@/lib/workspaceStore";
@@ -2589,8 +2590,38 @@ function MethodsTab({ entry }: { entry: StructureEntry }) {
           </p>
         )}
       </div>
+
+      {/* Session export — take the review into PyMOL / ChimeraX */}
+      <div style={{ background: "var(--pio-paper)", borderRadius: 12, padding: "12px 14px" }}>
+        <p className="text-pio-xs" style={{ fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)", marginBottom: 8 }}>OPEN IN YOUR TOOL</p>
+        <p className="text-pio-sm" style={{ color: "var(--pio-graphite)", lineHeight: 1.6, marginBottom: 10 }}>
+          A script that loads this structure and recreates the pLDDT colouring, ligands, pockets, CDRs, and interface residues as named selections.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {([
+            { label: "PyMOL (.pml)", build: buildPymolScript, ext: "pml" },
+            { label: "ChimeraX (.cxc)", build: buildChimeraxScript, ext: "cxc" },
+          ] as const).map((opt) => (
+            <motion.button
+              key={opt.ext}
+              type="button"
+              whileTap={{ scale: 0.96 }}
+              transition={spring.press}
+              onClick={() => downloadSessionScript(opt.build(entry, analysis), `${safeFilename(sourceId)}-proteinio.${opt.ext}`)}
+              className="flex items-center gap-1.5 rounded-[12px] px-3 py-2 text-pio-xs font-semibold bg-[var(--pio-sky)] text-[var(--pio-highlight)] hover:bg-[var(--pio-highlight)] hover:text-[var(--pio-highlight-text)] transition-colors cursor-pointer"
+            >
+              <Download size={12} />
+              {opt.label}
+            </motion.button>
+          ))}
+        </div>
+      </div>
     </div>
   );
+}
+
+function safeFilename(s: string): string {
+  return (s || "structure").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "structure";
 }
 
 // ── SimilarTab ───────────────────────────────────────────────────────────────
