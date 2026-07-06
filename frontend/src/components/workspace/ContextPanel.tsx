@@ -2635,6 +2635,17 @@ function MethodsTab({ entry }: { entry: StructureEntry }) {
           ))}
         </div>
       </div>
+
+      {/* Data & privacy */}
+      <div style={{ background: "var(--pio-paper)", borderRadius: 12, padding: "12px 14px" }}>
+        <p className="text-pio-xs" style={{ fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)", marginBottom: 8 }}>DATA &amp; PRIVACY</p>
+        <p className="text-pio-sm" style={{ color: "var(--pio-graphite)", lineHeight: 1.6 }}>
+          Metrics are computed on CPU with no models run. The backend is stateless — it analyses and
+          returns, storing nothing. Results are cached only in your browser. On this hosted site your
+          structure is sent to the backend to be analysed; run the backend locally to keep data entirely
+          on your machine.
+        </p>
+      </div>
     </div>
   );
 }
@@ -3372,6 +3383,20 @@ function EmptyGallery() {
         <p className="mt-2 text-pio-lg leading-relaxed text-[var(--pio-graphite)]">
           Explore protein structures, contacts, ligands, and confidence in one browser workspace.
           Start with a structure file, PDB ID, AlphaFold accession, or sample structure.
+        </p>
+        <p className="mt-3 text-pio-sm leading-relaxed text-[var(--pio-graphite)] opacity-80">
+          Local-first: all metrics run on CPU with no models, results stay cached in your browser, and
+          the backend stores nothing. On this hosted site your structure is sent to the backend only to be
+          analysed and returned;{" "}
+          <a
+            href="https://github.com/can-karakoc/protein-io#data--privacy"
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-[var(--pio-highlight)] hover:underline"
+          >
+            self-host the backend
+          </a>{" "}
+          to keep structures entirely on your machine.
         </p>
 
         <div className="mt-5 border-t border-[var(--pio-line)] pt-5">

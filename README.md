@@ -4,6 +4,23 @@ Protein Interaction Explorer is an open-source structural biology workspace for 
 
 The project is intentionally simple for the public MVP: no authentication, no database, no Docker, no queues, and no cloud storage.
 
+## Data & privacy
+
+Protein I/O is **local-first**. Every metric is computed on CPU — no structure-prediction or
+docking models are run — and the backend is **stateless**: it analyses what you send and returns
+the result, storing nothing (no database, no cloud storage, no accounts). Your results are cached
+only in **your browser** (IndexedDB / localStorage), and session bundles are files on your disk.
+
+What that means in practice:
+
+- **Self-hosted (recommended for private data).** Run the backend on your own machine (`uvicorn`
+  or the [Python client](clients/python) pointed at `localhost`). Nothing leaves your machine.
+- **Hosted site.** Your uploaded structure (or a fetched PDB/UniProt ID) is sent to the backend
+  **only to be analysed and returned** — it is processed in memory and not persisted server-side.
+  It does transit the network to reach the server, so for sensitive/unpublished structures, self-host.
+- **Chat.** The optional AI chat calls the Anthropic API and is **disabled on the hosted site**; it
+  runs only when you enable it locally (`NEXT_PUBLIC_ENABLE_CHAT` / `CHAT_ENABLED`).
+
 ## MVP Features
 
 - Upload a local PDB or mmCIF file.
