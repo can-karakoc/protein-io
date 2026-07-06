@@ -386,6 +386,41 @@ def _build_report(analysis: AnalysisResponse, sections: set, include_all: bool, 
     return "\n\n---\n\n".join(parts)
 
 
+_REVIEW_SYSTEM = (
+    "You are Protein I/O's structure-review copilot. You are given ONLY the computed metrics for a single "
+    "structure. Respond in short Markdown with exactly two parts:\n"
+    "**Verdict** — 2-3 sentences on how much to trust this structure overall, citing the key numbers.\n"
+    "**Next experiment** — ONE concrete, specific next step given these results.\n\n"
+    "Rules: use ONLY numbers present in the provided metrics; never invent residue numbers, distances, pLDDT, "
+    "ipTM, or any value you were not given. Be concise (under ~120 words total) and honest about uncertainty. "
+    "If the metrics are limited (e.g. no confidence scores), say so rather than guessing."
+)
+
+
+async def review_narration(analysis: AnalysisResponse) -> dict:
+    """One-shot LLM narration of the computed metrics into a verdict + suggested next experiment."""
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        return {"review": None, "error": "ANTHROPIC_API_KEY is not set on the server."}
+    try:
+        client = anthropic.AsyncAnthropic(api_key=api_key)
+        context = _build_report(analysis, sections=set(), include_all=True, comparison=None)
+        response = await client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=400,
+            system=_REVIEW_SYSTEM,
+            messages=[{"role": "user", "content": f"Computed metrics:\n\n{context}"}],
+        )
+        text = next((b.text for b in response.content if hasattr(b, "text")), "")
+        return {"review": text, "error": None}
+    except anthropic.AuthenticationError:
+        return {"review": None, "error": "Invalid Anthropic API key."}
+    except anthropic.RateLimitError:
+        return {"review": None, "error": "Anthropic rate limit hit — try again in a moment."}
+    except Exception as exc:
+        return {"review": None, "error": f"Copilot error: {exc}"}
+
+
 async def run_chat(analysis: AnalysisResponse, messages: list[dict], comparison: dict | None = None) -> dict:
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:

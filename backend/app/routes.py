@@ -375,3 +375,24 @@ async def chat(request: ChatRequest) -> ChatResponse:
         raise HTTPException(status_code=403, detail="Chat is disabled on this deployment.")
     result = await run_chat(request.analysis, request.messages, request.comparison)
     return ChatResponse(**result)
+
+
+class CopilotReviewRequest(BaseModel):
+    analysis: AnalysisResponse
+
+
+class CopilotReviewResponse(BaseModel):
+    review: str | None
+    error: str | None = None
+
+
+@router.post("/api/copilot/review", response_model=CopilotReviewResponse)
+async def copilot_review(request: CopilotReviewRequest) -> CopilotReviewResponse:
+    # LLM narration of the computed metrics — same credit-drain concern as chat, so it is
+    # gated behind CHAT_ENABLED (off on the public deployment, on locally / self-hosted).
+    if os.getenv("CHAT_ENABLED", "true").strip().lower() != "true":
+        raise HTTPException(status_code=403, detail="AI review is disabled on this deployment.")
+    from app.chat import review_narration
+
+    result = await review_narration(request.analysis)
+    return CopilotReviewResponse(**result)

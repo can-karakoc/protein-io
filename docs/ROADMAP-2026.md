@@ -186,8 +186,12 @@ Antibodies are a large share of biotech; no free review UI offers this.
   antibody). Rule-based over real numbers → always-on, free, and **cannot fabricate**; shown at the
   top of the Overview tab. This is the copilot's trust-verdict, done the trustworthy way. Verified
   on P00533 (pLDDT 76 + clashes + pocket) and 1HSG (clashes + pocket).
-- `[ ]` LLM narration + suggested next experiment on top of the verdict — DEFERRED (chat is disabled
-  on the hosted site to avoid API cost; runs only when enabled locally).
+- `[x]` **LLM narration + suggested next experiment** (`/api/copilot/review` + `CopilotReview` card) —
+  a local-only "AI review" on the Overview tab narrates the computed metrics into a plain-English
+  verdict + one concrete next experiment, strictly over the real numbers (fed `_build_report`;
+  system prompt forbids inventing values). Gated behind `CHAT_ENABLED` (off on the hosted site,
+  on locally / self-hosted). Verified live: grounded narration for 1CRN citing its real H-bond /
+  aromatic / resolution numbers.
 - `[ ]` Natural-language query across a structure or a whole batch — DEFERRED (needs the LLM).
 - `[x]` **Inline "explain this metric"** (`metricExplainers.ts` + `MetricInfo` popover) — a small
   info icon on each analysis section (pLDDT, PAE, ipTM, interface confidence, BSA, druggability,

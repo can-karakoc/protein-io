@@ -13,10 +13,13 @@ import {
   Info,
   Loader2,
   Shield,
+  Sparkles,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 import { ease, listItem, spring, stagger, tabContent } from "@/lib/motion";
 
@@ -26,6 +29,7 @@ import { buildChimeraxScript, buildPymolScript, downloadSessionScript } from "@/
 import { downloadMethodsReport } from "@/lib/methodsReport";
 import { buildReviewVerdict, type VerdictTone } from "@/lib/reviewVerdict";
 import { METRIC_EXPLAINERS, type MetricKey } from "@/lib/metricExplainers";
+import { CHAT_ENABLED } from "@/lib/features";
 import type { AnalysisResponse, AntibodyCdr, ChainSecondaryStructure, ChemblTargetSummary, ContactDifference, ContactRecord, FoldseekHit, FoldseekSearchResult, InterfaceConfidence, LigandInteractionSummary, LigandSummary, LigandValidity, PaeMatrix, Pocket, RcsbAnalysisResponse, ResidueConfidence, SSType } from "@/lib/types";
 import type { ContextTab, StructureEntry } from "@/lib/workspaceStore";
 import { useWorkspace } from "@/lib/workspaceStore";
@@ -289,6 +293,66 @@ function ReviewVerdictCard({ analysis }: { analysis: AnalysisResponse }) {
   );
 }
 
+// ── AI review (LLM narration — local only) ────────────────────────────────────
+
+function CopilotReview({ analysis }: { analysis: AnalysisResponse }) {
+  const [loading, setLoading] = useState(false);
+  const [review, setReview] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function run() {
+    setLoading(true); setError(null); setReview(null);
+    try {
+      const res = await fetch(buildApiUrl("/api/copilot/review"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ analysis }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) { setError(data?.detail ?? `Server error ${res.status}`); return; }
+      if (data?.error) { setError(data.error); return; }
+      setReview(data?.review ?? "");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Request failed.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="rounded-[14px] p-4" style={{ background: "var(--pio-lavender-pale)" }}>
+      <div className="flex items-center gap-2">
+        <Sparkles size={14} style={{ color: "var(--pio-lavender-deep)" }} />
+        <p className="text-pio-2xs font-bold uppercase tracking-[0.08em]" style={{ color: "var(--pio-lavender-deep)" }}>AI review</p>
+        <span className="text-pio-2xs text-[var(--pio-graphite)] opacity-55">local only</span>
+        {!review && (
+          <button
+            type="button"
+            onClick={() => void run()}
+            disabled={loading}
+            className="ml-auto inline-flex items-center gap-1.5 rounded-[10px] px-2.5 py-1 text-pio-2xs font-semibold text-[var(--pio-lavender-deep)] transition-colors hover:bg-[color-mix(in_srgb,var(--pio-lavender-deep)_12%,transparent)] disabled:opacity-50"
+          >
+            {loading ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
+            {loading ? "Thinking…" : "Generate"}
+          </button>
+        )}
+      </div>
+      {!review && !error && !loading && (
+        <p className="mt-1.5 text-pio-xs leading-[1.5] text-[var(--pio-graphite)]">
+          Narrate the metrics above into a plain-English verdict + a suggested next experiment. Strictly over the
+          computed numbers — uses your local Anthropic key.
+        </p>
+      )}
+      {error && <p className="mt-2 text-pio-xs text-[var(--pio-coral-deep)]">{error}</p>}
+      {review && (
+        <div className="pio-markdown mt-2 text-pio-sm leading-[1.55] text-[var(--pio-ink)]">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{review}</ReactMarkdown>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Tab: Overview ─────────────────────────────────────────────────────────────
 
 function OverviewTab({ entry }: { entry: StructureEntry }) {
@@ -383,6 +447,9 @@ function OverviewTab({ entry }: { entry: StructureEntry }) {
 
       {/* Review verdict — synthesis of the computed metrics */}
       <ReviewVerdictCard analysis={analysis} />
+
+      {/* AI review — LLM narration on top of the verdict (local only) */}
+      {CHAT_ENABLED && <CopilotReview analysis={analysis} />}
 
       {/* UniProt function */}
       {analysis.uniprot_annotations?.function && (
