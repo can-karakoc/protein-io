@@ -46,9 +46,11 @@ def contact_categories(atom_a: AtomRecord, atom_b: AtomRecord, contact_type: Con
     elif contact_type == "ligand-water":
         categories.append("ligand-water")
 
+    # "very-close-contact" is a factual <2 Å marker. A steric *clash* ("possible-clash")
+    # is decided separately by app.clashes (VDW overlap between non-bonded atoms) so the
+    # backbone peptide bond isn't miscounted as a clash.
     if distance < VERY_CLOSE_CONTACT_DISTANCE:
         categories.append("very-close-contact")
-        categories.append("possible-clash")
 
     return categories
 

@@ -205,6 +205,28 @@ def _compute_pockets(atoms) -> list:
         return []
 
 
+def _compute_clashes(structure):
+    """Proper VDW steric clashes; fail-soft to an empty list."""
+    import logging
+
+    from app.clashes import detect_clashes
+
+    try:
+        return detect_clashes(structure)
+    except Exception as exc:  # pragma: no cover - defensive
+        logging.getLogger(__name__).info("Clash detection skipped: %s", exc)
+        return []
+
+
+def _mark_clash_contacts(contacts, clashes):
+    from app.clashes import mark_clash_contacts
+
+    try:
+        return mark_clash_contacts(contacts, clashes)
+    except Exception:  # pragma: no cover - defensive
+        return contacts
+
+
 def _compute_antibody(atoms, residue_confidences):
     """In-house antibody Fv/CDR annotation; fail-soft to None. Adds per-CDR mean pLDDT."""
     import logging
@@ -310,6 +332,11 @@ def analyze_pdb_content_with_timing(
     water_bridges = find_water_bridges(structure)
     contacts_ms = elapsed_ms(contacts_started)
 
+    # Proper steric clashes (VDW overlap between non-bonded atoms). Tag the matching
+    # contact rows *before* trust labels so the "possible-clash" label reflects real clashes.
+    clashes = _compute_clashes(structure)
+    contacts = _mark_clash_contacts(contacts, clashes)
+
     response_started = perf_counter()
     is_predicted = metadata is not None and metadata.source in PREDICTED_SOURCES
     confidence, residue_confidences, confidence_warnings = analyze_plddt_confidence(
@@ -337,6 +364,12 @@ def analyze_pdb_content_with_timing(
     pockets = _compute_pockets(structure.atoms) if include_validity else []
     antibody = _compute_antibody(structure.atoms, residue_confidences) if include_validity else None
 
+    # Authoritative clash count/list come from the atom-level VDW detector, not the
+    # residue-level contact table.
+    interaction_summary = summarize_interactions(contacts).model_copy(
+        update={"possible_clash_count": len(clashes), "possible_clashes": clashes}
+    )
+
     response = AnalysisResponse(
         summary=summary,
         metadata=metadata,
@@ -345,7 +378,7 @@ def analyze_pdb_content_with_timing(
         residue_confidences=residue_confidences,
         pae=pae,
         pae_matrix=pae_matrix,
-        interaction_summary=summarize_interactions(contacts),
+        interaction_summary=interaction_summary,
         ligand_interactions=summarize_ligand_interactions(contacts, water_bridges=water_bridges, ligands=structure.ligands),
         ligand_validity=ligand_validity,
         secondary_structure=secondary_structure,
