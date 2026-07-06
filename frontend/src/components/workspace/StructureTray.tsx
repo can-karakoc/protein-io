@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertCircle, ChevronDown, ChevronsLeft, FileUp, GitCompare, Layers, Loader2, Play, Search, Trash2, X } from "lucide-react";
+import { AlertCircle, ChevronDown, ChevronsLeft, Download, FileUp, GitCompare, Layers, Loader2, Play, Search, Trash2, Upload, X } from "lucide-react";
 import { type ReactNode, useRef, useState } from "react";
 
 import { ease, listItem, spring, stagger } from "@/lib/motion";
@@ -26,6 +26,7 @@ function Collapsible({ open, children }: { open: boolean; children: ReactNode })
 }
 
 import { buildApiUrl } from "@/lib/api";
+import { buildSessionBundle, downloadSessionBundle, parseSessionBundle } from "@/lib/sessionBundle";
 import type { AnalysisResponse, StructureComparisonResponse } from "@/lib/types";
 import { type StructureEntry, type StructureFormat, useWorkspace } from "@/lib/workspaceStore";
 
@@ -570,6 +571,65 @@ function ComparePanel() {
   );
 }
 
+// ── Session export / import ───────────────────────────────────────────────────
+
+function SessionControls() {
+  const { structures, addStructure, setActiveId, setContextTab } = useWorkspace();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  function exportSession() {
+    setError(null);
+    downloadSessionBundle(buildSessionBundle(structures), `protein-io-session-${new Date().toISOString().slice(0, 10)}.json`);
+  }
+
+  async function importSession(file: File) {
+    setError(null);
+    try {
+      const items = parseSessionBundle(await file.text());
+      let firstId: string | null = null;
+      for (const s of items) {
+        const id = addStructure({ ...s, isAnalyzing: false, error: null });
+        firstId ??= id;
+      }
+      if (firstId) { setActiveId(firstId); setContextTab("overview"); }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not import session.");
+    }
+  }
+
+  const btn = "flex flex-1 items-center justify-center gap-1.5 rounded-[9px] border border-[var(--pio-line)] bg-[var(--pio-paper)] py-1.5 text-pio-xs font-semibold text-[var(--pio-graphite)] hover:border-[var(--pio-line-strong)] hover:text-[var(--pio-ink)] transition-colors";
+
+  return (
+    <div className="border-t border-[var(--pio-line)] mx-3 flex flex-col gap-2 pt-3 pb-4">
+      <p className="px-1 text-pio-3xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)] opacity-70">Session</p>
+      <div className="flex gap-2 px-1">
+        {structures.length > 0 && (
+          <button type="button" onClick={exportSession} className={btn} title="Save all loaded structures + analyses to a file">
+            <Download size={12} /> Export
+          </button>
+        )}
+        <button type="button" onClick={() => inputRef.current?.click()} className={btn} title="Restore a saved session file">
+          <Upload size={12} /> Import
+        </button>
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".json,application/json"
+          className="sr-only"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) void importSession(f); e.target.value = ""; }}
+        />
+      </div>
+      {error && (
+        <div className="flex items-start gap-1.5 rounded-[8px] bg-[var(--pio-coral-pale)] px-2 py-1.5 mx-1">
+          <AlertCircle size={11} className="mt-0.5 shrink-0 text-[var(--pio-coral-deep)]" />
+          <p className="text-pio-3xs text-[var(--pio-coral-deep)]">{error}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main StructureTray ────────────────────────────────────────────────────────
 
 export function StructureTray({ onCollapse }: { onCollapse?: () => void } = {}) {
@@ -602,10 +662,13 @@ export function StructureTray({ onCollapse }: { onCollapse?: () => void } = {}) 
       <div className="flex flex-1 min-h-0 flex-col overflow-y-auto scrollbar-thin-report">
         {/* Empty state: loader fills full width with sidebar-matching padding */}
         {structures.length === 0 && (
-          <div className="px-6 py-5">
-            <p className="mb-4 text-pio-3xl font-bold text-[var(--pio-ink)]">Load Structure</p>
-            <StructureLoader onLoaded={() => {}} />
-          </div>
+          <>
+            <div className="px-6 py-5">
+              <p className="mb-4 text-pio-3xl font-bold text-[var(--pio-ink)]">Load Structure</p>
+              <StructureLoader onLoaded={() => {}} />
+            </div>
+            <SessionControls />
+          </>
         )}
 
         {/* Loaded state: list + collapsible "Load another" */}
@@ -662,6 +725,9 @@ export function StructureTray({ onCollapse }: { onCollapse?: () => void } = {}) 
 
             {/* Compare panel — only when ≥2 structures are loaded */}
             {structures.length >= 2 && <ComparePanel />}
+
+            {/* Session export / import */}
+            <SessionControls />
           </>
         )}
       </div>

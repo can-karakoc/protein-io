@@ -28,6 +28,30 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@router.get("/api/versions")
+def package_versions() -> dict[str, str | None]:
+    """Installed versions of the tools that back the analysis — for the methods report."""
+    import importlib.metadata as md
+
+    def v(pkg: str) -> str | None:
+        try:
+            return md.version(pkg)
+        except Exception:
+            return None
+
+    return {
+        "app": "0.1.0",
+        "gemmi": v("gemmi"),
+        "numpy": v("numpy"),
+        "scipy": v("scipy"),
+        "rdkit": v("rdkit"),
+        "posebusters": v("posebusters"),
+        "antpack": v("antpack"),
+        "tmtools": v("tmtools"),
+        "fastapi": v("fastapi"),
+    }
+
+
 def _parse_sidecar_bytes(
     filename: str,
     content: bytes,

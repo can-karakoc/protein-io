@@ -161,10 +161,16 @@ Antibodies are a large share of biotech; no free review UI offers this.
   (sticks), pocket lining residues, antibody CDRs, and interface residues. Pure text, no
   backend, no deps. Verified on 1HSG (ligand/pockets/interface) and P00533 (AlphaFold +
   pLDDT) across both tools.
-- `[ ]` Shareable session bundle (file-based export/import, no backend).
-- `[ ]` Public REST API + documented Python client.
-- `[ ]` Citable, versioned methods/provenance report.
-- `[ ]` Explicit local-first / privacy story in UI + docs.
+- `[x]` **Shareable session bundle** (`sessionBundle.ts`) — export all loaded structures + their
+  analyses to one `.json`, re-import to restore the workspace exactly (no re-fetch/recompute).
+  Export/Import live in the tray (Import also in the empty state). Verified: export → import into
+  an empty workspace restores 1HSG + its analysis.
+- `[x]` **Citable, versioned methods report** (`methodsReport.ts` + `/api/versions`) — download a
+  Markdown methods/provenance doc listing only the methods actually used, with a software-version
+  table (from `/api/versions`) and literature references. Verified on 1HSG.
+- `[ ]` Public REST API + documented Python client — pending a product decision (public traffic on
+  the paid backend needs rate limiting / abuse controls + an API-stability commitment).
+- `[ ]` Explicit local-first / privacy story in UI + docs — needs honest hosted-vs-self-hosted framing.
 
 ### Phase 16 — AI-native review copilot
 

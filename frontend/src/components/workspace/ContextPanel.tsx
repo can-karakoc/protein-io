@@ -20,6 +20,7 @@ import { ease, listItem, spring, stagger, tabContent } from "@/lib/motion";
 import { buildApiUrl } from "@/lib/api";
 import { downloadComparisonReportPdf } from "@/lib/comparisonReport";
 import { buildChimeraxScript, buildPymolScript, downloadSessionScript } from "@/lib/sessionExport";
+import { downloadMethodsReport } from "@/lib/methodsReport";
 import type { AnalysisResponse, AntibodyCdr, ChainSecondaryStructure, ChemblTargetSummary, ContactDifference, ContactRecord, FoldseekHit, FoldseekSearchResult, InterfaceConfidence, LigandInteractionSummary, LigandSummary, LigandValidity, PaeMatrix, Pocket, RcsbAnalysisResponse, ResidueConfidence, SSType } from "@/lib/types";
 import type { ContextTab, StructureEntry } from "@/lib/workspaceStore";
 import { useWorkspace } from "@/lib/workspaceStore";
@@ -2589,6 +2590,24 @@ function MethodsTab({ entry }: { entry: StructureEntry }) {
             No parser, contact, confidence, or PAE warnings were recorded for this analysis.
           </p>
         )}
+      </div>
+
+      {/* Citable, versioned methods report */}
+      <div style={{ background: "var(--pio-paper)", borderRadius: 12, padding: "12px 14px" }}>
+        <p className="text-pio-xs" style={{ fontWeight: 600, letterSpacing: "0.07em", color: "var(--pio-graphite)", marginBottom: 8 }}>METHODS REPORT</p>
+        <p className="text-pio-sm" style={{ color: "var(--pio-graphite)", lineHeight: 1.6, marginBottom: 10 }}>
+          A citable Markdown report of every method used for this analysis, with tool versions and literature references.
+        </p>
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.96 }}
+          transition={spring.press}
+          onClick={() => void downloadMethodsReport(entry, analysis, buildApiUrl("/api/versions"), `${safeFilename(sourceId)}-methods.md`)}
+          className="flex items-center gap-1.5 rounded-[12px] px-3 py-2 text-pio-xs font-semibold bg-[var(--pio-sky)] text-[var(--pio-highlight)] hover:bg-[var(--pio-highlight)] hover:text-[var(--pio-highlight-text)] transition-colors cursor-pointer"
+        >
+          <Download size={12} />
+          Methods report (.md)
+        </motion.button>
       </div>
 
       {/* Session export — take the review into PyMOL / ChimeraX */}
