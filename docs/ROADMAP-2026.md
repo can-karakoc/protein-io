@@ -174,15 +174,22 @@ Antibodies are a large share of biotech; no free review UI offers this.
   `versions`) pointed at a backend you run — no hosted public endpoint, so zero cost/abuse
   surface. Verified live against the local backend (1HSG → 1015 contacts, 3 pockets). A public
   *hosted* API (rate limiting / keys / capacity) is deliberately deferred until there's demand.
-- `[ ]` Explicit local-first / privacy story in UI + docs — needs honest hosted-vs-self-hosted framing.
+- `[x]` **Explicit local-first / privacy story** — README "Data & privacy" section + empty-state
+  note + a Methods-tab card, with honest hosted-vs-self-hosted framing (the hosted site *does*
+  send your structure to the backend to analyse it; self-host to keep data on your machine).
 
-### Phase 16 — AI-native review copilot
+### Phase 16 — AI-native review copilot  🚧 PARTIAL (`feat/privacy-and-review-verdict`)
 
-- `[ ]` Upgrade the chat agent into a review copilot that narrates over computed metrics
-  into a plain-English trust verdict + suggested next experiment — **strictly over real
-  numbers, never fabricated**.
-- `[ ]` Natural-language query across a structure or a whole batch.
-- `[ ]` Inline "explain this metric".
+- `[x]` **Deterministic review verdict** (`reviewVerdict.ts`) — a plain-English synthesis of the
+  *computed* metrics into an overall trust assessment (good/caution/warn) + the specific things
+  to inspect (confidence, low-confidence interfaces, clashes, ligand-pose failures, top pocket,
+  antibody). Rule-based over real numbers → always-on, free, and **cannot fabricate**; shown at the
+  top of the Overview tab. This is the copilot's trust-verdict, done the trustworthy way. Verified
+  on P00533 (pLDDT 76 + clashes + pocket) and 1HSG (clashes + pocket).
+- `[ ]` LLM narration + suggested next experiment on top of the verdict — DEFERRED (chat is disabled
+  on the hosted site to avoid API cost; runs only when enabled locally).
+- `[ ]` Natural-language query across a structure or a whole batch — DEFERRED (needs the LLM).
+- `[ ]` Inline "explain this metric" — DEFERRED (can also be deterministic).
 
 ---
 

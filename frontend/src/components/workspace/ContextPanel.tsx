@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertCircle,
   AlertTriangle,
+  CheckCircle2,
   ChevronRight,
   Download,
   ExternalLink,
@@ -21,6 +22,7 @@ import { buildApiUrl } from "@/lib/api";
 import { downloadComparisonReportPdf } from "@/lib/comparisonReport";
 import { buildChimeraxScript, buildPymolScript, downloadSessionScript } from "@/lib/sessionExport";
 import { downloadMethodsReport } from "@/lib/methodsReport";
+import { buildReviewVerdict, type VerdictTone } from "@/lib/reviewVerdict";
 import type { AnalysisResponse, AntibodyCdr, ChainSecondaryStructure, ChemblTargetSummary, ContactDifference, ContactRecord, FoldseekHit, FoldseekSearchResult, InterfaceConfidence, LigandInteractionSummary, LigandSummary, LigandValidity, PaeMatrix, Pocket, RcsbAnalysisResponse, ResidueConfidence, SSType } from "@/lib/types";
 import type { ContextTab, StructureEntry } from "@/lib/workspaceStore";
 import { useWorkspace } from "@/lib/workspaceStore";
@@ -173,6 +175,47 @@ function WarningBanner({ warnings }: { warnings: string[] }) {
   );
 }
 
+// ── Review verdict (deterministic copilot) ────────────────────────────────────
+
+const VERDICT_STYLE: Record<VerdictTone, { bg: string; fg: string; Icon: typeof CheckCircle2 }> = {
+  good: { bg: "var(--pio-green-pale)", fg: "var(--pio-green-deep)", Icon: CheckCircle2 },
+  caution: { bg: "var(--pio-amber-pale)", fg: "var(--pio-amber-deep)", Icon: AlertTriangle },
+  warn: { bg: "var(--pio-coral-pale)", fg: "var(--pio-coral-deep)", Icon: AlertCircle },
+};
+const DOT_COLOR: Record<VerdictTone, string> = {
+  good: "var(--pio-green-deep)",
+  caution: "var(--pio-amber-deep)",
+  warn: "var(--pio-coral-deep)",
+};
+
+function ReviewVerdictCard({ analysis }: { analysis: AnalysisResponse }) {
+  const verdict = useMemo(() => buildReviewVerdict(analysis), [analysis]);
+  if (!verdict) return null;
+  const s = VERDICT_STYLE[verdict.tone];
+  return (
+    <div style={{ background: s.bg, borderRadius: 14, padding: "14px 16px" }}>
+      <div className="mb-2 flex items-center gap-2">
+        <s.Icon size={15} style={{ color: s.fg }} />
+        <p className="text-pio-2xs font-bold uppercase tracking-[0.08em]" style={{ color: s.fg }}>Review verdict</p>
+      </div>
+      <p className="text-pio-base font-semibold leading-snug text-[var(--pio-ink)]">{verdict.headline}</p>
+      <div className="mt-3 flex flex-col gap-2">
+        {verdict.points.map((p, i) => (
+          <div key={i} className="flex items-start gap-2">
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: DOT_COLOR[p.tone], marginTop: 6, flexShrink: 0 }} />
+            <p className="text-pio-sm leading-[1.5] text-[var(--pio-graphite)]">
+              <span className="font-bold text-[var(--pio-ink)]">{p.label}.</span> {p.detail}
+            </p>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-pio-2xs text-[var(--pio-graphite)] opacity-60">
+        Rule-based summary of the computed metrics — a review aid, not a substitute for expert judgment.
+      </p>
+    </div>
+  );
+}
+
 // ── Tab: Overview ─────────────────────────────────────────────────────────────
 
 function OverviewTab({ entry }: { entry: StructureEntry }) {
@@ -264,6 +307,9 @@ function OverviewTab({ entry }: { entry: StructureEntry }) {
           )}
         </div>
       )}
+
+      {/* Review verdict — synthesis of the computed metrics */}
+      <ReviewVerdictCard analysis={analysis} />
 
       {/* UniProt function */}
       {analysis.uniprot_annotations?.function && (
