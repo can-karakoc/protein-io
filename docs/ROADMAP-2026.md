@@ -189,7 +189,10 @@ Antibodies are a large share of biotech; no free review UI offers this.
 - `[ ]` LLM narration + suggested next experiment on top of the verdict — DEFERRED (chat is disabled
   on the hosted site to avoid API cost; runs only when enabled locally).
 - `[ ]` Natural-language query across a structure or a whole batch — DEFERRED (needs the LLM).
-- `[ ]` Inline "explain this metric" — DEFERRED (can also be deterministic).
+- `[x]` **Inline "explain this metric"** (`metricExplainers.ts` + `MetricInfo` popover) — a small
+  info icon on each analysis section (pLDDT, PAE, ipTM, interface confidence, BSA, druggability,
+  contact trust labels, secondary structure, CDRs) opens a curated, accurate plain-English
+  explanation. Deterministic — always-on, free, never fabricated.
 
 ---
 

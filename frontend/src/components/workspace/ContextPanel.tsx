@@ -10,6 +10,7 @@ import {
   ExternalLink,
   FlaskConical,
   GitCompare,
+  Info,
   Loader2,
   Shield,
   X,
@@ -23,6 +24,7 @@ import { downloadComparisonReportPdf } from "@/lib/comparisonReport";
 import { buildChimeraxScript, buildPymolScript, downloadSessionScript } from "@/lib/sessionExport";
 import { downloadMethodsReport } from "@/lib/methodsReport";
 import { buildReviewVerdict, type VerdictTone } from "@/lib/reviewVerdict";
+import { METRIC_EXPLAINERS, type MetricKey } from "@/lib/metricExplainers";
 import type { AnalysisResponse, AntibodyCdr, ChainSecondaryStructure, ChemblTargetSummary, ContactDifference, ContactRecord, FoldseekHit, FoldseekSearchResult, InterfaceConfidence, LigandInteractionSummary, LigandSummary, LigandValidity, PaeMatrix, Pocket, RcsbAnalysisResponse, ResidueConfidence, SSType } from "@/lib/types";
 import type { ContextTab, StructureEntry } from "@/lib/workspaceStore";
 import { useWorkspace } from "@/lib/workspaceStore";
@@ -172,6 +174,45 @@ function WarningBanner({ warnings }: { warnings: string[] }) {
         </div>
       ))}
     </div>
+  );
+}
+
+// ── Explain this metric (inline popover) ──────────────────────────────────────
+
+function MetricInfo({ metric, align = "left" }: { metric: MetricKey; align?: "left" | "right" }) {
+  const [open, setOpen] = useState(false);
+  const e = METRIC_EXPLAINERS[metric];
+  return (
+    <span className="relative inline-flex align-middle">
+      <button
+        type="button"
+        onClick={(ev) => { ev.stopPropagation(); setOpen((o) => !o); }}
+        aria-label={`Explain ${e.label}`}
+        className="inline-flex h-4 w-4 items-center justify-center rounded-full text-[var(--pio-graphite)] opacity-50 transition-opacity hover:opacity-100"
+      >
+        <Info size={12} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={(ev) => { ev.stopPropagation(); setOpen(false); }} />
+            <motion.div
+              initial={{ opacity: 0, y: 4, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 4, scale: 0.98 }}
+              transition={spring.snappy}
+              onClick={(ev) => ev.stopPropagation()}
+              className="absolute top-6 z-50 w-[250px] rounded-[12px] border border-[var(--pio-line)] bg-[var(--pio-white)] p-3 text-left shadow-[0_8px_24px_rgba(17,22,16,0.16)]"
+              style={{ [align]: 0 } as React.CSSProperties}
+            >
+              <p className="text-pio-xs font-bold text-[var(--pio-ink)]">{e.label}</p>
+              <p className="mt-1 text-pio-2xs leading-[1.55] text-[var(--pio-graphite)]">{e.what}</p>
+              <p className="mt-1.5 text-pio-2xs leading-[1.55] text-[var(--pio-ink)]">{e.read}</p>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </span>
   );
 }
 
@@ -510,7 +551,7 @@ function GlobalScoresSection({ scores }: { scores: import("@/lib/types").GlobalM
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">Global scores</p>
+      <p className="flex items-center gap-1 text-pio-2xs font-semibold uppercase tracking-[0.07em] text-[var(--pio-graphite)]">Global scores <MetricInfo metric="iptm" /></p>
       <div className="flex gap-2">
         {items.map(({ label, value, tip, unit }) => (
           <div
@@ -1014,7 +1055,7 @@ function ContactsTab({ entry }: { entry: StructureEntry }) {
     <div className="flex flex-col gap-5">
       {/* Section header */}
       <div>
-        <h2 className="pio-section-title">Contacts</h2>
+        <h2 className="pio-section-title">Contacts <MetricInfo metric="trust_label" /></h2>
         <p className="pio-section-copy mt-1">
           All residue and ligand contacts detected within the distance cutoff, grouped by interaction type.
         </p>
@@ -1393,7 +1434,7 @@ function InterfacesTab({ entry }: { entry: StructureEntry }) {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="pio-section-title">Interfaces</h2>
+        <h2 className="pio-section-title">Interfaces <MetricInfo metric="interface_confidence" /></h2>
         <p className="pio-section-copy mt-1">
           Chain-pair contact interfaces — inter-chain contacts and participating residues.
         </p>
@@ -1636,7 +1677,7 @@ function ConfidenceTab({ entry }: { entry: StructureEntry }) {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h2 className="pio-section-title">Confidence (pLDDT)</h2>
+        <h2 className="pio-section-title">Confidence (pLDDT) <MetricInfo metric="plddt" /></h2>
         <p className="pio-section-copy mt-1">
           Per-residue pLDDT — how confident the model is in each residue&apos;s predicted position (0–100).
           Treat low and very-low regions cautiously.
@@ -1821,7 +1862,7 @@ function PaeTab({ entry }: { entry: StructureEntry }) {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h2 className="pio-section-title">Predicted Aligned Error</h2>
+        <h2 className="pio-section-title">Predicted Aligned Error <MetricInfo metric="pae" /></h2>
         <p className="pio-section-copy mt-1">
           Expected error in the relative position of every residue pair. Off-diagonal blocks show how
           confidently the chains are placed relative to one another.
@@ -3068,7 +3109,7 @@ function SequenceTab({ entry }: { entry: StructureEntry }) {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h2 className="pio-section-title">Sequence &amp; secondary structure</h2>
+        <h2 className="pio-section-title">Sequence &amp; secondary structure <MetricInfo metric="secondary_structure" /></h2>
         <p className="pio-section-copy mt-1">
           Geometric (Cα) secondary-structure estimate per chain, with the pLDDT confidence
           track beneath it. Helix / sheet / coil are assigned from backbone geometry (P-SEA).
@@ -3179,7 +3220,7 @@ function PocketsTab({ entry }: { entry: StructureEntry }) {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h2 className="pio-section-title">Binding pockets</h2>
+        <h2 className="pio-section-title">Binding pockets <MetricInfo metric="druggability" /></h2>
         <p className="pio-section-copy mt-1">
           Geometric cavity estimate (LIGSITE-style grid) — volume, a druggability proxy, and
           the residues lining each pocket, ranked by size. Click a pocket to highlight its
@@ -3256,7 +3297,7 @@ function AntibodyTab({ entry }: { entry: StructureEntry }) {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h2 className="pio-section-title">Antibody</h2>
+        <h2 className="pio-section-title">Antibody <MetricInfo metric="cdr" /></h2>
         <p className="pio-section-copy mt-1">
           Variable-domain (Fv) chains and their CDR loops from <strong>IMGT numbering</strong>
           {" "}(AntPack — no external binaries), covering heavy, light, and single-domain
