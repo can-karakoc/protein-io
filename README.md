@@ -4,6 +4,17 @@ Protein Interaction Explorer is an open-source structural biology workspace for 
 
 The project is intentionally simple for the public MVP: no authentication, no database, no Docker, no queues, and no cloud storage.
 
+## Documentation
+
+The full technical reference lives in [`docs/reference/`](docs/reference/README.md):
+
+- [Architecture](docs/reference/architecture.md) — topology, data flow, the stateless-backend contract, deployment.
+- [Features](docs/reference/features.md) — every mode, result tab, export, and AI feature.
+- [Methods](docs/reference/methods.md) — the science: every computed metric, its thresholds, assumptions, and references.
+- [API](docs/reference/api.md) — REST endpoint reference.
+- [Modules](docs/reference/modules.md) — backend + frontend module-by-module map.
+- [Dependencies](docs/reference/dependencies.md) — every library and why it is used.
+
 ## Data & privacy
 
 Protein I/O is **local-first**. Every metric is computed on CPU — no structure-prediction or

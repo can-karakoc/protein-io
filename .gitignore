@@ -45,3 +45,18 @@ docs/BUILD_LOG.md
 docs/CODEX_RULES.md
 docs/LEARNING_NOTES.md
 .vercel
+
+# Internal docs kept LOCAL only — not published to the remote.
+# (product design/direction, planning, internal process, agent meta)
+/CLAUDE.md
+/docs/PRODUCT_DIRECTION.md
+/docs/ROADMAP.md
+/docs/ROADMAP-2026.md
+/docs/MVP_SCOPE.md
+/docs/RELEASE_PLAN.md
+/docs/ACTION_PLAN.md
+/docs/DECISIONS.md
+/docs/GIT_WORKFLOW.md
+/docs/IMPLEMENTATION_GUIDELINES.md
+/docs/MANUAL_QA.md
+/docs/superpowers/
