@@ -188,3 +188,34 @@ def test_batch_endpoint_ignores_unparseable_sidecar():
     # Bad sidecar must not fail the run.
     assert response.status_code == 200
     assert response.json()["succeeded"] == 1
+
+
+# ── Phase 16: batch natural-language query ─────────────────────────────────────
+
+def test_batch_context_is_compact_one_line_per_structure():
+    from app.batch import batch_analyze
+    from app.chat import _batch_context
+
+    result = asyncio.run(batch_analyze([
+        ("designA.pdb", SAMPLE_PDB.read_bytes()),
+        ("designB.pdb", SAMPLE_PDB.read_bytes()),
+    ]))
+    ctx = _batch_context(result.entries)
+    lines = ctx.splitlines()
+    assert len(lines) == 2
+    assert all(ln.startswith("- design") for ln in lines)
+    assert all("chains=" in ln and "residues=" in ln and "contacts=" in ln for ln in lines)
+
+
+def test_batch_query_empty_question_is_400(monkeypatch):
+    monkeypatch.setenv("CHAT_ENABLED", "true")
+    client = TestClient(app)
+    body = {"batch": {"entries": [], "total": 0, "succeeded": 0, "failed": 0}, "question": "   "}
+    assert client.post("/api/batch/query", json=body).status_code == 400
+
+
+def test_batch_query_disabled_returns_403(monkeypatch):
+    monkeypatch.setenv("CHAT_ENABLED", "false")
+    client = TestClient(app)
+    body = {"batch": {"entries": [], "total": 0, "succeeded": 0, "failed": 0}, "question": "rank them"}
+    assert client.post("/api/batch/query", json=body).status_code == 403

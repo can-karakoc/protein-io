@@ -397,3 +397,27 @@ async def copilot_review(request: CopilotReviewRequest) -> CopilotReviewResponse
 
     result = await review_narration(request.analysis)
     return CopilotReviewResponse(**result)
+
+
+class BatchQueryRequest(BaseModel):
+    batch: BatchAnalysisResponse
+    question: str
+
+
+class BatchQueryResponse(BaseModel):
+    answer: str | None = None
+    error: str | None = None
+
+
+@router.post("/api/batch/query", response_model=BatchQueryResponse)
+async def batch_query_endpoint(request: BatchQueryRequest) -> BatchQueryResponse:
+    # Natural-language query across a batch — hits the Anthropic API, so gated behind
+    # CHAT_ENABLED (off on the public deployment, on locally / self-hosted).
+    if os.getenv("CHAT_ENABLED", "true").strip().lower() != "true":
+        raise HTTPException(status_code=403, detail="Batch query is disabled on this deployment.")
+    if not request.question.strip():
+        raise HTTPException(status_code=400, detail="Question must not be empty.")
+    from app.chat import batch_query
+
+    result = await batch_query(request.batch.entries, request.question.strip())
+    return BatchQueryResponse(**result)

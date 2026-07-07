@@ -440,6 +440,74 @@ async def review_narration(analysis: AnalysisResponse) -> dict:
         return {"assessment": None, "next_experiment": None, "error": f"Copilot error: {exc}"}
 
 
+_BATCH_SYSTEM = (
+    "You are Protein I/O's batch-review copilot. You are given a compact table of the COMPUTED "
+    "metrics for a set of protein structures (often a design campaign) plus a user question. "
+    "Answer using ONLY these metrics: compare, rank, or filter across the structures as asked and "
+    "name the specific files. Never invent numbers you were not given. If the metrics cannot answer "
+    "the question, say so plainly. Be concise and use a short Markdown list or table when comparing."
+)
+
+
+def _batch_context(entries: list) -> str:
+    """One compact metrics line per structure — the grounding for the batch query."""
+    lines = []
+    for e in entries:
+        a = getattr(e, "analysis", None)
+        fname = getattr(e, "filename", "?")
+        if a is None:
+            lines.append(f"- {fname}: FAILED ({getattr(e, 'error', None) or 'analysis error'})")
+            continue
+        parts = [f"chains={a.summary.chain_count}", f"residues={a.summary.residue_count}", f"contacts={a.summary.contact_count}"]
+        if a.summary.ligand_count:
+            parts.append(f"ligands={a.summary.ligand_count}")
+        if a.confidence and a.confidence.average_plddt is not None:
+            parts.append(f"mean_pLDDT={a.confidence.average_plddt:.1f}")
+        if a.global_scores:
+            if a.global_scores.iptm is not None:
+                parts.append(f"ipTM={a.global_scores.iptm:.2f}")
+            if a.global_scores.ptm is not None:
+                parts.append(f"pTM={a.global_scores.ptm:.2f}")
+        if a.interaction_summary and a.interaction_summary.possible_clash_count:
+            parts.append(f"clashes={a.interaction_summary.possible_clash_count}")
+        if a.pockets:
+            top = max(a.pockets, key=lambda p: p.druggability or 0)
+            parts.append(f"pockets={len(a.pockets)}(top_drugg={(top.druggability or 0):.2f})")
+        if a.antibody and a.antibody.chains:
+            parts.append("antibody=" + "+".join(sorted({c.domain_type for c in a.antibody.chains})))
+        if a.ligand_validity:
+            passed = sum(1 for lv in a.ligand_validity if lv.pb_valid)
+            parts.append(f"ligand_valid={passed}/{len(a.ligand_validity)}")
+        lines.append(f"- {fname}: " + ", ".join(parts))
+    return "\n".join(lines)
+
+
+async def batch_query(entries: list, question: str) -> dict:
+    """Answer a natural-language question across a batch of analyzed structures."""
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        return {"answer": None, "error": "ANTHROPIC_API_KEY is not set on the server."}
+    if not entries:
+        return {"answer": None, "error": "No structures in the batch to query."}
+    try:
+        client = anthropic.AsyncAnthropic(api_key=api_key)
+        context = _batch_context(entries)
+        response = await client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=700,
+            system=_BATCH_SYSTEM,
+            messages=[{"role": "user", "content": f"Structures ({len(entries)}):\n{context}\n\nQuestion: {question}"}],
+        )
+        text = next((b.text for b in response.content if hasattr(b, "text")), "")
+        return {"answer": text, "error": None}
+    except anthropic.AuthenticationError:
+        return {"answer": None, "error": "Invalid Anthropic API key."}
+    except anthropic.RateLimitError:
+        return {"answer": None, "error": "Anthropic rate limit hit — try again in a moment."}
+    except Exception as exc:
+        return {"answer": None, "error": f"Batch query error: {exc}"}
+
+
 async def run_chat(analysis: AnalysisResponse, messages: list[dict], comparison: dict | None = None) -> dict:
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:

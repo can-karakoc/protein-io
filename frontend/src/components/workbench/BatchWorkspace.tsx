@@ -1,9 +1,12 @@
 "use client";
 
-import { AlertCircle, CheckCircle2, Download, FileText, FileUp, Loader2, Network, Play, RotateCcw, XCircle } from "lucide-react";
+import { AlertCircle, CheckCircle2, Download, FileText, FileUp, Loader2, Network, Play, RotateCcw, Sparkle, XCircle } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { buildApiUrl } from "@/lib/api";
 import { buildCampaignReportHtml, downloadCampaignReport, type CampaignReportRow } from "@/lib/campaignReport";
+import { CHAT_ENABLED } from "@/lib/features";
 import type { BatchAnalysisResponse, BatchClusterResponse, BatchDesignEntry } from "@/lib/types";
 import { useWorkspace } from "@/lib/workspaceStore";
 
@@ -474,6 +477,7 @@ export function BatchWorkspace() {
             </p>
           </div>
         )}
+        {result && !isLoading && CHAT_ENABLED && <BatchQueryPanel result={result} />}
         {result && !isLoading && (
           <BatchResultsView
             result={result}
@@ -493,6 +497,72 @@ export function BatchWorkspace() {
         )}
       </div>
       </div>
+    </div>
+  );
+}
+
+function BatchQueryPanel({ result }: { result: BatchAnalysisResponse }) {
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function ask() {
+    if (!question.trim() || loading) return;
+    setLoading(true); setError(null); setAnswer(null);
+    try {
+      const res = await fetch(buildApiUrl("/api/batch/query"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ batch: result, question: question.trim() }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) { setError(data?.detail ?? `Server error ${res.status}`); return; }
+      if (data?.error) { setError(data.error); return; }
+      setAnswer(data?.answer ?? "");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Request failed.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="mb-5 rounded-[14px] p-4" style={{ background: "var(--pio-lavender-pale)" }}>
+      <div className="mb-2 flex items-center gap-2">
+        <Sparkle size={15} style={{ color: "var(--pio-lavender-deep)" }} />
+        <p className="text-pio-2xs font-bold uppercase tracking-[0.08em]" style={{ color: "var(--pio-lavender-deep)" }}>Ask the batch</p>
+        <span className="text-pio-2xs font-medium" style={{ color: "var(--pio-lavender-deep)", opacity: 0.6 }}>local only</span>
+      </div>
+      <div className="flex gap-2">
+        <input
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void ask(); } }}
+          placeholder="e.g. Which designs have the highest ipTM and no clashes?"
+          className="flex-1 rounded-[10px] border px-3 py-2 text-pio-sm text-[var(--pio-ink)] placeholder:text-[var(--pio-graphite)] placeholder:opacity-50 focus:outline-none"
+          style={{ background: "var(--pio-white)", borderColor: "rgba(20,20,15,0.12)" }}
+        />
+        <button
+          type="button"
+          onClick={() => void ask()}
+          disabled={loading || !question.trim()}
+          className="inline-flex items-center gap-1.5 rounded-[10px] px-4 py-2 text-pio-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-50"
+          style={{ background: "var(--pio-lavender-deep)", color: "var(--pio-highlight-text)" }}
+        >
+          {loading && <Loader2 size={13} className="animate-spin" />}
+          {loading ? "Thinking…" : "Ask"}
+        </button>
+      </div>
+      {error && <p className="mt-2 text-pio-xs text-[var(--pio-coral-deep)]">{error}</p>}
+      {answer && (
+        <div className="pio-markdown mt-3 text-pio-sm leading-[1.55] text-[var(--pio-ink)]">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{answer}</ReactMarkdown>
+        </div>
+      )}
+      <p className="mt-2 text-pio-2xs" style={{ color: "var(--pio-lavender-deep)", opacity: 0.7 }}>
+        Answered strictly over the computed metrics for all {result.entries.length} structures. Uses your local Anthropic key.
+      </p>
     </div>
   );
 }
