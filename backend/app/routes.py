@@ -382,7 +382,8 @@ class CopilotReviewRequest(BaseModel):
 
 
 class CopilotReviewResponse(BaseModel):
-    review: str | None
+    assessment: str | None = None
+    next_experiment: str | None = None
     error: str | None = None
 
 

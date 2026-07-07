@@ -10,6 +10,11 @@ import type { ChatMessage } from "./chat";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
+export interface ReviewResult {
+  assessment: string;
+  nextExperiment: string;
+}
+
 export type StructureSource = "upload" | "rcsb" | "alphafold" | "sample";
 export type StructureFormat = "pdb" | "cif";
 
@@ -65,6 +70,7 @@ export type WorkspaceState = {
   batchResult: BatchAnalysisResponse | null;
   batchCluster: BatchClusterResponse | null;
   chatHistory: Record<string, ChatMessage[]>; // per-structure chat, persisted
+  reviewCache: Record<string, ReviewResult>; // per-structure AI review, persisted
 
   // Actions
   addStructure: (entry: Omit<StructureEntry, "id" | "savedAt">) => string;
@@ -82,6 +88,7 @@ export type WorkspaceState = {
   setBatchResult: (r: BatchAnalysisResponse | null) => void;
   setBatchCluster: (c: BatchClusterResponse | null) => void;
   setChatHistory: (structureId: string, messages: ChatMessage[]) => void;
+  setReviewResult: (structureId: string, result: ReviewResult) => void;
   setHasHydrated: (v: boolean) => void;
   getActive: () => StructureEntry | null;
 };
@@ -106,6 +113,7 @@ export const useWorkspace = create<WorkspaceState>()(
       batchResult: null,
       batchCluster: null,
       chatHistory: {},
+      reviewCache: {},
 
       addStructure: (entry) => {
         const id = nanoid(10);
@@ -141,7 +149,8 @@ export const useWorkspace = create<WorkspaceState>()(
             s.compareIds[1] === id ? null : s.compareIds[1],
           ];
           const { [id]: _dropped, ...chatHistory } = s.chatHistory;
-          return { structures: remaining, activeId: newActive, compareIds: newCompare, comparison: null, compareError: null, compareIsLoading: false, chatHistory };
+          const { [id]: _dropReview, ...reviewCache } = s.reviewCache;
+          return { structures: remaining, activeId: newActive, compareIds: newCompare, comparison: null, compareError: null, compareIsLoading: false, chatHistory, reviewCache };
         });
       },
 
@@ -172,6 +181,7 @@ export const useWorkspace = create<WorkspaceState>()(
       setBatchResult: (r) => set({ batchResult: r, batchCluster: null }),
       setBatchCluster: (c) => set({ batchCluster: c }),
       setChatHistory: (structureId, messages) => set((s) => ({ chatHistory: { ...s.chatHistory, [structureId]: messages } })),
+      setReviewResult: (structureId, result) => set((s) => ({ reviewCache: { ...s.reviewCache, [structureId]: result } })),
 
       setHasHydrated: (v) => set({ hasHydrated: v }),
 
@@ -212,6 +222,7 @@ export const useWorkspace = create<WorkspaceState>()(
         batchResult: s.batchResult,
         batchCluster: s.batchCluster,
         chatHistory: s.chatHistory,
+        reviewCache: s.reviewCache,
       }),
     },
   ),

@@ -31,7 +31,7 @@ import { buildReviewVerdict, type VerdictTone } from "@/lib/reviewVerdict";
 import { METRIC_EXPLAINERS, type MetricKey } from "@/lib/metricExplainers";
 import { CHAT_ENABLED } from "@/lib/features";
 import type { AnalysisResponse, AntibodyCdr, ChainSecondaryStructure, ChemblTargetSummary, ContactDifference, ContactRecord, FoldseekHit, FoldseekSearchResult, InterfaceConfidence, LigandInteractionSummary, LigandSummary, LigandValidity, PaeMatrix, Pocket, RcsbAnalysisResponse, ResidueConfidence, SSType } from "@/lib/types";
-import type { ContextTab, StructureEntry } from "@/lib/workspaceStore";
+import type { ContextTab, ReviewResult, StructureEntry } from "@/lib/workspaceStore";
 import { useWorkspace } from "@/lib/workspaceStore";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -295,13 +295,30 @@ function ReviewVerdictCard({ analysis }: { analysis: AnalysisResponse }) {
 
 // ── AI review (LLM narration — local only) ────────────────────────────────────
 
-function CopilotReview({ analysis }: { analysis: AnalysisResponse }) {
+function ReviewSection({ label, body, divider }: { label: string; body: string; divider?: boolean }) {
+  return (
+    <div
+      className={divider ? "border-t pt-3" : undefined}
+      style={divider ? { borderColor: "color-mix(in srgb, var(--pio-lavender-deep) 16%, transparent)" } : undefined}
+    >
+      <p className="mb-1 text-pio-2xs font-bold uppercase tracking-[0.08em]" style={{ color: "var(--pio-lavender-deep)", opacity: 0.7 }}>
+        {label}
+      </p>
+      <div className="pio-markdown text-pio-sm leading-[1.55] text-[var(--pio-ink)]">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
+      </div>
+    </div>
+  );
+}
+
+function CopilotReview({ analysis, structureKey }: { analysis: AnalysisResponse; structureKey: string | null }) {
+  const result = useWorkspace((s) => (structureKey ? s.reviewCache[structureKey] : undefined));
   const [loading, setLoading] = useState(false);
-  const [review, setReview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const hasResult = !!result && (!!result.assessment || !!result.nextExperiment);
 
   async function run() {
-    setLoading(true); setError(null); setReview(null);
+    setLoading(true); setError(null);
     try {
       const res = await fetch(buildApiUrl("/api/copilot/review"), {
         method: "POST",
@@ -311,7 +328,11 @@ function CopilotReview({ analysis }: { analysis: AnalysisResponse }) {
       const data = await res.json().catch(() => null);
       if (!res.ok) { setError(data?.detail ?? `Server error ${res.status}`); return; }
       if (data?.error) { setError(data.error); return; }
-      setReview(data?.review ?? "");
+      const next: ReviewResult = {
+        assessment: data?.assessment ?? "",
+        nextExperiment: data?.next_experiment ?? "",
+      };
+      if (structureKey) useWorkspace.getState().setReviewResult(structureKey, next);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Request failed.");
     } finally {
@@ -326,28 +347,32 @@ function CopilotReview({ analysis }: { analysis: AnalysisResponse }) {
         <p className="text-pio-2xs font-bold uppercase tracking-[0.08em]" style={{ color: "var(--pio-lavender-deep)" }}>AI review</p>
       </div>
 
-      {!review && !loading && !error && (
+      {!hasResult && !error && (
         <p className="text-pio-sm leading-[1.5]" style={{ color: "var(--pio-lavender-deep)", opacity: 0.8 }}>
-          Narrate the metrics above into a plain-English verdict and a suggested next experiment — strictly over the
+          Narrate the metrics above into a plain-English assessment and a suggested next experiment — strictly over the
           computed numbers. Uses your local Anthropic key.
         </p>
       )}
       {error && <p className="text-pio-sm text-[var(--pio-coral-deep)]">{error}</p>}
-      {review && (
-        <div className="pio-markdown text-pio-sm leading-[1.55] text-[var(--pio-ink)]">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{review}</ReactMarkdown>
+
+      {hasResult && (
+        <div className="flex flex-col gap-3">
+          {result!.assessment && <ReviewSection label="Assessment" body={result!.assessment} />}
+          {result!.nextExperiment && <ReviewSection label="Next experiment" body={result!.nextExperiment} divider />}
         </div>
       )}
 
       <div className="mt-3">
-        {review && !loading ? (
+        {hasResult ? (
           <button
             type="button"
             onClick={() => void run()}
-            className="inline-flex items-center gap-1.5 text-pio-2xs font-semibold transition-opacity hover:opacity-70"
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 text-pio-2xs font-semibold transition-opacity hover:opacity-70 disabled:opacity-50"
             style={{ color: "var(--pio-lavender-deep)" }}
           >
-            Regenerate
+            {loading && <Loader2 size={11} className="animate-spin" />}
+            {loading ? "Regenerating…" : "Regenerate"}
           </button>
         ) : (
           <button
@@ -462,7 +487,7 @@ function OverviewTab({ entry }: { entry: StructureEntry }) {
       <ReviewVerdictCard analysis={analysis} />
 
       {/* AI review — LLM narration on top of the verdict (local only) */}
-      {CHAT_ENABLED && <CopilotReview analysis={analysis} />}
+      {CHAT_ENABLED && <CopilotReview analysis={analysis} structureKey={entry.id} />}
 
       {/* UniProt function */}
       {analysis.uniprot_annotations?.function && (

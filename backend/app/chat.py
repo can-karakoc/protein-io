@@ -388,37 +388,56 @@ def _build_report(analysis: AnalysisResponse, sections: set, include_all: bool, 
 
 _REVIEW_SYSTEM = (
     "You are Protein I/O's structure-review copilot. You are given ONLY the computed metrics for a single "
-    "structure. Respond in short Markdown with exactly two parts:\n"
-    "**Verdict** — 2-3 sentences on how much to trust this structure overall, citing the key numbers.\n"
-    "**Next experiment** — ONE concrete, specific next step given these results.\n\n"
-    "Rules: use ONLY numbers present in the provided metrics; never invent residue numbers, distances, pLDDT, "
-    "ipTM, or any value you were not given. Be concise (under ~120 words total) and honest about uncertainty. "
+    "structure. Respond with a single JSON object and nothing else (no code fences, no prose around it) with "
+    "exactly these two string keys:\n"
+    '  "assessment" — 2-3 sentences on how much to trust this structure overall, citing the key numbers.\n'
+    '  "next_experiment" — ONE concrete, specific next step given these results.\n\n'
+    "You may use inline Markdown (bold, code) inside each string. Rules: use ONLY numbers present in the "
+    "provided metrics; never invent residue numbers, distances, pLDDT, ipTM, or any value you were not given. "
+    "Keep 'assessment' under ~90 words and 'next_experiment' under ~40 words, and be honest about uncertainty. "
     "If the metrics are limited (e.g. no confidence scores), say so rather than guessing."
 )
+
+
+def _parse_review_json(text: str) -> dict:
+    """Pull the assessment / next_experiment fields out of the model's JSON reply.
+    Falls back to treating the whole reply as the assessment if it isn't valid JSON."""
+    raw = text.strip()
+    start, end = raw.find("{"), raw.rfind("}")
+    if start >= 0 and end > start:
+        try:
+            obj = json.loads(raw[start : end + 1])
+            assessment = str(obj.get("assessment", "")).strip()
+            next_experiment = str(obj.get("next_experiment", "")).strip()
+            if assessment or next_experiment:
+                return {"assessment": assessment or None, "next_experiment": next_experiment or None}
+        except (json.JSONDecodeError, TypeError):
+            pass
+    return {"assessment": raw or None, "next_experiment": None}
 
 
 async def review_narration(analysis: AnalysisResponse) -> dict:
     """One-shot LLM narration of the computed metrics into a verdict + suggested next experiment."""
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
-        return {"review": None, "error": "ANTHROPIC_API_KEY is not set on the server."}
+        return {"assessment": None, "next_experiment": None, "error": "ANTHROPIC_API_KEY is not set on the server."}
     try:
         client = anthropic.AsyncAnthropic(api_key=api_key)
         context = _build_report(analysis, sections=set(), include_all=True, comparison=None)
         response = await client.messages.create(
             model="claude-sonnet-4-6",
-            max_tokens=400,
+            max_tokens=500,
             system=_REVIEW_SYSTEM,
             messages=[{"role": "user", "content": f"Computed metrics:\n\n{context}"}],
         )
         text = next((b.text for b in response.content if hasattr(b, "text")), "")
-        return {"review": text, "error": None}
+        return {**_parse_review_json(text), "error": None}
     except anthropic.AuthenticationError:
-        return {"review": None, "error": "Invalid Anthropic API key."}
+        return {"assessment": None, "next_experiment": None, "error": "Invalid Anthropic API key."}
     except anthropic.RateLimitError:
-        return {"review": None, "error": "Anthropic rate limit hit — try again in a moment."}
+        return {"assessment": None, "next_experiment": None, "error": "Anthropic rate limit hit — try again in a moment."}
     except Exception as exc:
-        return {"review": None, "error": f"Copilot error: {exc}"}
+        return {"assessment": None, "next_experiment": None, "error": f"Copilot error: {exc}"}
 
 
 async def run_chat(analysis: AnalysisResponse, messages: list[dict], comparison: dict | None = None) -> dict:
