@@ -138,7 +138,7 @@ Where the real biotech pain lives: the RFdiffusion → MPNN → co-fold → *fil
   styles + data, opens offline in any browser (local-first): ranked table + score formula +
   clusters. Verified e2e (backend 209 tests; browser: 2HHB+3HHB cluster together).
 
-### Phase 14 — Antibody mode  🚧 PARTIAL (`feat/phase14-antibody`)
+### Phase 14 — Antibody mode  ✅ DONE (`feat/phase14-antibody`, `feat/finish-phase16-phase14`)
 
 Antibodies are a large share of biotech; no free review UI offers this.
 
@@ -150,8 +150,16 @@ Antibodies are a large share of biotech; no free review UI offers this.
   rituximab/caplacizumab-VHH detected, hemoglobin/HER2/lysozyme rejected.
 - `[x]` **Antibody tab** — VH/VL chains + CDR loops (sequence, residue range, per-CDR mean
   pLDDT), each clickable to highlight the loop in Mol* (new `cdr` selection). 11 backend tests.
-- `[ ]` CDR-focused interface view (paratope contacts) + SAbDab context — DEFERRED.
-- `[ ]` Kabat/Chothia/Martin/Aho scheme toggle — DEFERRED (AntPack supports them; UI is IMGT-only).
+- `[x]` **CDR-focused interface view (paratope contacts) + SAbDab context** — `_paratope_map`
+  marks the CDR residues that contact an antigen (non-antibody polymer chain; waters/ligands
+  excluded). The Antibody tab surfaces per-CDR paratope counts, green paratope residues inline
+  in the sequence, a per-chain "Binds antigen chain X · N paratope residues" line with a
+  Highlight-paratope selection, and a SAbDab link-out for the PDB entry. Verified on 1VFB
+  (Fv D1.3 + lysozyme): antigen chain C, CDR-H3 paratope 99–102.
+- `[x]` **IMGT / Kabat / Martin / Aho numbering-scheme toggle** — `annotate_antibody`
+  precomputes CDR boundaries under every AntPack scheme in one pass; the tab toggles numbering
+  client-side (no re-analysis). Martin ≈ Chothia-extended (AntPack has no separate Chothia).
+  Verified: CDR-H3 shifts 96–105 (IMGT) → 98–104 (Aho) on 1VFB.
 
 ### Phase 15 — Workflow, collaboration, reproducibility  🚧 PARTIAL (`feat/phase15-session-export`)
 
@@ -178,7 +186,7 @@ Antibodies are a large share of biotech; no free review UI offers this.
   note + a Methods-tab card, with honest hosted-vs-self-hosted framing (the hosted site *does*
   send your structure to the backend to analyse it; self-host to keep data on your machine).
 
-### Phase 16 — AI-native review copilot  🚧 PARTIAL (`feat/privacy-and-review-verdict`)
+### Phase 16 — AI-native review copilot  ✅ DONE (`feat/privacy-and-review-verdict`, `feat/finish-phase16-phase14`)
 
 - `[x]` **Deterministic review verdict** (`reviewVerdict.ts`) — a plain-English synthesis of the
   *computed* metrics into an overall trust assessment (good/caution/warn) + the specific things
@@ -192,7 +200,12 @@ Antibodies are a large share of biotech; no free review UI offers this.
   system prompt forbids inventing values). Gated behind `CHAT_ENABLED` (off on the hosted site,
   on locally / self-hosted). Verified live: grounded narration for 1CRN citing its real H-bond /
   aromatic / resolution numbers.
-- `[ ]` Natural-language query across a structure or a whole batch — DEFERRED (needs the LLM).
+- `[x]` **Natural-language query across a structure or a whole batch** — single-structure NL query
+  ships as the per-structure **Chat** (tool-calling over the computed metrics). Batch NL query
+  (`/api/batch/query` + the "Ask the batch" panel in Batch mode) answers ranking/filtering
+  questions over one compact metrics line per design, strictly grounded, `CHAT_ENABLED`-gated.
+  The AI-review card also renders structured **Assessment / Next experiment** sections and is
+  persisted per structure (survives tab-switch + reload). Verified over 1CRN/1HSG/2HHB.
 - `[x]` **Inline "explain this metric"** (`metricExplainers.ts` + `MetricInfo` popover) — a small
   info icon on each analysis section (pLDDT, PAE, ipTM, interface confidence, BSA, druggability,
   contact trust labels, secondary structure, CDRs) opens a curated, accurate plain-English
