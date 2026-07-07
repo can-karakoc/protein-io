@@ -61,17 +61,20 @@ Annotated = tuple[str, float, dict[str, list[int]], list[str]]
 # ── AntPack path (primary) ────────────────────────────────────────────────────
 
 _MIN_PCT = 0.55  # germline identity floor; non-antibodies also fail AntPack's err check
-_ANNOTATOR = None
+# AntPack supports these numbering schemes. Martin ≈ Chothia-extended (AntPack has no
+# separate "chothia"). IMGT is the default used for the single-scheme return fields.
+_SCHEMES = ("imgt", "kabat", "martin", "aho")
+_ANNOTATORS: dict[str, object] = {}
 _ANTPACK_OK: bool | None = None
 
 
 def _antpack_available() -> bool:
-    global _ANTPACK_OK, _ANNOTATOR
+    global _ANTPACK_OK, _ANNOTATORS
     if _ANTPACK_OK is None:
         try:
             from antpack import SingleChainAnnotator
 
-            _ANNOTATOR = SingleChainAnnotator(scheme="imgt")
+            _ANNOTATORS = {s: SingleChainAnnotator(scheme=s) for s in _SCHEMES}
             _ANTPACK_OK = True
         except Exception as exc:  # pragma: no cover - only when the wheel is missing
             log.info("AntPack unavailable, using in-house antibody fallback: %s", exc)
@@ -79,16 +82,15 @@ def _antpack_available() -> bool:
     return _ANTPACK_OK
 
 
-def _annotate_antpack(seq: str) -> Annotated | None:
-    ann = _ANNOTATOR
-    numbering, pct, chain, err = ann.analyze_seq(seq)
+def _annotate_antpack(seq: str, annotator) -> Annotated | None:
+    numbering, pct, chain, err = annotator.analyze_seq(seq)
     if err or pct < _MIN_PCT:
         return None
     domain_type = "VH" if chain == "H" else "VL"
     order = ["CDR-H1", "CDR-H2", "CDR-H3"] if chain == "H" else ["CDR-L1", "CDR-L2", "CDR-L3"]
     label_to_name = {"cdr1": order[0], "cdr2": order[1], "cdr3": order[2]}
 
-    labels = ann.assign_cdr_labels(numbering, chain)
+    labels = annotator.assign_cdr_labels(numbering, chain)
     regions: dict[str, list[int]] = {}
     for idx, lab in enumerate(labels):
         name = label_to_name.get(lab)
@@ -193,7 +195,9 @@ def annotate_antibody(atoms: list) -> list[dict]:
     """Detect antibody variable domains + CDR loops per chain.
 
     Returns [{chain_id, domain_type (VH/VL), identity, cdrs: [{name, start, end,
-    sequence, length, residue_numbers}]}]. Empty when no antibody chains are found.
+    sequence, length, residue_numbers}], cdr_schemes: {scheme: [cdrs]}}]. `cdrs` is the
+    default IMGT set; `cdr_schemes` (AntPack only) carries the CDR boundaries under every
+    supported numbering scheme. Empty when no antibody chains are found.
     """
     use_antpack = _antpack_available()
     chains = _seqs_by_chain(atoms)
@@ -203,7 +207,7 @@ def annotate_antibody(atoms: list) -> list[dict]:
             continue
         seq = "".join(aa for _, aa in residues)
         try:
-            annotated = _annotate_antpack(seq) if use_antpack else _annotate_inhouse(seq)
+            annotated = _annotate_antpack(seq, _ANNOTATORS["imgt"]) if use_antpack else _annotate_inhouse(seq)
         except Exception as exc:  # pragma: no cover - defensive
             log.info("Antibody numbering failed for chain %s: %s", chain_id, exc)
             annotated = None
@@ -211,12 +215,29 @@ def annotate_antibody(atoms: list) -> list[dict]:
             continue
         domain_type, identity, regions, order = annotated
         cdrs = [{"name": name, **_group_ranges(regions[name], residues)} for name in order]
-        results.append({
+        entry: dict = {
             "chain_id": chain_id,
             "domain_type": domain_type,
             "identity": identity,
             "cdrs": cdrs,
-        })
+        }
+        # Precompute CDR boundaries under every AntPack scheme so the UI can toggle
+        # numbering (IMGT / Kabat / Martin / Aho) without re-analyzing the structure.
+        if use_antpack:
+            schemes: dict[str, list[dict]] = {"imgt": cdrs}
+            for scheme in _SCHEMES:
+                if scheme == "imgt":
+                    continue
+                try:
+                    scheme_ann = _annotate_antpack(seq, _ANNOTATORS[scheme])
+                except Exception:  # pragma: no cover - defensive
+                    scheme_ann = None
+                if scheme_ann is None:
+                    continue
+                _dt, _id, regions_s, order_s = scheme_ann
+                schemes[scheme] = [{"name": name, **_group_ranges(regions_s[name], residues)} for name in order_s]
+            entry["cdr_schemes"] = schemes
+        results.append(entry)
 
     results.sort(key=lambda r: (r["domain_type"] != "VH", r["chain_id"]))
     return results

@@ -3392,7 +3392,38 @@ function PocketsTab({ entry }: { entry: StructureEntry }) {
 
 // ── Antibody tab ──────────────────────────────────────────────────────────────
 
+const SCHEME_LABELS: Record<string, string> = { imgt: "IMGT", kabat: "Kabat", martin: "Martin", aho: "Aho" };
+
+function SchemeToggle({ schemes, value, onChange }: { schemes: string[]; value: string; onChange: (s: string) => void }) {
+  return (
+    <div
+      className="inline-flex gap-0.5 rounded-[10px] p-0.5"
+      style={{ background: "var(--pio-paper)", border: "1px solid rgba(20,20,15,0.09)" }}
+      role="group"
+      aria-label="CDR numbering scheme"
+    >
+      {schemes.map((s) => {
+        const active = s === value;
+        return (
+          <button
+            key={s}
+            type="button"
+            onClick={() => onChange(s)}
+            className="rounded-[8px] px-2.5 py-1 text-pio-2xs font-bold uppercase tracking-[0.06em] transition-colors"
+            style={active
+              ? { background: "var(--pio-highlight)", color: "var(--pio-highlight-text)" }
+              : { color: "var(--pio-graphite)" }}
+          >
+            {SCHEME_LABELS[s] ?? s}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function CdrCard({ cdr, chainId, isSelected, onSelect }: { cdr: AntibodyCdr; chainId: string; isSelected: boolean; onSelect: () => void }) {
+  const paratope = cdr.paratope_residues?.length ?? 0;
   return (
     <motion.div
       variants={listItem}
@@ -3409,17 +3440,30 @@ function CdrCard({ cdr, chainId, isSelected, onSelect }: { cdr: AntibodyCdr; cha
         background: isSelected ? "var(--pio-row-selection-bg)" : undefined,
       }}
     >
-      <div className="mb-1.5 flex items-center gap-2">
+      <div className="mb-1.5 flex flex-wrap items-center gap-2">
         <span className="pio-badge pio-badge-metadata text-pio-2xs">{cdr.name}</span>
         <span className="text-pio-2xs text-[var(--pio-graphite)]">{chainId}:{cdr.start}–{cdr.end} · {cdr.length} aa</span>
+        {paratope > 0 && (
+          <span className="pio-badge pio-badge-active text-pio-2xs" title="CDR residues contacting antigen">
+            {paratope} paratope
+          </span>
+        )}
         {cdr.mean_plddt != null && (
           <span className="ml-auto font-[family-name:var(--font-pio-mono)] text-pio-2xs font-bold" style={{ color: plddtHex(cdr.mean_plddt) }}>
             pLDDT {cdr.mean_plddt.toFixed(0)}
           </span>
         )}
-        <span className="text-pio-2xs text-[var(--pio-graphite)] opacity-60">{isSelected ? "highlighted" : "highlight"}</span>
+        <span className={`${cdr.mean_plddt != null ? "" : "ml-auto "}text-pio-2xs text-[var(--pio-graphite)] opacity-60`}>{isSelected ? "highlighted" : "highlight"}</span>
       </div>
-      <p className="break-all font-[family-name:var(--font-pio-mono)] text-pio-xs text-[var(--pio-ink)]">{cdr.sequence}</p>
+      <p className="break-all font-[family-name:var(--font-pio-mono)] text-pio-xs text-[var(--pio-ink)]">
+        {cdr.sequence.split("").map((aa, i) => {
+          const rn = cdr.residue_numbers[i];
+          const isPara = rn != null && cdr.paratope_residues?.includes(rn);
+          return isPara
+            ? <mark key={i} style={{ background: "transparent", color: "var(--pio-green-deep)", fontWeight: 700 }}>{aa}</mark>
+            : <span key={i}>{aa}</span>;
+        })}
+      </p>
     </motion.div>
   );
 }
@@ -3427,47 +3471,109 @@ function CdrCard({ cdr, chainId, isSelected, onSelect }: { cdr: AntibodyCdr; cha
 function AntibodyTab({ entry }: { entry: StructureEntry }) {
   const { analysis } = entry;
   const { selection, setSelection } = useWorkspace();
-  const chains = analysis?.antibody?.chains ?? [];
+  const antibody = analysis?.antibody ?? null;
+  const chains = antibody?.chains ?? [];
+  const schemes = antibody?.schemes ?? ["imgt"];
+  const [scheme, setScheme] = useState(schemes[0] ?? "imgt");
+  const pdbId = analysis?.metadata?.pdb_id ?? null;
+
   if (!chains.length) {
     return <p className="text-pio-sm text-[var(--pio-graphite)] opacity-60">No antibody variable domains detected.</p>;
   }
+  const activeScheme = schemes.includes(scheme) ? scheme : (schemes[0] ?? "imgt");
+
   return (
     <div className="flex flex-col gap-5">
       <div>
         <h2 className="pio-section-title">Antibody <MetricInfo metric="cdr" /></h2>
         <p className="pio-section-copy mt-1">
-          Variable-domain (Fv) chains and their CDR loops from <strong>IMGT numbering</strong>
-          {" "}(AntPack — no external binaries), covering heavy, light, and single-domain
-          nanobodies. Click a CDR to highlight it in 3D.
+          Variable-domain (Fv) chains and their CDR loops (AntPack — no external binaries),
+          covering heavy, light, and single-domain nanobodies. Toggle the numbering scheme,
+          click a CDR to highlight it in 3D, and <strong style={{ color: "var(--pio-green-deep)" }}>green</strong> residues
+          mark the paratope (CDR residues contacting antigen).
         </p>
       </div>
-      {chains.map((ch) => (
-        <div key={ch.chain_id} className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <span className="pio-badge pio-badge-active text-pio-xs">{ch.domain_type}</span>
-            <span className="text-pio-sm font-semibold text-[var(--pio-ink)]">Chain {ch.chain_id}</span>
-            <span className="ml-auto text-pio-2xs text-[var(--pio-graphite)]">{Math.round(ch.identity * 100)}% germline identity</span>
-          </div>
-          <motion.div className="flex flex-col gap-2" initial="hidden" animate="show" variants={stagger}>
-            {ch.cdrs.map((cdr) => {
-              const label = `${ch.chain_id} ${cdr.name}`;
-              const isSelected = selection?.kind === "cdr" && selection.label === label;
-              function toggle() {
-                if (isSelected) {
-                  setSelection(null);
-                } else {
-                  setSelection({
-                    kind: "cdr",
-                    label,
-                    residues: cdr.residue_numbers.map((rn) => ({ chainId: ch.chain_id, residueNumber: rn })),
-                  });
-                }
-              }
-              return <CdrCard key={cdr.name} cdr={cdr} chainId={ch.chain_id} isSelected={isSelected} onSelect={toggle} />;
-            })}
-          </motion.div>
+
+      {schemes.length > 1 && (
+        <div className="flex items-center gap-2">
+          <span className="text-pio-2xs font-semibold uppercase tracking-[0.06em] text-[var(--pio-graphite)]">Numbering</span>
+          <SchemeToggle schemes={schemes} value={activeScheme} onChange={setScheme} />
         </div>
-      ))}
+      )}
+
+      {chains.map((ch) => {
+        const cdrs = ch.cdr_schemes?.[activeScheme] ?? ch.cdrs;
+        const paratopeResidues = cdrs.flatMap((c) => c.paratope_residues ?? []);
+        const paratopeLabel = `${ch.chain_id} paratope`;
+        const paratopeSelected = selection?.kind === "cdr" && selection.label === paratopeLabel;
+        return (
+          <div key={ch.chain_id} className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <span className="pio-badge pio-badge-active text-pio-xs">{ch.domain_type}</span>
+              <span className="text-pio-sm font-semibold text-[var(--pio-ink)]">Chain {ch.chain_id}</span>
+              <span className="ml-auto text-pio-2xs text-[var(--pio-graphite)]">{Math.round(ch.identity * 100)}% germline identity</span>
+            </div>
+
+            {ch.antigen_chains.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 rounded-[10px] px-3 py-2" style={{ background: "var(--pio-green-pale)" }}>
+                <span className="text-pio-2xs text-[var(--pio-graphite)]">
+                  Binds antigen chain{ch.antigen_chains.length > 1 ? "s" : ""}{" "}
+                  <strong className="text-[var(--pio-ink)]">{ch.antigen_chains.join(", ")}</strong>
+                  {" "}· <strong className="text-[var(--pio-ink)]">{paratopeResidues.length}</strong> paratope residues
+                </span>
+                {paratopeResidues.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelection(paratopeSelected ? null : {
+                      kind: "cdr",
+                      label: paratopeLabel,
+                      residues: paratopeResidues.map((rn) => ({ chainId: ch.chain_id, residueNumber: rn })),
+                    })}
+                    className="ml-auto text-pio-2xs font-semibold text-[var(--pio-highlight)] transition-opacity hover:opacity-70"
+                  >
+                    {paratopeSelected ? "Clear paratope" : "Highlight paratope"}
+                  </button>
+                )}
+              </div>
+            )}
+
+            <motion.div className="flex flex-col gap-2" initial="hidden" animate="show" variants={stagger}>
+              {cdrs.map((cdr) => {
+                const label = `${ch.chain_id} ${cdr.name}`;
+                const isSelected = selection?.kind === "cdr" && selection.label === label;
+                function toggle() {
+                  if (isSelected) {
+                    setSelection(null);
+                  } else {
+                    setSelection({
+                      kind: "cdr",
+                      label,
+                      residues: cdr.residue_numbers.map((rn) => ({ chainId: ch.chain_id, residueNumber: rn })),
+                    });
+                  }
+                }
+                return <CdrCard key={cdr.name} cdr={cdr} chainId={ch.chain_id} isSelected={isSelected} onSelect={toggle} />;
+              })}
+            </motion.div>
+          </div>
+        );
+      })}
+
+      {pdbId && (
+        <div className="border-t pt-3" style={{ borderColor: "rgba(20,20,15,0.09)" }}>
+          <a
+            href={`https://opig.stats.ox.ac.uk/webapps/sabdab-sabpred/sabdab/structureviewer/?pdb=${pdbId.toLowerCase()}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-pio-xs font-semibold text-[var(--pio-highlight)] transition-opacity hover:opacity-70"
+          >
+            <ExternalLink size={12} /> View {pdbId.toUpperCase()} in SAbDab
+          </a>
+          <p className="mt-1 text-pio-2xs text-[var(--pio-graphite)] opacity-70">
+            SAbDab (the Structural Antibody Database) curates deposited antibody structures with germline, species, and antigen annotations.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

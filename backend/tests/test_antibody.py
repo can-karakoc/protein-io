@@ -133,7 +133,39 @@ def test_service_attaches_mean_plddt():
         ResidueConfidence(chain_id="H", residue_number=str(1 + i), residue_name="ALA", plddt=90.0, category="very_high")
         for i in range(len(TRAS_VH))
     ]
-    ab = _compute_antibody(atoms, confs)
+    ab = _compute_antibody(atoms, confs, [], {"H"})
     assert ab is not None
     assert ab.chains[0].domain_type == "VH"
     assert all(c.mean_plddt == 90.0 for c in ab.chains[0].cdrs)
+    # No antigen chain present → no paratope contacts.
+    assert all(c.paratope_residues == [] for c in ab.chains[0].cdrs)
+    assert ab.chains[0].antigen_chains == []
+    # AntPack exposes all four numbering schemes.
+    assert ab.schemes == ["imgt", "kabat", "martin", "aho"]
+    assert set(ab.chains[0].cdr_schemes or {}) == {"imgt", "kabat", "martin", "aho"}
+
+
+def test_paratope_and_scheme_boundaries():
+    from app.antibody import annotate_antibody
+    from app.service import _compute_antibody
+
+    atoms = chain_atoms("H", TRAS_VH)
+    raw = annotate_antibody(atoms)
+    h3 = next(c for c in raw[0]["cdrs"] if c["name"] == "CDR-H3")
+    # Every CDR-H3 residue contacts antigen chain G; a water contact (chain W / HOH)
+    # must be excluded from the paratope. Contacts are duck-typed.
+    contacts = [
+        SimpleNamespace(chain_a="H", residue_a=rn, residue_name_a="ALA",
+                        chain_b="G", residue_b="10", residue_name_b="LEU")
+        for rn in h3["residue_numbers"]
+    ]
+    contacts.append(SimpleNamespace(chain_a="H", residue_a=h3["residue_numbers"][0], residue_name_a="ALA",
+                                    chain_b="W", residue_b="1", residue_name_b="HOH"))
+    ab = _compute_antibody(atoms, [], contacts, {"H", "G"})  # W is not a polymer chain
+    chain = ab.chains[0]
+    assert chain.antigen_chains == ["G"]  # water/non-polymer excluded
+    imgt_h3 = next(c for c in chain.cdrs if c.name == "CDR-H3")
+    assert imgt_h3.paratope_residues == h3["residue_numbers"]
+    # CDR-H3 boundaries genuinely differ by scheme (IMGT is wider than Aho for H3).
+    aho_h3 = next(c for c in (chain.cdr_schemes or {})["aho"] if c.name == "CDR-H3")
+    assert aho_h3.length < imgt_h3.length

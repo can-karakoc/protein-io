@@ -227,8 +227,37 @@ def _mark_clash_contacts(contacts, clashes):
         return contacts
 
 
-def _compute_antibody(atoms, residue_confidences):
-    """In-house antibody Fv/CDR annotation; fail-soft to None. Adds per-CDR mean pLDDT."""
+_WATER_NAMES = {"HOH", "WAT", "DOD", "H2O", "TIP", "SOL"}
+
+
+def _paratope_map(contacts, antibody_chain_ids: set[str], polymer_chain_ids: set[str]) -> dict:
+    """For each antibody chain, which of its residues contact an antigen (a non-antibody
+    polymer chain), and which antigen chains. Waters/ligands are excluded so 'paratope'
+    means genuine antibody–antigen protein contacts."""
+    out: dict[str, dict] = {}
+
+    def _record(ab_chain: str, ab_res: str, ag_chain: str, ag_name: str):
+        if ag_chain in antibody_chain_ids or ag_chain not in polymer_chain_ids:
+            return
+        if ag_name.upper() in _WATER_NAMES:
+            return
+        entry = out.setdefault(ab_chain, {"residues": set(), "antigen_chains": set()})
+        entry["residues"].add(ab_res)
+        entry["antigen_chains"].add(ag_chain)
+
+    for c in contacts:
+        a_ab, b_ab = c.chain_a in antibody_chain_ids, c.chain_b in antibody_chain_ids
+        if a_ab and not b_ab:
+            _record(c.chain_a, c.residue_a, c.chain_b, c.residue_name_b)
+        elif b_ab and not a_ab:
+            _record(c.chain_b, c.residue_b, c.chain_a, c.residue_name_a)
+    return out
+
+
+def _compute_antibody(atoms, residue_confidences, contacts, polymer_chain_ids):
+    """Antibody Fv/CDR annotation; fail-soft to None. Adds per-CDR mean pLDDT, CDR
+    boundaries under each numbering scheme, and paratope residues (CDR residues that
+    contact an antigen chain)."""
     import logging
 
     from app.antibody import annotate_antibody
@@ -239,15 +268,34 @@ def _compute_antibody(atoms, residue_confidences):
         if not raw:
             return None
         plddt = {(c.chain_id, c.residue_number): c.plddt for c in residue_confidences}
+        antibody_chain_ids = {ch["chain_id"] for ch in raw}
+        paratope = _paratope_map(contacts, antibody_chain_ids, set(polymer_chain_ids))
+
+        def _cdr(chain_id: str, cdr: dict, para_residues: set) -> AntibodyCdr:
+            vals = [plddt[(chain_id, rn)] for rn in cdr["residue_numbers"] if (chain_id, rn) in plddt]
+            mean = round(sum(vals) / len(vals), 1) if vals else None
+            para = [rn for rn in cdr["residue_numbers"] if rn in para_residues]
+            return AntibodyCdr(**cdr, mean_plddt=mean, paratope_residues=para)
+
+        schemes_seen: set[str] = set()
         chains = []
         for ch in raw:
-            cdrs = []
-            for cdr in ch["cdrs"]:
-                vals = [plddt[(ch["chain_id"], rn)] for rn in cdr["residue_numbers"] if (ch["chain_id"], rn) in plddt]
-                mean = round(sum(vals) / len(vals), 1) if vals else None
-                cdrs.append(AntibodyCdr(**cdr, mean_plddt=mean))
-            chains.append(AntibodyChain(chain_id=ch["chain_id"], domain_type=ch["domain_type"], identity=ch["identity"], cdrs=cdrs))
-        return AntibodyAnalysis(chains=chains)
+            cid = ch["chain_id"]
+            para_residues = paratope.get(cid, {}).get("residues", set())
+            cdrs = [_cdr(cid, cdr, para_residues) for cdr in ch["cdrs"]]
+            cdr_schemes = None
+            if ch.get("cdr_schemes"):
+                cdr_schemes = {}
+                for scheme, scheme_cdrs in ch["cdr_schemes"].items():
+                    cdr_schemes[scheme] = [_cdr(cid, cdr, para_residues) for cdr in scheme_cdrs]
+                    schemes_seen.add(scheme)
+            antigen_chains = sorted(paratope.get(cid, {}).get("antigen_chains", set()))
+            chains.append(AntibodyChain(
+                chain_id=cid, domain_type=ch["domain_type"], identity=ch["identity"],
+                cdrs=cdrs, cdr_schemes=cdr_schemes, antigen_chains=antigen_chains,
+            ))
+        schemes = [s for s in ("imgt", "kabat", "martin", "aho") if s in schemes_seen] or ["imgt"]
+        return AntibodyAnalysis(chains=chains, schemes=schemes)
     except Exception as exc:  # pragma: no cover - defensive
         logging.getLogger(__name__).info("Antibody annotation skipped: %s", exc)
         return None
@@ -362,7 +410,13 @@ def analyze_pdb_content_with_timing(
 
     secondary_structure = _compute_secondary_structure(structure.atoms)
     pockets = _compute_pockets(structure.atoms) if include_validity else []
-    antibody = _compute_antibody(structure.atoms, residue_confidences) if include_validity else None
+    antibody = (
+        _compute_antibody(
+            structure.atoms, residue_confidences, contacts, {c.id for c in structure.chains}
+        )
+        if include_validity
+        else None
+    )
 
     # Authoritative clash count/list come from the atom-level VDW detector, not the
     # residue-level contact table.

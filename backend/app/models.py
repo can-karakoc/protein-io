@@ -375,18 +375,24 @@ class AntibodyCdr(BaseModel):
     length: int
     residue_numbers: list[str]
     mean_plddt: float | None = None
+    paratope_residues: list[str] = Field(default_factory=list)  # CDR residues contacting antigen
 
 
 class AntibodyChain(BaseModel):
     chain_id: str
     domain_type: str                # VH | VL
     identity: float                 # framework alignment identity to the reference domain
-    cdrs: list[AntibodyCdr]
+    cdrs: list[AntibodyCdr]         # default (IMGT) numbering
+    # CDR boundaries under every supported numbering scheme (AntPack only). Lets the UI
+    # toggle IMGT / Kabat / Martin / Aho without a re-analysis. None on the fallback path.
+    cdr_schemes: dict[str, list[AntibodyCdr]] | None = None
+    antigen_chains: list[str] = Field(default_factory=list)  # non-antibody chains this Fv contacts
 
 
 class AntibodyAnalysis(BaseModel):
     source: str = "sequence"        # in-house NW alignment to reference VH/VL, Kabat-style CDRs
     chains: list[AntibodyChain]
+    schemes: list[str] = Field(default_factory=lambda: ["imgt"])  # available numbering schemes
 
 
 class AnalysisResponse(BaseModel):

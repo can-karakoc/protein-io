@@ -326,16 +326,20 @@ export type AntibodyCdr = {
   length: number;
   residue_numbers: string[];
   mean_plddt: number | null;
+  paratope_residues: string[]; // CDR residues that contact antigen
 };
 export type AntibodyChain = {
   chain_id: string;
   domain_type: string; // VH | VL
   identity: number;
-  cdrs: AntibodyCdr[];
+  cdrs: AntibodyCdr[]; // default (IMGT) numbering
+  cdr_schemes?: Record<string, AntibodyCdr[]> | null; // CDRs per numbering scheme
+  antigen_chains: string[]; // non-antibody chains this Fv contacts
 };
 export type AntibodyAnalysis = {
   source: string;
   chains: AntibodyChain[];
+  schemes: string[]; // available numbering schemes (imgt/kabat/martin/aho)
 };
 
 export type AnalysisResponse = {
