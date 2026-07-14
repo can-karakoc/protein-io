@@ -3,7 +3,7 @@
 import { ArrowLeftRight, Database, Download, FileUp, LoaderCircle, Play, RotateCcw, Search, Sparkles, TrendingDown, TrendingUp, X } from "lucide-react";
 import { type CSSProperties, useEffect, useMemo, useState } from "react";
 
-import { buildApiUrl } from "@/lib/api";
+import { buildApiUrl, fetchWithRetry } from "@/lib/api";
 import { comparisonContactsToCsv } from "@/lib/csv";
 import { setCompareSession, labelFromInput } from "@/lib/compareSession";
 import {
@@ -217,7 +217,7 @@ export function CompareWorkspace() {
       const endpoint = isRcsb
         ? `/api/rcsb/${encodeURIComponent(normalizedId)}/analyze`
         : `/api/alphafold/${encodeURIComponent(normalizedId)}/analyze`;
-      const response = await fetch(buildApiUrl(`${endpoint}?cutoff_angstrom=${cutoff}`));
+      const response = await fetchWithRetry(buildApiUrl(`${endpoint}?cutoff_angstrom=${cutoff}`));
       if (!response.ok) {
         const body = (await response.json().catch(() => null)) as { detail?: string } | null;
         throw new Error(body?.detail ?? `Fetch failed with status ${response.status}.`);
@@ -266,7 +266,7 @@ export function CompareWorkspace() {
       formData.append("file_a", inputA.file);
       formData.append("file_b", inputB.file);
       formData.append("cutoff_angstrom", String(cutoff));
-      const response = await fetch(buildApiUrl("/api/compare"), {
+      const response = await fetchWithRetry(buildApiUrl("/api/compare"), {
         method: "POST",
         body: formData,
       });

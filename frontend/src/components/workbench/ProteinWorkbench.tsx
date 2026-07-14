@@ -13,7 +13,7 @@ import { ExploreSidebar } from "@/components/workbench/ExploreSidebar";
 import { WorkbenchShell } from "@/components/workbench/WorkbenchShell";
 import type { WorkbenchMode } from "@/components/workbench/TopNav";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { buildApiUrl } from "@/lib/api";
+import { buildApiUrl, fetchWithRetry } from "@/lib/api";
 import { getCompareSession, type CompareSessionEntry } from "@/lib/compareSession";
 import {
   listSavedRuns,
@@ -606,9 +606,15 @@ function ProteinWorkbenchState({
       const form_ms = elapsedMs(formStarted);
 
       const requestStarted = performance.now();
-      const response = await fetch(buildApiUrl("/api/analyze"), {
+      const response = await fetchWithRetry(buildApiUrl("/api/analyze"), {
         method: "POST",
         body: formData,
+        onRetry: (attempt) => {
+          setStatus({
+            label: "Server is waking up",
+            detail: `Free tier cold start detected. Retrying (${attempt}/2)...`,
+          });
+        },
       });
       const request_ms = elapsedMs(requestStarted);
 
@@ -671,8 +677,16 @@ function ProteinWorkbenchState({
     try {
       const timingStarted = performance.now();
       const requestStarted = performance.now();
-      const response = await fetch(
+      const response = await fetchWithRetry(
         buildApiUrl(`/api/rcsb/${encodeURIComponent(normalizedPdbId)}/analyze?cutoff_angstrom=${cutoff}`),
+        {
+          onRetry: (attempt) => {
+            setStatus({
+              label: "Server is waking up",
+              detail: `Free tier cold start detected. Retrying (${attempt}/2)...`,
+            });
+          },
+        },
       );
       const request_ms = elapsedMs(requestStarted);
 
@@ -755,8 +769,16 @@ function ProteinWorkbenchState({
     try {
       const timingStarted = performance.now();
       const requestStarted = performance.now();
-      const response = await fetch(
+      const response = await fetchWithRetry(
         buildApiUrl(`/api/alphafold/${encodeURIComponent(normalizedUniprotId)}/analyze?cutoff_angstrom=${cutoff}`),
+        {
+          onRetry: (attempt) => {
+            setStatus({
+              label: "Server is waking up",
+              detail: `Free tier cold start detected. Retrying (${attempt}/2)...`,
+            });
+          },
+        },
       );
       const request_ms = elapsedMs(requestStarted);
 

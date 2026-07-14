@@ -25,7 +25,7 @@ function Collapsible({ open, children }: { open: boolean; children: ReactNode })
   );
 }
 
-import { buildApiUrl } from "@/lib/api";
+import { buildApiUrl, fetchWithRetry } from "@/lib/api";
 import { buildSessionBundle, downloadSessionBundle, parseSessionBundle } from "@/lib/sessionBundle";
 import type { AnalysisResponse, StructureComparisonResponse } from "@/lib/types";
 import { type StructureEntry, type StructureFormat, useWorkspace } from "@/lib/workspaceStore";
@@ -188,7 +188,7 @@ function StructureLoader({ onLoaded }: { onLoaded: () => void }) {
         fd.append("confidence_file", new File([paeText], paeFileName || "confidence.json", { type: "application/json" }));
       }
       fd.append("cutoff_angstrom", String(cutoff));
-      const res = await fetch(buildApiUrl("/api/analyze"), { method: "POST", body: fd });
+      const res = await fetchWithRetry(buildApiUrl("/api/analyze"), { method: "POST", body: fd });
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as { detail?: string } | null;
         throw new Error(body?.detail ?? `Analysis failed (${res.status})`);
@@ -228,7 +228,7 @@ function StructureLoader({ onLoaded }: { onLoaded: () => void }) {
       error: null,
     });
     try {
-      const res = await fetch(buildApiUrl(`/api/rcsb/${encodeURIComponent(id)}/analyze?cutoff_angstrom=${cutoff}`));
+      const res = await fetchWithRetry(buildApiUrl(`/api/rcsb/${encodeURIComponent(id)}/analyze?cutoff_angstrom=${cutoff}`));
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as { detail?: string } | null;
         throw new Error(body?.detail ?? `RCSB fetch failed (${res.status})`);
@@ -271,7 +271,7 @@ function StructureLoader({ onLoaded }: { onLoaded: () => void }) {
       error: null,
     });
     try {
-      const res = await fetch(buildApiUrl(`/api/alphafold/${encodeURIComponent(id)}/analyze?cutoff_angstrom=${cutoff}`));
+      const res = await fetchWithRetry(buildApiUrl(`/api/alphafold/${encodeURIComponent(id)}/analyze?cutoff_angstrom=${cutoff}`));
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as { detail?: string } | null;
         throw new Error(body?.detail ?? `AlphaFold fetch failed (${res.status})`);
@@ -503,7 +503,7 @@ function ComparePanel() {
     fd.append("cutoff_angstrom", String(Math.max(entA.cutoff ?? 4, entB.cutoff ?? 4)));
 
     try {
-      const res = await fetch(buildApiUrl("/api/compare"), { method: "POST", body: fd });
+      const res = await fetchWithRetry(buildApiUrl("/api/compare"), { method: "POST", body: fd });
       if (!res.ok) {
         const body = await res.json().catch(() => null) as { detail?: string } | null;
         throw new Error(body?.detail ?? `Compare failed (${res.status})`);

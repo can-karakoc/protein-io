@@ -4,7 +4,7 @@ import { AlertCircle, CheckCircle2, Download, FileText, FileUp, Loader2, Network
 import { useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { buildApiUrl } from "@/lib/api";
+import { buildApiUrl, fetchWithRetry } from "@/lib/api";
 import { buildCampaignReportHtml, downloadCampaignReport, type CampaignReportRow } from "@/lib/campaignReport";
 import { CHAT_ENABLED } from "@/lib/features";
 import type { BatchAnalysisResponse, BatchClusterResponse, BatchDesignEntry } from "@/lib/types";
@@ -254,7 +254,7 @@ export function BatchWorkspace() {
       for (const f of sidecars) formData.append("sidecar_files", f, f.name);
       formData.append("cutoff_angstrom", String(cutoff));
       formData.append("include_validity", String(includeValidity));
-      const res = await fetch(buildApiUrl("/api/batch/analyze"), { method: "POST", body: formData });
+      const res = await fetchWithRetry(buildApiUrl("/api/batch/analyze"), { method: "POST", body: formData });
       if (!res.ok) {
         const detail = await res.json().then((j: { detail?: string }) => j.detail).catch(() => null);
         throw new Error(detail ?? `Server error ${res.status}`);
@@ -275,7 +275,7 @@ export function BatchWorkspace() {
       const formData = new FormData();
       for (const f of files) formData.append("files", f, f.name);
       formData.append("tm_threshold", "0.5");
-      const res = await fetch(buildApiUrl("/api/batch/cluster"), { method: "POST", body: formData });
+      const res = await fetchWithRetry(buildApiUrl("/api/batch/cluster"), { method: "POST", body: formData });
       if (!res.ok) {
         const detail = await res.json().then((j: { detail?: string }) => j.detail).catch(() => null);
         throw new Error(detail ?? `Server error ${res.status}`);
@@ -511,7 +511,7 @@ function BatchQueryPanel({ result }: { result: BatchAnalysisResponse }) {
     if (!question.trim() || loading) return;
     setLoading(true); setError(null); setAnswer(null);
     try {
-      const res = await fetch(buildApiUrl("/api/batch/query"), {
+      const res = await fetchWithRetry(buildApiUrl("/api/batch/query"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ batch: result, question: question.trim() }),

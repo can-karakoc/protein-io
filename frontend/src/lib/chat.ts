@@ -1,4 +1,4 @@
-import { buildApiUrl } from "@/lib/api";
+import { buildApiUrl, fetchWithRetry } from "@/lib/api";
 import type { AnalysisResponse, StructureComparisonResponse } from "@/lib/types";
 import type { CompareSessionEntry } from "@/lib/compareSession";
 
@@ -38,7 +38,7 @@ export async function sendChatMessage(
     ? { ...compareEntry.comparison, label_a: compareEntry.labelA, label_b: compareEntry.labelB }
     : null;
 
-  const res = await fetch(buildApiUrl("/api/chat"), {
+  const res = await fetchWithRetry(buildApiUrl("/api/chat"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ analysis, messages, comparison }),

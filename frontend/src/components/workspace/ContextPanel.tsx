@@ -23,7 +23,7 @@ import remarkGfm from "remark-gfm";
 
 import { ease, listItem, spring, stagger, tabContent } from "@/lib/motion";
 
-import { buildApiUrl } from "@/lib/api";
+import { buildApiUrl, fetchWithRetry } from "@/lib/api";
 import { downloadComparisonReportPdf } from "@/lib/comparisonReport";
 import { buildChimeraxScript, buildPymolScript, downloadSessionScript } from "@/lib/sessionExport";
 import { downloadMethodsReport } from "@/lib/methodsReport";
@@ -320,7 +320,7 @@ function CopilotReview({ analysis, structureKey }: { analysis: AnalysisResponse;
   async function run() {
     setLoading(true); setError(null);
     try {
-      const res = await fetch(buildApiUrl("/api/copilot/review"), {
+      const res = await fetchWithRetry(buildApiUrl("/api/copilot/review"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ analysis }),
@@ -2345,7 +2345,7 @@ function CompareTab() {
     fd.append("file_b", toFile(b));
     fd.append("cutoff_angstrom", String(Math.max(a.cutoff ?? 4, b.cutoff ?? 4)));
     try {
-      const res = await fetch(buildApiUrl("/api/compare"), { method: "POST", body: fd });
+      const res = await fetchWithRetry(buildApiUrl("/api/compare"), { method: "POST", body: fd });
       if (!res.ok) {
         const body = await res.json().catch(() => null) as { detail?: string } | null;
         throw new Error(body?.detail ?? `Compare failed (${res.status})`);
@@ -3021,7 +3021,7 @@ function SimilarTab({ entry }: { entry: StructureEntry }) {
     const path = isAfdb
       ? `/api/alphafold/${encodeURIComponent(accession)}/analyze?cutoff_angstrom=4`
       : `/api/rcsb/${encodeURIComponent(accession)}/analyze?cutoff_angstrom=4`;
-    const res = await fetch(buildApiUrl(path));
+    const res = await fetchWithRetry(buildApiUrl(path));
     if (!res.ok) {
       const body = (await res.json().catch(() => null)) as { detail?: string } | null;
       updateStructure(entryId, { isAnalyzing: false, error: body?.detail ?? `Fetch failed (${res.status})` });
@@ -3055,7 +3055,7 @@ function SimilarTab({ entry }: { entry: StructureEntry }) {
         : `${entry.name}.cif`;
       const fd = new FormData();
       fd.append("file", blob, filename);
-      const res = await fetch(buildApiUrl("/api/foldseek/search"), { method: "POST", body: fd });
+      const res = await fetchWithRetry(buildApiUrl("/api/foldseek/search"), { method: "POST", body: fd });
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as { detail?: string } | null;
         throw new Error(body?.detail ?? `Search failed (${res.status})`);
@@ -3682,7 +3682,7 @@ function EmptyGallery() {
       const path = entry.type === "rcsb"
         ? `/api/rcsb/${encodeURIComponent(entry.accession)}/analyze?cutoff_angstrom=4`
         : `/api/alphafold/${encodeURIComponent(entry.accession)}/analyze?cutoff_angstrom=4`;
-      const res = await fetch(buildApiUrl(path));
+      const res = await fetchWithRetry(buildApiUrl(path));
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as { detail?: string } | null;
         throw new Error(body?.detail ?? `Fetch failed (${res.status})`);
